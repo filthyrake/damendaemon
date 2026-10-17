@@ -10,8 +10,8 @@ import time
 import sys
 
 import torch
-from dllm.models import load
-from dllm.runtime import make_executor, require_gpu
+from damendaemon.models import load
+from damendaemon.runtime import make_executor, require_gpu
 
 
 def main():
@@ -28,7 +28,7 @@ def main():
         parser.error('at least a warmup and one measured cycle are required')
     require_gpu()
     if args.native_awq_baseline:
-        spec = importlib.util.spec_from_file_location('dllm.native_awq', args.native_awq_baseline)
+        spec = importlib.util.spec_from_file_location('damendaemon.native_awq', args.native_awq_baseline)
         module = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = module
         spec.loader.exec_module(module)
@@ -39,7 +39,7 @@ def main():
                   model=args.model, context=args.context, batch_size=args.batch_size,
                   profiled=not args.without_profiler,
                   native_awq_baseline=args.native_awq_baseline,
-                  native_awq_source_sha256=hashlib.sha256(Path(args.native_awq_baseline or 'dllm/native_awq.py').read_bytes()).hexdigest(),
+                  native_awq_source_sha256=hashlib.sha256(Path(args.native_awq_baseline or 'damendaemon/native_awq.py').read_bytes()).hexdigest(),
                   host_preparation_seconds=time.perf_counter()-started, cycles=[])
     prompt = source.raw_tokens('Explain how oceans affect weather.')
     expected = None

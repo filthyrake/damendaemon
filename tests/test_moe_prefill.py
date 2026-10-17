@@ -1,5 +1,5 @@
 import unittest
-from dllm.moe_prefill import qualified_scope, use_grouped_prefill, use_packed_prefill
+from damendaemon.moe_prefill import qualified_scope, use_grouped_prefill, use_packed_prefill
 
 
 class MoEPrefillScopeTests(unittest.TestCase):
@@ -35,7 +35,7 @@ class MoEPrefillScopeTests(unittest.TestCase):
             self.assertFalse(use_packed_prefill(True,lengths))
 
     def test_invalid_chunk_state_fails_before_touching_device_or_lengths(self):
-        from dllm.moe import OlmoeExecutor
+        from damendaemon.moe import OlmoeExecutor
         executor = object.__new__(OlmoeExecutor)
         executor.grouped_prefill = True
         executor.max_batch = 4

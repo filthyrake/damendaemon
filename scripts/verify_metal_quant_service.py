@@ -17,7 +17,7 @@ from urllib.error import HTTPError
 from urllib.request import Request,urlopen
 import torch
 from tokenizers import Tokenizer
-from dllm.bench import events
+from damendaemon.bench import events
 
 
 def cases_from_trace(trace):
@@ -48,17 +48,17 @@ def main():
     report=dict(passed=False,model=model,quantization=trace.get('reference_quantization','none'),
         trace_sha256=hashlib.sha256(Path(args.trace).read_bytes()).hexdigest(),checks=[],trials=[],statuses={},
         scope='Metal quantized HTTP and Q4/Q8 precision switching')
-    with tempfile.TemporaryDirectory(prefix='dllm-metal-q4-http-') as directory:
+    with tempfile.TemporaryDirectory(prefix='damendaemon-metal-q4-http-') as directory:
         logpath=Path(directory)/'server.log'
-        env={**os.environ,'DLLM_QUANTIZATION':report['quantization'],'DLLM_DEVICE':'mps','DLLM_METAL_WEIGHT_DTYPE':'float16'}
+        env={**os.environ,'DAMENDAEMON_QUANTIZATION':report['quantization'],'DAMENDAEMON_DEVICE':'mps','DAMENDAEMON_METAL_WEIGHT_DTYPE':'float16'}
         with logpath.open('w') as log:
-            process=subprocess.Popen([sys.executable,'-m','dllm','serve','--port','0','--device','mps',
+            process=subprocess.Popen([sys.executable,'-m','damendaemon','serve','--port','0','--device','mps',
                 '--context','2048','--batch-size','4','--batch-wait-ms','10','--gpu-models','1',
                 '--host-models','2','--host-gib','8'],stdout=log,stderr=log,env=env)
             try:
                 deadline=time.monotonic()+120
                 while time.monotonic()<deadline and process.poll() is None:
-                    lines=[line for line in logpath.read_text().splitlines() if line.startswith('dllm listening on ')]
+                    lines=[line for line in logpath.read_text().splitlines() if line.startswith('damendaemon listening on ')]
                     if lines:base=lines[-1].split()[-1];break
                     time.sleep(.1)
                 else:raise RuntimeError(logpath.read_text())
@@ -79,7 +79,7 @@ def main():
                     assert result['usage']['prompt_tokens']==len(case['prompt']),label
                     assert result['usage']['completion_tokens']==len(tokens),label
                     report['checks'].append(label)
-                    report['trials'].append(dict(label=label,wall_seconds=result['wall_seconds'],timing=result['dllm_timing']))
+                    report['trials'].append(dict(label=label,wall_seconds=result['wall_seconds'],timing=result['damendaemon_timing']))
                 def status(label):
                     value=call('/v1/models/status');report['statuses'][label]=value;return value
                 assert status('initial')['models']==[]
@@ -93,7 +93,7 @@ def main():
                 with ThreadPoolExecutor(4) as pool:
                     responses=list(pool.map(lambda pair:request(pair[0],count=pair[1]),enumerate(counts)))
                 for index,result in enumerate(responses):check(result,index,counts[index],'concurrent-shrinking:'+str(index))
-                assert max(r['dllm_timing']['max_batch_size'] for r in responses)>=2
+                assert max(r['damendaemon_timing']['max_batch_size'] for r in responses)>=2
                 with opened('/v1/completions',{**body(),'stream':True,'stream_options':{'include_usage':True}}) as response:
                     chunks=list(events(response, require_terminated=True))
                 assert chunks[-1]=='[DONE]'
@@ -129,7 +129,7 @@ def main():
                 assert next(m for m in switched['models'] if m['id']=='b')['quantization']==other
                 report['checks'].append('other-precision-switch-smoke')
                 restored=request();check(restored,label='host-restore')
-                assert restored['dllm_timing']['source_tier']=='host'
+                assert restored['damendaemon_timing']['source_tier']=='host'
                 for alias in ('a','b'):call('/v1/models/unload',dict(model=alias,release_host=True))
                 unloaded=status('unloaded')
                 assert unloaded['host_cached_bytes']==0 and all(m['partition'] is None for m in unloaded['models'])

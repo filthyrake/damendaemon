@@ -32,14 +32,14 @@ def parser():
 
 
 def worker(args):
-    from dllm.distributed_server_cli import main as serve
+    from damendaemon.distributed_server_cli import main as serve
     if os.environ['RANK']!='0':
         serve([args.model,'--quantization',args.quantization,'--alias','a','--port','0','--batch-size',str(args.batch_size)]);return
     import torch
     from tokenizers import Tokenizer
-    from dllm.bench import events
-    from dllm.distributed_serving import DistributedRuntime
-    from dllm.server import BoundedHTTPServer
+    from damendaemon.bench import events
+    from damendaemon.distributed_serving import DistributedRuntime
+    from damendaemon.server import BoundedHTTPServer
     from scripts.verify_partition_service import cases_from_trace
     torch.set_num_threads(4)
     trace=torch.load(args.trace,map_location='cpu',weights_only=True)
@@ -56,7 +56,7 @@ def worker(args):
         coordinator_devices=os.environ.get('CUDA_VISIBLE_DEVICES'),idle_seconds=args.idle_seconds,
         scope='Real two-rank greedy HTTP qualification; not a performance comparison',
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-            ('dllm/distributed.py','dllm/distributed_serving.py','dllm/distributed_server_cli.py','dllm/stage_protocol.py','dllm/layer_stage.py','dllm/q4_stage.py','dllm/q4_stage_kernels.py')})
+            ('damendaemon/distributed.py','damendaemon/distributed_serving.py','damendaemon/distributed_server_cli.py','damendaemon/stage_protocol.py','damendaemon/layer_stage.py','damendaemon/q4_stage.py','damendaemon/q4_stage_kernels.py')})
     base=None
     original_init=BoundedHTTPServer.__init__
     original_run=DistributedRuntime.run
@@ -81,9 +81,9 @@ def worker(args):
             assert result['choices'][0]['text']==tokenizer.decode(tokens,skip_special_tokens=True),label
             assert result['usage']['prompt_tokens']==len(case['prompt']),label
             assert result['usage']['completion_tokens']==len(tokens),label
-            assert 1<=result['dllm_timing']['max_batch_size']<=args.batch_size,label
-            assert 1<=result['dllm_timing']['prefill_batch_size']<=args.batch_size,label
-            report['checks'].append(label);report['trials'].append(dict(label=label,timing=result['dllm_timing']))
+            assert 1<=result['damendaemon_timing']['max_batch_size']<=args.batch_size,label
+            assert 1<=result['damendaemon_timing']['prefill_batch_size']<=args.batch_size,label
+            report['checks'].append(label);report['trials'].append(dict(label=label,timing=result['damendaemon_timing']))
         try:
             assert call('/health')['status']=='ok'
             assert [m['id'] for m in call('/v1/models')['data']]==['a']
@@ -96,7 +96,7 @@ def worker(args):
             for index,result in enumerate(initial_results):
                 check(result,0,counts[index],'initial-queued-common-prefix:'+str(index))
             if initial['packed_prefill']:
-                assert max(result['dllm_timing']['prefill_batch_size'] for result in initial_results)==args.batch_size
+                assert max(result['damendaemon_timing']['prefill_batch_size'] for result in initial_results)==args.batch_size
             for index in range(len(cases)):check(request(index),index,label='independent:'+str(index))
             for index in (1,0,2,0):check(request(index),index,label='resident-reuse:'+str(index))
             counts=(2,8,4,6)
@@ -104,7 +104,7 @@ def worker(args):
                 results=list(pool.map(lambda pair:request(pair[0],pair[1]),enumerate(counts)))
             for index,result in enumerate(results):check(result,index,counts[index],'queued-concurrent:'+str(index))
             if args.batch_size>1:
-                assert max(result['dllm_timing']['max_batch_size'] for result in results)>1,'no decode batching observed'
+                assert max(result['damendaemon_timing']['max_batch_size'] for result in results)>1,'no decode batching observed'
             if args.batch_size>1:
                 lengths=(2,8,4,6,3,5)
                 with ThreadPoolExecutor(6) as pool:

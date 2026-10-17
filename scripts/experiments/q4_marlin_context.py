@@ -7,7 +7,7 @@ retain the requested length. The other model/layout/hardware filters remain.
 import hashlib
 from pathlib import Path
 
-from dllm import native_q4_marlin
+from damendaemon import native_q4_marlin
 
 
 def install_validation_context(limit):

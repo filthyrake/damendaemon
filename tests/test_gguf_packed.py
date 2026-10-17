@@ -5,7 +5,7 @@ import unittest
 
 import numpy as np
 import torch
-from dllm.gguf_packed import FORMATS, read_raw, layout
+from damendaemon.gguf_packed import FORMATS, read_raw, layout
 
 
 @unittest.skipUnless(importlib.util.find_spec('gguf'), 'optional gguf codec is not installed')

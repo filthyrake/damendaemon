@@ -7,7 +7,7 @@ import torch
 import triton as tr
 import triton.language as tl
 
-from dllm.kquant_kernels import _values, expand
+from damendaemon.kquant_kernels import _values, expand
 
 
 @tr.jit
@@ -45,13 +45,13 @@ def linear(x, weight, layout, *, packed=False, bm=32, bn=64, bk=32):
     return result
 
 
-from dllm.kquant_prefill_kernels import _half_matmul, linear as fused_linear
+from damendaemon.kquant_prefill_kernels import _half_matmul, linear as fused_linear
 
 
 def compensated_linear(x, weight, layout, *, bm=32, bn=64, fused_split=False):
     if fused_split:
         return fused_linear(x, weight, layout, bm=bm, bn=bn)
-    from dllm.precise_matmul import _split
+    from damendaemon.precise_matmul import _split
 
     width, spec = layout
     rows, outputs = x.shape[0], spec[-1][1]
@@ -75,7 +75,7 @@ def install_validation_dispatch():
     import hashlib
     import inspect
     from pathlib import Path
-    from dllm import kquant_kernels
+    from damendaemon import kquant_kernels
 
     original = kquant_kernels.linear
 

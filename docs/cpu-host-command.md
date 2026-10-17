@@ -12,7 +12,7 @@ binds tokenizer serialization, EOS, model configuration, quantization, token pol
 context, slots and layer coverage. No checkpoint is downloaded or transmitted.
 
 Use existing certificates from your trusted CA. Both sides require TLS 1.3 mutual
-authentication, exact peer certificate pins and dllm ALPN. The coordinator also
+authentication, exact peer certificate pins and damendaemon ALPN. The coordinator also
 checks the worker certificate's hostname. Key files stay local; the command does
 not issue credentials, print keys, accept plaintext or install services.
 
@@ -91,7 +91,7 @@ Start the same `worker` command first. The serve role takes no prompt/input file
 It reports `http_ready` only after authenticated model setup and binding its HTTP
 listener to `127.0.0.1`. `--http-port 0` selects an available port and reports the
 URL. TLS secures the worker link; the HTTP listener stays loopback-only and uses
-the existing `DLLM_API_KEY`, admin and named-client authentication/admission
+the existing `DAMENDAEMON_API_KEY`, admin and named-client authentication/admission
 configuration. Invalid authentication configuration fails before peer connection.
 
 Submit raw text or token IDs to `/v1/completions`; SSE and per-request usage are

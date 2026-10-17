@@ -8,7 +8,7 @@ import time
 
 from safetensors import safe_open
 import torch
-from dllm.mxfp4 import routed_linear
+from damendaemon.mxfp4 import routed_linear
 from verify_mxfp4 import reference
 
 
@@ -16,7 +16,7 @@ def main():
     parser=argparse.ArgumentParser();parser.add_argument('model');args=parser.parse_args()
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
-    root=Path(args.model);source=json.loads((root/'dllm-source.json').read_text());catalog=source['tensors']
+    root=Path(args.model);source=json.loads((root/'damendaemon-source.json').read_text());catalog=source['tensors']
     torch.set_num_threads(4);torch.manual_seed(72);rows=[]
     def get(name):
         with safe_open(str(root/catalog[name]['file']),framework='pt',device='cpu') as reader:return reader.get_tensor(name)

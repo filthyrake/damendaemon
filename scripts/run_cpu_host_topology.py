@@ -6,14 +6,14 @@ import signal
 import socket
 from types import SimpleNamespace
 
-from dllm.cpu_host_pipeline_build import build_cpu_host_pipeline_worker,CpuHostPipelineBuildError
-from dllm.cpu_reference_text import read_json
-from dllm.host_completion import HostCompletion
-from dllm.host_endpoint import HostPeerListener,connect_peer
-from dllm.host_serving import HostServingTopology
-from dllm.host_tensor_channel import HostTensorChannel
-from dllm.host_tls import certificate_pin
-from dllm.host_topology import HostTopology
+from damendaemon.cpu_host_pipeline_build import build_cpu_host_pipeline_worker,CpuHostPipelineBuildError
+from damendaemon.cpu_reference_text import read_json
+from damendaemon.host_completion import HostCompletion
+from damendaemon.host_endpoint import HostPeerListener,connect_peer
+from damendaemon.host_serving import HostServingTopology
+from damendaemon.host_tensor_channel import HostTensorChannel
+from damendaemon.host_tls import certificate_pin
+from damendaemon.host_topology import HostTopology
 from scripts.run_cpu_host_reference import parser_for_command,prepare as prepare_pair,emit,serve_worker_pair
 
 
@@ -54,7 +54,7 @@ def prepare(args,*,family='qwen'):
         local.address,local.port,local.server_name,local.peer_cert=first['address'],first['port'],first['server_name'],first['peer_cert']
     address,config,text,inputs,limits,session,context,pin,verified=(prepare_pair(local) if family=='qwen' else prepare_pair(local,family=family))
     if family=='flash':
-        from dllm.glm_flash_host_generation import native_excluded_ids
+        from damendaemon.glm_flash_host_generation import native_excluded_ids
         exclusions=native_excluded_ids(text)
     else:exclusions=() if getattr(args,'native_chat',False) else text.excluded_ids
     plan=HostTopology(config,ranges,bytes.fromhex(args.model_id),quantization=args.quantization,
@@ -74,7 +74,7 @@ def run(args,*,family='qwen',cuda=False):
     if cuda:
         from scripts.cuda_host_execution import validate,configure,build_options
         validate(args,family=family)
-    from dllm.http_auth import AuthPolicy
+    from damendaemon.http_auth import AuthPolicy
     auth=AuthPolicy.from_env() if args.role=='serve' else None
     address,plan,text,inputs,limits,context,pin,verified,peers=(prepare(args) if family=='qwen' else prepare(args,family=family))
     if cuda:configure(args)
@@ -107,17 +107,17 @@ def run(args,*,family='qwen',cuda=False):
                 max_cache_bytes=args.cache_mib*2**20,max_workspace_bytes=args.workspace_mib*2**20,
                 projection_workspace_bytes=args.projection_workspace_mib*2**20,max_output_bytes=args.output_mib*2**20)
             if cuda:
-                from dllm.cuda_host_pipeline_build import build_cuda_host_pipeline_worker
+                from damendaemon.cuda_host_pipeline_build import build_cuda_host_pipeline_worker
                 worker=build_cuda_host_pipeline_worker(args.snapshot,plan,args.index,transports,**options,**build_options(args))
             elif family=='deepseek':
-                from dllm.deepseek_host_pipeline_build import build_deepseek_host_pipeline_worker
+                from damendaemon.deepseek_host_pipeline_build import build_deepseek_host_pipeline_worker
                 options.pop('max_workspace_bytes');options['workspace_bytes']=options.pop('projection_workspace_bytes')
                 worker=build_deepseek_host_pipeline_worker(args.snapshot,plan,args.index,transports,**options)
             elif family=='flash':
-                from dllm.glm_flash_host_pipeline_build import build_glm_flash_host_pipeline_worker
+                from damendaemon.glm_flash_host_pipeline_build import build_glm_flash_host_pipeline_worker
                 worker=build_glm_flash_host_pipeline_worker(args.snapshot,plan,args.index,transports,**options)
             elif family=='glm':
-                from dllm.glm_host_pipeline_build import build_glm_host_pipeline_worker
+                from damendaemon.glm_host_pipeline_build import build_glm_host_pipeline_worker
                 worker=build_glm_host_pipeline_worker(args.snapshot,plan,args.index,transports,**options)
             else:
                 worker=build_cpu_host_pipeline_worker(args.snapshot,plan,args.index,transports,
@@ -144,13 +144,13 @@ def run(args,*,family='qwen',cuda=False):
             else:serve_worker_pair(worker,text,args,auth,pair_type=HostServingTopology)
         elif family in ('glm','flash','deepseek') and args.native_chat:
             if family=='deepseek':
-                from dllm.deepseek_host_generation import HostDeepSeekGenerator as Runner
+                from damendaemon.deepseek_host_generation import HostDeepSeekGenerator as Runner
             elif family=='flash':
                 if plan.input_kind=='flash_embeddings':
-                    from dllm.glm_flash_host_image_generation import HostFlashImageGenerator as Runner
-                else:from dllm.glm_flash_host_generation import HostFlashGenerator as Runner
+                    from damendaemon.glm_flash_host_image_generation import HostFlashImageGenerator as Runner
+                else:from damendaemon.glm_flash_host_generation import HostFlashGenerator as Runner
             else:
-                from dllm.glm_host_generation import HostGlmGenerator as Runner
+                from damendaemon.glm_host_generation import HostGlmGenerator as Runner
             if vision is not None:
                 from scripts.flash_host_images import generation_options
                 runner=Runner(worker,text,vision,chunk_size=args.prefill_chunk,**generation_options(args))

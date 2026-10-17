@@ -2,9 +2,9 @@ from concurrent.futures import ThreadPoolExecutor
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.host_stage_channel import HostStageChannel
-from dllm.host_hybrid_worker import HostHybridWorker
-from dllm.stage_protocol import StageState
+from damendaemon.host_stage_channel import HostStageChannel
+from damendaemon.host_hybrid_worker import HostHybridWorker
+from damendaemon.stage_protocol import StageState
 from tests import test_host_tensor_channel,test_hybrid_stage
 
 

@@ -3,7 +3,7 @@
 Initial checkpoint qualification: Qwen/Qwen2.5-0.5B-Instruct, pinned HF revision
 `7ae557604adf67be50417f59c2c2f167def9a775`, Q8_0 comparator file on NVIDIA A2,
 PyTorch 2.6.0+cu124. Import uses the optional MIT-licensed `gguf==0.19.0` reader
-package with additional bounds checks. Inference stays in dllm's decoder and
+package with additional bounds checks. Inference stays in damendaemon's decoder and
 GPU kernels. No llama.cpp inference dependency is introduced.
 
 Fixture SHA-256: `6810aa35d0eae4a02dea4031bcb983842888739028ebfdce797e16bf5b869d18`.
@@ -13,7 +13,7 @@ Reference llama-server executable SHA-256:
 ## Proof
 
 - [A2 runtime report](qwen2-q8-a2.json): all 171 runtime weight tensors and 97
-  scale tensors exactly match dllm's existing Q8 preparation from the pinned
+  scale tensors exactly match damendaemon's existing Q8 preparation from the pinned
   HF weights. Packed values and scales are copied, not requantized.
 - Complete logits match bit-for-bit for eight generation steps at 1, 17, 129,
   and 505 prompt tokens, both with and without CUDA graphs (64 comparisons).
@@ -108,7 +108,7 @@ parsing tokenizer metadata. Bounded reads now create plain read-only ndarray
 views over the same file buffer. All file bounds checks remain in place.
 
 [Four alternating CPU trials](metadata-reader-benchmark.json) on the local Mac,
-with an empty dllm metadata cache and potentially warm filesystem pages, reduce
+with an empty damendaemon metadata cache and potentially warm filesystem pages, reduce
 median metadata/tokenizer-plan time from 4.363 s to 1.685 s (2.59x). Complete
 plans, tensor descriptors, and serialized tokenizers match exactly. This is
 **CPU model-loading work**, not GPU throughput or complete activation latency.
@@ -118,7 +118,7 @@ Reproduce with `scripts/benchmark_gguf_metadata.py` and the reader from commit
 
 ## Published checkpoint and exact-file downloads
 
-`dllm pull`, `run`, and `add` accept `--filename` for one exact GGUF file within
+`damendaemon pull`, `run`, and `add` accept `--filename` for one exact GGUF file within
 a Hugging Face repository. The repository revision is resolved before fetching
 the file; other quantization variants and safetensors copies are not downloaded.
 GGUF file magic is recognized after symlink resolution, so HF cache blobs do
@@ -185,7 +185,7 @@ identical responses and 16 output tokens:
 
 The 0.6–2.2% latency cost and the additional-case regression do not justify
 adding this policy. **The candidate was removed from production; there is no
-`DLLM_QWEN2_PRECISION` runtime option.** The [experimental patch](experimental-qwen2-mixed.patch)
+`DAMENDAEMON_QWEN2_PRECISION` runtime option.** The [experimental patch](experimental-qwen2-mixed.patch)
 is retained for reproduction against commit `c935d6e` in an isolated checkout.
 `scripts/benchmark_qwen2_precision.py` requires that patch and fails explicitly
 without it. `scripts/probe_gguf_precision.py` is a diagnostic using eager
@@ -368,7 +368,7 @@ The CPU/HTTP suite passes 277 tests.
 The initial implementation is **not performance-ready**. Controlled alternating
 HTTP measurements use the same coefficient values, A2, 512 context, two resident
 models, three warmups and six measured pairs per case, with exactly 16 output
-tokens and matching text/usage. These compare dllm's two execution paths, not
+tokens and matching text/usage. These compare damendaemon's two execution paths, not
 llama.cpp or vLLM:
 
 | Input tokens / concurrency | Packed median | Expanded FP16 median |
@@ -404,9 +404,9 @@ The optional `native/kquant_gemv.cu` library uses warp-owned output rows,
 paired coefficients/inputs and safe halfword loads over original GGUF bytes.
 It performs explicit FP16 coefficient rounding followed by FP32 accumulation.
 It does not repack or requantize weights, call another inference engine, or
-change CUDA streams. The CMake `dllm-kquant` target was built on A2 with
+change CUDA streams. The CMake `damendaemon-kquant` target was built on A2 with
 `CMAKE_CUDA_ARCHITECTURES=86`, Release, and `--fmad=false`.
-Set `DLLM_KQUANT_CUDA_LIBRARY` before starting the process to opt in; unsupported
+Set `DAMENDAEMON_KQUANT_CUDA_LIBRARY` before starting the process to opt in; unsupported
 precision/layout/batch shapes retain the default path. The ABI and buffer
 layout are validated before launch. This is not an automatic runtime build.
 
@@ -468,7 +468,7 @@ alternating HTTP medians are:
 | 129 / 2 | 0.376 s | 0.366 s |
 
 Single-request latency improves about 7–10% while retaining the original
-compact weights; concurrency two is about 3% slower. This compares dllm paths,
+compact weights; concurrency two is about 3% slower. This compares damendaemon paths,
 not other engines, and excludes activation/cold-start time.
 
 Fresh independent HF requalification for both optimized paths is recorded in
@@ -480,7 +480,7 @@ unchanged. No broader architecture/context/hardware claim is implied.
 
 ## Same-file llama.cpp comparison
 
-`llama32-q4-k-m-engines-a2.json` runs dllm with the optional CUDA library and
+`llama32-q4-k-m-engines-a2.json` runs damendaemon with the optional CUDA library and
 the unchanged pinned llama.cpp server sequentially on A2 in A/B/B/A order.
 Each phase uses three warmup rounds and six measured rounds per case, identical
 token IDs, exactly 16 output tokens, four slots, FP16 KV and 512 context per slot.
@@ -488,13 +488,13 @@ The comparator's `/props` confirms its actual slot limit; checkpoint, binary and
 native-library hashes are recorded. These are matched stored-weight/KV formats,
 not a claim that different engines use identical intermediate arithmetic.
 
-llama.cpp prompt caching is disabled in every request; dllm prefix reuse and
+llama.cpp prompt caching is disabled in every request; damendaemon prefix reuse and
 speculation are disabled. `llama32-q4-k-m-engine-controls-a2.json` records the
 reference device/offload lines and all 90 prompt-evaluation lengths across its
 two phases: every request recomputed its complete 16/129/400-token input.
 All generated text matches across engines, including the warmups.
 
-| Input / concurrency | dllm latency | llama.cpp latency | dllm aggregate output tok/s | llama.cpp aggregate output tok/s |
+| Input / concurrency | damendaemon latency | llama.cpp latency | damendaemon aggregate output tok/s | llama.cpp aggregate output tok/s |
 |---|---:|---:|---:|---:|
 | 16 / 1 | 0.242 s | 0.164 s | 65.99 | 97.79 |
 | 129 / 1 | 0.263 s | 0.184 s | 60.72 | 87.02 |
@@ -502,10 +502,10 @@ All generated text matches across engines, including the warmups.
 | 129 / 2 | 0.379 s | 0.232 s | 84.51 | 138.09 |
 
 Medians pool the twelve measured rounds per engine/case. Aggregate throughput
-includes prompt processing and all requests in a round. dllm remains about
+includes prompt processing and all requests in a round. damendaemon remains about
 22–63% slower. At 400 input tokens, first visible output is approximately
 0.100 s versus 0.102 s; the remaining gap is predominantly decoding. Shorter
-prompts also expose dllm's temporary-expansion prefill cost. These measurements
+prompts also expose damendaemon's temporary-expansion prefill cost. These measurements
 do not establish parity or extrapolate to longer output/context or larger batches.
 
 ## Q5_K_M qualification gap
@@ -524,7 +524,7 @@ qualification is not claimed. Issue #45 tracks diagnosis and remaining proof.
 Controlled teacher-token diagnostics are retained as
 `llama32-q5-k-m-diagnostic-{triton,expanded,float32-reference}.json`.
 The packed Triton path also fails the FP16 reference (1.0454% RMS), while the
-same coefficients expanded into dllm's dense path pass (0.561%). Native packed
+same coefficients expanded into damendaemon's dense path pass (0.561%). Native packed
 execution passes the higher-precision HF reference (0.608%) with the same forced
 inputs. This narrows the issue to accumulation/precision behavior; the latter
 result does not replace or erase the original failing gate.
@@ -563,11 +563,11 @@ The initial experiment (source at commit `ebcfe2e`) was built with:
 
 ```sh
 nvcc -O3 -std=c++17 -arch=sm_86 --fmad=false -Xcompiler=-fPIC -shared \
-  scripts/experiments/kquant_residual.cu -o results/libdllm_kquant_residual.so
+  scripts/experiments/kquant_residual.cu -o results/libdamendaemon_kquant_residual.so
 ```
 
 The validation scripts select it only through
-`DLLM_EXPERIMENTAL_RESIDUAL_LIBRARY`; ordinary dllm execution ignores that variable.
+`DAMENDAEMON_EXPERIMENTAL_RESIDUAL_LIBRARY`; ordinary damendaemon execution ignores that variable.
 The later production option uses a separate variable and a narrower model scope.
 
 The residual experiment's second revision removes repeated subgroup reductions
@@ -629,8 +629,8 @@ must not be presented as complete K-quant numerical qualification.
 
 ## Qualified optional residual backend
 
-The shared CUDA implementation is now built as `dllm-kquant-residual`; explicit
-`DLLM_KQUANT_RESIDUAL_LIBRARY` enables per-executor selection. Selection requires
+The shared CUDA implementation is now built as `damendaemon-kquant-residual`; explicit
+`DAMENDAEMON_KQUANT_RESIDUAL_LIBRARY` enables per-executor selection. Selection requires
 CUDA, Llama `mixed` precision, hidden width 2048, context at most 512, and packed formats exactly
 Q4_K/Q6_K. Any Q5-containing model is excluded. Only single-row 2048-wide
 projections use it; all other projections retain ordinary dispatch. Ordinary
@@ -666,7 +666,7 @@ It contains 169 Q4_K, 29 Q6_K and 113 F32 tensors. The source HF revision is
 
 `qwen3-q4-k-m-reference-cuda-{initial,extended}-a2.json` passes all 160 independent
 FP16 HF comparisons: maximum RMS 0.841%, absolute 0.126953125, no greedy
-mismatches. dllm uses its standard Qwen3 policy (FP16 matrices, FP32 residuals
+mismatches. damendaemon uses its standard Qwen3 policy (FP16 matrices, FP32 residuals
 and nonlinear operations). `qwen3-q4-k-m-runtime-cuda-a2.json` passes all 68
 single/batched fixed/paged/graph/chunked comparisons and the full HTTP/lifecycle
 suite, maximum RMS 0.203% against the identical expanded coefficients.
@@ -682,19 +682,19 @@ in this test but correctly remains unselected for Qwen3.
 
 These are HTTP medians after warmup, 16 output tokens and 512 context, alternating
 six measured rounds per implementation. Packed execution is about 8–9% faster
-for single requests and 3% at concurrency two. This is a within-dllm comparison;
+for single requests and 3% at concurrency two. This is a within-damendaemon comparison;
 it does not establish parity with another engine or qualify long Qwen3 contexts.
 
 ### Same-file Qwen3 llama.cpp comparison and output divergence
 
-`qwen3-q4-k-m-engines-a2.json` records sequential dllm/llama.cpp/llama.cpp/dllm
+`qwen3-q4-k-m-engines-a2.json` records sequential damendaemon/llama.cpp/llama.cpp/damendaemon
 phases with the same file, prompt IDs, FP16 KV, four 512-token slots, 16 output
 tokens and no prompt-cache reuse. The control log counts in
 `qwen3-q4-k-m-engine-controls-a2.json` confirm all 90 reference requests
 recomputed their full input. Pinned reference binary/hash and commands are in
 the report. Medians pool twelve measured rounds per engine/case:
 
-| Input / concurrency | dllm CUDA | llama.cpp | Generated text |
+| Input / concurrency | damendaemon CUDA | llama.cpp | Generated text |
 |---|---:|---:|---|
 | 16 / 1 | 0.148477 s | 0.141501 s | Different wording |
 | 129 / 1 | 0.152062 s | 0.154091 s | Identical |
@@ -702,17 +702,17 @@ the report. Medians pool twelve measured rounds per engine/case:
 | 129 / 2 | 0.216758 s | 0.203051 s | Identical |
 
 The report deliberately retains `passed: false`: its exact-output assertion
-fails on the shortest prompt. dllm continues with “a specific element” where
+fails on the shortest prompt. damendaemon continues with “a specific element” where
 llama.cpp chooses “a value.” Each engine is stable across its own phases.
 Stored weights/KV and workload match; intermediate arithmetic and the generated
 sequences do not universally match. No clean cross-engine equivalence is claimed.
 
 The diagnostic `qwen3-q4-k-m-engine-prompts-reference-a2.json` evaluates those
 exact prompt IDs and 16 decode decisions with independent gguf.quants/HF eager
-FP16 execution, graphs both off and on. All 96 greedy decisions match dllm,
-maximum RMS 0.368%. Thus the differing sequence passes dllm's independent
-reference gate; it is not evidence that dllm reproduced llama.cpp's arithmetic.
-The 400-token matched-output case is approximately 11% faster in dllm, while
+FP16 execution, graphs both off and on. All 96 greedy decisions match damendaemon,
+maximum RMS 0.368%. Thus the differing sequence passes damendaemon's independent
+reference gate; it is not evidence that damendaemon reproduced llama.cpp's arithmetic.
+The 400-token matched-output case is approximately 11% faster in damendaemon, while
 concurrency two is about 7% slower. The 129-token single case is roughly tied.
 
 `qwen3-q4-k-m-reference-cuda-2048-a2.json` extends independent numerical coverage
@@ -750,7 +750,7 @@ confirm approximately 20% lower Q6 down-projection latency and 11% lower Q6 head
 latency, while the Q4 down projection regresses. A validation-only candidate
 therefore adds only two-row, pure-Q6 `(width, outputs)` shapes `(8192, 2048)` and
 `(2048, 128256)` to the already-tested single-row policy. It is selected only by
-`DLLM_EXPERIMENTAL_RESIDUAL_BATCH2=1` with the explicit validation entry point.
+`DAMENDAEMON_EXPERIMENTAL_RESIDUAL_BATCH2=1` with the explicit validation entry point.
 
 `llama32-q4-k-m-residual-batch2-runtime-a2.json` passes all 100 single/two/four-row
 fixed/paged/graph/chunk comparisons (maximum RMS 0.173%) and HTTP/lifecycle checks.
@@ -789,7 +789,7 @@ independent coefficients, vectors and rejected format combinations.
 ## FP32 K-quant numerical path
 
 `llama32-q4-k-m-float32-reference-2048-a2.json` passes the same 2048-context
-teacher trace under the existing `DLLM_LLAMA_PRECISION=float32` policy, using
+teacher trace under the existing `DAMENDAEMON_LLAMA_PRECISION=float32` policy, using
 explicit `--reference-dtype float32 --weight-rounding kquant-float32` independent
 HF execution. All 64 greedy decisions agree; maximum absolute error is
 0.00012112 and RMS 0.00160%. The old mixed/standard failures remain unchanged.
@@ -849,7 +849,7 @@ All generated text matches. Median request latency:
 
 Every phase also passes host restore, alias swapping with one GPU-resident model,
 disk reload, and early stream cancellation followed by recovery. This gain is
-over dllm's ordinary FP32 path; it is not a same-precision win over llama.cpp or
+over damendaemon's ordinary FP32 path; it is not a same-precision win over llama.cpp or
 the earlier FP16 residual option. FP32 prefill remains expensive. The candidate
 is still validation-only while Q5 coverage and production integration proceed.
 
@@ -865,8 +865,8 @@ agreement. See `llama32-q5-k-m-residual-f32-reference-2048-extended-a2.json`,
 ## Opt-in FP32 production dispatch
 
 The FP32 arithmetic now lives in `native/kquant_residual_f32.cu`, built as
-`dllm-kquant-residual-f32`. The experimental source includes that implementation.
-`DLLM_KQUANT_RESIDUAL_F32_LIBRARY` selects a per-executor callback only for CUDA
+`damendaemon-kquant-residual-f32`. The experimental source includes that implementation.
+`DAMENDAEMON_KQUANT_RESIDUAL_F32_LIBRARY` selects a per-executor callback only for CUDA
 Llama hidden width 2048, FP32 precision, context <=2048, and Q4/Q6 or Q5/Q6
 layouts. Shapes outside rows 1–4 and widths 2048/8192 fall back. ABI 101 remains
 separate from FP16 ABI 1; loaded modules stay alive for captured CUDA graphs.
@@ -876,7 +876,7 @@ context, format, shape, opt-in and per-executor library boundaries.
 Both `llama32-q{4,5}-k-m-residual-f32-production-replay-a2.json` reports pass the
 100-case runtime gate with the normal `cuda-kquant-residual-f32` backend label.
 The Q5 production HTTP comparison passes all output/lifecycle checks using the
-normal `dllm` CLI in every phase. Ordinary/candidate FP32 medians are:
+normal `damendaemon` CLI in every phase. Ordinary/candidate FP32 medians are:
 
 | Input tokens / concurrency | Ordinary FP32 | Production residual FP32 |
 | --- | ---: | ---: |
@@ -960,9 +960,9 @@ weights. Repeated matrix profiling remains 22–38% faster at 129/400 rows
 Q5 initial/extended independent HF suites all pass at 2048 context, with exact
 greedy agreement; Q5's worst RMS is 0.1754%.
 
-The corrected kernels now live in `dllm/kquant_prefill_kernels.py`. The
+The corrected kernels now live in `damendaemon/kquant_prefill_kernels.py`. The
 experimental entry point calls the same implementation. The normal executor's
-separate per-model selector uses `DLLM_KQUANT_PREFILL_F32=1` only for CUDA Llama
+separate per-model selector uses `DAMENDAEMON_KQUANT_PREFILL_F32=1` only for CUDA Llama
 hidden width 2048, FP32 precision, context <=2048, Q4/Q6 or Q5/Q6 layouts, and
 rows >=128 at widths 2048/8192. Decode and dense-weight dispatch stay separate.
 The normal production range, Q4/Q5 100-case long-prefill replay, and Q4
@@ -1038,16 +1038,16 @@ checks below 4096 cannot establish Mistral's longer-context window semantics.
 Score-based merge reconstruction follows the approach in Apache-2.0
 Transformers `convert_slow_tokenizer.generate_merges`; native behavior is checked
 against MIT-licensed llama.cpp. Both are validation references rather than
-inference engines used by dllm. The local regression suite passes 295 tests.
+inference engines used by damendaemon. The local regression suite passes 295 tests.
 
 The initial full-model A2 report `mistral-spm-q4-reference-a2.json` passes all
 64 complete-logit comparisons (four prompts, eight steps, eager and graph),
 with exact greedy-token agreement, maximum absolute error 0.08594 and maximum
 relative RMS 0.2114%. The independent reference dequantizes the same Q4_0 bytes
-with `gguf.quants` and executes HF Mistral eager attention in FP16. dllm uses
+with `gguf.quants` and executes HF Mistral eager attention in FP16. damendaemon uses
 its default Llama mixed-precision policy. Context is 512. The new
 `--serial-reference` verifier mode saves CPU logits and releases the expanded
-HF GPU weights before loading dllm, allowing this check on the A2 without
+HF GPU weights before loading damendaemon, allowing this check on the A2 without
 altering either runtime's arithmetic. This is numerical proof, not a timing
 comparison or longer-window qualification.
 
@@ -1071,17 +1071,17 @@ The native Q4 path additionally passes all 96 extended independent HF checks,
 maximum absolute error 0.089844 and RMS 0.4425%, with exact greedy agreement
 (`mistral-spm-q4-native-reference-extended-a2.json`). The report identifies and
 hashes the selected native library. The merge reconstruction attribution and
-Apache-2.0 text are retained in `dllm/gguf_sentencepiece.py` and
+Apache-2.0 text are retained in `damendaemon/gguf_sentencepiece.py` and
 `docs/licenses/transformers-Apache-2.0.txt`.
 
 The first same-file normal-server A/B/B/A comparison is preserved in
-`mistral-spm-q4-http-a2.json`. Both dllm phases pass cross-checkpoint
+`mistral-spm-q4-http-a2.json`. Both damendaemon phases pass cross-checkpoint
 Mistral→Qwen3→Mistral switching, host restore, full disk reload, cancellation
 recovery, streaming and concurrent chat. The whole comparison remains
 `passed: false`: the 16-token prompt generates different words across engines;
 the 400-token prompt differs by an initial space. Medians for 16 output tokens:
 
-| Input / concurrency | dllm native Q4 | llama.cpp | Text equal |
+| Input / concurrency | damendaemon native Q4 | llama.cpp | Text equal |
 | --- | ---: | ---: | --- |
 | 16 / 1 | 0.720051 s | 0.494891 s | No |
 | 129 / 1 | 1.029845 s | 0.648294 s | Yes |
@@ -1089,8 +1089,8 @@ the 400-token prompt differs by an initial space. Medians for 16 output tokens:
 | 129 / 2 | 1.524126 s | 0.803146 s | Yes |
 
 Both engines use the same file, explicit token IDs, 512 tokens per slot, four
-slots and FP16 KV. dllm uses its qualified mixed policy; this does not imply
-identical internal arithmetic. The matching 129-token cases show dllm 59%/90%
+slots and FP16 KV. damendaemon uses its qualified mixed policy; this does not imply
+identical internal arithmetic. The matching 129-token cases show damendaemon 59%/90%
 slower at concurrency 1/2. No performance-parity claim is made.
 
 The independent HF replay of those exact benchmark IDs passes all 96 checks,
@@ -1128,7 +1128,7 @@ a batch-two step emits two tokens. Both profiles use the normal loader, with
 about 9.0 s host preparation and 3.1–3.2 s executor creation observed individually.
 
 `scripts/experiments/q4_residual.cu` is an isolated integer-dot experiment using
-dllm's existing two-term dyadic int8 activation quantizer. It preserves packed
+damendaemon's existing two-term dyadic int8 activation quantizer. It preserves packed
 Q4_0 bytes and scales, but applies coefficient scaling in FP32 rather than
 rounding every dequantized coefficient to FP16. This arithmetic difference is
 explicit and requires independent full-model validation before promotion.
@@ -1144,7 +1144,7 @@ outputs >=1024. Normal production dispatch is unchanged.
 
 Build the experiment separately with CUDA `nvcc -O3 -std=c++17 -arch=sm_86
 -shared -Xcompiler -fPIC scripts/experiments/q4_residual.cu -o PATH.so`.
-Set `DLLM_EXPERIMENTAL_Q4_RESIDUAL_LIBRARY=PATH.so` only in an explicit validation
+Set `DAMENDAEMON_EXPERIMENTAL_Q4_RESIDUAL_LIBRARY=PATH.so` only in an explicit validation
 process. `scripts/profile_q4_residual.py` reproduces matrix checks and timing;
 full-model verifiers use `--experimental-q4-residual`.
 
@@ -1154,7 +1154,7 @@ HF checks (maximum absolute 0.085938, RMS 0.4182%, exact greedy agreement) and a
 `mistral-spm-q4-residual-reference-extended-a2.json` and
 `mistral-spm-q4-residual-layout-a2.json`. End-to-end comparison is separate.
 
-A diagnostic `DLLM_Q4_RESIDUAL_BYPASS_L1` compile-time variant keeps weight loads
+A diagnostic `DAMENDAEMON_Q4_RESIDUAL_BYPASS_L1` compile-time variant keeps weight loads
 out of L1; it is a distinct binary and never overwrites the active candidate.
 `q4-residual-cache-matrices-a2.json` passes the same 108 matrix gates. The
 batch-two down projection improves from the first experiment's 0.9055 ms to
@@ -1180,13 +1180,13 @@ changes. Six measured rounds per workload per phase, after three warmups:
 | 129 / 2 | 1.520831 s | 1.508158 s |
 
 Single-request latency improves 11–18%; the unchanged batch-two path is
-approximately tied. These are dllm-versus-dllm results, not new llama.cpp parity
+approximately tied. These are damendaemon-versus-damendaemon results, not new llama.cpp parity
 claims. Normal per-model dispatch requires separate confirmation from this
 validation-only server entry point.
 
 The normal opt-in implementation lives in `native/q4_residual.cu` and
-`dllm/native_q4_residual.py`, CMake target `dllm-q4-residual`, ABI 201. Set
-`DLLM_Q4_RESIDUAL_LIBRARY` before creating the executor. Selection is per model,
+`damendaemon/native_q4_residual.py`, CMake target `damendaemon-q4-residual`, ABI 201. Set
+`DAMENDAEMON_Q4_RESIDUAL_LIBRARY` before creating the executor. Selection is per model,
 not a global monkey patch, and bound to its library path for graph lifetime.
 It requires CUDA, Q4_0, mixed precision, context <=512, Llama metadata with
 32 layers, hidden 4096, intermediate 14336, 32 query/8 KV heads, head dimension
@@ -1207,7 +1207,7 @@ passes. Combined A/B/B/A baseline/candidate median seconds are 0.7180/0.5875
 (16 input tokens, concurrency 1), 1.0301/0.8947 (129/1), 1.2459/1.1149
 (400/1), and 1.5222/1.5172 (129/2). Thus the production opt-in preserves the
 11–18% single-request latency reduction, with the unchanged batch-two path
-approximately tied. These remain comparisons within dllm, not llama.cpp parity.
+approximately tied. These remain comparisons within damendaemon, not llama.cpp parity.
 The four new CPU regression tests cover
 ABI rejection, CPU-buffer rejection, opt-in/topology/precision/context gates,
 per-executor path binding and unchanged dense/batch fallback. The complete
@@ -1273,12 +1273,12 @@ record the native K-quant library hash. The local suite passes 307 tests.
 The same published file passes all output and lifecycle checks in
 `tinyllama-q4-k-m-http-a2.json`: A/B/B/A phases, three warmup and six measured
 rounds per phase, 16 output tokens, context 512 per slot, four slots and FP16 KV.
-Both dllm phases pass host restore, disk reload, cancellation recovery,
+Both damendaemon phases pass host restore, disk reload, cancellation recovery,
 streaming/concurrent chat and a real TinyLlama -> Qwen3 -> TinyLlama swap.
 All measured generated texts match the pinned llama.cpp server. Combined median
-seconds (dllm / llama.cpp) are:
+seconds (damendaemon / llama.cpp) are:
 
-| Input tokens / concurrency | dllm | llama.cpp |
+| Input tokens / concurrency | damendaemon | llama.cpp |
 |---|---:|---:|
 | 16 / 1 | 0.2064 | 0.1297 |
 | 129 / 1 | 0.2336 | 0.1577 |
@@ -1286,7 +1286,7 @@ seconds (dllm / llama.cpp) are:
 | 129 / 2 | 0.3414 | 0.1905 |
 | 129 / 4 | 0.4940 | 0.3185 |
 
-Thus serving compatibility passes for these workloads, while dllm remains
+Thus serving compatibility passes for these workloads, while damendaemon remains
 26–79% slower. Matching output does not establish performance parity or qualify
 long contexts, arbitrary SPM checkpoints or structured generation.
 
@@ -1343,7 +1343,7 @@ check and identical outputs. Ordinary / candidate median seconds are
 Four-request total latency remains tied. Both models therefore support an
 explicit latency/throughput option, not a changed default.
 
-Normal CLI plumbing now exposes `dllm serve --batch-wait-ms 1`, bounded to
+Normal CLI plumbing now exposes `damendaemon serve --batch-wait-ms 1`, bounded to
 finite values from 0 through 10, with default 0. The shared helper runs once
 before an idle model group begins; it is never inserted into active decode
 iterations. Existing queue order, management/model barriers, cancellation and
@@ -1356,7 +1356,7 @@ is recorded separately when complete.
 Final normal-command confirmation passes on both checkpoints in
 `mistral-spm-q4-admission-production-1ms-a2.json` and
 `tinyllama-q4-k-m-admission-production-1ms-a2.json`. All four phases invoke
-`python -m dllm serve`; recorded arguments select 0/1/1/0 ms. Every generated
+`python -m damendaemon serve`; recorded arguments select 0/1/1/0 ms. Every generated
 text and lifecycle gate passes. Combined median total seconds are:
 
 | Input / concurrency | Mistral default | Mistral 1 ms | TinyLlama default | TinyLlama 1 ms |
@@ -1393,11 +1393,11 @@ remain at 512.
 
 The pinned llama.cpp CUDA source converts inputs to Q8_1 in its
 [`mmvq` path](https://github.com/ggml-org/llama.cpp/blob/836d57176dc699a726c55418e4f96b8ca628e1bf/ggml/src/ggml-cuda/mmvq.cu),
-while dllm's qualified Q4 residual path uses two int8 terms. Same weight bytes
+while damendaemon's qualified Q4 residual path uses two int8 terms. Same weight bytes
 and FP16 KV do not imply identical internal activation arithmetic. An independent
 single-term absmax/127 diagnostic uses legacy Q4_0 matrices with Mistral-sized
 projections. It is enabled only when building
-`scripts/experiments/q4_residual.cu` with `-DDLLM_Q4_SINGLE_TERM=1`. It uses FP32
+`scripts/experiments/q4_residual.cu` with `-DDAMENDAEMON_Q4_SINGLE_TERM=1`. It uses FP32
 activation scaling and is not a bitwise reimplementation of Q8_1.
 
 `q4-single-term-matrices-a2.json` retains the failed numerical gate: 18 of 108
@@ -1417,7 +1417,7 @@ qualified two-term production kernel, whose hash is also recorded:
 This identifies a measurable accuracy/cost tradeoff; it does not attribute the
 entire cross-engine gap to that difference. The diagnostic is not selected by
 normal runtime dispatch and does not replace the qualified two-term kernel.
-Build with `nvcc -O3 -std=c++17 -arch=sm_86 -DDLLM_Q4_SINGLE_TERM=1 -shared
+Build with `nvcc -O3 -std=c++17 -arch=sm_86 -DDAMENDAEMON_Q4_SINGLE_TERM=1 -shared
 -Xcompiler -fPIC scripts/experiments/q4_residual.cu -o PATH.so`, then use
 `profile_q4_residual.py --two-term-library PATH_TO_PRODUCTION_LIBRARY` with the
 existing experimental/native library environment variables. Its nonzero exit
@@ -1426,7 +1426,7 @@ status is the preserved accuracy failure, not a successful qualification.
 
 ### TinyLlama native residual decode at 512 context
 
-The existing opt-in `DLLM_KQUANT_RESIDUAL_LIBRARY` passes 64 initial and 96
+The existing opt-in `DAMENDAEMON_KQUANT_RESIDUAL_LIBRARY` passes 64 initial and 96
 extended independent HF checks on this published checkpoint, with exact greedy
 agreement. Reports `tinyllama-q4-k-m-residual-reference-a2.json` and
 `tinyllama-q4-k-m-residual-reference-extended-a2.json` record the selected normal
@@ -1494,7 +1494,7 @@ Both paths use FP16 KV and the unchanged packed checkpoint; admission stays zero
 
 These medians pool six measured rounds from each of two phases after three
 warmups per case. Single-request latency falls 2.7–8.1%; concurrent paths are
-approximately tied. This compares dllm implementations, not llama.cpp.
+approximately tied. This compares damendaemon implementations, not llama.cpp.
 
 The original binary-search corpus naturally stopped after five output tokens
 at the near-limit prompt. Its failed fixed-16-token eligibility report is
@@ -1512,10 +1512,10 @@ across different prompt corpora is claimed.
 `tinyllama-q4-k-m-llama-http-2048-ocean-a2.json` preserves a failed output
 equality gate. Every run completed the requested 16 output tokens, but the
 2032-token prompt diverges near the end, and llama.cpp produces two distinct
-texts across the four-request workload. dllm is consistent across those runs.
-All dllm lifecycle checks pass. This is not an output-equivalent benchmark win.
+texts across the four-request workload. damendaemon is consistent across those runs.
+All damendaemon lifecycle checks pass. This is not an output-equivalent benchmark win.
 
-| Input tokens / concurrency | dllm median seconds | llama.cpp median seconds |
+| Input tokens / concurrency | damendaemon median seconds | llama.cpp median seconds |
 | --- | ---: | ---: |
 | 16 / 1 | 0.207917 | 0.128954 |
 | 129 / 1 | 0.233868 | 0.157290 |
@@ -1530,7 +1530,7 @@ useful diagnostic evidence, but the long and four-request outputs differ.
 three exact prompt sequences against HF with independently dequantized,
 FP16-rounded coefficients: all 96 logit checks pass, every greedy token agrees,
 and eager/graph paths agree. Worst relative RMS is 0.73287%, maximum absolute
-error 0.072265625. This validates dllm against its declared arithmetic reference;
+error 0.072265625. This validates damendaemon against its declared arithmetic reference;
 it does not establish bitwise cross-engine arithmetic or general answer quality.
 
 
@@ -1605,7 +1605,7 @@ original control. The rebuilt 128-thread control is approximately tied. The
 other geometries offer no broad improvement and sometimes regress by 1–3%.
 Default launch geometry remains 128 threads. Reproduce with
 `scripts/profile_kquant_launch.py`; compile isolated variants using
-`-DDLLM_KQUANT_THREADS=64` or `256`, retaining `--fmad=false` and `sm_86`.
+`-DDAMENDAEMON_KQUANT_THREADS=64` or `256`, retaining `--fmad=false` and `sm_86`.
 These are matrix experiments, not new qualified model or HTTP paths.
 
 
@@ -1613,7 +1613,7 @@ These are matrix experiments, not new qualified model or HTTP paths.
 ordinary weight loads versus explicit L1-bypassing loads. All 90 actual-matrix
 checks preserve output bits. Cache bypass is slower by roughly 3–16% across
 these cases, so it is not selected. The rebuilt unflagged control is roughly
-tied with the installed binary. `DLLM_KQUANT_BYPASS_L1` is a compile-time
+tied with the installed binary. `DAMENDAEMON_KQUANT_BYPASS_L1` is a compile-time
 experiment only; normal builds retain ordinary loads and 128-thread blocks.
 `kquant-rebuilt-control-coefficients-a2.json` independently probes the rebuilt
 unflagged library against GGUF dequantization, including mixed segment alignment
@@ -1674,7 +1674,7 @@ sides include the warmup-stream fix. Original/cached pooled medians are
 0.208453/0.191185 seconds (16/1), 0.234636/0.214548 (129/1),
 0.545332/0.524106 (2032/1), 0.343211/0.330513 (129/2), and
 0.495083/0.387239 (129/4). Four-request latency falls 21.8%; single-request
-latency falls 3.9–8.6%. These are within-dllm gains for an additional 1.927 GiB
+latency falls 3.9–8.6%. These are within-damendaemon gains for an additional 1.927 GiB
 of residency, not cross-engine wins or a free memory optimization. The
 prototype's performance proof is separate from normal-path admission and
 status qualification, which must pass before the cache is supported.
@@ -1682,7 +1682,7 @@ status qualification, which must pass before the cache is supported.
 
 ### Normal admission-accounted TinyLlama resident cache
 
-The normal executor now supports `DLLM_KQUANT_DENSE_CACHE_MIB`, default zero.
+The normal executor now supports `DAMENDAEMON_KQUANT_DENSE_CACHE_MIB`, default zero.
 Selection is bounded to the qualified TinyLlama metadata, mixed precision,
 CUDA Q4_K/Q6_K and context up to 2048. Core weights, KV and existing workspace
 reserves are accounted first. A complete set of eligible projections is cached
@@ -1726,7 +1726,7 @@ phases of each engine, excluding warmups. Throughput includes request prefill;
 it is not decode-only token speed. Four-request latency falls 20.1% and aggregate
 output throughput rises 25.2%. Single-request latency falls 3.9–9.0%. Both sides
 use ordinary native decode and zero idle coalescing. Combined-option results
-are qualified separately; these are within-dllm gains, not llama.cpp parity.
+are qualified separately; these are within-damendaemon gains, not llama.cpp parity.
 The additional GPU-resident copies cost 1973 MiB in total across all cached
 projections; the cache does not reduce the authoritative packed checkpoint.
 
@@ -1783,7 +1783,7 @@ independent HF comparisons with exact greedy agreement, maximum absolute logit
 error 0.1328125 and relative RMS 0.6857%. The experimental resident-cache run
 `qwen3-medium-cache-reference-512-a2.json` passes the same gates. Both use the
 standard Qwen3 policy: FP16 matrices with FP32 residual/nonlinear operations.
-The independent reference runs first and releases GPU residency before dllm
+The independent reference runs first and releases GPU residency before damendaemon
 executes; its logits remain available for comparison.
 
 The broader validation-only cache admits 3,440,902,144 bytes under its 4 GiB
@@ -1813,7 +1813,7 @@ cancellation recovery, streaming and concurrent chat.
 
 Medians pool measured rounds from both phases, excluding warmups. Throughput
 includes prefill. Four-request latency falls 21.6%, single-request latency
-6.8–7.0%; this is within-dllm performance with additional residency, not a
+6.8–7.0%; this is within-damendaemon performance with additional residency, not a
 cross-engine comparison. Cached host-restore requests took 1.535/1.712 seconds,
 switches back 1.800/1.973 seconds and disk-reload requests 3.770/5.009 seconds.
 Only two observations per action are available; no hot-swap speedup is claimed.
@@ -1832,7 +1832,7 @@ cycles and the cached model tensors are released.
 
 Normal selection now includes the tested Qwen3-1.7B geometry, standard Qwen3
 precision, CUDA FP16 matrix storage and Q4_K/Q6_K projections through context
-2048. `DLLM_KQUANT_DENSE_CACHE_MIB=4096` admits 3,440,902,144 bytes (3281.5 MiB).
+2048. `DAMENDAEMON_KQUANT_DENSE_CACHE_MIB=4096` admits 3,440,902,144 bytes (3281.5 MiB).
 It uses the same all-or-nothing free-memory/budget accounting and unchanged
 single-row decode as TinyLlama. Other Qwen geometries, longer contexts and
 FP32 execution remain excluded. Unit coverage checks these independent scope
@@ -1885,7 +1885,7 @@ from immutable revision `ec5deb64f2c6e6fa90c1abf74a91d5c93a9669ca`.
 
 Independent validation now has an explicit `--reference-prefill-chunk-size`
 option to bound HF eager-attention temporaries for a large reference model.
-It preserves HF's own execution and KV state; no dllm kernels enter the oracle.
+It preserves HF's own execution and KV state; no damendaemon kernels enter the oracle.
 A small independent HF Mistral test compares whole/chunked prompt outputs and
 continuations at lengths 15/16/17/63 around a 16-token window. The model gate
 can include declared window boundaries explicitly, and layout validation can
@@ -1896,8 +1896,8 @@ The independent A2 gate in `mistral-window-reference-a2.json` passes 96 logit
 comparisons, including prompts of 4095/4096/4097 tokens and eight continuation
 steps with eager and graph replay. Maximum absolute error is 0.0625, relative
 RMS 0.2572%, and every greedy token agrees with HF eager attention. The oracle
-uses 128-token prefill chunks and releases reference GPU weights before dllm
-runs. dllm uses the existing FP16 Mistral arithmetic policy and native Q4 CUDA
+uses 128-token prefill chunks and releases reference GPU weights before damendaemon
+runs. damendaemon uses the existing FP16 Mistral arithmetic policy and native Q4 CUDA
 GEMV; the separate Llama residual optimization remains unselected. Layout and
 normal-service qualification are recorded separately when complete.
 
@@ -1924,7 +1924,7 @@ its failure log is `mistral-window-runtime-tokenizer-mismatch-a2.log`.
 `mistral-window-chat-diagnostic.json` shows identical rendered templates but
 GGUF inserts token 28705 after the literal BOS marker, while the HF fast
 tokenizer does not. The unchanged native `llama-tokenize --no-bos` matches
-dllm's complete GGUF token sequence exactly (native binary SHA256 recorded).
+damendaemon's complete GGUF token sequence exactly (native binary SHA256 recorded).
 The tokenizer was not changed to force HF chat equivalence.
 
 The HTTP verifier retains strict source-text comparison by default. Its explicit
@@ -1945,7 +1945,7 @@ uses seven output tokens at context 4104, while the preceding two use eight.
 
 The final `mistral-window-runtime-traces-a2.json` passes all 270 exact full-logit
 comparisons between the GGUF-loaded and identically quantized HF-loaded weights
-executing through dllm, with eager and graph replay. These are loader/runtime
+executing through damendaemon, with eager and graph replay. These are loader/runtime
 identity checks; the separate 96-check report supplies independent HF inference
 validation. Exact prompt IDs and generated-token traces are retained, including
 both source chat inputs, the short timing prompt and the three window boundaries.
@@ -1959,7 +1959,7 @@ space on the GGUF path that HF may strip. The corresponding exact decoded-trace
 and streaming gates are true; no cross-source text-parity claim is made.
 
 Warm short raw-request medians are 0.726445 seconds for GGUF and 0.725845 for the
-HF-loaded path, both within dllm, using identical prompt IDs and the same packed
+HF-loaded path, both within damendaemon, using identical prompt IDs and the same packed
 values. No extra logprobs are requested in this final run. These near-equal
 measurements are functional-path evidence, not an optimization or cross-engine
 performance win.
@@ -2037,7 +2037,7 @@ speedup claim.
 
 ### Normal A2 short-prompt tile policy
 
-`dllm/q4_prefill_policy.py` now selects 32-row tiles for 33–64 input rows on
+`damendaemon/q4_prefill_policy.py` now selects 32-row tiles for 33–64 input rows on
 the NVIDIA A2, limited to the five measured Mistral projection shapes. Device
 properties are cached per CUDA device; other devices and shapes retain their
 previous choice. Single-row native decode never enters this policy. The
@@ -2083,7 +2083,7 @@ Pooled measured medians, in seconds:
 At 33/48/64 input tokens, first output improves 11.4%/18.2%/20.7% and total
 latency improves 1.06%/3.03%/3.86%. Unchanged workloads vary by less than 1%
 in total latency. The control disables only the new tile selector; the
-candidate uses ordinary dllm. Unlike the earlier experimental run, 129-token
+candidate uses ordinary damendaemon. Unlike the earlier experimental run, 129-token
 prompts retain their old dispatch and show no material improvement. These
 results qualify the bounded A2 launch policy, not general hardware or
 cross-engine performance parity.
@@ -2094,7 +2094,7 @@ cross-engine performance parity.
 two-term Q4 kernel with isolated 2/4/8/16-warp variants and a four-warp variant
 that removes the unused activation-sum reduction. All use `nvcc -O3
 -std=c++17 -arch=sm_86 -shared -Xcompiler -fPIC`; candidate macros are
-`DLLM_Q4_LAUNCH_WARPS` and `DLLM_Q4_SKIP_SUM` in
+`DAMENDAEMON_Q4_LAUNCH_WARPS` and `DAMENDAEMON_Q4_SKIP_SUM` in
 `scripts/experiments/q4_residual_launch.cu`. Production native code is unchanged.
 
 All 216 matrix/range/bias checks pass, including exact agreement with the
@@ -2109,8 +2109,8 @@ No production launch or arithmetic changes follow from these results. These
 are synthetic kernel measurements, not model or serving performance claims.
 
 The follow-up `q4-residual-cache-a2.json` tests shared activation staging
-(`DLLM_Q4_SHARED_INPUTS=1`), activation-plus-scale staging (`=2`), and streaming
-packed-weight loads through L2 (`DLLM_Q4_STREAM_WEIGHTS=1`). All 180 exact-output
+(`DAMENDAEMON_Q4_SHARED_INPUTS=1`), activation-plus-scale staging (`=2`), and streaming
+packed-weight loads through L2 (`DAMENDAEMON_Q4_STREAM_WEIGHTS=1`). All 180 exact-output
 and independent RMS checks pass. Shared staging slows the large 4096-wide cases
 by 18.6–26.7%, and the 14336-wide projection by 265–286%; it is rejected.
 Streaming weights improves that wide projection by 3.7% but slows the other
@@ -2119,7 +2119,7 @@ remains within 0.2% of the production control. The separate builds preserve the
 same precision and compiler options as the launch experiment.
 
 `q4-residual-paired-activations-a2.json` tests an isolated paired activation
-layout (`DLLM_Q4_PAIRED_ACTIVATIONS=1`). Each dyadic term keeps K bytes and the
+layout (`DAMENDAEMON_Q4_PAIRED_ACTIVATIONS=1`). Each dyadic term keeps K bytes and the
 same values, arranged so one vector load supplies the low/high nibble dots.
 All 144 native-output and independent RMS checks pass exactly. The four large
 4096-wide projections improve 6.7–8.4% with ordinary weight caching. The
@@ -2130,8 +2130,8 @@ model selector. Four-warp calibration stays within 0.3%. These results motivate
 a combined candidate; they do not yet establish model correctness or serving
 speedup. Production native code remains unchanged at this experiment stage.
 
-The combined candidate (`DLLM_Q4_PAIRED_ACTIVATIONS=1`,
-`DLLM_Q4_STREAM_WEIGHTS=2`) uses streaming loads only for the measured
+The combined candidate (`DAMENDAEMON_Q4_PAIRED_ACTIVATIONS=1`,
+`DAMENDAEMON_Q4_STREAM_WEIGHTS=2`) uses streaming loads only for the measured
 4096-output/14336-input down projection; separate compiled kernels avoid a
 per-iteration policy branch. Direct quantizer inspection passes 24 cases across
 widths 256/4096/14336, including zero, FP16 subnormals, maximum values, mixed
@@ -2154,7 +2154,7 @@ relative RMS 0.004182), plus all 128 graph/batch/paging/chunking checks
 accuracy limits are unchanged.
 
 `mistral-q4-paired-http-a2.json` compares the existing residual kernel with the
-combined paired prototype through ordinary dllm HTTP servers, ABBA, on the A2.
+combined paired prototype through ordinary damendaemon HTTP servers, ABBA, on the A2.
 Both phases use the same Mistral-weight/Llama-metadata Q4_0 fixture, mixed
 precision, context 512 per slot, four slots and 16 output tokens. Each phase
 has three warmup and six measured rounds per workload. The explicit control
@@ -2442,7 +2442,7 @@ and layout checks above qualify that arithmetic difference in this narrow scope.
 
 ### Integrated opt-in Q4 Marlin gates
 
-The normal `DLLM_Q4_MARLIN_LIBRARY` backend has separate evidence:
+The normal `DAMENDAEMON_Q4_MARLIN_LIBRARY` backend has separate evidence:
 
 - `mistral-q4-marlin-production-reference-a2.json`: 96 independent HF checks,
   zero greedy-token mismatches, maximum relative RMS 0.005255. The selected
@@ -2498,11 +2498,11 @@ functionality and the absence of the earlier large repacking regression.
 
 `mistral-q4-marlin-production-llama-http-a2.json` completes all four ABBA phases
 on the same GGUF hash, A2, prompt token IDs, 16 output tokens, context512 per
-slot and FP16 KV. dllm uses normal Marlin dispatch and mixed residual precision;
+slot and FP16 KV. damendaemon uses normal Marlin dispatch and mixed residual precision;
 llama.cpp uses its own Q4 arithmetic. The pinned llama.cpp binary hash is
 `344fe55b9043e7cd362b199a24fcbb9eba7e1d9513e17083a18df4190002401d`.
 
-| Input / concurrency | dllm total ms | llama.cpp total ms | dllm output tok/s | llama.cpp output tok/s |
+| Input / concurrency | damendaemon total ms | llama.cpp total ms | damendaemon output tok/s | llama.cpp output tok/s |
 | --- | ---: | ---: | ---: | ---: |
 | 16 / 1 | 427.45 | 493.37 | 37.43 | 32.43 |
 | 129 / 1 | 577.66 | 649.12 | 27.70 | 24.65 |
@@ -2510,15 +2510,15 @@ llama.cpp uses its own Q4 arithmetic. The pinned llama.cpp binary hash is
 | 129 / 2 | 798.81 | 803.20 | 40.06 | 39.84 |
 | 129 / 4 | 1129.12 | 1376.71 | 56.68 | 46.49 |
 
-Single-request post-first-output throughput is dllm 38.13/37.82/36.58 versus
+Single-request post-first-output throughput is damendaemon 38.13/37.82/36.58 versus
 llama.cpp 34.80/34.56/34.28 tokens/sec. At concurrency four, llama.cpp has lower
-first-output latency (638.16 versus 690.04 ms), despite dllm's higher aggregate
+first-output latency (638.16 versus 690.04 ms), despite damendaemon's higher aggregate
 throughput. Concurrency two total time is effectively tied in this run.
 
 **The report deliberately retains `passed:false`: cross-engine text differs
 for the 16-token input.** Each engine emits one stable text per workload across
 all measured rounds and both phases; the other four workloads match between
-engines. dllm's independent HF accuracy and internal lifecycle gates pass, but
+engines. damendaemon's independent HF accuracy and internal lifecycle gates pass, but
 this timing comparison does not establish exact output parity, broad model
 support, or superiority on other workloads. No assertion or threshold was
 relaxed to relabel this cross-engine comparison as a pass.
@@ -2526,7 +2526,7 @@ relaxed to relabel this cross-engine comparison as a pass.
 
 ### Documented CMake build and production matrix gate
 
-The documented `DLLM_BUILD_Q4_MARLIN=ON` CMake target builds successfully for
+The documented `DAMENDAEMON_BUILD_Q4_MARLIN=ON` CMake target builds successfully for
 SM86. `mistral-q4-marlin-production-matrices-a2.json` tests that binary through
 the production adapter: all five real projection shapes have bitwise-identical
 prepared weights/scales/zero points to the independently checked original

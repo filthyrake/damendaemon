@@ -1,8 +1,8 @@
 """Independent gather/scatter proof with fragmented pages and untouched tails."""
 import json
 import torch
-from dllm.paged_kernels import copy_pages
-from dllm.runtime import require_gpu
+from damendaemon.paged_kernels import copy_pages
+from damendaemon.runtime import require_gpu
 
 
 def main():

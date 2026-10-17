@@ -2,8 +2,8 @@ import json
 import importlib.util
 import unittest
 import torch
-from dllm.structured import response_schema, prepare_options
-from dllm.sampling import Sampler, Sampling, sample_rows
+from damendaemon.structured import response_schema, prepare_options
+from damendaemon.sampling import Sampler, Sampling, sample_rows
 
 
 def format_for(schema):

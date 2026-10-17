@@ -1,6 +1,6 @@
 # Authenticated CPU host HTTP runtime
 
-`HostServingPair` and `HostDistributedRuntime` in `dllm.host_serving` connect a
+`HostServingPair` and `HostDistributedRuntime` in `damendaemon.host_serving` connect a
 prepared authenticated CPU coordinator to the existing bounded distributed
 request owner. They reuse the ordinary HTTP validation, authentication and client
 admission layer through `handler_for_host`. No socket is bound by these adapters.

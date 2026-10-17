@@ -29,8 +29,8 @@ The wrapper records actual Q4 dispatch counts and restores public admission
 after execution. Reports are `qwen2-q4-metal-{reference,replay,dispatch}.json`.
 
 Reproduce the isolated replay using `scripts/experiments/run_metal_q4.py`
-around `scripts/replay_reference.py`, with explicit `DLLM_DEVICE=mps`,
-`DLLM_QUANTIZATION=q4_0` and `DLLM_METAL_WEIGHT_DTYPE=float16`. The normal runtime independently repeats all 82 model checks with identical
+around `scripts/replay_reference.py`, with explicit `DAMENDAEMON_DEVICE=mps`,
+`DAMENDAEMON_QUANTIZATION=q4_0` and `DAMENDAEMON_METAL_WEIGHT_DTYPE=float16`. The normal runtime independently repeats all 82 model checks with identical
 results (`qwen2-q4-metal-production.json`). Prefix-cache verification passes
 48 checks covering exact/divergent prefixes, eviction and chunked prefill
 (`qwen2-q4-metal-prefix.json`).

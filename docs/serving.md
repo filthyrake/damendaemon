@@ -16,7 +16,7 @@ timeout is restored before inference.
 ## Serve and switch models
 
 ```sh
-dllm serve --model small=Qwen/Qwen3.5-0.8B \
+damendaemon serve --model small=Qwen/Qwen3.5-0.8B \
   --model medium=Qwen/Qwen3.5-2B --gpu-models 2 --context 1024
 ```
 
@@ -32,7 +32,7 @@ curl http://127.0.0.1:8088/v1/chat/completions \
 
 ## Repeatable model configuration
 
-Use `dllm serve --model-config models.json` to reuse model aliases and precision
+Use `damendaemon serve --model-config models.json` to reuse model aliases and precision
 across server restarts. For example, save this versioned JSON file:
 
 ```json
@@ -71,9 +71,9 @@ CLI/service settings. The server never rewrites the file automatically.
 After adding models to a running server, save its current registry explicitly:
 
 ```sh
-dllm models --save-config models.json
+damendaemon models --save-config models.json
 # After stopping the server, reuse the saved models with the same device/budgets:
-dllm serve --model-config models.json --device cuda --context 512 --host-gib 40
+damendaemon serve --model-config models.json --device cuda --context 512 --host-gib 40
 ```
 
 Keep any required experimental opt-ins and other options from your original
@@ -94,13 +94,13 @@ use the tokenizer's normal special-token processing; token-ID prompts are used
 exactly as supplied. One prompt/completion per request is supported; prompt
 batches, echo, and raw-completion logprobs are not yet implemented.
 Chat log probabilities are described [below](#token-log-probabilities).
-The CLI equivalent is `dllm run MODEL --raw --prompt 'text to continue'`.
+The CLI equivalent is `damendaemon run MODEL --raw --prompt 'text to continue'`.
 
 StarCoder2 3B is qualified at 2048 context with original FP32 weights on A2 and
 Apple Silicon (`--host-gib 16`), and with optional CUDA Q8 weight storage.
 Mistral 7B Instruct v0.1 is qualified on A2 with Q8 storage through its 4096-token
 window boundary. See the architecture evidence for exact revisions and limits.
-Enable experimental Q8 on-load conversion with `DLLM_QUANTIZATION=q8_0`; it
+Enable experimental Q8 on-load conversion with `DAMENDAEMON_QUANTIZATION=q8_0`; it
 supports native Metal for Qwen2, Qwen3, Llama and Mamba-1/2; other families require CUDA.
 See [GGUF and AWQ import scope](quantization.md) for supported packed formats.
 GPTQ remains unsupported.
@@ -113,7 +113,7 @@ curl http://127.0.0.1:8088/v1/completions \
 
 ## Thinking and chat behavior
 
-Qwen3 and Qwen3.5 thinking default to their model templates. Use `dllm run Qwen/Qwen3-1.7B
+Qwen3 and Qwen3.5 thinking default to their model templates. Use `damendaemon run Qwen/Qwen3-1.7B
 --thinking off --prompt 'What is 7 times 8?'`, or pass
 `"chat_template_kwargs": {"enable_thinking": false}` in the API request to disable
 it. Explicit thinking controls are rejected for other architectures. Thinking
@@ -155,19 +155,19 @@ and opt-in for the qualified Qwen3.5-0.8B geometry on NVIDIA A2 and Apple M4:
 
 ```sh
 python -m pip install -e '.[runtime,vision]'
-DLLM_EXPERIMENTAL_VISION=1 DLLM_QUANTIZATION=q8_0 dllm serve \
+DAMENDAEMON_EXPERIMENTAL_VISION=1 DAMENDAEMON_QUANTIZATION=q8_0 damendaemon serve \
   --model vision=/path/to/Qwen3.5-0.8B-snapshot --context 1024 --batch-size 4
 ```
 
 Select the A2 UUID through `CUDA_VISIBLE_DEVICES` as for other CUDA runs.
-For Apple, add `DLLM_DEVICE=mps` to the command above. Both FP16 and Q8 text
+For Apple, add `DAMENDAEMON_DEVICE=mps` to the command above. Both FP16 and Q8 text
 pass image correctness and lifecycle validation on M4 with Torch 2.13.0. A native Metal recurrent scan is used
 for this qualified geometry at context <=1024 and at most four slots; set
-`DLLM_HYBRID_METAL_SCAN=0` for the ordinary Torch diagnostic path.
+`DAMENDAEMON_HYBRID_METAL_SCAN=0` for the ordinary Torch diagnostic path.
 `/v1/chat/completions` accepts user content lists with `text` and `image_url`
 parts; image URLs must be inline PNG/JPEG data URLs with `detail: "auto"`.
 The existing 1 MiB HTTP body limit applies. FP16 text is available by omitting
-`DLLM_QUANTIZATION`; vision retains its separate FP16-storage/FP32-arithmetic
+`DAMENDAEMON_QUANTIZATION`; vision retains its separate FP16-storage/FP32-arithmetic
 policy. Image tool calls, video/audio, remote image URLs, prefix snapshots,
 and chunked image prefill are unsupported. Other model families keep their
 existing text execution. See [image qualification](vision-qualification.md)
@@ -180,7 +180,7 @@ validates decoded pixels, image tokens, prompt plus output context, and model
 support. Renaming a file does not change its format.
 
 ```sh
-python - photo.png > /tmp/dllm-image-request.json <<'PYIMAGE'
+python - photo.png > /tmp/damendaemon-image-request.json <<'PYIMAGE'
 import base64
 import json
 import sys
@@ -215,7 +215,7 @@ After that command succeeds, submit the request to your local server:
 
 ```sh
 curl --fail-with-body --max-time 120 http://127.0.0.1:8088/v1/chat/completions \
-  -H 'Content-Type: application/json' --data-binary @/tmp/dllm-image-request.json
+  -H 'Content-Type: application/json' --data-binary @/tmp/damendaemon-image-request.json
 ```
 
 The body contains the image itself; remove the temporary file when finished.
@@ -229,7 +229,7 @@ sliding/full attention, GELU gating and its own normalization; the pinned 270M
 checkpoint passes CUDA and Metal reference replay, including 511/512/513-token
 window boundaries. CUDA uses FP16 weight storage with native FP32 matrix-vector
 arithmetic and windowed decode attention; arithmetic and KV remain FP32.
-`DLLM_GEMMA_WEIGHT_DTYPE=float32` selects full storage. Prefill optimization remains open. This does not imply support for multimodal Gemma. Qwen3.5 checkpoint qualification does not imply all newer Qwen
+`DAMENDAEMON_GEMMA_WEIGHT_DTYPE=float32` selects full storage. Prefill optimization remains open. This does not imply support for multimodal Gemma. Qwen3.5 checkpoint qualification does not imply all newer Qwen
 variants are supported. See the [model validation matrix](model-matrix.md):
 Qwen3-1.7B and SmolLM2-360M pass the expanded tests; Qwen3-0.6B remains provisional
 because two long-context positions exceed the logit-error limit.
@@ -262,15 +262,15 @@ The loopback development server has no authentication and is not a public gatewa
 
 ## Register, load and unload
 
-You can start `dllm serve` with no models and manage its registry without a
+You can start `damendaemon serve` with no models and manage its registry without a
 restart. Run these commands on the server's host:
 
 ```sh
-dllm add small Qwen/Qwen3.5-0.8B --revision 7ae557604adf67be50417f59c2c2f167def9a775
-dllm load small
-dllm models
-dllm unload small                 # retain the RAM copy
-dllm unload small --release-host  # release GPU and RAM copies; keep disk files
+damendaemon add small Qwen/Qwen3.5-0.8B --revision 7ae557604adf67be50417f59c2c2f167def9a775
+damendaemon load small
+damendaemon models
+damendaemon unload small                 # retain the RAM copy
+damendaemon unload small --release-host  # release GPU and RAM copies; keep disk files
 ```
 
 `add` also accepts an existing local snapshot directory. Downloads happen in the
@@ -285,9 +285,9 @@ use startup `--model` entries when you want aliases restored after a restart.
 Use a per-model chat-template override when a checkpoint template needs replacing:
 
 ```sh
-dllm add chat /path/to/model.gguf --chat-template /path/to/chat.jinja
-dllm run /path/to/model.gguf --chat-template /path/to/chat.jinja --prompt "Hello"
-dllm serve --model chat=/path/to/model.gguf --chat-template chat=/path/to/chat.jinja
+damendaemon add chat /path/to/model.gguf --chat-template /path/to/chat.jinja
+damendaemon run /path/to/model.gguf --chat-template /path/to/chat.jinja --prompt "Hello"
+damendaemon serve --model chat=/path/to/model.gguf --chat-template chat=/path/to/chat.jinja
 ```
 
 The registration API accepts `chat_template` as literal UTF-8 template text (at
@@ -300,7 +300,7 @@ configured alias. Encoder, T5 and Mamba overrides are not supported. The default
 always remains the checkpoint's embedded template unless explicitly overridden.
 An override does not add an unsupported tool-call protocol to a model family.
 
-The dllm HTTP extensions are `GET /v1/models/status` and
+The damendaemon HTTP extensions are `GET /v1/models/status` and
 `POST /v1/models/register`, `/v1/models/load`, `/v1/models/unload`.
 POST bodies use `model`; registration also requires `path`, and unloading accepts
 boolean `release_host`. Commands share bounded admission and wait for active
@@ -309,7 +309,7 @@ demand. These extensions are separate from OpenAI's completion protocol.
 
 ## Structured JSON
 
-Optional constrained JSON responses are enabled by installing `dllm[structured]`.
+Optional constrained JSON responses are enabled by installing `damendaemon[structured]`.
 Both completion routes accept `response_format: {"type":"json_object"}` or
 `{"type":"json_schema","json_schema":{"name":"result","strict":true,"schema":...}}`.
 The supported schema subset includes object properties/required/additionalProperties,
@@ -321,7 +321,7 @@ budget has finish reason `length` and can contain incomplete JSON.
 Grammar masks apply before sampling, with independent state for each request.
 Structured responses reject custom stop strings and explicit thinking; Qwen3/
 Qwen3.5 chat thinking is automatically disabled. Plain requests keep the existing
-fast path. The optional XGrammar compiler and mask kernels are reused; dllm
+fast path. The optional XGrammar compiler and mask kernels are reused; damendaemon
 still executes the model itself. Apple uses a native PyTorch/Metal bitmask path.
 
 JSON formatting permits at most eight whitespace characters between grammar
@@ -361,7 +361,7 @@ proof and measured overhead in [logprob evidence](evidence/logprobs/README.md).
 Qwen2.5/Qwen3 JSON-call chat templates support `tools`, `tool_choice: "auto"`
 or `"none"`, assistant `tool_calls`, and `tool` result messages with matching
 `tool_call_id`. Streaming returns indexed tool calls after each complete call is
-validated. dllm describes calls; your application executes them and returns results.
+validated. damendaemon describes calls; your application executes them and returns results.
 
 ```json
 {
@@ -404,11 +404,11 @@ separate stream backpressure timeout.
 
 ## Queue status during inference
 
-Use `dllm status --server http://127.0.0.1:8088` or
+Use `damendaemon status --server http://127.0.0.1:8088` or
 `GET /v1/scheduler/status` to inspect queue ownership while inference is busy.
 This reads scheduler bookkeeping without entering the inference queue or
 inspecting GPU residency, so it also works when admission capacity is full.
-`dllm models` remains the separate serialized model-residency view.
+`damendaemon models` remains the separate serialized model-residency view.
 
 The response separates `queued_generation_requests` from
 `worker_owned_generation_requests`, and `queued_commands` from
@@ -425,14 +425,14 @@ GPU-health check or sustained-user performance qualification.
 
 ## Finish admitted work before stopping
 
-Run `dllm drain --server http://127.0.0.1:8088` to stop accepting new work while
+Run `damendaemon drain --server http://127.0.0.1:8088` to stop accepting new work while
 already-admitted generations and commands finish in their existing order.
 The equivalent request is `POST /v1/scheduler/drain` with JSON body `{}`.
 It returns immediately and is idempotent. New generation and queued management,
 embedding, reranking and scoring requests receive HTTP503. Existing queue and
 backpressure deadlines still apply.
 
-Poll `dllm status` until `drained` is true, then stop the process normally.
+Poll `damendaemon status` until `drained` is true, then stop the process normally.
 `draining` reports that admission is stopped; `worker_busy` stays true while the
 worker owns an operation, even if its caller has cancelled. `drained` requires
 both no admitted requests and an idle worker, rather than relying on an empty
@@ -448,7 +448,7 @@ without this scheduler return HTTP501 for drain.
 Set serving admission limits explicitly when needed:
 
 ```sh
-dllm serve --model chat=/path/to/pinned/snapshot --batch-size 4 \
+damendaemon serve --model chat=/path/to/pinned/snapshot --batch-size 4 \
   --queue-size 8 --queue-timeout 30
 ```
 
@@ -459,12 +459,12 @@ the platform thread-wait limit. It bounds waiting for worker ownership, not
 inference execution. The same setting also bounds stream backpressure and
 existing internal management waits; model-status commands retain their shorter
 one-second queue bound. These options do not increase KV capacity or change the
-HTTP connection cap. `dllm status` reports `queue_timeout_seconds` alongside
+HTTP connection cap. `damendaemon status` reports `queue_timeout_seconds` alongside
 capacity. Invalid settings fail before downloads or GPU initialization.
 
 ## Remove a registered alias
 
-Use `dllm remove ALIAS --server http://127.0.0.1:8088`, or
+Use `damendaemon remove ALIAS --server http://127.0.0.1:8088`, or
 `POST /v1/models/remove` with `{"model":"ALIAS"}`, to release an alias's GPU and
 host residency and remove its snapshot, precision and template registration.
 The existing management barrier lets the current inference group finish before
@@ -475,14 +475,14 @@ Checkpoint files are never deleted, and other aliases remain registered even
 when they use the same path. Missing aliases return an error. You can add the
 name again with a corrected snapshot or precision. This differs from `unload`,
 which preserves the registration. Save the live registry again with
-`dllm models --save-config FILE` to persist the change; an old manifest still
+`damendaemon models --save-config FILE` to persist the change; an old manifest still
 contains the old alias. Exporting an entirely empty registry remains unsupported.
 
 Successful batched generation timing includes `queue_seconds`: elapsed time
 from admission bookkeeping to the worker taking the request. It excludes
 activation, prompt preparation, KV-capacity waits after ownership, and decoding.
-The nonstreaming response exposes it in `dllm_timing`; streaming responses with
-`stream_options.include_usage:true` include the same `dllm_timing` extension in
+The nonstreaming response exposes it in `damendaemon_timing`; streaming responses with
+`stream_options.include_usage:true` include the same `damendaemon_timing` extension in
 the final usage event. Disabling usage does not add a separate timing event.
 
 
@@ -492,7 +492,7 @@ Inspect an existing local floating-point hybrid checkpoint without downloading
 weights, reading tensor values, or initializing a GPU:
 
 ```sh
-dllm plan-hybrid /path/to/local/snapshot --contexts 32768 65536 \
+damendaemon plan-hybrid /path/to/local/snapshot --contexts 32768 65536 \
   --batches 1 4 --cache-dtype float32
 ```
 
@@ -522,7 +522,7 @@ weights/state, limits context to 2048 and batch capacity to four, and reserves
 additional to the executor's workspace reserve and does not guarantee desktop
 responsiveness under every workload.
 
-Development selection requires `--device xpu`, `DLLM_EXPERIMENTAL_XPU=1` and
+Development selection requires `--device xpu`, `DAMENDAEMON_EXPERIMENTAL_XPU=1` and
 `ONEAPI_DEVICE_SELECTOR=level_zero:gpu`, with one visible Intel Arc B580 in an
 XPU-enabled PyTorch environment. CUDA/Metal kernels, quantization, GGUF/AWQ,
 multimodal models, scaled RoPE, paged KV, speculative decoding and graph
@@ -551,9 +551,9 @@ logic; it does not qualify Intel kernels or hardware memory behavior.
 
 ## Experimental host-weight layer streaming
 
-`DLLM_EXPERIMENTAL_HYBRID_OFFLOAD=1` adds synchronous host-to-device layer
+`DAMENDAEMON_EXPERIMENTAL_HYBRID_OFFLOAD=1` adds synchronous host-to-device layer
 streaming to the CUDA hybrid text executor. It requires unquantized weights,
-`DLLM_KERNELS=torch`, FP16 hybrid precision and `--no-graph`, with context at most
+`DAMENDAEMON_KERNELS=torch`, FP16 hybrid precision and `--no-graph`, with context at most
 2048 and batch capacity at most four. This is an implementation preview under
 issue #64, verified with CPU tensor and ownership tests only. No GPU execution,
 transfer speed, practical-model quality or useful throughput is qualified.
@@ -593,7 +593,7 @@ within a chunk remain synchronous. CPU regressions cover the combined streamed
 and chunked path, including an interleaved second slot. This adds scheduling
 behavior, not a hardware latency guarantee.
 
-`dllm plan-hybrid` also reports a `layer_streaming` storage scenario using the
+`damendaemon plan-hybrid` also reports a `layer_streaming` storage scenario using the
 same layer plan as execution: fixed weights, each layer's bytes, peak resident
 weights and the output-head FP32 temporary. Its per-context rows add state and
 the workspace floor. This scenario estimates unquantized source storage only;
@@ -610,7 +610,7 @@ Inventory retains packed dtypes for their format-specific loaders; the hybrid
 planner still accepts only floating-point source weights. Header validation does
 not hash tensor contents or protect against concurrent changes to checkpoint files.
 
-For explicit stage placement, add `--layer-splits 16 32` to `dllm plan-hybrid`.
+For explicit stage placement, add `--layer-splits 16 32` to `damendaemon plan-hybrid`.
 The boundaries are global layer indices and must be strictly increasing inside
 the model. Passing `--layer-splits` with no values reports one stage. Optional
 `--stage-weight-dtype float32` estimates promoted FP32 weights; `native` retains
@@ -631,9 +631,9 @@ allocator fragmentation, loading peaks and hardware/transport qualification
 remain outside the estimate. Planning is bounded to 16 stages and 256 layers.
 
 The `build_cuda_pipeline(model, devices, budgets, max_batch=4)` helper
-in `dllm.hybrid_pipeline_build` turns a loaded CPU model and ordered CUDA
+in `damendaemon.hybrid_pipeline_build` turns a loaded CPU model and ordered CUDA
 ordinals/byte budgets into a synchronous coordinator. It requires
-`DLLM_EXPERIMENTAL_HYBRID_PIPELINE=1`, CUDA, unquantized FP16 text, context at
+`DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE=1`, CUDA, unquantized FP16 text, context at
 most 2048 and at most four slots. It rejects offload, legacy layer splitting,
 vision and paged KV.
 It plans before allocating, bounds the supplied caps by observed free memory,
@@ -648,7 +648,7 @@ constructed coordinator owns its stages and must likewise be closed. CPU
 fixtures cover arithmetic equivalence, changed headroom, partial allocation,
 interruption and failed-cleanup retry; device transport remains unqualified.
 
-For experimental serving, set `DLLM_HYBRID_PIPELINE_BUDGETS_MIB` to comma-separated
+For experimental serving, set `DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB` to comma-separated
 positive integer limits, one per visible GPU in `CUDA_VISIBLE_DEVICES` order,
 alongside the pipeline opt-in. For example, `22000,14000` specifies caps of
 22000 and 14000 MiB; the UUID selection must expose exactly two distinct GPUs.
@@ -679,7 +679,7 @@ failure note, and a partially rebound model is never published under an alias.
 
 ## Optional API authentication
 
-Set `DLLM_API_KEY` for inference clients and a different `DLLM_ADMIN_API_KEY`
+Set `DAMENDAEMON_API_KEY` for inference clients and a different `DAMENDAEMON_ADMIN_API_KEY`
 for administration before starting the server. Each configured key must contain
 16–512 printable ASCII characters without spaces; use independently generated
 random values. Keys are read at startup and never included in status, manifests
@@ -699,13 +699,13 @@ are rejected.
 
 Management CLI commands read the admin key, falling back to the inference key
 when only that one is configured (administrative requests then receive 403).
-`dllm bench` continues to use `DLLM_API_KEY`. Authenticated CLI and benchmark
+`damendaemon bench` continues to use `DAMENDAEMON_API_KEY`. Authenticated CLI and benchmark
 requests refuse redirects; use the endpoint's final URL explicitly. Anonymous
 client behavior is unchanged. These roles do not provide TLS or tenant data
 isolation. The server still binds only to
 `127.0.0.1`; no public listener or deployment is enabled.
 
-For separately limited inference clients, set `DLLM_CLIENT_KEYS` to a JSON object
+For separately limited inference clients, set `DAMENDAEMON_CLIENT_KEYS` to a JSON object
 mapping client names to `{"key":"<independently-generated-secret>","max_inflight":2}`.
 Names contain 1–64 letters, digits, dots, underscores or hyphens. Configure at most
 128 clients, each with a distinct key meeting the rules above and an integer
@@ -820,14 +820,14 @@ non-generation routes retain their existing policies.
 
 ### Optional client decode shares
 
-`dllm serve --client-decode-turns` gives each currently ready client an equal
+`damendaemon serve --client-decode-turns` gives each currently ready client an equal
 number of rows in each ordinary decode step by default. For example, with three ready
 requests from client A and one from B, the step decodes one A request and the B
 request; A's requests rotate on later steps. With four A requests and two B
 requests, each gets two rows. When only one client is ready, all its ready rows
 can decode. The default remains disabled and decodes every ready request.
 
-Named entries in `DLLM_CLIENT_KEYS` may set `decode_weight` to an integer from
+Named entries in `DAMENDAEMON_CLIENT_KEYS` may set `decode_weight` to an integer from
 1 to 16 (default 1). With decode turns enabled, ready token rows are proportional
 to these weights across iterations. For example, two continuously ready clients
 with one request each and weights 3 and 1 decode the first request every step and
@@ -873,7 +873,7 @@ New/rejoining clients start at the current service floor; cancelled/completed
 requests and absent lanes lose history. Normalized service counters remain within
 one maximum dispatched chunk across continuously pending lanes, and all state
 clears when prompt work/model ownership ends. Decode still runs between chunks.
-Named `DLLM_CLIENT_KEYS` entries may set `prefill_weight` to an integer from 1
+Named `DAMENDAEMON_CLIENT_KEYS` entries may set `prefill_weight` to an integer from 1
 through 16 (default 1), independently of `decode_weight`. Each dispatched chunk
 charges its actual token count divided by this declared weight. Continuously
 pending clients with weights 3 and 1 therefore approach a 3:1 prompt-token share,
@@ -895,7 +895,7 @@ no wall-clock latency or throughput SLO. Scheduler status reports the boolean
 
 ### Shared local-process rate accounting
 
-Set `DLLM_CLIENT_RATE_DB` to an explicit absolute SQLite file path to share named
+Set `DAMENDAEMON_CLIENT_RATE_DB` to an explicit absolute SQLite file path to share named
 client rolling request and declared-output allowances across server processes on
 one host and retain them across restart. Without this variable, existing
 in-memory behavior is unchanged and no database is created. Configure at least
@@ -940,7 +940,7 @@ reset, migration, credential storage or deployment is performed.
 
 ### Shared outstanding admission across local servers
 
-Set `DLLM_CLIENT_RESERVATION_DB` to the same absolute private local SQLite path
+Set `DAMENDAEMON_CLIENT_RESERVATION_DB` to the same absolute private local SQLite path
 for participating named-client servers. This coordinates `max_inflight` and
 `max_reserved_output_tokens` independently of rolling rate limits. Defaults remain
 process-local. Owner locks permit crash reclamation without unsafe lease expiry;
@@ -953,7 +953,7 @@ to the handler. It verifies authority policy and retains uncertain operations
 through the same HTTP cleanup path. Network-backed admission is not enabled by
 default, and prior unresolved remote claims block owner startup.
 
-Explicit cross-host outstanding quotas are configured with `DLLM_REMOTE_QUOTA_CONFIG`; see [quota commands](quota-commands.md) for authority bootstrap, pinned mutual TLS, owner recovery and CPU command shutdown behavior.
+Explicit cross-host outstanding quotas are configured with `DAMENDAEMON_REMOTE_QUOTA_CONFIG`; see [quota commands](quota-commands.md) for authority bootstrap, pinned mutual TLS, owner recovery and CPU command shutdown behavior.
 
 Serving commands own accepted HTTP request threads through shutdown. SIGINT or
 SIGTERM stops ordinary server admission, then closes the scheduler before joining

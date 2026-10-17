@@ -4,10 +4,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.packed_tiles import decode_tile,validate_layout
-from dllm.packed_projection import packed_linear
-from dllm.prepared_projection import PackedProjection
-from dllm.packed_checkpoint import read_packed_matrix
+from damendaemon.packed_tiles import decode_tile,validate_layout
+from damendaemon.packed_projection import packed_linear
+from damendaemon.prepared_projection import PackedProjection
+from damendaemon.packed_checkpoint import read_packed_matrix
 from tests.test_packed_checkpoint import write_raw
 
 
@@ -63,7 +63,7 @@ class PackedFp32ScaleTests(unittest.TestCase):
                 payload=write_pair(a,raw,scales,both=same)
                 if not same:write_raw(b,{'s':dict(dtype='F32',shape=[2,2],data_offsets=[0,16])},payload)
                 needed=raw.numel()+scales.numel()*4
-                with patch('dllm.packed_checkpoint._payload',side_effect=AssertionError('values read')):
+                with patch('damendaemon.packed_checkpoint._payload',side_effect=AssertionError('values read')):
                     with self.assertRaisesRegex(ValueError,'budget'):read_packed_matrix(a,'w',a if same else b,'s',format='e4m3fn_f32',max_bytes=needed-1)
                     with self.assertRaises(ValueError):read_packed_matrix(a,'w',a if same else b,'s',format='e4m3fn')
                 pair=read_packed_matrix(a,'w',a if same else b,'s',format='e4m3fn_f32',max_bytes=needed)
@@ -72,5 +72,5 @@ class PackedFp32ScaleTests(unittest.TestCase):
                 pair.scales.zero_()
                 reread=read_packed_matrix(a,'w',a if same else b,'s',format='e4m3fn_f32')
                 torch.testing.assert_close(reread.scales,scales,rtol=0,atol=0)
-            with patch('dllm.packed_checkpoint.sys.byteorder','big'):
+            with patch('damendaemon.packed_checkpoint.sys.byteorder','big'):
                 with self.assertRaisesRegex(ValueError,'endian'):read_packed_matrix(a,'w',b,'s',format='e4m3fn_f32')

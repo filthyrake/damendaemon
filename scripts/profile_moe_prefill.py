@@ -9,9 +9,9 @@ import time
 from types import MethodType
 
 import torch
-from dllm.models import load
-from dllm.runtime import make_executor, require_gpu
-from dllm.moe import OlmoeExecutor
+from damendaemon.models import load
+from damendaemon.runtime import make_executor, require_gpu
+from damendaemon.moe import OlmoeExecutor
 
 
 @torch.inference_mode()
@@ -29,7 +29,7 @@ def main():
     args = parser.parse_args()
     require_gpu()
     torch.set_num_threads(4)
-    spec = importlib.util.spec_from_file_location('dllm.moe_baseline', args.baseline_source)
+    spec = importlib.util.spec_from_file_location('damendaemon.moe_baseline', args.baseline_source)
     baseline = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(baseline)
     source = load(args.model, 2048, args.quantization)

@@ -2,7 +2,7 @@
 if not __debug__:
     raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
 
-from dllm.evidence_environment import report_environment
+from damendaemon.evidence_environment import report_environment
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json
@@ -11,11 +11,11 @@ import threading
 from urllib.error import HTTPError
 from urllib.request import Request,urlopen
 import torch
-from dllm.bench import events
-from dllm.models import load
-from dllm.runtime import require_gpu
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer,handler_for
+from damendaemon.bench import events
+from damendaemon.models import load
+from damendaemon.runtime import require_gpu
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer,handler_for
 
 
 def main():
@@ -23,7 +23,7 @@ def main():
     p.add_argument('--device',choices=('cuda','mps'),default='cuda')
     p.add_argument('--chunk-size',type=int,default=0);p.add_argument('--prefix-budget',type=int,default=0)
     args=p.parse_args()
-    os.environ['DLLM_DEVICE']=args.device
+    os.environ['DAMENDAEMON_DEVICE']=args.device
     require_gpu();torch.set_num_threads(4)
     model=load(args.model,512)
     encoder_decoder=model.config.get('is_encoder_decoder',False)
@@ -71,14 +71,14 @@ def main():
         post({'model':'b','prompt':'The blue bird','max_tokens':8,'temperature':0})
         restored=post(body())
         assert restored['choices'][0]['text']==expected['choices'][0]['text']
-        assert restored['dllm_timing']['source_tier']=='host',restored
+        assert restored['damendaemon_timing']['source_tier']=='host',restored
         report={'passed':True,'device':args.device,'model':args.model,'other_model':args.other_model,
             'runtime_environment':report_environment(os.environ),
             'text_and_token_prompts_equal':True,'stream_and_nonstream_equal':True,'concurrent_isolation':True,
             'context_boundary_with_output':True,'encoder_decoder':encoder_decoder,
             'oversized_requests_rejected':True,'chat_rejected':True,
             'cancellation_recovery':True,'decoder_only_switch_and_host_restore':True,
-            'restore_timing':restored['dllm_timing'],
+            'restore_timing':restored['damendaemon_timing'],
             'prefill_chunk_size':args.chunk_size,'prefix_cache_tokens':args.prefix_budget,
             'sample':expected}
     finally:

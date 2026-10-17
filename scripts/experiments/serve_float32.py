@@ -5,4 +5,4 @@ import torch
 
 if __name__ == '__main__':
     torch.backends.cuda.matmul.allow_tf32 = False
-    runpy.run_module('dllm', run_name='__main__')
+    runpy.run_module('damendaemon', run_name='__main__')

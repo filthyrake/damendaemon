@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.cpu_pipeline_build import build_cpu_pipeline,CpuPipelineBuildError
-from dllm.cpu_hybrid_stage import CpuHybridStage
-from dllm.hybrid_pipeline import HybridPipeline,PipelineCancelled
+from damendaemon.cpu_pipeline_build import build_cpu_pipeline,CpuPipelineBuildError
+from damendaemon.cpu_hybrid_stage import CpuHybridStage
+from damendaemon.hybrid_pipeline import HybridPipeline,PipelineCancelled
 from tests.test_cpu_hybrid_stage import model,decoded
 from tests.test_cpu_stage_plan import OPTIONS
 

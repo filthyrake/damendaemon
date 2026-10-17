@@ -2,7 +2,7 @@
 import json
 import torch
 from torch.nn import functional as F
-from dllm import metal_kernels as metal
+from damendaemon import metal_kernels as metal
 
 
 @torch.inference_mode()

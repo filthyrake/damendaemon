@@ -2,7 +2,7 @@ from dataclasses import FrozenInstanceError
 import hashlib
 import json
 import unittest
-from dllm.host_topology import HostTopology
+from damendaemon.host_topology import HostTopology
 from tests.test_cpu_hybrid_stage import model
 
 

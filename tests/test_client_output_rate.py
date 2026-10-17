@@ -7,9 +7,9 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from dllm.client_admission import ClientAdmission, ClientOutputLimitError, ClientOutputRateLimitError
-from dllm.http_auth import AuthPolicy, ClientKey
-from dllm.server import handler_for
+from damendaemon.client_admission import ClientAdmission, ClientOutputLimitError, ClientOutputRateLimitError
+from damendaemon.http_auth import AuthPolicy, ClientKey
+from damendaemon.server import handler_for
 from tests.test_server import FakeRuntime
 
 ALICE = 'alice-output-rate-key-1234'
@@ -28,10 +28,10 @@ class OutputRateTests(unittest.TestCase):
     def test_configuration_and_unlimited_default(self):
         for value in (None, True, 0, -1, 1.5, '1', 2**31):
             raw={'alice':dict(key=ALICE, max_inflight=1, max_output_tokens_per_minute=value)}
-            with patch.dict('os.environ', {'DLLM_CLIENT_KEYS':json.dumps(raw)}, clear=True):
+            with patch.dict('os.environ', {'DAMENDAEMON_CLIENT_KEYS':json.dumps(raw)}, clear=True):
                 with self.assertRaises(ValueError):AuthPolicy.from_env()
         raw['alice']['max_output_tokens_per_minute']=2**31-1
-        with patch.dict('os.environ', {'DLLM_CLIENT_KEYS':json.dumps(raw)}, clear=True):
+        with patch.dict('os.environ', {'DAMENDAEMON_CLIENT_KEYS':json.dumps(raw)}, clear=True):
             self.assertEqual(AuthPolicy.from_env().clients[0].max_output_tokens_per_minute, 2**31-1)
         admission=ClientAdmission(AuthPolicy(clients=(ClientKey('alice', ALICE, 1),)))
         with admission.output_lease(['Bearer '+ALICE], 2**40):pass
@@ -95,7 +95,7 @@ class OutputRateTests(unittest.TestCase):
                 calls.append(args[2])
                 if kwargs.get('raw_prompt')=='fail':raise ValueError('fixture failure')
                 yield from super().generate(*args, **kwargs)
-        with patch('dllm.client_admission.ClientAdmission', return_value=admission):
+        with patch('damendaemon.client_admission.ClientAdmission', return_value=admission):
             handler=handler_for(Runtime(), policy())
         server=ThreadingHTTPServer(('127.0.0.1',0), handler)
         thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()

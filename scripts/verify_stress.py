@@ -12,13 +12,13 @@ from types import SimpleNamespace
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from dllm.batch import BatchExecutor
-from dllm.qwen2 import ModelWeights
-from dllm.config import decoder_config
-from dllm.runtime import require_gpu, make_executor
+from damendaemon.batch import BatchExecutor
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.config import decoder_config
+from damendaemon.runtime import require_gpu, make_executor
 from reference_model import load_reference
 from reference_trace import save_trace
-from dllm.device import selected_device, synchronize, empty_cache, device_name
+from damendaemon.device import selected_device, synchronize, empty_cache, device_name
 
 
 def main():
@@ -31,7 +31,7 @@ def main():
     parser.add_argument('--prefill-chunk-size',type=int,default=0)
     parser.add_argument('--tiny-prefixes',action='store_true',
                         help='also qualify single and packed 1..16-token prompts with subsequent decode')
-    parser.add_argument('--reference-only', action='store_true', help='generate a reference trace without a dllm GPU executor')
+    parser.add_argument('--reference-only', action='store_true', help='generate a reference trace without a damendaemon GPU executor')
     parser.add_argument('--golden-output', help='save teacher-forced inputs and FP32 reference logits for cross-environment replay')
     parser.add_argument('--reference-attention', choices=('sdpa', 'eager'), default='sdpa')
     packed_options = parser.add_mutually_exclusive_group()

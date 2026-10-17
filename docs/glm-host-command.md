@@ -63,7 +63,7 @@ remain unqualified.
 Use `serve --native-chat` at index zero with the same plan, peer file, native
 workers, TLS files and identity policy. `--http-port` defaults to 8088 (0 chooses
 an available port), and `--alias` names the served model. The existing
-`DLLM_API_KEY`, `DLLM_ADMIN_API_KEY` and named-client policies apply; secrets stay
+`DAMENDAEMON_API_KEY`, `DAMENDAEMON_ADMIN_API_KEY` and named-client policies apply; secrets stay
 in the environment. HTTP binds only to loopback. Readiness and model status
 identify CPU reference scope, topology and source-verification state.
 

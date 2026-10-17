@@ -10,10 +10,10 @@ import unittest
 from unittest.mock import patch
 import torch
 from PIL import Image
-from dllm.glm_flash_inline_images import decode_inline_images
-from dllm.glm_flash_images import CONTRACT
-from dllm.glm_flash_vision import vision_specs,ROOT
-from dllm.glm_text import EOS
+from damendaemon.glm_flash_inline_images import decode_inline_images
+from damendaemon.glm_flash_images import CONTRACT
+from damendaemon.glm_flash_vision import vision_specs,ROOT
+from damendaemon.glm_text import EOS
 from tests import test_glm_flash_image_generation,test_glm_flash_reference_loader,test_glm_flash_vision
 from tests.test_packed_checkpoint import write_raw
 from scripts.run_glm_flash_image_reference import main

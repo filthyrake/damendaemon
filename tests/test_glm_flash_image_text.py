@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock,patch
 from tokenizers import Tokenizer,AddedToken
-from dllm.glm_flash_image_text import FlashImageText,render_image_chat,BEGIN_IMAGE,IMAGE,END_IMAGE
+from damendaemon.glm_flash_image_text import FlashImageText,render_image_chat,BEGIN_IMAGE,IMAGE,END_IMAGE
 from tests.test_glm_text import tokenizer_fixture
 
 
@@ -49,7 +49,7 @@ class FlashImageTextTests(unittest.TestCase):
             text.tokenizer=Mock(wraps=text.tokenizer)
             with self.assertRaisesRegex(ValueError,'budget'):text.image_chat_tokens(messages,[[1,65536,65536]])
             text.tokenizer.encode.assert_not_called()
-            with patch('dllm.glm_flash_image_text.MAX_TOKENS',4):
+            with patch('damendaemon.glm_flash_image_text.MAX_TOKENS',4):
                 with self.assertRaisesRegex(ValueError,'token limit'):text.image_chat_tokens(messages,[[1,2,2]])
 
     def test_atomic_markers_and_text_limits(self):

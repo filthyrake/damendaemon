@@ -7,9 +7,9 @@ import time
 
 import torch
 
-from dllm.runtime import require_gpu
-from dllm.quantized_kernels import linear as current
-from dllm.compensated_q8 import linear as compensated
+from damendaemon.runtime import require_gpu
+from damendaemon.quantized_kernels import linear as current
+from damendaemon.compensated_q8 import linear as compensated
 from scripts.experiments.q8_blocked_matvec import linear as blocked
 
 

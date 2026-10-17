@@ -9,12 +9,12 @@ import json
 import os
 import time
 import torch
-from dllm import vision_model
-from dllm.vision_hybrid import VisionHybridExecutor
-from dllm.vision_qwen35 import VisionEncoder
-from dllm.cli import main
+from damendaemon import vision_model
+from damendaemon.vision_hybrid import VisionHybridExecutor
+from damendaemon.vision_qwen35 import VisionEncoder
+from damendaemon.cli import main
 
-output=open(os.environ['DLLM_VISION_STAGE_PROFILE'],'w',buffering=1)
+output=open(os.environ['DAMENDAEMON_VISION_STAGE_PROFILE'],'w',buffering=1)
 
 
 def record(stage,started,**extra):

@@ -8,7 +8,7 @@
       "prompt_tokens": 128,
       "concurrency": 1,
       "engines": {
-        "dllm": {
+        "damendaemon": {
           "first_output_seconds": {
             "p50": 0.026183124631643295,
             "p95": 0.02692987583577633
@@ -39,15 +39,15 @@
           "stable_text_per_prompt": true
         }
       },
-      "dllm_over_llama_throughput_p50": 0.9035122967691771,
-      "dllm_over_llama_first_output_p95": 0.4381541792915332,
+      "damendaemon_over_llama_throughput_p50": 0.9035122967691771,
+      "damendaemon_over_llama_first_output_p95": 0.4381541792915332,
       "exact_cross_engine_text": true
     },
     {
       "prompt_tokens": 128,
       "concurrency": 4,
       "engines": {
-        "dllm": {
+        "damendaemon": {
           "first_output_seconds": {
             "p50": 0.10744664072990417,
             "p95": 0.11973832547664642
@@ -78,15 +78,15 @@
           "stable_text_per_prompt": true
         }
       },
-      "dllm_over_llama_throughput_p50": 0.44440327770858,
-      "dllm_over_llama_first_output_p95": 0.5571399383956896,
+      "damendaemon_over_llama_throughput_p50": 0.44440327770858,
+      "damendaemon_over_llama_first_output_p95": 0.5571399383956896,
       "exact_cross_engine_text": true
     },
     {
       "prompt_tokens": 512,
       "concurrency": 1,
       "engines": {
-        "dllm": {
+        "damendaemon": {
           "first_output_seconds": {
             "p50": 0.07439307635650039,
             "p95": 0.07689889054745436
@@ -117,15 +117,15 @@
           "stable_text_per_prompt": true
         }
       },
-      "dllm_over_llama_throughput_p50": 0.9294046674885914,
-      "dllm_over_llama_first_output_p95": 0.6044296270585416,
+      "damendaemon_over_llama_throughput_p50": 0.9294046674885914,
+      "damendaemon_over_llama_first_output_p95": 0.6044296270585416,
       "exact_cross_engine_text": true
     },
     {
       "prompt_tokens": 512,
       "concurrency": 4,
       "engines": {
-        "dllm": {
+        "damendaemon": {
           "first_output_seconds": {
             "p50": 0.29209906328469515,
             "p95": 0.32019669376313686
@@ -156,15 +156,15 @@
           "stable_text_per_prompt": false
         }
       },
-      "dllm_over_llama_throughput_p50": 0.550462396425476,
-      "dllm_over_llama_first_output_p95": 0.6232083809001239,
+      "damendaemon_over_llama_throughput_p50": 0.550462396425476,
+      "damendaemon_over_llama_first_output_p95": 0.6232083809001239,
       "exact_cross_engine_text": false
     },
     {
       "prompt_tokens": 2048,
       "concurrency": 1,
       "engines": {
-        "dllm": {
+        "damendaemon": {
           "first_output_seconds": {
             "p50": 0.5530555103905499,
             "p95": 0.5865535940974951
@@ -195,15 +195,15 @@
           "stable_text_per_prompt": true
         }
       },
-      "dllm_over_llama_throughput_p50": 0.8768399035661598,
-      "dllm_over_llama_first_output_p95": 1.1941480921036116,
+      "damendaemon_over_llama_throughput_p50": 0.8768399035661598,
+      "damendaemon_over_llama_first_output_p95": 1.1941480921036116,
       "exact_cross_engine_text": true
     },
     {
       "prompt_tokens": 2048,
       "concurrency": 4,
       "engines": {
-        "dllm": {
+        "damendaemon": {
           "first_output_seconds": {
             "p50": 2.074725610204041,
             "p95": 2.3336340272799134
@@ -234,13 +234,13 @@
           "stable_text_per_prompt": true
         }
       },
-      "dllm_over_llama_throughput_p50": 0.6697449075784878,
-      "dllm_over_llama_first_output_p95": 1.1349223438387221,
+      "damendaemon_over_llama_throughput_p50": 0.6697449075784878,
+      "damendaemon_over_llama_first_output_p95": 1.1349223438387221,
       "exact_cross_engine_text": true
     }
   ],
   "precision_policies": {
-    "dllm": {
+    "damendaemon": {
       "projections": "Q8_0",
       "input_embedding": "FP16",
       "output_head": "Q8_0",

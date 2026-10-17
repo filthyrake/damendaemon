@@ -3,14 +3,14 @@ import threading
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.cpu_hybrid_stage import CpuHybridStage
-from dllm.cpu_pipeline_generation import CpuPipelineReferenceGenerator
-from dllm.host_completion import HostCompletion
-from dllm.host_pipeline_worker import HostPipelineCoordinator,HostPipelineWorker
-from dllm.host_topology import HostTopology
-from dllm.host_tensor_channel import HostTensorChannel
-from dllm.planned_host_stage_channel import PlannedHostStageChannel
-from dllm.stage_protocol import StageState
+from damendaemon.cpu_hybrid_stage import CpuHybridStage
+from damendaemon.cpu_pipeline_generation import CpuPipelineReferenceGenerator
+from damendaemon.host_completion import HostCompletion
+from damendaemon.host_pipeline_worker import HostPipelineCoordinator,HostPipelineWorker
+from damendaemon.host_topology import HostTopology
+from damendaemon.host_tensor_channel import HostTensorChannel
+from damendaemon.planned_host_stage_channel import PlannedHostStageChannel
+from damendaemon.stage_protocol import StageState
 from tests.test_cpu_hybrid_stage import model,decoded
 from tests.test_cpu_pipeline_generation import OPTIONS
 from tests import test_host_tls

@@ -7,15 +7,15 @@ import json
 from pathlib import Path
 import socket
 
-from dllm.config import hybrid_config
-from dllm.cpu_hybrid_stage import cpu_hybrid_shapes
-from dllm.cpu_reference_text import CpuReferenceText,read_json
-from dllm.cpu_completion_inputs import completion_inputs
-from dllm.cpu_host_worker_build import build_cpu_host_worker,CpuHostWorkerBuildError
-from dllm.host_completion import HostCompletion
-from dllm.host_endpoint import HostPeerListener,connect_peer
-from dllm.host_tensor_channel import HostTensorChannel
-from dllm.host_tls import client_context,server_context,certificate_pin
+from damendaemon.config import hybrid_config
+from damendaemon.cpu_hybrid_stage import cpu_hybrid_shapes
+from damendaemon.cpu_reference_text import CpuReferenceText,read_json
+from damendaemon.cpu_completion_inputs import completion_inputs
+from damendaemon.cpu_host_worker_build import build_cpu_host_worker,CpuHostWorkerBuildError
+from damendaemon.host_completion import HostCompletion
+from damendaemon.host_endpoint import HostPeerListener,connect_peer
+from damendaemon.host_tensor_channel import HostTensorChannel
+from damendaemon.host_tls import client_context,server_context,certificate_pin
 from scripts.run_cpu_pipeline_reference import _positive
 
 
@@ -135,30 +135,30 @@ def prepare(args,*,family='qwen'):
         raise ValueError('identity limits require verification and valid byte/time bounds')
     verified=None
     if args.verify_model_id:
-        from dllm.cpu_snapshot_identity import fingerprint
+        from damendaemon.cpu_snapshot_identity import fingerprint
         verified=fingerprint(args.snapshot,max_bytes=args.identity_max_mib*1024**2,timeout=args.identity_timeout)
         if verified.model_id!=args.model_id.lower():raise ValueError('local snapshot does not match model identity')
         args.snapshot=str(verified.root)
     config=read_json(Path(args.snapshot)/'config.json',1024**2)
     if family=='flash':
-        from dllm.glm_flash_checkpoint import tensor_specs
-        from dllm.glm_flash_reference_loader import _options
-        from dllm.glm_flash_layer_stage import validate_range
+        from damendaemon.glm_flash_checkpoint import tensor_specs
+        from damendaemon.glm_flash_reference_loader import _options
+        from damendaemon.glm_flash_layer_stage import validate_range
         tensor_specs(config);c=config['text_config'];_options(c)
         validate_range(0,args.split,c['num_hidden_layers'])
         if images:
             from scripts.flash_host_images import validate_metadata
             validate_metadata(args,config)
     elif family=='deepseek':
-        from dllm.deepseek_checkpoint import tensor_specs
-        from dllm.deepseek_reference_loader import _options
-        from dllm.deepseek_layer_stage import validate_range
+        from damendaemon.deepseek_checkpoint import tensor_specs
+        from damendaemon.deepseek_reference_loader import _options
+        from damendaemon.deepseek_layer_stage import validate_range
         tensor_specs(config);_options(config);c=config
         validate_range(0,args.split,c['num_hidden_layers'])
     elif family=='glm':
-        from dllm.glm_checkpoint import tensor_specs
-        from dllm.glm_reference_loader import _options
-        from dllm.glm_layer_stage import validate_range
+        from damendaemon.glm_checkpoint import tensor_specs
+        from damendaemon.glm_reference_loader import _options
+        from damendaemon.glm_layer_stage import validate_range
         if not isinstance(config,dict) or config.get('model_type')!='glm_moe_dsa':
             raise ValueError('GLM host command requires an explicit sparse-attention GLM config')
         tensor_specs(config);_options(config);c=config
@@ -173,25 +173,25 @@ def prepare(args,*,family='qwen'):
         raise ValueError('invalid CPU host split/context')
     if native:
         if family=='deepseek':
-            from dllm.deepseek_text import DeepSeekText as Text
+            from damendaemon.deepseek_text import DeepSeekText as Text
         elif family=='flash':
-            if images:from dllm.glm_flash_image_tool_text import FlashImageToolText as Text
-            else:from dllm.glm_flash_tool_text import FlashToolText as Text
+            if images:from damendaemon.glm_flash_image_tool_text import FlashImageToolText as Text
+            else:from damendaemon.glm_flash_tool_text import FlashToolText as Text
         else:
-            from dllm.glm_tool_text import GlmToolText as Text
+            from damendaemon.glm_tool_text import GlmToolText as Text
         if family=='deepseek':
-            from dllm.deepseek_generation import validate_text_config
-            from dllm.deepseek_host_generation import _snapshot
+            from damendaemon.deepseek_generation import validate_text_config
+            from damendaemon.deepseek_host_generation import _snapshot
             text=_snapshot(Text(args.snapshot,vocab_size=c['vocab_size']))
         else:
-            from dllm.glm_generation import validate_text_config
+            from damendaemon.glm_generation import validate_text_config
             text=Text(args.snapshot,vocab_size=c['vocab_size'])
         validate_text_config(c,text,args.context)
         if images and config.get('image_token_id')!=text.image_token_id:
             raise ValueError('Flash image token disagrees with native tokenizer')
     elif args.chat_template is None:text=CpuReferenceText(args.snapshot,config)
     else:
-        from dllm.cpu_reference_chat import CpuReferenceChat
+        from damendaemon.cpu_reference_chat import CpuReferenceChat
         text=CpuReferenceChat(args.snapshot,config,args.chat_template)
     inputs=limits=None
     if args.role=='complete':
@@ -214,12 +214,12 @@ def prepare(args,*,family='qwen'):
     # Bind tokenizer semantics and EOS in addition to the caller's model identity.
     if native:
         if family=='deepseek':
-            from dllm.deepseek_host_generation import native_session_identity
+            from damendaemon.deepseek_host_generation import native_session_identity
         elif family=='flash':
-            if images:from dllm.glm_flash_host_image_generation import native_image_session_identity as native_session_identity
-            else:from dllm.glm_flash_host_generation import native_session_identity
+            if images:from damendaemon.glm_flash_host_image_generation import native_image_session_identity as native_session_identity
+            else:from damendaemon.glm_flash_host_generation import native_session_identity
         else:
-            from dllm.glm_host_generation import native_session_identity
+            from damendaemon.glm_host_generation import native_session_identity
         identity=native_session_identity(text,verified=verified is not None)
     else:
         digest=hashlib.sha256(bytes.fromhex(args.model_id))
@@ -238,7 +238,7 @@ def emit(event):print(json.dumps(event,ensure_ascii=False),flush=True)
 
 
 def run(args):
-    from dllm.http_auth import AuthPolicy
+    from damendaemon.http_auth import AuthPolicy
     auth=AuthPolicy.from_env() if args.role=='serve' else None
     address,c,text,inputs,limits,identity,context,pin,verified=prepare(args)
     connection=listener=transport=worker=runner=None
@@ -305,8 +305,8 @@ def serve_worker_pair(worker,text,args,auth,*,pair_type=None):
     """Run one HTTP service lifetime with explicit peer and thread ownership."""
     import signal
     import threading
-    from dllm.host_serving import HostServingPair,HostDistributedRuntime,handler_for_host
-    from dllm.server import BoundedHTTPServer
+    from damendaemon.host_serving import HostServingPair,HostDistributedRuntime,handler_for_host
+    from damendaemon.server import BoundedHTTPServer
     pair=(HostServingPair if pair_type is None else pair_type)(worker,text,chunk_size=args.prefill_chunk)
     runtime=HostDistributedRuntime(pair,args.alias,args.queue_size,args.queue_timeout,
         client_decode_turns=args.client_decode_turns,interleaved_prefill=args.interleaved_prefill,client_prefill_turns=args.client_prefill_turns)

@@ -3,10 +3,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.deepseek_stage_slots import DeepSeekStageSlots
-from dllm.deepseek_reference_loader import load_reference_stage,load_reference_model
-from dllm.glm_stage_slots import GlmStageSlots
-from dllm.glm_flash_stage_slots import FlashStageSlots
+from damendaemon.deepseek_stage_slots import DeepSeekStageSlots
+from damendaemon.deepseek_reference_loader import load_reference_stage,load_reference_model
+from damendaemon.glm_stage_slots import GlmStageSlots
+from damendaemon.glm_flash_stage_slots import FlashStageSlots
 from tests.test_deepseek_reference_loader import fixture
 from tests.test_deepseek_checkpoint import config as geometry
 
@@ -92,7 +92,7 @@ class DeepSeekStageSlotTests(unittest.TestCase):
             self.assertTrue(first.failed);self.assertTrue(first.closed);self.assertEqual(first.states,[None]*3)
 
     def test_projection_release_and_failed_prefill_cleanup_keep_retry_owner(self):
-        from dllm.deepseek_layer_stage import DeepSeekStageState
+        from damendaemon.deepseek_layer_stage import DeepSeekStageState
         owners=self.owners();self.run_slots(owners,torch.tensor([[1],[2]]),[0,0],[0,1],True)
         first,last=owners[0],owners[-1];a,b=first.states[:2]
         with patch.object(a,'close',side_effect=RuntimeError('release')):

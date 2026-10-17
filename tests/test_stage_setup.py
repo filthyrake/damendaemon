@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 import torch.distributed as dist
-from dllm.stage_setup import StageSetup
+from damendaemon.stage_setup import StageSetup
 
 
 class StageSetupTests(unittest.TestCase):
@@ -25,7 +25,7 @@ class StageSetupTests(unittest.TestCase):
     def test_missing_peer_and_malformed_status_are_bounded(self):
         store = dist.HashStore(); first = StageSetup(store, 0)
         first.ready()
-        with patch('dllm.stage_setup.time.monotonic', return_value=first.deadline):
+        with patch('damendaemon.stage_setup.time.monotonic', return_value=first.deadline):
             with self.assertRaises(TimeoutError):first.wait_ready()
         store.set('1', b'garbage')
         with self.assertRaisesRegex(ValueError, 'invalid peer'):first.check_peer()

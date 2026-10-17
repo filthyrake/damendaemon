@@ -10,10 +10,10 @@ import sys
 import torch
 from transformers import AutoTokenizer
 from reference_model import load_reference
-from dllm.qwen2 import ModelWeights
-from dllm.runtime import require_gpu,make_executor
-from dllm.prefix import PrefixCache
-from dllm.device import device_name
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.runtime import require_gpu,make_executor
+from damendaemon.prefix import PrefixCache
+from damendaemon.device import device_name
 
 
 @torch.inference_mode()
@@ -23,7 +23,7 @@ def main():
     p.add_argument('--device',choices=('cuda','mps'),default='cuda')
     p.add_argument('--reference-quantization',choices=('none','q8_0','q4_0'),default='none')
     args=p.parse_args()
-    os.environ['DLLM_DEVICE']=args.device
+    os.environ['DAMENDAEMON_DEVICE']=args.device
     require_gpu();torch.set_num_threads(4)
     model=ModelWeights(args.model,1024)
     if model.quantization!=args.reference_quantization:

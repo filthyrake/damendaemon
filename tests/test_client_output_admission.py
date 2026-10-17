@@ -7,9 +7,9 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.request import Request,urlopen
 
-from dllm.client_admission import ClientAdmission,ClientOutputLimitError
-from dllm.http_auth import AuthPolicy,ClientKey
-from dllm.server import handler_for
+from damendaemon.client_admission import ClientAdmission,ClientOutputLimitError
+from damendaemon.http_auth import AuthPolicy,ClientKey
+from damendaemon.server import handler_for
 from tests.test_server import FakeRuntime
 
 ALICE='alice-output-budget-key-1'
@@ -26,10 +26,10 @@ class ClientOutputAdmissionTests(unittest.TestCase):
     def test_configuration_exact_boundary_and_exception_release(self):
         for value in (None,True,0,-1,1.5,'8',2**31):
             config={'alice':{'key':ALICE,'max_inflight':4,'max_reserved_output_tokens':value}}
-            with patch.dict('os.environ',{'DLLM_CLIENT_KEYS':json.dumps(config)},clear=True):
+            with patch.dict('os.environ',{'DAMENDAEMON_CLIENT_KEYS':json.dumps(config)},clear=True):
                 with self.assertRaises(ValueError):AuthPolicy.from_env()
         config={'alice':{'key':ALICE,'max_inflight':4,'max_reserved_output_tokens':8}}
-        with patch.dict('os.environ',{'DLLM_CLIENT_KEYS':json.dumps(config)},clear=True):
+        with patch.dict('os.environ',{'DAMENDAEMON_CLIENT_KEYS':json.dumps(config)},clear=True):
             self.assertEqual(AuthPolicy.from_env().clients[0].max_reserved_output_tokens,8)
         admission=ClientAdmission(policy());a=['Bearer '+ALICE];b=['Bearer '+BOB]
         with admission.output_lease(a,5):

@@ -46,10 +46,10 @@ fixed through arithmetic changes, without relaxing tolerances.
 
 ### Optional parallel prefill
 
-`DLLM_HYBRID_PREFILL=fla` uses the optional `fla-core==0.4.2` kernel package
+`DAMENDAEMON_HYBRID_PREFILL=fla` uses the optional `fla-core==0.4.2` kernel package
 for prompts of at least 64 tokens. The default independent scan needs no FLA.
 Both FLA replays pass the same 84 comparisons, with worst relative RMS errors
-of 0.2155% and 0.4283%. FLA owns only the selected prefill kernel; dllm retains
+of 0.2155% and 0.4283%. FLA owns only the selected prefill kernel; damendaemon retains
 weights, state, decoding, scheduling, and model switching.
 
 Warm median prefill times on the A2, four measured repetitions after one
@@ -100,7 +100,7 @@ After fusion, the same profile measures 682 launches per token (48% fewer).
 The matched HTTP rerun reaches 85.9 / 139.0 / 239.7 aggregate tokens/s at
 concurrency 1 / 2 / 4, improvements of approximately 10% / 14% / 10% over the
 pre-fusion run. Median first-output latency is 41.1 / 66.3 / 156.5 ms. These
-results compare dllm revisions, not dllm against vLLM. Optional FLA prefill with
+results compare damendaemon revisions, not damendaemon against vLLM. Optional FLA prefill with
 the fused executor also passes 84/84 reference comparisons for both models;
 worst relative RMS errors are 0.2535% and 0.4108%.
 
@@ -121,10 +121,10 @@ automatic CPU execution fallback. CUDA graphs are never enabled on MPS;
 `graph_requested` in newer validation output distinguishes a request from actual
 capture. Early experiment files predate that distinction.
 
-PyTorch 2.13.0 compiles dllm's Metal source for RMSNorm, SwiGLU, matrix-vector
+PyTorch 2.13.0 compiles damendaemon's Metal source for RMSNorm, SwiGLU, matrix-vector
 multiplication, rotary/cache writes, and decode attention. Larger prefill matrix
-operations use native PyTorch MPS operations. `DLLM_KERNELS=torch` retains a
-tensor baseline and `DLLM_KERNELS=metal` requires the custom kernels.
+operations use native PyTorch MPS operations. `DAMENDAEMON_KERNELS=torch` retains a
+tensor baseline and `DAMENDAEMON_KERNELS=metal` requires the custom kernels.
 
 Qwen2.5-0.5B and Qwen3-0.6B pass 48 single-sequence greedy comparisons each.
 SmolLM2-360M passes batched decode, reordered slots, and cache reuse, plus 82
@@ -146,7 +146,7 @@ medians; first-output latency is observed by the streaming HTTP client, not a
 GPU-only timer. Reference llama.cpp commit:
 `836d57176dc699a726c55418e4f96b8ca628e1bf`.
 
-| Concurrent requests | dllm Metal aggregate tokens/s | llama.cpp aggregate tokens/s | dllm first output | llama.cpp first output |
+| Concurrent requests | damendaemon Metal aggregate tokens/s | llama.cpp aggregate tokens/s | damendaemon first output | llama.cpp first output |
 | ---: | ---: | ---: | ---: | ---: |
 | 1 | 46.3 | 55.2 | 32.3 ms | 28.0 ms |
 | 2 | 83.4 | 95.3 | 55.2 ms | 37.8 ms |
@@ -161,7 +161,7 @@ These FP32 results do not predict quantized-model performance or larger models.
 
 ### Optional FP16 weight storage with FP32 arithmetic
 
-`DLLM_METAL_WEIGHT_DTYPE=float16` stores two-dimensional weight tensors in FP16,
+`DAMENDAEMON_METAL_WEIGHT_DTYPE=float16` stores two-dimensional weight tensors in FP16,
 while keeping normalization weights, arithmetic, residuals, and KV in FP32.
 The native matrix-vector kernel promotes loaded half weights before multiplying
 and accumulating. This does not enable the FP16-compute path that failed the
@@ -172,16 +172,16 @@ weight storage, with the existing workspace reserve.
 The same SmolLM2 comparison with an independently converted F16 GGUF and FP32
 KV gives:
 
-| Concurrent requests | dllm aggregate tokens/s | llama.cpp aggregate tokens/s | dllm first output | llama.cpp first output |
+| Concurrent requests | damendaemon aggregate tokens/s | llama.cpp aggregate tokens/s | damendaemon first output | llama.cpp first output |
 | ---: | ---: | ---: | ---: | ---: |
 | 1 | 61.5 | 92.2 | 47.5 ms | 22.4 ms |
 | 2 | 105.6 | 147.3 | 77.5 ms | 32.7 ms |
 | 4 | 158.2 | 172.8 | 136.1 ms | 58.7 ms |
 
-The selected storage improves dllm decode throughput and reduces retained
+The selected storage improves damendaemon decode throughput and reduces retained
 weight memory, but prefill currently expands matrix weights to FP32 for native
 tensor matrix operations. That temporary conversion worsens first-output
-latency. It does not make dllm faster than the matching llama.cpp path.
+latency. It does not make damendaemon faster than the matching llama.cpp path.
 SmolLM2 and Qwen3 pass all 82 and 84 long-context reference checks respectively,
 with the same worst errors as their FP32-storage runs. Kernel checks cover
 both storage types, biased/unbiased projections, and larger-batch tensor fallback.
@@ -196,15 +196,15 @@ widths 3 and 1023. The updated kernel passes the full Qwen3 and SmolLM2 FP16
 storage checks, the Qwen2 FP32 storage checks, and the live switching service.
 The fresh paired F16-weight/F32-KV comparison is:
 
-| Concurrent requests | dllm aggregate tokens/s | llama.cpp aggregate tokens/s | dllm first output | llama.cpp first output |
+| Concurrent requests | damendaemon aggregate tokens/s | llama.cpp aggregate tokens/s | damendaemon first output | llama.cpp first output |
 | ---: | ---: | ---: | ---: | ---: |
 | 1 | 69.9 | 92.4 | 47.8 ms | 22.6 ms |
 | 2 | 126.4 | 147.0 | 76.4 ms | 33.2 ms |
 | 4 | 222.4 | 184.9 | 135.4 ms | 62.3 ms |
 
-An earlier dllm-only vectorized run measured 69.8 / 123.1 / 196.4 tokens/s;
+An earlier damendaemon-only vectorized run measured 69.8 / 123.1 / 196.4 tokens/s;
 both runs are retained, rather than hiding concurrent-throughput variability.
-dllm leads four-request aggregate throughput in the fresh paired run, while
+damendaemon leads four-request aggregate throughput in the fresh paired run, while
 llama.cpp still leads single-request throughput and every first-output latency.
 This narrow SmolLM2 result is not general engine parity. The FP32-storage table
 above predates this vectorization and is retained as a historical baseline.

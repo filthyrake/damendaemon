@@ -5,7 +5,7 @@ import torch
 
 
 def install_validation_dispatch(max_tokens=4):
-    from dllm.moe import OlmoeExecutor
+    from damendaemon.moe import OlmoeExecutor
     if torch.cuda.get_device_name() != 'NVIDIA A2' or max_tokens not in (1,2,4,8,16):
         raise ValueError('unsupported routed prefill experiment scope')
     original = OlmoeExecutor.experts

@@ -15,7 +15,7 @@ import sys
 import time
 from urllib.error import HTTPError
 from urllib.request import Request,urlopen
-from dllm.bench import _response_json
+from damendaemon.bench import _response_json
 
 
 PAIR_COUNTS=(1,4,16,64)
@@ -74,7 +74,7 @@ def _read_response(source,count):
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--engines',nargs='+',choices=('dllm','vllm'),default=['dllm','vllm']);args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--engines',nargs='+',choices=('damendaemon','vllm'),default=['damendaemon','vllm']);args=p.parse_args()
     if len(set(args.engines))!=len(args.engines):p.error('engines must be distinct')
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
@@ -85,8 +85,8 @@ def main():
     for engine in args.engines:
         with socket.socket() as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
         env=dict(os.environ)
-        if engine=='dllm':
-            command=[sys.executable,'-m','dllm','serve','--port',str(port),'--context','512','--model','rank='+args.model]
+        if engine=='damendaemon':
+            command=[sys.executable,'-m','damendaemon','serve','--port',str(port),'--context','512','--model','rank='+args.model]
         elif engine=='vllm':
             venv=root/'baselines/vllm-venv/bin'
             command=[str(venv/'vllm'),'serve',args.model,'--runner','pooling','--dtype','float',
@@ -143,7 +143,7 @@ def main():
                     'query':query,'base_documents':base_docs,'gpu_uuid':env['CUDA_VISIBLE_DEVICES'],
                     'vllm_use_activation':True if engine=='vllm' else None,
                     'precision_environment':{k:env.get(k) for k in ('VLLM_FLOAT32_MATMUL_PRECISION','TRITON_F32_DEFAULT','NVIDIA_TF32_OVERRIDE')},
-                    'dllm_encoder_graph_max_batch':env.get('DLLM_ENCODER_GRAPH_MAX_BATCH','8')}
+                    'damendaemon_encoder_graph_max_batch':env.get('DAMENDAEMON_ENCODER_GRAPH_MAX_BATCH','8')}
                 Path(f'rerank-compare-{engine}.json').write_text(json.dumps(report,indent=2));reports.append(report)
                 print(engine+' complete',flush=True)
             finally:
@@ -159,8 +159,8 @@ def compare_reports(left,right):
     """Check every trial/request, including warmups, by original document index."""
     _coverage(left);_coverage(right)
     engines=(left.get('engine'),right.get('engine'))
-    if any(not isinstance(engine,str) for engine in engines) or set(engines)!={'dllm','vllm'}:
-        raise ValueError('rerank agreement requires distinct dllm and vllm reports')
+    if any(not isinstance(engine,str) for engine in engines) or set(engines)!={'damendaemon','vllm'}:
+        raise ValueError('rerank agreement requires distinct damendaemon and vllm reports')
     assert left['query']==right['query'] and left['base_documents']==right['base_documents']
     assert left['model']==right['model'] and left['precision']==right['precision']
     assert left['gpu_uuid']==right['gpu_uuid']

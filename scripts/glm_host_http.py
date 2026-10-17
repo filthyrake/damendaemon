@@ -2,9 +2,9 @@
 import signal
 import threading
 import time
-from dllm.reference_serving import handler_for_reference
-from dllm.runtime import BusyError
-from dllm.server import BoundedHTTPServer
+from damendaemon.reference_serving import handler_for_reference
+from damendaemon.runtime import BusyError
+from damendaemon.server import BoundedHTTPServer
 from scripts.run_cpu_host_reference import emit
 
 
@@ -13,21 +13,21 @@ def serve(worker,text,args,auth,*,family='glm',vision=None):
     if images and (family!='flash' or vision is None):raise ValueError('image HTTP requires explicit Flash vision ownership')
     if not images and vision is not None:raise ValueError('text HTTP does not accept vision ownership')
     if family=='deepseek':
-        from dllm.deepseek_host_generation import HostDeepSeekGenerator as Runner
-        from dllm.deepseek_host_serving import HostDeepSeekReferenceRuntime as Runtime
-        from dllm.queued_deepseek_host_serving import QueuedHostDeepSeekReferenceRuntime as QueuedRuntime
+        from damendaemon.deepseek_host_generation import HostDeepSeekGenerator as Runner
+        from damendaemon.deepseek_host_serving import HostDeepSeekReferenceRuntime as Runtime
+        from damendaemon.queued_deepseek_host_serving import QueuedHostDeepSeekReferenceRuntime as QueuedRuntime
     elif family=='flash':
         if images:
-            from dllm.glm_flash_host_image_generation import HostFlashImageGenerator as Runner
-            from dllm.glm_flash_host_image_serving import HostFlashImageReferenceRuntime as Runtime,QueuedHostFlashImageReferenceRuntime as QueuedRuntime
+            from damendaemon.glm_flash_host_image_generation import HostFlashImageGenerator as Runner
+            from damendaemon.glm_flash_host_image_serving import HostFlashImageReferenceRuntime as Runtime,QueuedHostFlashImageReferenceRuntime as QueuedRuntime
         else:
-            from dllm.glm_flash_host_generation import HostFlashGenerator as Runner
-            from dllm.glm_flash_host_serving import HostFlashReferenceRuntime as Runtime
-            from dllm.queued_glm_flash_host_serving import QueuedHostFlashReferenceRuntime as QueuedRuntime
+            from damendaemon.glm_flash_host_generation import HostFlashGenerator as Runner
+            from damendaemon.glm_flash_host_serving import HostFlashReferenceRuntime as Runtime
+            from damendaemon.queued_glm_flash_host_serving import QueuedHostFlashReferenceRuntime as QueuedRuntime
     elif family=='glm':
-        from dllm.glm_host_generation import HostGlmGenerator as Runner
-        from dllm.glm_host_serving import HostGlmReferenceRuntime as Runtime
-        from dllm.queued_glm_host_serving import QueuedHostGlmReferenceRuntime as QueuedRuntime
+        from damendaemon.glm_host_generation import HostGlmGenerator as Runner
+        from damendaemon.glm_host_serving import HostGlmReferenceRuntime as Runtime
+        from damendaemon.queued_glm_host_serving import QueuedHostGlmReferenceRuntime as QueuedRuntime
     else:raise ValueError('unsupported native host HTTP family')
     if images:
         from scripts.flash_host_images import generation_options

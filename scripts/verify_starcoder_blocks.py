@@ -8,8 +8,8 @@ import tempfile
 import torch
 from tokenizers import Tokenizer, models
 from transformers import Starcoder2Config, Starcoder2ForCausalLM
-from dllm.qwen2 import ModelWeights
-from dllm.runtime import make_executor, require_gpu
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.runtime import make_executor, require_gpu
 
 
 def main():

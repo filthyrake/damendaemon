@@ -12,9 +12,9 @@ import os
 from pathlib import Path
 
 import torch
-from dllm.device import device_name, empty_cache
-from dllm.gguf_model import GgufWeights
-from dllm.runtime import make_executor, require_gpu
+from damendaemon.device import device_name, empty_cache
+from damendaemon.gguf_model import GgufWeights
+from damendaemon.runtime import make_executor, require_gpu
 
 
 def require_gate(condition, message):
@@ -65,14 +65,14 @@ def main():
     pool_tokens = paged_capacity(args.context, lengths)
     experiment = None
     if args.experimental_q4_marlin_prefill_budget:
-        if args.context!=512 or not os.environ.get('DLLM_Q4_MARLIN_LIBRARY'):
-            parser.error('prefill experiment requires context512 and DLLM_Q4_MARLIN_LIBRARY')
+        if args.context!=512 or not os.environ.get('DAMENDAEMON_Q4_MARLIN_LIBRARY'):
+            parser.error('prefill experiment requires context512 and DAMENDAEMON_Q4_MARLIN_LIBRARY')
         args.require_q4_marlin=True
         from experiments.q4_marlin_prefill_budget import install_validation_budget
         experiment=install_validation_budget(args.experimental_q4_marlin_prefill_budget)
     if args.experimental_q4_marlin_context:
-        if not os.environ.get('DLLM_Q4_MARLIN_LIBRARY'):
-            parser.error('context experiment requires DLLM_Q4_MARLIN_LIBRARY')
+        if not os.environ.get('DAMENDAEMON_Q4_MARLIN_LIBRARY'):
+            parser.error('context experiment requires DAMENDAEMON_Q4_MARLIN_LIBRARY')
         args.require_q4_marlin=True
         if args.context!=args.experimental_q4_marlin_context:
             parser.error('context override must equal the actual requested context')
@@ -114,11 +114,11 @@ def main():
     if args.experimental_residual:
         from experiments.kquant_residual import install_validation_dispatch
         experiment = install_validation_dispatch()
-    if os.environ.get('DLLM_KV_CACHE_TOKENS'):
+    if os.environ.get('DAMENDAEMON_KV_CACHE_TOKENS'):
         raise ValueError('run with no inherited KV pool override')
     require_gpu(); torch.set_num_threads(4); torch.backends.cuda.matmul.allow_tf32 = False
     if args.awq_qualification:
-        from dllm.awq_model import AwqWeights
+        from damendaemon.awq_model import AwqWeights
         source = AwqWeights(args.model, args.context, 'none')
         if args.experimental_qwen3_fp16:
             source.awq_fp16_rounding = True
@@ -137,20 +137,20 @@ def main():
                   paged_pool_tokens=pool_tokens,
                   model=str(Path(args.model).resolve()), host_bytes=source.bytes, comparisons=checks,
                   scope='layout equivalence to single-request fixed eager; independent model accuracy is separate')
-    kquant_path = os.environ.get('DLLM_KQUANT_CUDA_LIBRARY')
+    kquant_path = os.environ.get('DAMENDAEMON_KQUANT_CUDA_LIBRARY')
     if kquant_path:
         report['native_kquant_library'] = dict(path=kquant_path,sha256=hashlib.sha256(Path(kquant_path).read_bytes()).hexdigest())
-    kquant_residual_path = os.environ.get('DLLM_KQUANT_RESIDUAL_LIBRARY')
+    kquant_residual_path = os.environ.get('DAMENDAEMON_KQUANT_RESIDUAL_LIBRARY')
     if kquant_residual_path:
         report['native_kquant_residual_library'] = dict(path=kquant_residual_path,
             sha256=hashlib.sha256(Path(kquant_residual_path).read_bytes()).hexdigest())
-    library = os.environ.get('DLLM_Q4_CUDA_LIBRARY')
+    library = os.environ.get('DAMENDAEMON_Q4_CUDA_LIBRARY')
     if library:
         report['native_q4_library'] = dict(path=library, sha256=hashlib.sha256(Path(library).read_bytes()).hexdigest())
-    residual_library = os.environ.get('DLLM_Q4_RESIDUAL_LIBRARY')
+    residual_library = os.environ.get('DAMENDAEMON_Q4_RESIDUAL_LIBRARY')
     if residual_library:
         report['native_q4_residual_library'] = dict(path=residual_library,sha256=hashlib.sha256(Path(residual_library).read_bytes()).hexdigest())
-    marlin_path=os.environ.get('DLLM_Q4_MARLIN_LIBRARY')
+    marlin_path=os.environ.get('DAMENDAEMON_Q4_MARLIN_LIBRARY')
     if marlin_path:
         report['native_q4_marlin_library']=dict(path=marlin_path,sha256=hashlib.sha256(Path(marlin_path).read_bytes()).hexdigest())
     def compare(actual, expected, **case):
@@ -164,7 +164,7 @@ def main():
         with torch.inference_mode():
             executor = make_executor(source, use_graph=False, max_batch=1)
             if args.require_q4_small_tiles:
-                from dllm import q4_prefill_policy
+                from damendaemon import q4_prefill_policy
                 weight = executor.w['0.qkv.weight']
                 if not (weight.dtype == torch.uint8 and executor.compute_dtype == torch.float16
                         and q4_prefill_policy.use_small_tile(64, weight.shape[0], weight.shape[1]*2, weight.device)):
@@ -209,8 +209,8 @@ def main():
             del actual, executor
             gc.collect(); empty_cache()
             for paged in (False, True):
-                if paged:os.environ['DLLM_KV_CACHE_TOKENS'] = str(pool_tokens)
-                else:os.environ.pop('DLLM_KV_CACHE_TOKENS', None)
+                if paged:os.environ['DAMENDAEMON_KV_CACHE_TOKENS'] = str(pool_tokens)
+                else:os.environ.pop('DAMENDAEMON_KV_CACHE_TOKENS', None)
                 for graph in (False, True):
                     print(f'Checking paged={paged}, graph={graph}', flush=True)
                     executor = make_executor(source, use_graph=graph, max_batch=4)
@@ -253,9 +253,9 @@ def main():
         report['error'] = repr(error)
         raise
     finally:
-        os.environ.pop('DLLM_KV_CACHE_TOKENS', None)
+        os.environ.pop('DAMENDAEMON_KV_CACHE_TOKENS', None)
         if args.awq_qualification:
-            from dllm.qwen2 import weight_files
+            from damendaemon.qwen2 import weight_files
             report['checkpoint_sha256'] = {}
             for file in [Path(args.model)/'config.json', *weight_files(args.model)]:
                 with file.open('rb') as stream:

@@ -11,12 +11,12 @@ from concurrent.futures import ThreadPoolExecutor
 from urllib.request import Request,urlopen
 import torch
 from transformers import AutoTokenizer
-from dllm.bench import events
-from dllm.runtime import require_gpu
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer,handler_for
-from dllm.tool_calls import prepare_tools
-from dllm.structured import matches_schema
+from damendaemon.bench import events
+from damendaemon.runtime import require_gpu
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer,handler_for
+from damendaemon.tool_calls import prepare_tools
+from damendaemon.structured import matches_schema
 
 TOOLS=[{'type':'function','function':{'name':name,'description':description,'strict':True,
     'parameters':{'type':'object','properties':{key:{'type':'string','const':value}},
@@ -29,7 +29,7 @@ MESSAGES=[{'role':'user','content':'Please get the weather in Paris.'}]
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--other-model',required=True)
     p.add_argument('--device',choices=('cuda','mps'),required=True);args=p.parse_args()
-    os.environ['DLLM_DEVICE']=args.device;require_gpu();torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_DEVICE']=args.device;require_gpu();torch.set_num_threads(4)
     runtime=BatchedRuntime({'a':args.model,'b':args.other_model},context=2048,batch_size=4,
         gpu_models=1,host_models=2,host_gib=16)
     server=BoundedHTTPServer(('127.0.0.1',0),handler_for(runtime))
@@ -69,18 +69,18 @@ def main():
                 assert payloads[-1]['usage']==result['usage']
                 assert payloads[-2]['choices'][0]['finish_reason']=='tool_calls'
                 reports.append({'model':path,'choice':choice,'call':call['function'],
-                    'usage':result['usage'],'timing':result['dllm_timing'],'stream_equal':True,'template_ids_equal':True})
+                    'usage':result['usage'],'timing':result['damendaemon_timing'],'stream_equal':True,'template_ids_equal':True})
             short=request(alias,max_tokens=1)['choices'][0]
             assert short['finish_reason']=='length' and not short['message'].get('tool_calls'),short
             assert short['message']['content'],short
-        result=request('a');check(result);assert result['dllm_timing']['source_tier']=='host'
+        result=request('a');check(result);assert result['damendaemon_timing']['source_tier']=='host'
         barrier=threading.Barrier(4)
         def run(index):
             choice='required' if index%2==0 else {'type':'function','function':{'name':'translate'}}
             barrier.wait();result=request(tool_choice=choice);return result,check(result,choice)
         with ThreadPoolExecutor(4) as pool:concurrent=list(pool.map(run,range(4)))
         assert len({call['id'] for _,call in concurrent})==4
-        max_batch=max(r['dllm_timing']['max_batch_size'] for r,_ in concurrent);assert max_batch>=2
+        max_batch=max(r['damendaemon_timing']['max_batch_size'] for r,_ in concurrent);assert max_batch>=2
         with post(stream=True) as response:next(events(response, require_terminated=True))
         check(request())
         auto=copy.deepcopy(TOOLS)

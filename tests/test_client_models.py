@@ -6,8 +6,8 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from dllm.http_auth import AuthPolicy, ClientKey, INFERENCE_ROUTES
-from dllm.server import handler_for
+from damendaemon.http_auth import AuthPolicy, ClientKey, INFERENCE_ROUTES
+from damendaemon.server import handler_for
 from tests.test_server import FakeRuntime
 
 ALICE = 'alice-permissions-test-key'
@@ -20,7 +20,7 @@ class ClientModelsTests(unittest.TestCase):
     def test_strict_configuration_and_exact_alias_semantics(self):
         for models in ([], ['a'], ['a', 'org/model']):
             raw = json.dumps({'alice': {'key':ALICE, 'max_inflight':1, 'models':models}})
-            with patch.dict('os.environ', {'DLLM_CLIENT_KEYS':raw}, clear=True):
+            with patch.dict('os.environ', {'DAMENDAEMON_CLIENT_KEYS':raw}, clear=True):
                 client = AuthPolicy.from_env().clients[0]
             self.assertEqual(client.models, frozenset(models))
             self.assertFalse(client.allows_model('A'))
@@ -28,7 +28,7 @@ class ClientModelsTests(unittest.TestCase):
             self.assertNotIn(ALICE, repr(client))
         for models in (None, 'a', ['a','a'], [''], [1], ['a\n'], ['a'*129], [str(i) for i in range(129)]):
             raw = json.dumps({'alice': {'key':ALICE, 'max_inflight':1, 'models':models}})
-            with patch.dict('os.environ', {'DLLM_CLIENT_KEYS':raw}, clear=True):
+            with patch.dict('os.environ', {'DAMENDAEMON_CLIENT_KEYS':raw}, clear=True):
                 with self.assertRaises(ValueError) as error:
                     AuthPolicy.from_env()
                 self.assertNotIn(ALICE, str(error.exception))

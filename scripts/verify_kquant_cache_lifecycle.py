@@ -12,8 +12,8 @@ import weakref
 
 import torch
 
-from dllm.gguf_model import GgufWeights
-from dllm.runtime import make_executor, require_gpu
+from damendaemon.gguf_model import GgufWeights
+from damendaemon.runtime import make_executor, require_gpu
 from experiments import kquant_dense_cache
 
 
@@ -34,7 +34,7 @@ def main():
     if args.context < 512:
         parser.error('--context must be at least 512')
     cache_mib = args.cache_mib if args.cache_mib is not None else (2048 if args.production_cache else 4096)
-    os.environ.pop('DLLM_KQUANT_DENSE_CACHE_MIB', None)
+    os.environ.pop('DAMENDAEMON_KQUANT_DENSE_CACHE_MIB', None)
     require_gpu()
     torch.set_num_threads(4)
     report = dict(experiment=None if args.expanded_control or args.production_cache else kquant_dense_cache.install_validation_dispatch(),
@@ -57,7 +57,7 @@ def main():
             for cycle, cap in enumerate(caps):
                 kquant_dense_cache.CACHE_LIMIT = cap
                 if args.production_cache:
-                    os.environ['DLLM_KQUANT_DENSE_CACHE_MIB'] = str(cap // 1024**2)
+                    os.environ['DAMENDAEMON_KQUANT_DENSE_CACHE_MIB'] = str(cap // 1024**2)
                 gc.collect()
                 torch.cuda.empty_cache()
                 before = torch.cuda.memory_allocated()

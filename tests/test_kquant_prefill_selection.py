@@ -4,8 +4,8 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.kquant_prefill import select
-from dllm.quantization import Linear
+from damendaemon.kquant_prefill import select
+from damendaemon.quantization import Linear
 
 
 class PrefillSelectionTests(unittest.TestCase):
@@ -17,7 +17,7 @@ class PrefillSelectionTests(unittest.TestCase):
                     dtype=torch.float32, precision='float32', context=2048)
         with patch.dict(os.environ, {}, clear=True):
             self.assertIsNone(select(**args))
-        with patch.dict(os.environ, {'DLLM_KQUANT_PREFILL_F32': '1'}):
+        with patch.dict(os.environ, {'DAMENDAEMON_KQUANT_PREFILL_F32': '1'}):
             self.assertIsNotNone(select(**args))
             self.assertIsNotNone(select(**{**args, 'layouts': {'q5': (2048, ((0, 8, 13, 0), (8, 16, 14, 11264)))}}))
             for changed in ({'context': 2049}, {'dtype': torch.float16}, {'precision': 'mixed'},
@@ -29,10 +29,10 @@ class PrefillSelectionTests(unittest.TestCase):
                     self.assertIsNone(select(**{**args, **changed}))
 
     def test_prefill_shape_bias_and_executor_isolation(self):
-        with patch.dict(os.environ, {'DLLM_KQUANT_PREFILL_F32': '1'}):
+        with patch.dict(os.environ, {'DAMENDAEMON_KQUANT_PREFILL_F32': '1'}):
             selected = select(self.config, self.layouts, 'cuda', torch.float32, 'float32', 512)
         weight = torch.zeros(1, dtype=torch.uint8)
-        with patch.dict(os.environ, {}, clear=True), patch('dllm.kquant_prefill.linear') as multiply:
+        with patch.dict(os.environ, {}, clear=True), patch('damendaemon.kquant_prefill.linear') as multiply:
             self.assertIsNone(selected(torch.zeros(127, 2048), weight, self.layouts['qkv']))
             self.assertIsNone(selected(torch.zeros(128, 4096), weight, (4096, self.layouts['qkv'][1])))
             multiply.assert_not_called()

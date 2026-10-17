@@ -15,12 +15,12 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
-    from dllm.cuda_glm_flash_image_placement import place_cuda_flash_image
-    from dllm.cuda_glm_flash_image_generation import CudaFlashImageToolGenerator,cuda_image_embeddings
-    from dllm.glm_flash_image_tool_generation import FlashImageToolReferenceGenerator
-    from dllm.glm_flash_image_tool_text import FlashImageToolText
-    from dllm.glm_flash_image_embeddings import image_embeddings
-    from dllm.glm_flash_images import prepare_images
+    from damendaemon.cuda_glm_flash_image_placement import place_cuda_flash_image
+    from damendaemon.cuda_glm_flash_image_generation import CudaFlashImageToolGenerator,cuda_image_embeddings
+    from damendaemon.glm_flash_image_tool_generation import FlashImageToolReferenceGenerator
+    from damendaemon.glm_flash_image_tool_text import FlashImageToolText
+    from damendaemon.glm_flash_image_embeddings import image_embeddings
+    from damendaemon.glm_flash_images import prepare_images
     from tests.test_cuda_glm_flash_placement import fixture
     from tests.test_glm_flash_image_generation import text_fixture,vision
     from tests.test_glm_flash_vision import control

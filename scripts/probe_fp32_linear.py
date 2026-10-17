@@ -2,8 +2,8 @@
 import json
 import torch
 import triton
-from dllm.kernels import _linear_fp32
-from dllm.runtime import require_gpu
+from damendaemon.kernels import _linear_fp32
+from damendaemon.runtime import require_gpu
 
 
 @torch.inference_mode()

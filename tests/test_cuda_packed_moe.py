@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.cuda_packed_expert import CudaPackedExpert
-from dllm.cuda_packed_moe import _accumulate, _accumulate_batched, cuda_packed_moe
+from damendaemon.cuda_packed_expert import CudaPackedExpert
+from damendaemon.cuda_packed_moe import _accumulate, _accumulate_batched, cuda_packed_moe
 
 
 class CudaPackedMoeTests(unittest.TestCase):
@@ -62,8 +62,8 @@ class CudaPackedMoeTests(unittest.TestCase):
         ids=torch.tensor([[1,0]]);weights=torch.tensor([[.5,.5]])
         with self.assertRaises(ValueError):cuda_packed_moe(x,bank,ids,weights,batched=True)
         real=self.batched_bank('cpu')
-        with patch('dllm.cuda_packed_moe._validate'), \
-                patch('dllm.cuda_packed_moe._accumulate_batched',return_value=x) as compute:
+        with patch('damendaemon.cuda_packed_moe._validate'), \
+                patch('damendaemon.cuda_packed_moe._accumulate_batched',return_value=x) as compute:
             cuda_packed_moe(x,real,ids,weights,batched=True)
             compute.assert_called_once()
             compute.reset_mock()
@@ -75,7 +75,7 @@ class CudaPackedMoeTests(unittest.TestCase):
         with FakeTensorMode():
             bank=self.bank('cuda:0');x=torch.empty(0,2,device='cuda:0')
             ids=torch.empty(0,2,device='cuda:0',dtype=torch.int64);weights=torch.empty(0,2,device='cuda:0')
-            with patch('dllm.cuda_packed_moe._accumulate',return_value=x) as compute:
+            with patch('damendaemon.cuda_packed_moe._accumulate',return_value=x) as compute:
                 self.assertIs(cuda_packed_moe(x,bank,ids,weights),x)
                 compute.reset_mock()
                 for bad in (torch.empty(0,2),torch.empty(0,3,device='cuda:0')):
@@ -88,7 +88,7 @@ class CudaPackedMoeTests(unittest.TestCase):
     def test_invalid_route_rejected_before_group_allocation(self):
         # CPU control of value validation, explicitly bypassing device admission.
         bank=self.bank('cpu');x=torch.ones(1,2);weights=torch.ones(1,1)
-        with patch('dllm.cuda_packed_moe._validate'), patch('dllm.cuda_packed_moe._accumulate') as compute:
+        with patch('damendaemon.cuda_packed_moe._validate'), patch('damendaemon.cuda_packed_moe._accumulate') as compute:
             for value in (-1,2,2**60):
                 with self.assertRaises(ValueError):cuda_packed_moe(x,bank,torch.tensor([[value]]),weights)
             compute.assert_not_called()

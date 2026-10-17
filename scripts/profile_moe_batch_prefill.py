@@ -6,9 +6,9 @@ from pathlib import Path
 import time
 from types import MethodType
 import torch
-from dllm.models import load
-from dllm.moe import OlmoeExecutor
-from dllm.runtime import make_executor, require_gpu
+from damendaemon.models import load
+from damendaemon.moe import OlmoeExecutor
+from damendaemon.runtime import make_executor, require_gpu
 from scripts.experiments.moe_batched_prefill import install_validation_dispatch
 
 
@@ -31,7 +31,7 @@ def main():
     report = dict(passed=False, model=args.model, device=torch.cuda.get_device_name(),
                   context=2048, max_batch=4, quantization=source.quantization,
                   scope='direct packed prefill; same resident weights; control/candidate/candidate/control; excluded warmups',
-                  control_sha256=hashlib.sha256(Path('dllm/moe.py').read_bytes()).hexdigest(),
+                  control_sha256=hashlib.sha256(Path('damendaemon/moe.py').read_bytes()).hexdigest(),
                   dispatch=dispatch, cases=[])
     corpus = source.raw_tokens('The library contains books about oceans and mountains. ')*100
     def check(actual, target):

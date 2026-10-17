@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import MagicMock, patch
 
-from dllm.admission import wait_for_batch
+from damendaemon.admission import wait_for_batch
 
 
 def request(alias='a',command=None):
@@ -25,14 +25,14 @@ class AdmissionTests(unittest.TestCase):
     def test_new_arrival_wakes_without_consuming_or_reordering_requests(self):
         runtime=self.runtime();incoming=request()
         runtime.condition.wait.side_effect=lambda **_:runtime.pending.append(incoming)
-        with patch('dllm.admission.time.monotonic',return_value=0):
+        with patch('damendaemon.admission.time.monotonic',return_value=0):
             wait_for_batch(runtime,request(),.001)
         runtime.condition.wait.assert_called_once_with(timeout=.001)
         self.assertEqual(list(runtime.pending),[incoming])
 
     def test_deadline_close_cancel_and_single_slot_do_not_wait(self):
         runtime=self.runtime()
-        with patch('dllm.admission.time.monotonic',side_effect=[0,.002]):
+        with patch('damendaemon.admission.time.monotonic',side_effect=[0,.002]):
             wait_for_batch(runtime,request(),.001)
         runtime.condition.wait.assert_not_called()
         wait_for_batch(runtime,request(),0)
@@ -48,7 +48,7 @@ class AdmissionTests(unittest.TestCase):
         finished=request();finished.done.set();cancelled=request();cancelled.cancelled.set()
         runtime=self.runtime(finished,cancelled);incoming=request()
         runtime.condition.wait.side_effect=lambda **_:runtime.pending.append(incoming)
-        with patch('dllm.admission.time.monotonic',return_value=0):
+        with patch('damendaemon.admission.time.monotonic',return_value=0):
             wait_for_batch(runtime,request(),.001)
         runtime.condition.wait.assert_called_once()
         self.assertEqual(list(runtime.pending),[finished,cancelled,incoming])
@@ -90,22 +90,22 @@ if __name__=='__main__':unittest.main()
 
 class QueueLimitTests(unittest.TestCase):
     def test_invalid_limits_fail_before_gpu_initialization(self):
-        from dllm.runtime import Runtime
-        from dllm.scheduler import BatchedRuntime
+        from damendaemon.runtime import Runtime
+        from damendaemon.scheduler import BatchedRuntime
         from unittest.mock import patch
         invalid = [(value, 120) for value in (True, 1.5, 0, -1, None)]
         invalid += [(8, value) for value in (True, 0, -1, float('nan'), float('inf'), 1e100, 10**1000, None)]
         for constructor in (Runtime, BatchedRuntime):
             for capacity, timeout in invalid:
                 with self.subTest(constructor=constructor, capacity=capacity, timeout=timeout), \
-                        patch('dllm.runtime.require_gpu') as gpu, self.assertRaises(ValueError):
+                        patch('damendaemon.runtime.require_gpu') as gpu, self.assertRaises(ValueError):
                     constructor({}, queue_size=capacity, queue_timeout=timeout)
                 gpu.assert_not_called()
 
     def test_scheduler_forwards_limits_to_inner_runtime(self):
-        from dllm.scheduler import BatchedRuntime
+        from damendaemon.scheduler import BatchedRuntime
         from unittest.mock import patch
-        with patch('dllm.scheduler.Runtime') as inner:
+        with patch('damendaemon.scheduler.Runtime') as inner:
             runtime = BatchedRuntime({}, batch_size=2, queue_size=6, queue_timeout=.25)
             try:
                 self.assertEqual(inner.call_args.kwargs['queue_size'], 6)

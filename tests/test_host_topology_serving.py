@@ -6,14 +6,14 @@ import unittest
 from unittest.mock import patch
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError
-from dllm.cpu_hybrid_checkpoint import load_cpu_checkpoint
-from dllm.cpu_pipeline_generation import CpuPipelineReferenceGenerator
-from dllm.cpu_reference_text import CpuReferenceText,read_json
-from dllm.host_topology import HostTopology
-from dllm.host_serving import HostServingPair,HostServingTopology,HostDistributedRuntime,handler_for_host
-from dllm.http_auth import AuthPolicy
-from dllm.runtime import BusyError
-from dllm.server import BoundedHTTPServer
+from damendaemon.cpu_hybrid_checkpoint import load_cpu_checkpoint
+from damendaemon.cpu_pipeline_generation import CpuPipelineReferenceGenerator
+from damendaemon.cpu_reference_text import CpuReferenceText,read_json
+from damendaemon.host_topology import HostTopology
+from damendaemon.host_serving import HostServingPair,HostServingTopology,HostDistributedRuntime,handler_for_host
+from damendaemon.http_auth import AuthPolicy
+from damendaemon.runtime import BusyError
+from damendaemon.server import BoundedHTTPServer
 from tests import test_cpu_host_pipeline_build as builders
 from tests.test_cpu_pipeline_generation import tokenizer,OPTIONS
 from tests.test_distributed_drain import wait_for

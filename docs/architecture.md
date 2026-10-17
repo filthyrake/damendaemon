@@ -2,7 +2,7 @@
 
 ## Current execution architecture
 
-dllm owns its forward passes, model lifecycle, scheduling and serving API.
+damendaemon owns its forward passes, model lifecycle, scheduling and serving API.
 The runtime does not wrap vLLM, llama.cpp or Ollama. Python currently implements
 control and scheduling; GPU work runs through Triton, native CUDA/C++ or Metal
 kernels and PyTorch GPU operations. PyTorch provides tensor storage, CUDA graph
@@ -67,7 +67,7 @@ expand the implemented scope in the linked support matrix.
 
 ## Product contract
 
-dllm owns model discovery, lifecycle, scheduling, and the user interface. A
+damendaemon owns model discovery, lifecycle, scheduling, and the user interface. A
 single persistent API accepts a model name on each request. Loading another
 model does not require restarting that API. Existing streams drain before their
 model is evicted; a deadline or explicit cancellation may terminate them.
@@ -78,7 +78,7 @@ mature kernel libraries where licensing permits instead of rebuilding every
 matrix multiplication. The primary test device is the A2 on the lab VM. The A30 and desktop 3090
 are also authorized for bounded tests that preserve their existing services;
 the M4 laptop supplies Apple evidence. GPU experiments run sequentially so
-measurements do not contend with other dllm validation jobs.
+measurements do not contend with other damendaemon validation jobs.
 
 ## Split responsibilities
 
@@ -147,7 +147,7 @@ and attribution for any reused implementation.
 
 ## Evidence required before calling it fast
 
-Compare dllm with vLLM and llama.cpp on the same device, model revision,
+Compare damendaemon with vLLM and llama.cpp on the same device, model revision,
 quantization, prompt/output tokens, context size, and sampling settings. Keep
 single-user decode and concurrent throughput as separate results. Record p50/p95
 first-output latency, total latency, total output tokens/wall time, failures,

@@ -2,7 +2,7 @@
 import hashlib
 from pathlib import Path
 import torch
-from dllm import awq_kernels
+from damendaemon import awq_kernels
 from . import awq_gemv
 
 

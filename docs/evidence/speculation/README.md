@@ -8,16 +8,16 @@ proposal tests; oracle figures there are not actual feature performance.
 
 ## Supported opt-in path
 
-`DLLM_SPECULATIVE_TOKENS=2|4|8` enables one bounded CUDA verifier graph per
+`DAMENDAEMON_SPECULATIVE_TOKENS=2|4|8` enables one bounded CUDA verifier graph per
 eligible executor; default0 keeps ordinary decoding. Qualified pinned models:
 Qwen2.5-0.5B-Instruct (`7ae557604adf67be50417f59c2c2f167def9a775`) and
 Qwen3-0.6B (`c1899de289a04d12100db370d81485cdf75e47ca`) on A2. Qwen2 uses its
 existing FP16 policy. These Qwen3 measurements use the default `standard`
 policy: FP16 compute/KV with FP32 residual accumulation. They do not use
-`DLLM_QWEN3_PRECISION=float32`; the standard mode retains its separately
+`DAMENDAEMON_QWEN3_PRECISION=float32`; the standard mode retains its separately
 documented long-context independent-reference gap.
 Qwen3-1.7B is also qualified below. Llama3.2-1B requires explicit
-`DLLM_LLAMA_PRECISION=float32`; its default mixed policy remains excluded.
+`DAMENDAEMON_LLAMA_PRECISION=float32`; its default mixed policy remains excluded.
 See the [Llama precision gate and cost](llama/README.md).
 
 The HTTP scheduler uses speculation only for one active greedy request with
@@ -171,7 +171,7 @@ matrix storage dtypes plus the selected precision policies to prevent ambiguity.
 
 ## Explicit higher-precision Qwen3 qualification
 
-A subsequent run explicitly sets `DLLM_QWEN3_PRECISION=float32`. Its report
+A subsequent run explicitly sets `DAMENDAEMON_QWEN3_PRECISION=float32`. Its report
 records FP32 compute/residual/KV, FP16 stored matrices, and the actual `float32`
 policy for both pinned Qwen3 sizes. The full HTTP suite passes exact responses,
 streaming, sampling/penalty/logprob/stop/schema fallback, concurrency, disconnect

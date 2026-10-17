@@ -11,9 +11,9 @@ import socket
 import statistics
 import time
 import torch
-from dllm.qwen2 import ModelWeights
-from dllm.runtime import require_gpu, make_executor
-from dllm.stage_identity import fingerprint
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.runtime import require_gpu, make_executor
+from damendaemon.stage_identity import fingerprint
 
 
 @torch.inference_mode()

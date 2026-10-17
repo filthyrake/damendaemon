@@ -11,8 +11,8 @@ import unittest
 from contextlib import redirect_stderr
 from unittest.mock import patch
 import torch
-from dllm.cpu_reference_text import CpuReferenceText
-from dllm.cpu_snapshot_identity import fingerprint
+from damendaemon.cpu_reference_text import CpuReferenceText
+from damendaemon.cpu_snapshot_identity import fingerprint
 from scripts import run_glm_host_topology as cli,run_cpu_host_topology as shared
 from tests import test_cpu_host_topology_command as prior
 from tests.test_glm_generation import text_fixture
@@ -30,7 +30,7 @@ class GlmHostTopologyCommandTests(unittest.TestCase):
         self.cert=credentials();self.plan=self.path/'plan.json';self.peers=self.path/'peers.json'
         self.batch=self.path/'batch.json'
         self.batch.write_text(json.dumps([dict(prompt='ab',max_new_tokens=3),dict(tokens=[3],max_new_tokens=1)]))
-        self.environment={k:v for k,v in os.environ.items() if not k.startswith('DLLM_')}
+        self.environment={k:v for k,v in os.environ.items() if not k.startswith('DAMENDAEMON_')}
         self.environment.update(OMP_NUM_THREADS='1',MKL_NUM_THREADS='1')
         self.fixture=SimpleNamespace(batch=self.batch,environment=self.environment)
         self.snapshot(3)

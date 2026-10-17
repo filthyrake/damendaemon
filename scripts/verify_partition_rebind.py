@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 from unittest.mock import patch
 import torch
-from dllm.runtime import Runtime
+from damendaemon.runtime import Runtime
 
 
 def storage(executor):
@@ -47,7 +47,7 @@ def main():
     assert Path(traces['a']['path']).resolve()!=Path(traces['b']['path']).resolve()
     difference=(traces['a']['trace'][0]['targets'][0]-traces['b']['trace'][0]['targets'][0]).abs().max().item()
     assert difference>.5,'fixture must distinguish unchanged weights from replacement'
-    os.environ.update(DLLM_EXPERIMENTAL_LAYER_SPLIT='12',DLLM_PARTITION_REBIND='1',DLLM_QUANTIZATION=quantization)
+    os.environ.update(DAMENDAEMON_EXPERIMENTAL_LAYER_SPLIT='12',DAMENDAEMON_PARTITION_REBIND='1',DAMENDAEMON_QUANTIZATION=quantization)
     runtime=Runtime({alias:t['path'] for alias,t in traces.items()},context=512,batch_size=4,gpu_models=1,host_models=2)
     report=dict(passed=False,quantization=quantization,reference_target_difference=difference,runs=[],
         scope='same-host partition weight rebind correctness and failure proof; timings are not an ABBA benchmark')
@@ -91,7 +91,7 @@ def main():
             report['fresh_recovery']=dict(source_tier=tier,activation_seconds=seconds,checks=replay(replacement,traces['a']))
         if args.inject_packed_refresh_failure:
             if report['stage_adjacent_weight_count']:
-                from dllm import q4_stage as q4_adjacent_body
+                from damendaemon import q4_stage as q4_adjacent_body
             else:
                 from scripts.experiments import q4_adjacent_body
             original_repack=q4_adjacent_body.repack_adjacent;refresh_calls=0

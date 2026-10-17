@@ -17,7 +17,7 @@ from urllib.error import HTTPError
 from urllib.request import Request,urlopen
 import torch
 from tokenizers import Tokenizer
-from dllm.bench import events
+from damendaemon.bench import events
 
 
 def cases_from_trace(trace):
@@ -56,21 +56,21 @@ def main():
         trace_sha256=hashlib.sha256(Path(args.trace).read_bytes()).hexdigest(),checks=[],trials=[],statuses={},
         injected_stage_failure=args.inject_stage_failure,allocation_diagnostics=args.allocation_diagnostics,
         experimental_q4_body=args.experimental_q4_body,scope='same-host two-GPU HTTP qualification')
-    with tempfile.TemporaryDirectory(prefix='dllm-partition-http-') as directory:
+    with tempfile.TemporaryDirectory(prefix='damendaemon-partition-http-') as directory:
         logpath=Path(directory)/'server.log'
-        env={**os.environ,'DLLM_QUANTIZATION':report['quantization'],'DLLM_DEVICE':'cuda'}
+        env={**os.environ,'DAMENDAEMON_QUANTIZATION':report['quantization'],'DAMENDAEMON_DEVICE':'cuda'}
         with logpath.open('w') as log:
             command=([sys.executable,__file__,'--failure-server'] if args.inject_stage_failure else
                      [sys.executable,__file__,'--diagnostic-server'] if args.allocation_diagnostics else
                      [sys.executable,'-m','scripts.experiments.run_q4_body','--body-kernel',args.experimental_q4_body] if args.experimental_q4_body else
-                     [sys.executable,'-m','dllm'])
+                     [sys.executable,'-m','damendaemon'])
             process=subprocess.Popen([*command,'serve','--port','0','--context','512','--layer-split','12',
                 '--batch-size','4','--batch-wait-ms','10','--gpu-models','1','--host-models','2','--host-gib','8',
                 '--model','a='+model,'--model','b='+model],stdout=log,stderr=log,env=env)
             try:
                 deadline=time.monotonic()+120
                 while time.monotonic()<deadline and process.poll() is None:
-                    lines=[line for line in logpath.read_text().splitlines() if line.startswith('dllm listening on ')]
+                    lines=[line for line in logpath.read_text().splitlines() if line.startswith('damendaemon listening on ')]
                     if lines:base=lines[-1].split()[-1];break
                     time.sleep(.1)
                 else:raise RuntimeError(logpath.read_text())
@@ -91,7 +91,7 @@ def main():
                     assert result['usage']['prompt_tokens']==len(case['prompt']),label
                     assert result['usage']['completion_tokens']==len(tokens),label
                     report['checks'].append(label)
-                    report['trials'].append(dict(label=label,wall_seconds=result['wall_seconds'],timing=result['dllm_timing']))
+                    report['trials'].append(dict(label=label,wall_seconds=result['wall_seconds'],timing=result['damendaemon_timing']))
                 def status(label):
                     value=call('/v1/models/status');report['statuses'][label]=value;return value
                 status('initial')
@@ -105,26 +105,26 @@ def main():
                     failed=status('failed-executor')
                     assert failed['models'][0]['executor_failed']
                     result=request();check(result,label='reactivation-after-partial-stage-failure')
-                    assert result['dllm_timing']['source_tier']=='host'
+                    assert result['damendaemon_timing']['source_tier']=='host'
                     assert not status('reactivated')['models'][0]['executor_failed']
                 for index in range(len(cases)):check(request(index),index,label='independent:'+str(index))
                 loaded=status('loaded');assert len(loaded['cuda_devices'])==2
                 assert [s['layers'] for s in loaded['models'][0]['partition']]==[[0,12],[12,24]]
                 assert all(s['kv_bytes']==12582912 for s in loaded['models'][0]['partition'])
                 if not args.experimental_q4_body:
-                    from dllm.partition_policy import q4_stage_adjacent_enabled
+                    from damendaemon.partition_policy import q4_stage_adjacent_enabled
                     layout='q4-adjacent-body' if q4_stage_adjacent_enabled(report['quantization']) else 'canonical'
                     assert all(s['weight_layout']==layout for s in loaded['models'][0]['partition'])
                     if layout=='q4-adjacent-body':
-                        from dllm.q4_stage import runtime_rows_enabled
+                        from damendaemon.q4_stage import runtime_rows_enabled
                         assert all(s['runtime_row_bounds']==runtime_rows_enabled() for s in loaded['models'][0]['partition'])
-                        from dllm.partition_policy import q4_stage_runtime_rope_enabled
+                        from damendaemon.partition_policy import q4_stage_runtime_rope_enabled
                         assert all(s['runtime_rope_tokens']==q4_stage_runtime_rope_enabled(report['quantization']) for s in loaded['models'][0]['partition'])
                 counts=(2,8,4,6)
                 with ThreadPoolExecutor(4) as pool:
                     responses=list(pool.map(lambda pair:request(pair[0],count=pair[1]),enumerate(counts)))
                 for index,result in enumerate(responses):check(result,index,counts[index],'concurrent-shrinking:'+str(index))
-                assert max(r['dllm_timing']['max_batch_size'] for r in responses)>=2
+                assert max(r['damendaemon_timing']['max_batch_size'] for r in responses)>=2
                 with opened('/v1/completions',{**body(),'stream':True,'stream_options':{'include_usage':True}}) as response:
                     chunks=list(events(response, require_terminated=True))
                 assert chunks[-1]=='[DONE]'
@@ -156,7 +156,7 @@ def main():
                 report['checks'].append('seeded-sampling-and-penalties')
                 check(request(alias='b'),label='second-alias')
                 restored=request();check(restored,label='host-restore')
-                assert restored['dllm_timing']['source_tier']=='host'
+                assert restored['damendaemon_timing']['source_tier']=='host'
                 for alias in ('a','b'):call('/v1/models/unload',dict(model=alias,release_host=True))
                 unloaded=status('unloaded')
                 assert unloaded['host_cached_bytes']==0 and all(m['partition'] is None for m in unloaded['models'])
@@ -186,7 +186,7 @@ def main():
 
 if __name__=='__main__':
     if len(sys.argv)>1 and sys.argv[1]=='--failure-server':
-        from dllm.layer_stage import LayerStage
+        from damendaemon.layer_stage import LayerStage
         original=LayerStage.run_decode
         state={'failed':False}
         def fail_once(stage,*args,**kwargs):
@@ -196,10 +196,10 @@ if __name__=='__main__':
             return original(stage,*args,**kwargs)
         LayerStage.run_decode=fail_once
         del sys.argv[1]
-        from dllm.cli import main as serve
+        from damendaemon.cli import main as serve
         serve()
     elif len(sys.argv)>1 and sys.argv[1]=='--diagnostic-server':
-        from dllm.runtime import Runtime
+        from damendaemon.runtime import Runtime
         torch.cuda.memory._record_memory_history(max_entries=20000)
         original_status=Runtime._status
         def diagnostic_status(runtime):
@@ -213,6 +213,6 @@ if __name__=='__main__':
             return result
         Runtime._status=diagnostic_status
         del sys.argv[1]
-        from dllm.cli import main as serve
+        from damendaemon.cli import main as serve
         serve()
     else:main()

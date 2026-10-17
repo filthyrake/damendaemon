@@ -39,7 +39,7 @@ def main():
     output = Path(args.output)
     output.write_text(json.dumps(report, indent=2)+'\n')
     try:
-        with tempfile.TemporaryDirectory(prefix='dllm-job-deadline-') as directory:
+        with tempfile.TemporaryDirectory(prefix='damendaemon-job-deadline-') as directory:
             worker = Path(directory)/'worker.py'
             worker.write_text(WORKER)
             command = [sys.executable, '-m', 'torch.distributed.run', '--standalone', '--nproc-per-node=2',

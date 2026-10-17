@@ -6,22 +6,22 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_flash_host_image_generation import HostFlashImageGenerator,native_image_session_identity,load_host_image_vision
-from dllm.glm_flash_host_generation import HostFlashGenerator,native_session_identity,native_excluded_ids
-from dllm.glm_flash_image_tool_text import FlashImageToolText
-from dllm.glm_flash_image_tool_generation import FlashImageToolReferenceGenerator
-from dllm.glm_flash_host_pipeline_build import build_glm_flash_host_pipeline_worker
-from dllm.glm_flash_reference_loader import load_reference_model
-from dllm.glm_flash_vision_loader import load_reference_vision
-from dllm.glm_flash_images import prepare_images
-from dllm.glm_flash_image_embeddings import image_embeddings
-from dllm.host_topology import HostTopology
-from dllm.host_tensor_channel import HostTensorChannel
-from dllm.cpu_snapshot_identity import fingerprint
-from dllm.glm_flash_tools import FlashTools
-from dllm.glm_text import END_THINK,EOS
-from dllm.stage_protocol import PREFILL_CHUNK
-from dllm.reference_cancellation import cancellation_scope,ReferenceCancelled
+from damendaemon.glm_flash_host_image_generation import HostFlashImageGenerator,native_image_session_identity,load_host_image_vision
+from damendaemon.glm_flash_host_generation import HostFlashGenerator,native_session_identity,native_excluded_ids
+from damendaemon.glm_flash_image_tool_text import FlashImageToolText
+from damendaemon.glm_flash_image_tool_generation import FlashImageToolReferenceGenerator
+from damendaemon.glm_flash_host_pipeline_build import build_glm_flash_host_pipeline_worker
+from damendaemon.glm_flash_reference_loader import load_reference_model
+from damendaemon.glm_flash_vision_loader import load_reference_vision
+from damendaemon.glm_flash_images import prepare_images
+from damendaemon.glm_flash_image_embeddings import image_embeddings
+from damendaemon.host_topology import HostTopology
+from damendaemon.host_tensor_channel import HostTensorChannel
+from damendaemon.cpu_snapshot_identity import fingerprint
+from damendaemon.glm_flash_tools import FlashTools
+from damendaemon.glm_text import END_THINK,EOS
+from damendaemon.stage_protocol import PREFILL_CHUNK
+from damendaemon.reference_cancellation import cancellation_scope,ReferenceCancelled
 from tests import test_host_tls,test_host_pipeline_worker
 from tests.test_glm_flash_inline_images import snapshot
 from tests.test_glm_tools import TOOLS,CALLS
@@ -126,7 +126,7 @@ class FlashHostImageGenerationTests(unittest.TestCase):
         self.assertEqual(owners[0].channel.state.sequence,before);self.assertTrue(owners[0].ready)
 
     def test_policy_geometry_and_verified_vision_admission(self):
-        from dllm.glm_flash_tool_text import FlashToolText
+        from damendaemon.glm_flash_tool_text import FlashToolText
         text=FlashToolText(self.path,vocab_size=self.text.vocab_size)
         self.assertNotEqual(native_image_session_identity(self.text),native_session_identity(text))
         self.assertNotEqual(native_image_session_identity(self.text),native_image_session_identity(self.text,verified=True))
@@ -189,11 +189,11 @@ class FlashHostImageGenerationTests(unittest.TestCase):
     def test_verified_vision_detects_source_mismatch_and_change_during_load(self):
         _,owners,_=self.session(verified=True,claim=False)
         path=self.path/'tokenizer.json';original=path.read_bytes();path.write_bytes(original+b' ')
-        with patch('dllm.glm_flash_vision_loader.load_reference_vision',side_effect=AssertionError('payload before source validation')):
+        with patch('damendaemon.glm_flash_vision_loader.load_reference_vision',side_effect=AssertionError('payload before source validation')):
             with self.assertRaisesRegex(ValueError,'snapshot differs'):load_host_image_vision(self.path,owners[0])
         path.write_bytes(original)
         def changed(*args,**kwargs):
             result=load_reference_vision(*args,**kwargs);path.write_bytes(original+b' ');return result
-        with patch('dllm.glm_flash_vision_loader.load_reference_vision',changed):
+        with patch('damendaemon.glm_flash_vision_loader.load_reference_vision',changed):
             with self.assertRaisesRegex(ValueError,'snapshot file changed'):load_host_image_vision(self.path,owners[0])
         self.assertTrue(owners[0].ready);self.assertIsNone(getattr(owners[0],'_completion_owner',None))

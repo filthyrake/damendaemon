@@ -2,7 +2,7 @@
 import argparse
 import json
 
-from dllm.deepseek_checkpoint import audit_snapshot
+from damendaemon.deepseek_checkpoint import audit_snapshot
 
 
 def main():

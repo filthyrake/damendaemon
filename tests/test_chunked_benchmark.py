@@ -27,7 +27,7 @@ class Process:
     def kill(self): raise AssertionError('not needed')
 def launch(command, stdout, **kwargs):
     chunk[0] = int(command[command.index('--prefill-chunk-size')+1])
-    stdout.write('dllm listening on http://unused.invalid\n'); stdout.flush()
+    stdout.write('damendaemon listening on http://unused.invalid\n'); stdout.flush()
     process=Process(); processes.append(process); return process
 def response(request, **kwargs):
     body=json.loads(request.data)

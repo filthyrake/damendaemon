@@ -1,7 +1,7 @@
 import unittest
 import torch
 from types import SimpleNamespace
-from dllm.cuda_deepseek_block import CudaDeepSeekBlock,_Backend
+from damendaemon.cuda_deepseek_block import CudaDeepSeekBlock,_Backend
 
 
 class CudaBlockAdmissionTests(unittest.TestCase):
@@ -15,5 +15,5 @@ class CudaBlockAdmissionTests(unittest.TestCase):
         device=torch.device('cuda:0')
         backend=_Backend(SimpleNamespace(device=device),1024,1024)
         block=SimpleNamespace(hc_mult=2,dim=8,table=None,weights={})
-        with FakeTensorMode(),patch('dllm.cuda_deepseek_block.finite',side_effect=AssertionError('scan before admission')):
+        with FakeTensorMode(),patch('damendaemon.cuda_deepseek_block.finite',side_effect=AssertionError('scan before admission')):
             with self.assertRaises(ValueError):backend.admit(torch.empty(1,3,2,8,device=device),None,block)

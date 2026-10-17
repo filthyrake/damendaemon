@@ -3,7 +3,7 @@ import json
 import statistics
 import time
 import torch
-from dllm.metal_kernels import library, _SOURCE
+from damendaemon.metal_kernels import library, _SOURCE
 
 
 @torch.inference_mode()

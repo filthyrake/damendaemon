@@ -1,6 +1,6 @@
 # Parallel Mamba-2 prefill experiment
 
-`DLLM_MAMBA2_SSD=1` opts into a block-SSD prefill kernel on CUDA Ampere or newer
+`DAMENDAEMON_MAMBA2_SSD=1` opts into a block-SSD prefill kernel on CUDA Ampere or newer
 with at least 99 KiB shared memory per block. It is selected only for prompts/
 chunks of at least 128 tokens with the qualified 130M geometry (inner1536,
 head64, state128). Short prompts, decode and other shapes retain recurrent scan.
@@ -28,16 +28,16 @@ Native recurrence-stage medians for 1536 tokens, one row/reset: 15.32 ms serial
 versus 4.91 ms SSD; these isolate one layer's recurrence, not full inference.
 Serving comparison uses the pinned original FP32 checkpoint, exact same 1536
 input IDs, context2048, 32 outputs and five warm rounds on A2. Every trial's
-output text agrees across all three engines and both dllm implementations.
+output text agrees across all three engines and both damendaemon implementations.
 
 | Engine / path | c1 tokens/s | c2 | c4 | First text ms c1 / c2 / c4 |
 |---|---:|---:|---:|---|
-| dllm serial recurrence | 52.06 | 54.51 | 58.40 | 495.27 / 744.75 / 1975.76 |
-| dllm block SSD | 86.22 | 94.10 | 106.84 | 246.36 / 371.12 / 980.12 |
+| damendaemon serial recurrence | 52.06 | 54.51 | 58.40 | 495.27 / 744.75 / 1975.76 |
+| damendaemon block SSD | 86.22 | 94.10 | 106.84 | 246.36 / 371.12 / 980.12 |
 | llama.cpp | 90.54 | 100.95 | 117.39 | 172.45 / 365.07 / 759.25 |
 | vLLM | 117.41 | 137.84 | 164.76 | 157.33 / 232.45 / 473.02 |
 
-This halves dllm first-token latency but does not close the long-prompt gap.
+This halves damendaemon first-token latency but does not close the long-prompt gap.
 The CUDA profile attributes about 117.6 ms/prompt to SSD and 103.6 ms to the
 two main FP32 matrix-multiply shapes, out of 239.3 ms recorded device work.
 Decode remains dominated by matrix-vector projection (3.13 of 3.53 ms/token).
@@ -72,9 +72,9 @@ long-prompt vLLM gap remains. Independent GPU jobs were serialized on A2.
 
 ## Compensated projection experiment
 
-`DLLM_MAMBA2_COMPENSATED=1` adds an independent opt-in CUDA prefill projection
+`DAMENDAEMON_MAMBA2_COMPENSATED=1` adds an independent opt-in CUDA prefill projection
 path for unquantized 130M geometry, at 128 or more packed prompt rows. It reuses
-dllm's existing power-of-two-scaled high/low FP16 activation decomposition and
+damendaemon's existing power-of-two-scaled high/low FP16 activation decomposition and
 FP32 accumulation. Every selected checkpoint weight must be finite and exactly
 representable as FP16, checked before GPU allocation; Q8 and unqualified
 geometries/devices reject the option. Resident weights remain FP32 and each

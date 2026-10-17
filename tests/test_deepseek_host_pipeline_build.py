@@ -4,12 +4,12 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.cpu_snapshot_identity import fingerprint
-from dllm.deepseek_host_pipeline_build import build_deepseek_host_pipeline_worker,DeepSeekHostPipelineBuildError
-from dllm.host_topology import HostTopology
+from damendaemon.cpu_snapshot_identity import fingerprint
+from damendaemon.deepseek_host_pipeline_build import build_deepseek_host_pipeline_worker,DeepSeekHostPipelineBuildError
+from damendaemon.host_topology import HostTopology
 from tests import test_cpu_host_pipeline_build as hybrid_tests
 from tests.test_deepseek_reference_loader import fixture
-from dllm.deepseek_reference_loader import load_reference_model
+from damendaemon.deepseek_reference_loader import load_reference_model
 
 
 class DeepSeekHostPipelineBuildTests(unittest.TestCase):
@@ -70,7 +70,7 @@ class DeepSeekHostPipelineBuildTests(unittest.TestCase):
                 self.assertTrue(all(link.closed for link in links))
 
     def test_snapshot_change_after_loading_or_slot_construction_rejected(self):
-        import dllm.deepseek_host_pipeline_build as builder
+        import damendaemon.deepseek_host_pipeline_build as builder
         for target in ('load_reference_stage','_OwnedDeepSeekHostStage'):
             with self.subTest(target=target):
                 plan=self.plan();links=self.links(plan)[0];original=getattr(builder,target)

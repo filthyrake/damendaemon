@@ -12,9 +12,9 @@ import torch
 import triton
 import triton.testing
 
-from dllm.gguf_model import GgufWeights
-from dllm.native_kquant import library, linear_if_enabled
-from dllm.runtime import require_gpu
+from damendaemon.gguf_model import GgufWeights
+from damendaemon.native_kquant import library, linear_if_enabled
+from damendaemon.runtime import require_gpu
 
 
 def digest(path):
@@ -50,13 +50,13 @@ def main():
             bias = torch.randn(outputs, device='cuda', dtype=torch.float16)
             for rows in (1, 2, 4):
                 x = torch.randn(rows, width, device='cuda', dtype=torch.float16)
-                os.environ['DLLM_KQUANT_CUDA_LIBRARY'] = paths[0]
+                os.environ['DAMENDAEMON_KQUANT_CUDA_LIBRARY'] = paths[0]
                 expected = linear_if_enabled(x, weight, layout, bias)
                 case = dict(name=name, width=width, outputs=outputs, rows=rows,
                             formats=spec, rounds=[])
                 report['cases'].append(case)
                 for path in paths + paths[::-1]:
-                    os.environ['DLLM_KQUANT_CUDA_LIBRARY'] = path
+                    os.environ['DAMENDAEMON_KQUANT_CUDA_LIBRARY'] = path
                     actual = linear_if_enabled(x, weight, layout, bias)
                     item = dict(library=path, passed=bool(torch.isfinite(actual).all()
                                                         and torch.equal(actual, expected)))

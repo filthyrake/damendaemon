@@ -119,7 +119,7 @@ void launch(const int8_t* q1, const int8_t* q2, const float4* scales, const uint
     #undef LAUNCH
 }
 
-extern "C" int dllm_residual_quantize(const void* x, void* q1, void* q2, void* scales, int rows, int k, void* stream) {
+extern "C" int damendaemon_residual_quantize(const void* x, void* q1, void* q2, void* scales, int rows, int k, void* stream) {
     if (!x || !q1 || !q2 || !scales || rows<1 || rows>4 || k<=0 || k%256) return cudaErrorInvalidValue;
     const int groups=rows*(k/32);
     quantize<<<(groups+3)/4,128,0,reinterpret_cast<cudaStream_t>(stream)>>>(
@@ -127,7 +127,7 @@ extern "C" int dllm_residual_quantize(const void* x, void* q1, void* q2, void* s
     return cudaGetLastError();
 }
 
-extern "C" int dllm_residual_gemv(const void* q1, const void* q2, const void* scales, const void* weights,
+extern "C" int damendaemon_residual_gemv(const void* q1, const void* q2, const void* scales, const void* weights,
                                   const void* bias, void* output, int rows, int n, int k,
                                   int first, int count, int kind, void* stream_pointer) {
     if (!q1 || !q2 || !scales || !weights || !output || rows<1 || rows>4 || n<=0 || k<=0 || k%256
@@ -141,4 +141,4 @@ extern "C" int dllm_residual_gemv(const void* q1, const void* q2, const void* sc
     return cudaGetLastError();
 }
 
-extern "C" int dllm_residual_abi_version() { return 101; }
+extern "C" int damendaemon_residual_abi_version() { return 101; }

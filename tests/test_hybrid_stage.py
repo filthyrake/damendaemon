@@ -4,8 +4,8 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.capacity import hybrid_state_bytes
-from dllm.hybrid_stage import HybridLayerStage, shard_model
+from damendaemon.capacity import hybrid_state_bytes
+from damendaemon.hybrid_stage import HybridLayerStage, shard_model
 from tests import test_hybrid_layer_range
 
 
@@ -17,8 +17,8 @@ class HybridStageTests(unittest.TestCase):
         self.model = self.fixture.fixture.model()
 
     def stage(self, start, end):
-        with patch('dllm.hybrid.selected_device', return_value='cpu'), \
-                patch('dllm.hybrid.empty_cache'), patch('dllm.hybrid.available_memory', return_value=2**40):
+        with patch('damendaemon.hybrid.selected_device', return_value='cpu'), \
+                patch('damendaemon.hybrid.empty_cache'), patch('damendaemon.hybrid.available_memory', return_value=2**40):
             return HybridLayerStage(self.model, start, end, max_batch=2)
 
     def test_shards_own_only_selected_weights_and_keep_global_indices(self):

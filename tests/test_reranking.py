@@ -2,8 +2,8 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from dllm.encoder import config
-from dllm.reranking import options,ranked,length_groups
+from damendaemon.encoder import config
+from damendaemon.reranking import options,ranked,length_groups
 
 
 class RerankingTests(unittest.TestCase):
@@ -56,7 +56,7 @@ class RerankingTests(unittest.TestCase):
                 with self.assertRaises(ValueError):config(root)
 
     def test_xlm_roberta_position_offset_and_architecture_dispatch(self):
-        from dllm.models import config as dispatch
+        from damendaemon.models import config as dispatch
         c={'model_type':'xlm-roberta','architectures':['XLMRobertaForSequenceClassification'],
             'hidden_size':8,'intermediate_size':16,'num_attention_heads':2,'num_hidden_layers':2,
             'max_position_embeddings':8194,'vocab_size':32,'type_vocab_size':1,
@@ -71,7 +71,7 @@ class RerankingTests(unittest.TestCase):
                 with self.assertRaises(ValueError):dispatch(root)
 
     def test_roberta_dispatch_and_unsupported_heads(self):
-        from dllm.models import config as dispatch
+        from damendaemon.models import config as dispatch
         c={'model_type':'roberta','architectures':['RobertaForSequenceClassification'],
            'hidden_size':8,'intermediate_size':16,'num_attention_heads':2,'num_hidden_layers':2,
            'max_position_embeddings':514,'vocab_size':32,'type_vocab_size':1,

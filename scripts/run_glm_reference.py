@@ -3,16 +3,16 @@ import argparse
 from contextlib import closing
 import json
 from pathlib import Path
-from dllm.checkpoint import _unique_fields
-from dllm.glm_text import GlmText,_read
-from dllm.glm_tool_text import GlmToolText
-from dllm.glm_tool_generation import GlmToolReferenceGenerator
-from dllm.glm_reference_loader import load_reference_model
-from dllm.glm_checkpoint_pipeline import load_reference_pipeline
-from dllm.glm_pipeline_generation import PipelineReferenceGenerator,PipelineToolReferenceGenerator
-from dllm.glm_generation import ReferenceGenerator,validate_text_config
-from dllm.glm_batch_generation import BatchReferenceGenerator
-from dllm.reference_batch import prepare_batch
+from damendaemon.checkpoint import _unique_fields
+from damendaemon.glm_text import GlmText,_read
+from damendaemon.glm_tool_text import GlmToolText
+from damendaemon.glm_tool_generation import GlmToolReferenceGenerator
+from damendaemon.glm_reference_loader import load_reference_model
+from damendaemon.glm_checkpoint_pipeline import load_reference_pipeline
+from damendaemon.glm_pipeline_generation import PipelineReferenceGenerator,PipelineToolReferenceGenerator
+from damendaemon.glm_generation import ReferenceGenerator,validate_text_config
+from damendaemon.glm_batch_generation import BatchReferenceGenerator
+from damendaemon.reference_batch import prepare_batch
 
 
 def _positive(value):

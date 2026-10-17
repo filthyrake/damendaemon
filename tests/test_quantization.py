@@ -5,7 +5,7 @@ from unittest.mock import patch
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import torch
-from dllm.quantization import quantize, dequantize, prepare, mode
+from damendaemon.quantization import quantize, dequantize, prepare, mode
 
 
 class QuantizationTests(unittest.TestCase):
@@ -19,19 +19,19 @@ class QuantizationTests(unittest.TestCase):
             if calls == 2:
                 self.assertIsNone(first(), 'converted source matrix stayed alive during later packing')
             return quantize(weight)
-        with patch('dllm.quantization.quantize', new=pack):
+        with patch('damendaemon.quantization.quantize', new=pack):
             scales = prepare(weights, 'q8_0')
         self.assertEqual(calls, 2)
         self.assertEqual(set(scales), set(weights))
 
     def test_metal_quantization_rejects_unqualified_formats_and_architectures(self):
-        from dllm.qwen2 import ModelWeights
+        from damendaemon.qwen2 import ModelWeights
         with TemporaryDirectory() as directory:
             (Path(directory)/'config.json').write_text('{}')
             for family,quantization in (('qwen2','q4_0'),('gemma3_text','q8_0'),('qwen3_5_text','q8_0')):
                 with self.subTest(family=family,quantization=quantization),\
-                        patch('dllm.qwen2.selected_device',return_value='mps'),\
-                        patch('dllm.qwen2.decoder_config',return_value={'model_type':family}),\
+                        patch('damendaemon.qwen2.selected_device',return_value='mps'),\
+                        patch('damendaemon.qwen2.decoder_config',return_value={'model_type':family}),\
                         self.assertRaisesRegex(ValueError,'Metal decoder quantization'):
                     ModelWeights(directory,512,quantization=quantization)
 
@@ -47,7 +47,7 @@ class QuantizationTests(unittest.TestCase):
     def test_quantizing_tied_head_preserves_embedding(self):
         embedding = torch.randn(64,96).half()
         weights = {'embed':embedding,'head':embedding,'norm':torch.ones(96)}
-        with patch.dict(os.environ, {'DLLM_QUANTIZATION':'q8_0'}):
+        with patch.dict(os.environ, {'DAMENDAEMON_QUANTIZATION':'q8_0'}):
             scales = prepare(weights)
         self.assertIs(weights['embed'],embedding)
         self.assertEqual(weights['embed'].dtype,torch.float16)
@@ -59,11 +59,11 @@ class QuantizationTests(unittest.TestCase):
         for value in (torch.zeros(1,31),torch.zeros(32),torch.full((1,32),float('nan'))):
             with self.assertRaises(ValueError):
                 quantize(value)
-        with patch.dict(os.environ, {'DLLM_QUANTIZATION':'q4'}), self.assertRaises(ValueError):
+        with patch.dict(os.environ, {'DAMENDAEMON_QUANTIZATION':'q4'}), self.assertRaises(ValueError):
             mode()
 
     def test_q4_blocks_signed_scales_and_nibble_order(self):
-        from dllm.quantization import quantize_q4,dequantize_q4
+        from damendaemon.quantization import quantize_q4,dequantize_q4
         weight=torch.arange(-8,8,dtype=torch.float32).repeat(2).reshape(1,32)
         data,scales=quantize_q4(weight)
         self.assertEqual(data.tolist(),[[i|(i<<4) for i in range(16)]])
@@ -76,7 +76,7 @@ class QuantizationTests(unittest.TestCase):
         self.assertTrue(torch.equal(dequantize_q4(data,scales),torch.zeros(2,64)))
 
     def test_q4_tied_head_and_invalid_weights(self):
-        from dllm.quantization import quantize_q4
+        from damendaemon.quantization import quantize_q4
         embedding=torch.randn(64,96).half()
         weights={'embed':embedding,'head':embedding,'norm':torch.ones(96)}
         scales=prepare(weights,'q4_0')

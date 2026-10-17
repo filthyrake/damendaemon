@@ -7,9 +7,9 @@ import torch
 import triton as tr
 import triton.language as tl
 import triton.testing
-from dllm.runtime import require_gpu
-from dllm.quantization import quantize_q4,dequantize_q4
-from dllm.quantized_kernels_q4 import linear
+from damendaemon.runtime import require_gpu
+from damendaemon.quantization import quantize_q4,dequantize_q4
+from damendaemon.quantized_kernels_q4 import linear
 
 
 @tr.jit

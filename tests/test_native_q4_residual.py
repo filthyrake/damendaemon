@@ -3,8 +3,8 @@ import unittest
 from unittest.mock import Mock,patch
 
 import torch
-from dllm.native_q4_residual import library,linear,qualified_scope,select
-from dllm.quantization import Linear
+from damendaemon.native_q4_residual import library,linear,qualified_scope,select
+from damendaemon.quantization import Linear
 
 
 def config():
@@ -28,20 +28,20 @@ class NativeQ4ResidualTests(unittest.TestCase):
 
     def test_selected_path_is_bound_to_executor_and_batch_falls_back(self):
         args=(config(),'q4_0','cuda',torch.float16,'mixed',512)
-        with patch.dict(os.environ,{'DLLM_Q4_RESIDUAL_LIBRARY':''}),patch('ctypes.CDLL') as load:
+        with patch.dict(os.environ,{'DAMENDAEMON_Q4_RESIDUAL_LIBRARY':''}),patch('ctypes.CDLL') as load:
             self.assertIsNone(select(*args));load.assert_not_called()
-        with patch.dict(os.environ,{'DLLM_Q4_RESIDUAL_LIBRARY':'first'}),patch('dllm.native_q4_residual.library'):
+        with patch.dict(os.environ,{'DAMENDAEMON_Q4_RESIDUAL_LIBRARY':'first'}),patch('damendaemon.native_q4_residual.library'):
             decode=select(*args)
         x=torch.zeros(1,4096,dtype=torch.float16);w=torch.empty(1024,2048,dtype=torch.uint8)
         scales=torch.empty(1024,128,dtype=torch.float16)
-        with patch.dict(os.environ,{'DLLM_Q4_RESIDUAL_LIBRARY':'second'}),patch('dllm.native_q4_residual.linear',return_value='selected') as multiply:
+        with patch.dict(os.environ,{'DAMENDAEMON_Q4_RESIDUAL_LIBRARY':'second'}),patch('damendaemon.native_q4_residual.linear',return_value='selected') as multiply:
             self.assertIsNone(decode(x.expand(2,-1),w,scales));multiply.assert_not_called()
             self.assertEqual(decode(x,w,scales),'selected')
             self.assertEqual(multiply.call_args.kwargs['library_path'],'first')
 
     def test_abi_and_cpu_buffers_fail_before_launch(self):
         for version in (1,200,203):
-            handle=type('Library',(),{})();handle.dllm_q4_residual_abi_version=lambda:version
+            handle=type('Library',(),{})();handle.damendaemon_q4_residual_abi_version=lambda:version
             with self.subTest(version=version),patch('ctypes.CDLL',return_value=handle),self.assertRaisesRegex(RuntimeError,'ABI'):
                 library(f'/unsupported-{version}')
         with patch('ctypes.CDLL') as load,self.assertRaisesRegex(ValueError,'buffers'):
@@ -53,12 +53,12 @@ class NativeQ4ResidualTests(unittest.TestCase):
         for version in (201,202):
             with self.subTest(version=version):
                 handle=Mock()
-                handle.dllm_q4_residual_abi_version.return_value=version
+                handle.damendaemon_q4_residual_abi_version.return_value=version
                 with patch('ctypes.CDLL',return_value=handle):
                     loaded,quantize,multiply=library(f'/abi-{version}')
                 self.assertIs(loaded,handle)
-                self.assertIs(quantize,handle.dllm_q4_residual_quantize)
-                self.assertIs(multiply,handle.dllm_q4_residual_gemv)
+                self.assertIs(quantize,handle.damendaemon_q4_residual_quantize)
+                self.assertIs(multiply,handle.damendaemon_q4_residual_gemv)
 
     def test_per_model_q4_dispatch_leaves_dense_weights_on_fallback(self):
         quant=torch.zeros(2,16,dtype=torch.uint8);dense=torch.ones(2,32);scales=torch.ones(2,1,dtype=torch.float16)

@@ -4,12 +4,12 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from dllm.models import load
+from damendaemon.models import load
 
 
 class VisionLoadPreflightTests(unittest.TestCase):
     def test_wrapper_keeps_geometry_and_context_contract(self):
-        from dllm.vision_model import VisionModelWeights
+        from damendaemon.vision_model import VisionModelWeights
         config = {'model_type': 'qwen3_5_text', 'hidden_size': 1024,
                   'num_hidden_layers': 24}
         for changed, context in (({'model_type': 'qwen3'}, 1024),
@@ -24,13 +24,13 @@ class VisionLoadPreflightTests(unittest.TestCase):
                   'num_hidden_layers': 24}
         for enabled, context in (('1', 2048), ('1', 1024), ('0', 2048)):
             with self.subTest(enabled=enabled, context=context), \
-                    patch.dict(os.environ, DLLM_EXPERIMENTAL_VISION=enabled), \
-                    patch('dllm.models.validate_device_model'), \
-                    patch('dllm.models.is_gguf', return_value=False), \
-                    patch('dllm.models.config', return_value=config), \
-                    patch('dllm.qwen2.ModelWeights') as text, \
-                    patch('dllm.vision_qwen35.VisionWeights') as vision, \
-                    patch('dllm.vision_qwen35.read_vision_config') as metadata:
+                    patch.dict(os.environ, DAMENDAEMON_EXPERIMENTAL_VISION=enabled), \
+                    patch('damendaemon.models.validate_device_model'), \
+                    patch('damendaemon.models.is_gguf', return_value=False), \
+                    patch('damendaemon.models.config', return_value=config), \
+                    patch('damendaemon.qwen2.ModelWeights') as text, \
+                    patch('damendaemon.vision_qwen35.VisionWeights') as vision, \
+                    patch('damendaemon.vision_qwen35.read_vision_config') as metadata:
                 text.return_value = SimpleNamespace(config=config, max_context=context, bytes=10)
                 vision.return_value = SimpleNamespace(bytes=20)
                 if enabled == '1' and context > 1024:
@@ -68,7 +68,7 @@ class VisionMetadataTests(unittest.TestCase):
         (self.path/'config.json').write_text(json.dumps(dict(model_type='qwen3_5',vision_config=vision)))
 
     def test_bad_containers_and_numeric_types_reject_before_tensor_scan(self):
-        from dllm.vision_qwen35 import VisionWeights
+        from damendaemon.vision_qwen35 import VisionWeights
         cases = [None, [], 'vision', 12]
         for key, value in self.geometry.items():
             if type(value) is int:
@@ -77,33 +77,33 @@ class VisionMetadataTests(unittest.TestCase):
                      for bad in ([], 'axial', 10000, {'rope_type':'axial','rope_theta':'10000'},
                                  {'rope_type':'axial','rope_theta':True}))
         for vision in cases:
-            with self.subTest(vision=vision), patch('dllm.vision_qwen35.weight_files') as files:
+            with self.subTest(vision=vision), patch('damendaemon.vision_qwen35.weight_files') as files:
                 self.write(vision)
                 with self.assertRaisesRegex(ValueError, 'vision'):
                     VisionWeights(self.path)
                 files.assert_not_called()
 
     def test_valid_geometry_and_rotary_controls(self):
-        from dllm.vision_qwen35 import read_vision_config, VisionWeights
+        from damendaemon.vision_qwen35 import read_vision_config, VisionWeights
         for rope in (None, {'rope_type':'axial','rope_theta':10000},
                      {'rope_type':'axial','rope_theta':10000.0}):
             vision = {**self.geometry, 'rope_parameters':rope}
             self.write(vision)
             self.assertEqual(read_vision_config(self.path), vision)
             # Valid metadata reaches the tensor boundary; no large weights needed.
-            with patch('dllm.vision_qwen35.weight_files', side_effect=RuntimeError('tensor boundary')):
+            with patch('damendaemon.vision_qwen35.weight_files', side_effect=RuntimeError('tensor boundary')):
                 with self.assertRaisesRegex(RuntimeError, 'tensor boundary'):
                     VisionWeights(self.path)
 
     def test_dispatch_rejects_before_text_and_vision_weights(self):
         for vision in ([], {**self.geometry, 'depth':12.0}, {**self.geometry, 'rope_parameters':[]}):
             self.write(vision)
-            with patch.dict(os.environ, DLLM_EXPERIMENTAL_VISION='1'), \
-                    patch('dllm.models.validate_device_model'), \
-                    patch('dllm.models.config', return_value=dict(model_type='qwen3_5_text',
+            with patch.dict(os.environ, DAMENDAEMON_EXPERIMENTAL_VISION='1'), \
+                    patch('damendaemon.models.validate_device_model'), \
+                    patch('damendaemon.models.config', return_value=dict(model_type='qwen3_5_text',
                           hidden_size=1024,num_hidden_layers=24)), \
-                    patch('dllm.qwen2.ModelWeights') as text, \
-                    patch('dllm.vision_qwen35.VisionWeights') as images:
+                    patch('damendaemon.qwen2.ModelWeights') as text, \
+                    patch('damendaemon.vision_qwen35.VisionWeights') as images:
                 with self.assertRaises(ValueError):
                     load(self.path, 1024)
                 text.assert_not_called()

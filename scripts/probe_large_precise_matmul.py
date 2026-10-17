@@ -6,7 +6,7 @@ import time
 
 import torch
 from torch.nn import functional as F
-from dllm.precise_matmul import linear
+from damendaemon.precise_matmul import linear
 
 
 def main():

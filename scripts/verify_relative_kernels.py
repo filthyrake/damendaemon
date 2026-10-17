@@ -4,15 +4,15 @@ import os
 import json
 import torch
 from torch.nn import functional as F
-from dllm.t5 import relative_buckets
-from dllm.runtime import require_gpu
+from damendaemon.t5 import relative_buckets
+from damendaemon.runtime import require_gpu
 
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--device',choices=('cuda','mps'),default='cuda')
-    args=p.parse_args();device=args.device;os.environ['DLLM_DEVICE']=device
-    if device=='cuda':from dllm.kernels import attention
-    else:from dllm.metal_kernels import attention
+    args=p.parse_args();device=args.device;os.environ['DAMENDAEMON_DEVICE']=device
+    if device=='cuda':from damendaemon.kernels import attention
+    else:from damendaemon.metal_kernels import attention
     require_gpu();torch.manual_seed(29)
     checks=[]
     for dtype in ((torch.float16,torch.float32) if device=='cuda' else (torch.float32,)):

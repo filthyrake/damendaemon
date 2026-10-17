@@ -2,13 +2,13 @@ import unittest
 from unittest.mock import patch
 
 import torch
-from dllm.vision_inputs import image_size, prepare_images
+from damendaemon.vision_inputs import image_size, prepare_images
 
 
 class VisionInputTests(unittest.TestCase):
     def test_budget_checked_before_any_resize(self):
         image=torch.zeros(192,320,3,dtype=torch.uint8)
-        with patch('dllm.vision_inputs.F.interpolate') as resize:
+        with patch('damendaemon.vision_inputs.F.interpolate') as resize:
             with self.assertRaisesRegex(ValueError,'budget'):
                 prepare_images([image,image],max_patches=400)
             resize.assert_not_called()

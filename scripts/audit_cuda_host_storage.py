@@ -1,9 +1,9 @@
 """Audit declared CPU/CUDA range-plan storage from headers without loading weights."""
 import argparse
 import json
-from dllm.cpu_reference_text import read_json
-from dllm.reference_stage_plan import inspect_reference_storage
-from dllm.cuda_host_storage import audit_cuda_host_storage
+from damendaemon.cpu_reference_text import read_json
+from damendaemon.reference_stage_plan import inspect_reference_storage
+from damendaemon.cuda_host_storage import audit_cuda_host_storage
 from scripts.serve_cpu_reference import bounded_integer
 
 

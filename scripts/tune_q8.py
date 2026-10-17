@@ -2,7 +2,7 @@
 import json
 import torch
 import triton
-from dllm.quantized_kernels import _linear
+from damendaemon.quantized_kernels import _linear
 
 torch.manual_seed(11)
 reports=[]

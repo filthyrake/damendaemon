@@ -1,12 +1,12 @@
-"""Check a dense rotary decoder's GGUF comparator against dllm tensor values."""
+"""Check a dense rotary decoder's GGUF comparator against damendaemon tensor values."""
 import argparse
 import json
 import numpy as np
 import torch
 from gguf import GGUFReader
 from gguf.quants import dequantize
-from dllm.qwen2 import ModelWeights
-from dllm.quantization import dequantize as unpack
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.quantization import dequantize as unpack
 
 
 def main():

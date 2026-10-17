@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.cuda_packed_moe import _accumulate, _accumulate_batched, _accumulate_fused
+from damendaemon.cuda_packed_moe import _accumulate, _accumulate_batched, _accumulate_fused
 
 
 class FakeStackedExpert:
@@ -20,7 +20,7 @@ class FakeStackedExpert:
         self.gate = SimpleNamespace(weight=raw, scales=scales, format=format)
         self.up = SimpleNamespace(weight=raw, scales=scales, format=format)
         self.down = SimpleNamespace(weight=raw.T.contiguous(), scales=scales.T.contiguous(), format=format)
-        from dllm.packed_tiles import decode_tile
+        from damendaemon.packed_tiles import decode_tile
         self.width = raw.shape[1]
         self.activation_limit = activation_limit
         self._decoded = [decode_tile(raw, scales, format=format, row_start=0,
@@ -47,7 +47,7 @@ class FakeStackedExpert:
 
 class FusedCompositionTests(unittest.TestCase):
     def bank(self, tokens_hidden=None, format='e4m3fn', experts=3, seed=482):
-        from dllm.packed_tiles import decode_tile
+        from damendaemon.packed_tiles import decode_tile
         rng = torch.Generator().manual_seed(seed)
         rows, columns = 32, 8
         bank = []

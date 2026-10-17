@@ -2,12 +2,12 @@
 
 [Documentation](README.md) · [Project](../README.md) · [Support matrix](support.md)
 
-Install dllm, select a device explicitly, and pin model revisions for repeatable runs.
+Install damendaemon, select a device explicitly, and pin model revisions for repeatable runs.
 
 ## Run a model
 
 Linux, Python 3.11+, NVIDIA CUDA GPU and a compatible driver. Install the CUDA
-build of PyTorch into a fresh environment before installing dllm's runtime extra.
+build of PyTorch into a fresh environment before installing damendaemon's runtime extra.
 The fast Triton path also needs a C compiler and matching Python development
 headers for its CUDA driver helper:
 
@@ -19,28 +19,28 @@ python -m pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/
 python -m pip install -e '.[runtime]'
 
 export CUDA_VISIBLE_DEVICES=GPU-your-device-uuid
-dllm run Qwen/Qwen3.5-0.8B --thinking off --prompt 'Explain CUDA graphs in one paragraph.'
+damendaemon run Qwen/Qwen3.5-0.8B --thinking off --prompt 'Explain CUDA graphs in one paragraph.'
 ```
 
-`run` downloads the model if needed. `dllm pull OWNER/REPOSITORY` downloads
+`run` downloads the model if needed. `damendaemon pull OWNER/REPOSITORY` downloads
 without requiring a GPU and prints the resolved immutable revision and local
 snapshot path. Use that path for offline runs, or `run --revision SHA` to pin a
 repository revision. Pull selects the shards named by the root safetensors index
 (or the root `model.safetensors`) and preserves model metadata and licenses;
 alternate weight copies elsewhere in the repository are not downloaded.
 
-`DLLM_KERNELS=auto` (default) selects fused Triton kernels when available and
+`DAMENDAEMON_KERNELS=auto` (default) selects fused Triton kernels when available and
 falls back to PyTorch if its import or compiler setup is unavailable. Set
-`DLLM_KERNELS=triton` to require the fast path, or `DLLM_KERNELS=torch` to use the
+`DAMENDAEMON_KERNELS=triton` to require the fast path, or `DAMENDAEMON_KERNELS=torch` to use the
 reference tensor path. Non-streaming responses report the selected backend in
-`dllm_timing.kernel_backend`.
+`damendaemon_timing.kernel_backend`.
 
 The explicit GPU UUID prevents accidentally using another busy device. Obtain
 UUIDs with `nvidia-smi -L`. No GPU is needed for downloading or HTTP benchmarking.
 
 For optional parallel hybrid prefill, install `.[hybrid]` and set
-`DLLM_HYBRID_PREFILL=fla`. This uses the kernel-only FLA package for prompts of
-64 tokens or more; dllm still owns model execution, state, scheduling, and
+`DAMENDAEMON_HYBRID_PREFILL=fla`. This uses the kernel-only FLA package for prompts of
+64 tokens or more; damendaemon still owns model execution, state, scheduling, and
 switching. The default `scan` path has no FLA dependency. Both paths are checked
 against independently generated FP32 reference logits. First-use compilation
 can be substantial; warm measurements exclude it.
@@ -50,15 +50,15 @@ can be substantial; warm measurements exclude it.
 Install `.[runtime]` in a native arm64 Python environment on macOS and select MPS:
 
 ```sh
-dllm run Qwen/Qwen3.5-0.8B --device mps --thinking off --prompt 'What is 2 + 2?'
-dllm serve --device mps --model small=Qwen/Qwen3.5-0.8B \
+damendaemon run Qwen/Qwen3.5-0.8B --device mps --thinking off --prompt 'What is 2 + 2?'
+damendaemon serve --device mps --model small=Qwen/Qwen3.5-0.8B \
   --model other=Qwen/Qwen3.5-2B
 ```
 
 The dense MPS path uses FP32 weights, activations, and KV. On PyTorch 2.13,
-`auto` selects dllm's native Metal kernels for normalization, activation,
+`auto` selects damendaemon's native Metal kernels for normalization, activation,
 small-batch matrix operations, rotary/cache writes, and decode attention.
-`DLLM_KERNELS=metal` requires them; `DLLM_KERNELS=torch` selects the tensor
+`DAMENDAEMON_KERNELS=metal` requires them; `DAMENDAEMON_KERNELS=torch` selects the tensor
 baseline. CUDA graphs and Triton are disabled on MPS. Execution stays on the
 Apple GPU, with no automatic CPU fallback. Metal performance parity remains open.
 The same scheduler and model residency interface apply. Dense text details are in
@@ -67,7 +67,7 @@ Qwen3.5 hybrid image path and its FP16/Q8 limits are in
 [vision qualification](vision-qualification.md).
 
 For lower device-weight memory and faster decoding, set
-`DLLM_METAL_WEIGHT_DTYPE=float16` with the native Metal backend. Arithmetic and
+`DAMENDAEMON_METAL_WEIGHT_DTYPE=float16` with the native Metal backend. Arithmetic and
 KV remain FP32; this differs from the unqualified FP16-compute tensor path.
 Prefill currently expands matrix weights to FP32 temporarily, which increases
 first-output latency. FP32 weight storage remains the default.
@@ -83,12 +83,12 @@ slots, and no graphs. It is not the planned 32K daily-use configuration.
 Download the pinned snapshot, then use the local path printed by `pull`:
 
 ```sh
-dllm pull Qwen/Qwen3.8-27B --revision 1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0
+damendaemon pull Qwen/Qwen3.8-27B --revision 1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0
 
 ROCR_VISIBLE_DEVICES=0 HIP_VISIBLE_DEVICES=0 \
-DLLM_KERNELS=triton DLLM_QUANTIZATION=q8_0 \
-DLLM_HYBRID_PRECISION=compensated DLLM_ROCM_MEMORY_GIB=48 \
-dllm serve --device rocm --model chat=/path/printed/by/pull \
+DAMENDAEMON_KERNELS=triton DAMENDAEMON_QUANTIZATION=q8_0 \
+DAMENDAEMON_HYBRID_PRECISION=compensated DAMENDAEMON_ROCM_MEMORY_GIB=48 \
+damendaemon serve --device rocm --model chat=/path/printed/by/pull \
   --context 512 --batch-size 4 --no-graph --host-gib 40
 ```
 
@@ -108,12 +108,12 @@ curl http://127.0.0.1:8088/v1/chat/completions \
 ```
 
 See [serving and model management](serving.md) for status, switching and release.
-For the independently checked Q4 variant on HOMER, replace `DLLM_QUANTIZATION=q8_0`
-with `DLLM_QUANTIZATION=q4_0 DLLM_EXPERIMENTAL_HYBRID_Q4=1`, retaining the
+For the independently checked Q4 variant on HOMER, replace `DAMENDAEMON_QUANTIZATION=q8_0`
+with `DAMENDAEMON_QUANTIZATION=q4_0 DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4=1`, retaining the
 other bounds above. Packed weights use 15.80 GiB. The numerical and HTTP gates
 pass, but this is not original-weight quality or a faster-than-Q8 claim.
 32K context and practical multimodal support remain
-in [the current roadmap](https://github.com/filthyrake/dllm/issues/3).
+in [the current roadmap](https://github.com/filthyrake/damendaemon/issues/3).
 
 ## A30 practical-model preview
 
@@ -123,9 +123,9 @@ numerical and HTTP lifecycle gates on NVIDIA A30. Select your A30's UUID from
 
 ```sh
 CUDA_VISIBLE_DEVICES=YOUR_A30_UUID \
-DLLM_KERNELS=triton DLLM_QUANTIZATION=q4_0 \
-DLLM_HYBRID_PRECISION=compensated DLLM_EXPERIMENTAL_HYBRID_Q4=1 \
-dllm serve --device cuda --model chat=/path/printed/by/pull \
+DAMENDAEMON_KERNELS=triton DAMENDAEMON_QUANTIZATION=q4_0 \
+DAMENDAEMON_HYBRID_PRECISION=compensated DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4=1 \
+damendaemon serve --device cuda --model chat=/path/printed/by/pull \
   --context 512 --batch-size 4 --prefill-chunk-size 127 \
   --no-graph --host-gib 40
 ```
@@ -138,4 +138,4 @@ three minutes, while restoring from host memory took about five seconds in the
 retained trial. Warm single-request decode was about 1.75 tokens/sec: this is a
 working capability preview with substantial speed work remaining. See the
 [raw service results](evidence/hybrid/a30-qwen38-27b-q4-service512.json) and
-[context qualification issue](https://github.com/filthyrake/dllm/issues/70).
+[context qualification issue](https://github.com/filthyrake/damendaemon/issues/70).

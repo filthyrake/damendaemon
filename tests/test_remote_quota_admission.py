@@ -6,13 +6,13 @@ import tempfile
 import threading
 import unittest
 from unittest.mock import patch
-from dllm.http_auth import AuthPolicy,ClientKey
-from dllm.host_tls import QUOTA_ALPN,client_context,server_context,certificate_pin
-from dllm.remote_reservation_ledger import RemoteReservationLedger
-from dllm.remote_quota_transport import RemoteQuotaClient,RemoteQuotaServer
-from dllm.remote_quota_admission import RemoteQuotaReservations,RemoteQuotaRecoveryRequired
-from dllm.shared_client_reservations import SharedReservationUnavailable,SharedReservationRejected
-from dllm.server import BoundedHTTPServer,handler_for
+from damendaemon.http_auth import AuthPolicy,ClientKey
+from damendaemon.host_tls import QUOTA_ALPN,client_context,server_context,certificate_pin
+from damendaemon.remote_reservation_ledger import RemoteReservationLedger
+from damendaemon.remote_quota_transport import RemoteQuotaClient,RemoteQuotaServer
+from damendaemon.remote_quota_admission import RemoteQuotaReservations,RemoteQuotaRecoveryRequired
+from damendaemon.shared_client_reservations import SharedReservationUnavailable,SharedReservationRejected
+from damendaemon.server import BoundedHTTPServer,handler_for
 from tests.test_server import FakeRuntime
 from tests.test_distributed_drain import wait_for
 from tests import test_host_tls as tls,test_shared_reservation_http as http_fixture
@@ -151,7 +151,7 @@ class RemoteQuotaAdmissionTests(unittest.TestCase):
         self.assertTrue(a.claims);a.close();self.assertTrue(a.closed);self.assertFalse(a.claims);b.close()
 
     def test_remote_capacity_release_does_not_refund_rolling_rates(self):
-        from dllm.client_admission import ClientAdmission,ClientRateLimitError,ClientOutputRateLimitError
+        from damendaemon.client_admission import ClientAdmission,ClientRateLimitError,ClientOutputRateLimitError
         client=ClientKey('alice',self.client.key,2,max_reserved_output_tokens=6,max_requests_per_minute=1,max_output_tokens_per_minute=3)
         store=self.store(policies=[client]);admission=ClientAdmission(AuthPolicy(clients=(client,)),reservation_store=store)
         self.addCleanup(admission.close);headers=['Bearer '+client.key]

@@ -6,7 +6,7 @@ import unittest
 from contextlib import redirect_stderr
 from unittest.mock import patch
 from scripts import compare_a2,compare_llama
-from dllm import token_workload
+from damendaemon import token_workload
 
 
 class ComparisonPromptFileTests(unittest.TestCase):
@@ -17,7 +17,7 @@ class ComparisonPromptFileTests(unittest.TestCase):
             path=Path(temp)/'prompt.json'
             for payload in payloads:
                 if payload is not None:path.write_bytes(payload)
-                for module,args in ((compare_a2,[]),(compare_llama,['http://unused.invalid','--engine','dllm'])):
+                for module,args in ((compare_a2,[]),(compare_llama,['http://unused.invalid','--engine','damendaemon'])):
                     with self.subTest(payload=payload and payload[:20],module=module.__name__), \
                             patch('sys.argv',['compare',*args,'--prompt-token-ids',str(path)]), \
                             patch.object(compare_a2.Path,'cwd',side_effect=AssertionError('workspace accessed')), \

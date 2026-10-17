@@ -36,7 +36,7 @@ def main():
                           'bytes':value['data_offsets'][1]-value['data_offsets'][0]}
     report={'repository':REPOSITORY,'revision':REVISION,'path':str(root),'safetensor_file_bytes':total,
         'config':config,'tensors':catalog,'license':'Apache-2.0; preserved LICENSE in snapshot'}
-    (root/'dllm-source.json').write_text(json.dumps(report,indent=2)+'\n')
+    (root/'damendaemon-source.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps({'repository':REPOSITORY,'revision':REVISION,'path':str(root),
         'safetensor_file_bytes':total,'tensor_count':len(catalog),
         'first_layer':{k:v for k,v in catalog.items() if k.startswith('model.layers.0.')}},indent=2))

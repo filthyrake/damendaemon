@@ -9,8 +9,8 @@ from unittest.mock import patch
 from concurrent.futures import ThreadPoolExecutor
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError
-from dllm.glm_flash_pipeline_generation import FlashPipelineToolReferenceGenerator
-from dllm.glm_flash_model import FlashModelState
+from damendaemon.glm_flash_pipeline_generation import FlashPipelineToolReferenceGenerator
+from damendaemon.glm_flash_model import FlashModelState
 from scripts import serve_cpu_reference as command
 from tests import test_serve_cpu_reference as fixtures
 
@@ -27,7 +27,7 @@ class FlashPipelineHttpTests(unittest.TestCase):
             key=secrets.token_urlsafe(32);admin=secrets.token_urlsafe(32)
             process=subprocess.Popen([sys.executable,'-m','scripts.serve_cpu_reference','flash',str(path),
                 '--context','128','--port','0','--queue-size','3',*cuts],stdout=subprocess.PIPE,stderr=subprocess.PIPE,
-                text=True,env=self.env|{'DLLM_API_KEY':key,'DLLM_ADMIN_API_KEY':admin})
+                text=True,env=self.env|{'DAMENDAEMON_API_KEY':key,'DAMENDAEMON_ADMIN_API_KEY':admin})
             try:
                 ready=self.event(process);base=ready['url']
                 headers={'Authorization':'Bearer '+key,'Content-Type':'application/json'}
@@ -57,7 +57,7 @@ class FlashPipelineHttpTests(unittest.TestCase):
 
     def test_images_deepseek_and_bad_cuts_fail_before_payload(self):
         path=self.snapshot('flash')
-        with patch.dict(os.environ,self.env,clear=True),patch('dllm.glm_flash_reference_loader._payload',side_effect=AssertionError('payload')):
+        with patch.dict(os.environ,self.env,clear=True),patch('damendaemon.glm_flash_reference_loader._payload',side_effect=AssertionError('payload')):
             for family,options in (('deepseek',['--layer-splits','1']),('flash',['--layer-splits','3']),
                                    ('glm',['--layer-splits','1','--flash-images'])):
                 with self.assertRaises(ValueError):command.prepare(self.args(family,path,*options))

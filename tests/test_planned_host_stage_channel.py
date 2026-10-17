@@ -2,10 +2,10 @@ from concurrent.futures import ThreadPoolExecutor
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.host_topology import HostTopology
-from dllm.planned_host_stage_channel import PlannedHostStageChannel
-from dllm.host_tensor_channel import HostTensorChannel
-from dllm.stage_protocol import StageState,Command,PREFILL,PREFILL_CHUNK,PREFILL_BATCH,DECODE,RELEASE,PING,STOP
+from damendaemon.host_topology import HostTopology
+from damendaemon.planned_host_stage_channel import PlannedHostStageChannel
+from damendaemon.host_tensor_channel import HostTensorChannel
+from damendaemon.stage_protocol import StageState,Command,PREFILL,PREFILL_CHUNK,PREFILL_BATCH,DECODE,RELEASE,PING,STOP
 from tests.test_cpu_hybrid_stage import model
 from tests import test_host_tls
 

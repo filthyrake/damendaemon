@@ -19,9 +19,9 @@ from urllib.error import URLError
 from urllib.request import Request,urlopen
 
 from tokenizers import Tokenizer
-from dllm.gguf_sentencepiece import restore_tokenizer
-from dllm.bench import events,llama_context
-from dllm.gguf_model import plan
+from damendaemon.gguf_sentencepiece import restore_tokenizer
+from damendaemon.bench import events,llama_context
+from damendaemon.gguf_model import plan
 
 
 def digest(path):
@@ -44,7 +44,7 @@ def main():
     comparison.add_argument('--residual-f32-library',help='compare ordinary packed FP32 with the isolated FP32 candidate')
     parser.add_argument('--production-q4-residual',action='store_true',help='exercise normal per-model Q4 integer-dot selection')
     parser.add_argument('--q4-residual-control-library',help='use this existing native residual library in control phases, instead of ordinary native Q4')
-    parser.add_argument('--dllm-q4-marlin-library',help='use normal Q4 Marlin for dllm in a matched llama.cpp comparison')
+    parser.add_argument('--damendaemon-q4-marlin-library',help='use normal Q4 Marlin for damendaemon in a matched llama.cpp comparison')
     parser.add_argument('--production-q4-marlin',action='store_true',help='use normal admission-accounted Q4 Marlin layout replacement')
     parser.add_argument('--q4-marlin-symmetric',action='store_true',help='isolated implicit-zero-point replacement versus qualified Marlin')
     parser.add_argument('--q4-marlin-control-library',help='qualified ABI 1 control for symmetric experiment or production ABI 2 upgrade')
@@ -63,7 +63,7 @@ def main():
     parser.add_argument('--long-prompt-tokens',type=int,default=400,help='length of the long single-request workload')
     parser.add_argument('--prompt-text',default='Binary search repeatedly halves a sorted range. A detailed explanation follows: ',
                         help='text repeated to construct identical explicit prompt IDs for both engines')
-    parser.add_argument('--lifecycle',action='store_true',help='also check dllm cancellation, swapping and reloads after timing')
+    parser.add_argument('--lifecycle',action='store_true',help='also check damendaemon cancellation, swapping and reloads after timing')
     parser.add_argument('--swap-model', help='optional different GGUF checkpoint for lifecycle swapping')
     parser.add_argument('--native-format', choices=('kquant','q4'), default='kquant', help='native decode library format')
     parser.add_argument('--native-library',required=True);parser.add_argument('--output',required=True)
@@ -88,9 +88,9 @@ def main():
         parser.error('--q4-residual-control-library requires --production-q4-residual or --q4-marlin-library')
     if args.q4_marlin_library and (args.native_format!='q4' or not args.q4_residual_control_library):
         parser.error('--q4-marlin-library requires --native-format q4 and --q4-residual-control-library')
-    if args.dllm_q4_marlin_library and (not (args.llama_server or args.prefill_token_budget) or args.native_format!='q4'):
-        parser.error('--dllm-q4-marlin-library requires a llama-server or prefill-budget comparison and --native-format q4')
-    if args.prefill_token_budget and (not args.dllm_q4_marlin_library or args.context!=512 or not args.lifecycle):
+    if args.damendaemon_q4_marlin_library and (not (args.llama_server or args.prefill_token_budget) or args.native_format!='q4'):
+        parser.error('--damendaemon-q4-marlin-library requires a llama-server or prefill-budget comparison and --native-format q4')
+    if args.prefill_token_budget and (not args.damendaemon_q4_marlin_library or args.context!=512 or not args.lifecycle):
         parser.error('--prefill-token-budget requires a native Marlin library, context 512 and lifecycle checks')
     if args.q4_marlin_symmetric and (not args.q4_marlin_library or not args.q4_marlin_control_library or args.q4_marlin_replace or args.production_q4_marlin):
         parser.error('--q4-marlin-symmetric requires candidate/control libraries and excludes other Marlin modes')
@@ -136,7 +136,7 @@ def main():
         experimental_arithmetic=('two dyadic int8 activation terms; FP32 rows 1-4, widths 2048/8192' if precision=='float32'
                                 else 'two dyadic int8 activation terms; FP16 single-row width-2048 K-quants') if residual else None,
         gpu_uuid=os.environ['CUDA_VISIBLE_DEVICES'],context_per_slot=args.context,slots=4,kv_dtype='float32' if precision=='float32' else 'float16',
-        dllm_precision=precision_description,model_type=source.config['model_type'],output_tokens=16,
+        damendaemon_precision=precision_description,model_type=source.config['model_type'],output_tokens=16,
         prompts=prompts,prompt_text=args.prompt_text,warmup_rounds=3,measured_rounds=6,runs=[])
     if args.q4_residual_library:
         report['experimental_arithmetic']='Q4 single-row integer dot; two dyadic int8 activation terms; FP32 coefficient scaling rather than rounded FP16 coefficients'
@@ -172,9 +172,9 @@ def main():
         report['implicit_zero_point']=8
         report['symmetric_sources']={name:digest(Path(__file__).parent/'experiments'/name) for name in
             ('q4_marlin_symmetric.py','q4_marlin_symmetric.cu','q4_marlin_replace.py','q4_marlin_direct.py','q4_marlin_repack.py')}
-    if args.dllm_q4_marlin_library:
-        dllm_marlin=Path(args.dllm_q4_marlin_library).resolve()
-        report['dllm_q4_marlin_library']=dict(path=str(dllm_marlin),sha256=digest(dllm_marlin))
+    if args.damendaemon_q4_marlin_library:
+        damendaemon_marlin=Path(args.damendaemon_q4_marlin_library).resolve()
+        report['damendaemon_q4_marlin_library']=dict(path=str(damendaemon_marlin),sha256=digest(damendaemon_marlin))
         report['experimental_arithmetic']='normal Q4 Marlin FP16 coefficients and mixed residuals versus llama.cpp over identical GGUF bytes; engine arithmetic differs'
     report['production_q4_marlin']=args.production_q4_marlin
     if args.production_q4_marlin:
@@ -184,39 +184,39 @@ def main():
         if args.q4_marlin_control_library:
             report['experimental_arithmetic']='normal ABI 2 implicit zero point eight versus qualified ABI 1 explicit zero points; same FP16 coefficients and scales'
         report['q4_marlin_production_sources']={name:digest(Path(__file__).resolve().parents[1]/name)
-            for name in ('dllm/native_q4_marlin.py','dllm/q4_marlin_repack.py','dllm/q4_marlin_policy.py','native/q4_marlin.cu')}
+            for name in ('damendaemon/native_q4_marlin.py','damendaemon/q4_marlin_repack.py','damendaemon/q4_marlin_policy.py','native/q4_marlin.cu')}
     report['production_residual_f32']=args.production_residual_f32
     report['experimental_prefill_f32']=args.prefill_f32 and not args.production_prefill_f32
     report['production_prefill_f32']=args.production_prefill_f32
     if args.prefill_f32:
         report['experimental_arithmetic']='FP32 prefill rows >=128; scaled high/low FP16 operands, three products; same production residual decode in both engines'
         report['prefill_source_sha256']=digest(Path(__file__).parent/'experiments/kquant_prefill_f32.py')
-        report['prefill_kernel_sha256']=digest(Path(__file__).resolve().parents[1]/'dllm/kquant_prefill_kernels.py')
+        report['prefill_kernel_sha256']=digest(Path(__file__).resolve().parents[1]/'damendaemon/kquant_prefill_kernels.py')
     environment=os.environ.copy()
-    environment.pop('DLLM_KQUANT_DENSE_CACHE_MIB',None)
-    environment.pop('DLLM_KQUANT_RESIDUAL_F32_LIBRARY',None)
-    environment.pop('DLLM_KQUANT_PREFILL_F32',None)
-    environment.pop('DLLM_EXPERIMENTAL_Q4_RESIDUAL_LIBRARY',None)
-    environment.pop('DLLM_Q4_MARLIN_LIBRARY',None)
-    environment.pop('DLLM_EXPERIMENTAL_Q4_MARLIN_LIBRARY',None)
-    environment.pop('DLLM_EXPERIMENTAL_Q4_MARLIN_REPLACE',None)
-    environment.pop('DLLM_EXPERIMENTAL_Q4_MARLIN_SYMMETRIC',None)
-    environment.pop('DLLM_EXPERIMENTAL_PREFILL_TOKEN_BUDGET',None)
-    environment.pop('DLLM_Q4_RESIDUAL_LIBRARY',None)
-    environment.pop('DLLM_EXPERIMENTAL_BATCH_WAIT_MS',None)
-    environment.pop('DLLM_Q4_CUDA_LIBRARY',None)
-    environment.pop('DLLM_KQUANT_CUDA_LIBRARY',None)
-    environment['DLLM_Q4_CUDA_LIBRARY' if args.native_format=='q4' else 'DLLM_KQUANT_CUDA_LIBRARY']=str(library)
-    environment.update(DLLM_DEVICE='cuda',DLLM_LLAMA_PRECISION=precision,
-        DLLM_QWEN3_PRECISION='float32' if precision=='float32' else 'standard',
-        DLLM_SPECULATIVE_TOKENS='0',DLLM_QUANTIZATION='none',OMP_NUM_THREADS='4')
-    production_residual=os.environ.get('DLLM_KQUANT_RESIDUAL_LIBRARY')
+    environment.pop('DAMENDAEMON_KQUANT_DENSE_CACHE_MIB',None)
+    environment.pop('DAMENDAEMON_KQUANT_RESIDUAL_F32_LIBRARY',None)
+    environment.pop('DAMENDAEMON_KQUANT_PREFILL_F32',None)
+    environment.pop('DAMENDAEMON_EXPERIMENTAL_Q4_RESIDUAL_LIBRARY',None)
+    environment.pop('DAMENDAEMON_Q4_MARLIN_LIBRARY',None)
+    environment.pop('DAMENDAEMON_EXPERIMENTAL_Q4_MARLIN_LIBRARY',None)
+    environment.pop('DAMENDAEMON_EXPERIMENTAL_Q4_MARLIN_REPLACE',None)
+    environment.pop('DAMENDAEMON_EXPERIMENTAL_Q4_MARLIN_SYMMETRIC',None)
+    environment.pop('DAMENDAEMON_EXPERIMENTAL_PREFILL_TOKEN_BUDGET',None)
+    environment.pop('DAMENDAEMON_Q4_RESIDUAL_LIBRARY',None)
+    environment.pop('DAMENDAEMON_EXPERIMENTAL_BATCH_WAIT_MS',None)
+    environment.pop('DAMENDAEMON_Q4_CUDA_LIBRARY',None)
+    environment.pop('DAMENDAEMON_KQUANT_CUDA_LIBRARY',None)
+    environment['DAMENDAEMON_Q4_CUDA_LIBRARY' if args.native_format=='q4' else 'DAMENDAEMON_KQUANT_CUDA_LIBRARY']=str(library)
+    environment.update(DAMENDAEMON_DEVICE='cuda',DAMENDAEMON_LLAMA_PRECISION=precision,
+        DAMENDAEMON_QWEN3_PRECISION='float32' if precision=='float32' else 'standard',
+        DAMENDAEMON_SPECULATIVE_TOKENS='0',DAMENDAEMON_QUANTIZATION='none',OMP_NUM_THREADS='4')
+    production_residual=os.environ.get('DAMENDAEMON_KQUANT_RESIDUAL_LIBRARY')
     if args.production_residual:
-        environment.pop('DLLM_KQUANT_RESIDUAL_LIBRARY',None)
+        environment.pop('DAMENDAEMON_KQUANT_RESIDUAL_LIBRARY',None)
         production_residual=None
     if production_residual:
         report['production_residual_library']=dict(path=production_residual,sha256=digest(production_residual))
-    report['experimental_batch2_q6']=bool(args.residual_library and os.environ.get('DLLM_EXPERIMENTAL_RESIDUAL_BATCH2')=='1')
+    report['experimental_batch2_q6']=bool(args.residual_library and os.environ.get('DAMENDAEMON_EXPERIMENTAL_RESIDUAL_BATCH2')=='1')
     if report['experimental_batch2_q6']:
         report['experimental_arithmetic']+='; batch-two pure Q6 at (width, outputs)=(8192,2048) or (2048,128256)'
     counterpart='residual-int8-fp32' if precision=='float32' else 'residual-int8-v2' if residual else 'llama.cpp'
@@ -236,13 +236,13 @@ def main():
         report['production_q4_small_tiles']=args.production_q4_small_tiles
         if args.production_q4_small_tiles:
             report['experimental_arithmetic']='unchanged FP16 coefficients; normal A2 33-64-row policy versus previous prompt tiles'
-            report['tile_source_sha256']=digest(Path(__file__).resolve().parents[1]/'dllm/q4_prefill_policy.py')
+            report['tile_source_sha256']=digest(Path(__file__).resolve().parents[1]/'damendaemon/q4_prefill_policy.py')
     if args.batch_wait_ms:counterpart='coalesced-prefill'
     if args.expand_tiles:
         counterpart='expand-tiles'
         report['experimental_arithmetic']='unchanged FP16 coefficients; 8x512 expansion tiles, four warps'
         report['expansion_source_sha256']=digest(Path(__file__).parent/'experiments/kquant_expand.py')
-        report['expansion_kernel_sha256']=digest(Path(__file__).resolve().parents[1]/'dllm/kquant_kernels.py')
+        report['expansion_kernel_sha256']=digest(Path(__file__).resolve().parents[1]/'damendaemon/kquant_kernels.py')
     if args.dense_cache:
         counterpart='dense-cache'
         report['experimental_arithmetic']='same FP16 coefficients; resident expanded projections for rows >1; extra VRAM, experimental accounting only'
@@ -250,46 +250,46 @@ def main():
         report['production_dense_cache']=args.production_dense_cache
         if args.production_dense_cache:
             report['experimental_arithmetic']='same FP16 coefficients; normal admission-accounted resident projection cache'
-            report['dense_cache_source_sha256']=digest(Path(__file__).resolve().parents[1]/'dllm/kquant_cache.py')
+            report['dense_cache_source_sha256']=digest(Path(__file__).resolve().parents[1]/'damendaemon/kquant_cache.py')
             report['dense_cache_budget_mib']=args.dense_cache_mib
     if residual:
-        variable='DLLM_EXPERIMENTAL_RESIDUAL_F32_LIBRARY' if precision=='float32' else 'DLLM_EXPERIMENTAL_RESIDUAL_LIBRARY'
+        variable='DAMENDAEMON_EXPERIMENTAL_RESIDUAL_F32_LIBRARY' if precision=='float32' else 'DAMENDAEMON_EXPERIMENTAL_RESIDUAL_LIBRARY'
         environment[variable]=str(residual)
     if precision=='float32':environment['NVIDIA_TF32_OVERRIDE']='0'
     if args.prefill_f32:
         counterpart='compensated-prefill-fp32'
-        environment['DLLM_KQUANT_RESIDUAL_F32_LIBRARY']=str(residual)
+        environment['DAMENDAEMON_KQUANT_RESIDUAL_F32_LIBRARY']=str(residual)
     try:
-        for phase,engine in enumerate(('dllm',counterpart,counterpart,'dllm')):
+        for phase,engine in enumerate(('damendaemon',counterpart,counterpart,'damendaemon')):
             with socket.socket() as reservation:
                 reservation.bind(('127.0.0.1',0));port=reservation.getsockname()[1]
             base=f'http://127.0.0.1:{port}'
             log_path=output.with_name(output.stem+f'-{phase}-{engine}.log')
             phase_environment=environment.copy()
-            if args.dllm_q4_marlin_library and (engine=='dllm' or args.prefill_token_budget):
-                phase_environment['DLLM_Q4_MARLIN_LIBRARY']=str(dllm_marlin)
+            if args.damendaemon_q4_marlin_library and (engine=='damendaemon' or args.prefill_token_budget):
+                phase_environment['DAMENDAEMON_Q4_MARLIN_LIBRARY']=str(damendaemon_marlin)
             if args.prefill_token_budget and engine==counterpart:
-                phase_environment['DLLM_EXPERIMENTAL_PREFILL_TOKEN_BUDGET']=str(args.prefill_token_budget)
-            if args.q4_marlin_control_library and engine=='dllm':
-                phase_environment['DLLM_Q4_MARLIN_LIBRARY']=str(marlin_control)
+                phase_environment['DAMENDAEMON_EXPERIMENTAL_PREFILL_TOKEN_BUDGET']=str(args.prefill_token_budget)
+            if args.q4_marlin_control_library and engine=='damendaemon':
+                phase_environment['DAMENDAEMON_Q4_MARLIN_LIBRARY']=str(marlin_control)
             if args.q4_residual_control_library:
-                phase_environment['DLLM_Q4_RESIDUAL_LIBRARY']=str(control)
+                phase_environment['DAMENDAEMON_Q4_RESIDUAL_LIBRARY']=str(control)
             if args.q4_marlin_library and engine==counterpart:
-                phase_environment['DLLM_Q4_MARLIN_LIBRARY' if args.production_q4_marlin else 'DLLM_EXPERIMENTAL_Q4_MARLIN_LIBRARY']=str(marlin)
-                if args.q4_marlin_replace:phase_environment['DLLM_EXPERIMENTAL_Q4_MARLIN_REPLACE']='1'
-                if args.q4_marlin_symmetric:phase_environment['DLLM_EXPERIMENTAL_Q4_MARLIN_SYMMETRIC']='1'
+                phase_environment['DAMENDAEMON_Q4_MARLIN_LIBRARY' if args.production_q4_marlin else 'DAMENDAEMON_EXPERIMENTAL_Q4_MARLIN_LIBRARY']=str(marlin)
+                if args.q4_marlin_replace:phase_environment['DAMENDAEMON_EXPERIMENTAL_Q4_MARLIN_REPLACE']='1'
+                if args.q4_marlin_symmetric:phase_environment['DAMENDAEMON_EXPERIMENTAL_Q4_MARLIN_SYMMETRIC']='1'
             if args.production_dense_cache and engine==counterpart:
-                phase_environment['DLLM_KQUANT_DENSE_CACHE_MIB']=str(args.dense_cache_mib)
+                phase_environment['DAMENDAEMON_KQUANT_DENSE_CACHE_MIB']=str(args.dense_cache_mib)
             if args.batch_wait_ms and engine==counterpart and not args.production_batch_wait:
-                phase_environment['DLLM_EXPERIMENTAL_BATCH_WAIT_MS']=str(args.batch_wait_ms)
+                phase_environment['DAMENDAEMON_EXPERIMENTAL_BATCH_WAIT_MS']=str(args.batch_wait_ms)
             if args.production_residual and engine==counterpart:
-                phase_environment['DLLM_KQUANT_RESIDUAL_LIBRARY']=str(residual)
+                phase_environment['DAMENDAEMON_KQUANT_RESIDUAL_LIBRARY']=str(residual)
             if args.q4_residual_library and engine==counterpart:
-                phase_environment['DLLM_Q4_RESIDUAL_LIBRARY' if args.production_q4_residual else 'DLLM_EXPERIMENTAL_Q4_RESIDUAL_LIBRARY']=str(residual)
+                phase_environment['DAMENDAEMON_Q4_RESIDUAL_LIBRARY' if args.production_q4_residual else 'DAMENDAEMON_EXPERIMENTAL_Q4_RESIDUAL_LIBRARY']=str(residual)
             if args.production_residual_f32 and engine==counterpart:
-                phase_environment['DLLM_KQUANT_RESIDUAL_F32_LIBRARY']=str(residual)
+                phase_environment['DAMENDAEMON_KQUANT_RESIDUAL_F32_LIBRARY']=str(residual)
             if args.production_prefill_f32 and engine==counterpart:
-                phase_environment['DLLM_KQUANT_PREFILL_F32']='1'
+                phase_environment['DAMENDAEMON_KQUANT_PREFILL_F32']='1'
             if engine!='llama.cpp':
                 module={'prefill-budget':'scripts.experiments.serve_prefill_budget',
                         'coalesced-prefill':'scripts.experiments.serve_batch_wait',
@@ -303,12 +303,12 @@ def main():
                         'compensated-prefill-fp32':'scripts.experiments.serve_prefill_f32',
                         'residual-int8-v2':'scripts.experiments.serve_residual',
                         'residual-int8-fp32':'scripts.experiments.serve_residual_f32'}.get(engine,
-                        'scripts.experiments.serve_float32' if precision=='float32' else 'dllm')
-                if args.production_q4_residual or args.production_residual or args.production_batch_wait:module='dllm'
-                if args.production_dense_cache:module='dllm'
+                        'scripts.experiments.serve_float32' if precision=='float32' else 'damendaemon')
+                if args.production_q4_residual or args.production_residual or args.production_batch_wait:module='damendaemon'
+                if args.production_dense_cache:module='damendaemon'
                 if args.production_q4_small_tiles:
-                    module='dllm' if engine==counterpart else 'scripts.experiments.serve_q4_legacy_tiles'
-                if args.production_residual_f32 and (args.production_prefill_f32 or not (args.prefill_f32 and engine==counterpart)):module='dllm'
+                    module='damendaemon' if engine==counterpart else 'scripts.experiments.serve_q4_legacy_tiles'
+                if args.production_residual_f32 and (args.production_prefill_f32 or not (args.prefill_f32 and engine==counterpart)):module='damendaemon'
                 command=[sys.executable,'-m',module,'serve','--model',f'a={model}','--port',str(port),
                     '--context',str(args.context),'--batch-size','4','--kv-cache-tokens','0','--gpu-models','1',
                     '--prefill-chunk-size','0','--prefix-cache-tokens','0']
@@ -374,7 +374,7 @@ def main():
                         case['median_seconds']=statistics.median(r['seconds'] for r in measured)
                         case['median_aggregate_output_tokens_per_second']=statistics.median(
                             r['aggregate_output_tokens_per_second'] for r in measured)
-                    if args.q4_marlin_library or (args.dllm_q4_marlin_library and (engine=='dllm' or args.prefill_token_budget)):
+                    if args.q4_marlin_library or (args.damendaemon_q4_marlin_library and (engine=='damendaemon' or args.prefill_token_budget)):
                         with urlopen(base+'/v1/models/status',timeout=30) as response:
                             run['memory_after_workloads']=json.load(response)
                     if args.lifecycle and engine!='llama.cpp':
@@ -386,15 +386,15 @@ def main():
                             with post(route,body) as response:value=json.load(response)
                             if timing:
                                 run.setdefault('lifecycle_timings',{})[timing]=dict(
-                                    seconds=time.perf_counter()-started,dllm_timing=value.get('dllm_timing'))
+                                    seconds=time.perf_counter()-started,damendaemon_timing=value.get('damendaemon_timing'))
                             return value
                         body=dict(model='a',prompt=prompts[129],temperature=0,max_tokens=16)
                         expected=next(c for c in run['cases'] if c['prompt_tokens']==129 and c['concurrency']==1)['rounds'][3]['requests'][0]['text']
                         checks={};run['lifecycle']=checks
                         json_post('/v1/models/unload',dict(model='a'))
                         restored=json_post('/v1/completions',body,timing='host_restore_request')
-                        assert restored['dllm_timing']['source_tier']=='host' and restored['choices'][0]['text']==expected
-                        run['kernel_backend']=restored['dllm_timing']['kernel_backend']
+                        assert restored['damendaemon_timing']['source_tier']=='host' and restored['choices'][0]['text']==expected
+                        run['kernel_backend']=restored['damendaemon_timing']['kernel_backend']
                         if args.production_dense_cache:
                             assert ('+resident-kquant-cache' in run['kernel_backend']) == (engine==counterpart)
                             with urlopen(base+'/v1/models/status',timeout=30) as response:
@@ -404,7 +404,7 @@ def main():
                             run['resident_projection_cache_bytes']=cache_bytes
                         if args.production_q4_residual:
                             assert ('+cuda-q4-residual' in run['kernel_backend']) == (engine==counterpart or bool(args.q4_residual_control_library))
-                        if args.dllm_q4_marlin_library:
+                        if args.damendaemon_q4_marlin_library:
                             assert '+cuda-q4-marlin' in run['kernel_backend']
                             selected=run['memory_after_workloads']['models'][0]
                             assert selected['q4_marlin_abi'] in (1,2)
@@ -427,7 +427,7 @@ def main():
                             assert overhead == (111099904 if selected['q4_marlin_abi']==1 else 0),overhead
                         if args.q4_marlin_symmetric:
                             assert '+cuda-q4-residual' not in run['kernel_backend']
-                            assert ('+cuda-q4-marlin' in run['kernel_backend']) == (engine=='dllm')
+                            assert ('+cuda-q4-marlin' in run['kernel_backend']) == (engine=='damendaemon')
                             assert ('+experimental-q4-marlin-symmetric' in run['kernel_backend']) == (engine==counterpart)
                         if args.q4_marlin_library and not (args.production_q4_marlin or args.q4_marlin_symmetric):
                             assert ('+cuda-q4-residual' in run['kernel_backend']) == (not args.q4_marlin_replace or engine!=counterpart)
@@ -445,12 +445,12 @@ def main():
                         restored=json_post('/v1/completions',body,timing='switch_back_request')
                         if not args.swap_model:assert other['choices'][0]['text']==expected
                         assert other['usage']['completion_tokens']>0 and restored['choices'][0]['text']==expected
-                        assert restored['dllm_timing']['source_tier']=='host'
+                        assert restored['damendaemon_timing']['source_tier']=='host'
                         checks['model_swap' if args.swap_model else 'alias_swap']=True
                         if args.swap_model:checks['swap_sample']=other['choices'][0]['text']
                         json_post('/v1/models/unload',dict(model='a',release_host=True))
                         restored=json_post('/v1/completions',body,timing='disk_reload_request')
-                        assert restored['dllm_timing']['source_tier']=='disk' and restored['choices'][0]['text']==expected
+                        assert restored['damendaemon_timing']['source_tier']=='disk' and restored['choices'][0]['text']==expected
                         checks['disk_reload']=True
                         with post('/v1/completions',{**body,'stream':True,'max_tokens':256}) as response:
                             next(events(response, require_terminated=True))

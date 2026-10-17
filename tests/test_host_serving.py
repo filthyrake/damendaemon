@@ -8,15 +8,15 @@ from unittest.mock import patch
 from urllib.request import Request as HttpRequest,urlopen
 from urllib.error import HTTPError
 
-from dllm.cpu_host_worker_build import build_cpu_host_worker
-from dllm.cpu_hybrid_checkpoint import load_cpu_checkpoint
-from dllm.cpu_pipeline_generation import CpuPipelineReferenceGenerator
-from dllm.cpu_reference_text import CpuReferenceText,read_json
-from dllm.distributed_serving import Request
-from dllm.host_serving import HostServingPair,HostDistributedRuntime,handler_for_host
-from dllm.server import BoundedHTTPServer
-from dllm.http_auth import AuthPolicy
-from dllm.runtime import BusyError
+from damendaemon.cpu_host_worker_build import build_cpu_host_worker
+from damendaemon.cpu_hybrid_checkpoint import load_cpu_checkpoint
+from damendaemon.cpu_pipeline_generation import CpuPipelineReferenceGenerator
+from damendaemon.cpu_reference_text import CpuReferenceText,read_json
+from damendaemon.distributed_serving import Request
+from damendaemon.host_serving import HostServingPair,HostDistributedRuntime,handler_for_host
+from damendaemon.server import BoundedHTTPServer
+from damendaemon.http_auth import AuthPolicy
+from damendaemon.runtime import BusyError
 from tests import test_cpu_host_worker_build as fixtures
 from tests.test_cpu_pipeline_generation import tokenizer,OPTIONS
 
@@ -74,8 +74,8 @@ class HostServingTests(unittest.TestCase):
         with self.post(base,body) as response:result=json.load(response)
         self.assertEqual(result['choices'][0]['text'],text)
         self.assertEqual(result['usage'],expected[-1]['usage'])
-        self.assertEqual(result['dllm_timing']['source_tier'],'cpu_reference')
-        self.assertEqual(result['dllm_timing']['kernel_backend'],'cpu-host-reference')
+        self.assertEqual(result['damendaemon_timing']['source_tier'],'cpu_reference')
+        self.assertEqual(result['damendaemon_timing']['kernel_backend'],'cpu-host-reference')
         with self.post(base,dict(body,stream=True,stream_options={'include_usage':True})) as response:wire=response.read().decode()
         events=[json.loads(line[6:]) for line in wire.splitlines() if line.startswith('data: ') and line!='data: [DONE]']
         self.assertEqual(''.join(e['choices'][0].get('text','') for e in events if e['choices']),text)
@@ -108,7 +108,7 @@ class HostServingTests(unittest.TestCase):
             while self.runtime.requests.qsize()!=2 and time.monotonic()<deadline:time.sleep(.005)
             self.assertEqual(self.runtime.requests.qsize(),2);self.start()
             results=[f.result(timeout=5) for f in futures]
-        self.assertEqual([r['dllm_timing']['max_batch_size'] for r in results],[2,2])
+        self.assertEqual([r['damendaemon_timing']['max_batch_size'] for r in results],[2,2])
         self.assertEqual(results[0]['choices'],results[1]['choices'])
         self.assertFalse(any(self.pair.state.lengths));self.assertEqual(self.runtime.completed,2)
         self.assertEqual(request()['usage']['completion_tokens'],3)
@@ -145,21 +145,21 @@ class HostServingTests(unittest.TestCase):
         with urlopen(base+'/health') as response:self.assertEqual(json.load(response)['status'],'ok')
         with self.post(base,{'model':'model','prompt':[1,2],'max_tokens':3}) as response:result=json.load(response)
         self.assertEqual(result['usage']['completion_tokens'],3)
-        self.assertEqual(result['dllm_timing']['max_batch_size'],1)
+        self.assertEqual(result['damendaemon_timing']['max_batch_size'],1)
         self.assertFalse(any(self.pair.state.lengths))
         self.runtime.close()
         with self.assertRaises(HTTPError) as error:urlopen(base+'/health')
         self.assertEqual(error.exception.code,503)
 
     def test_real_tls_backpressure_keeps_peer_alive_and_preserves_other_slot(self):
-        from dllm.distributed_serving import STREAM_BUFFER_EVENTS
+        from damendaemon.distributed_serving import STREAM_BUFFER_EVENTS
         self.start(heartbeat_interval=.02)
         requests=[]
         def capture(*args,**kwargs):
             request=Request(*args,**kwargs);requests.append(request);return request
         generation=self.runtime.generate('model',None,13,raw_prompt=[1,2])
         self.addCleanup(generation.close)
-        with patch('dllm.distributed_serving.Request',side_effect=capture):first=next(generation)
+        with patch('damendaemon.distributed_serving.Request',side_effect=capture):first=next(generation)
         request=requests[0];deadline=time.monotonic()+3
         while request.events.qsize()<STREAM_BUFFER_EVENTS and time.monotonic()<deadline:time.sleep(.005)
         self.assertEqual(request.events.qsize(),STREAM_BUFFER_EVENTS)
@@ -183,7 +183,7 @@ class HostServingTests(unittest.TestCase):
 
     def test_authenticated_http_clients_get_admission_turns_on_real_peers(self):
         import secrets
-        from dllm.http_auth import ClientKey
+        from damendaemon.http_auth import ClientKey
         a,b=secrets.token_urlsafe(32),secrets.token_urlsafe(32)
         base=self.serve(AuthPolicy(clients=(ClientKey('alice',a,8),ClientKey('bob',b,8))))
         order=[];original=self.pair.prefill

@@ -7,11 +7,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from dllm.glm_tool_text import GlmToolText,render_tool_chat
-from dllm.glm_tool_output import GlmToolTokenStream
-from dllm.glm_tool_generation import GlmToolReferenceGenerator
-from dllm.glm_flash_tools import FlashTools
-from dllm.glm_text import END_THINK,EOS
+from damendaemon.glm_tool_text import GlmToolText,render_tool_chat
+from damendaemon.glm_tool_output import GlmToolTokenStream
+from damendaemon.glm_tool_generation import GlmToolReferenceGenerator
+from damendaemon.glm_flash_tools import FlashTools
+from damendaemon.glm_text import END_THINK,EOS
 from scripts import run_glm_reference as cli
 from tests.test_glm_generation import text_fixture,ScriptedModel
 from tests.test_glm_batch_generation import ScriptedGlm

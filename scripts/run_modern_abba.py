@@ -32,11 +32,11 @@ def main():
     p.add_argument('--llama-server', required=True)
     p.add_argument('--model-revision', required=True)
     p.add_argument('--llama-revision', required=True)
-    p.add_argument('--dllm-revision', required=True)
+    p.add_argument('--damendaemon-revision', required=True)
     p.add_argument('--hardware', required=True)
     p.add_argument('--output-dir', required=True)
     p.add_argument('--candidate-q8-small-batch', action='store_true',
-                   help='compare ordinary dllm with the isolated HIP Q8 policy instead of llama.cpp')
+                   help='compare ordinary damendaemon with the isolated HIP Q8 policy instead of llama.cpp')
     args = p.parse_args()
     directory = Path(args.output_dir)
     directory.mkdir(parents=True, exist_ok=False)
@@ -56,26 +56,26 @@ def main():
     if not eos:
         raise ValueError('missing EOS IDs')
     report = dict(passed=False, competitive_pass=None, phases=[],
-                  limitations=[('within-dllm isolated Q8 launch policy; identical arithmetic/storage policy' if args.candidate_q8_small_batch else
-                                'FP16 dllm versus FP32 llama.cpp convolution history and differing intermediate arithmetic'),
+                  limitations=[('within-damendaemon isolated Q8 launch policy; identical arithmetic/storage policy' if args.candidate_q8_small_batch else
+                                'FP16 damendaemon versus FP32 llama.cpp convolution history and differing intermediate arithmetic'),
                                'client-visible decode proxy; internal decode and peak memory telemetry outstanding'],
                   gguf_sha256=digest(args.gguf), llama_binary_sha256=digest(args.llama_server))
     lock = (directory.parent/'modern-gpu-benchmark.lock').open('w')
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     try:
-        for phase, engine in (('A1', 'dllm'), ('B1', 'llama.cpp'), ('B2', 'llama.cpp'), ('A2', 'dllm')):
+        for phase, engine in (('A1', 'damendaemon'), ('B1', 'llama.cpp'), ('B2', 'llama.cpp'), ('A2', 'damendaemon')):
             candidate = args.candidate_q8_small_batch and phase.startswith('B')
             if candidate:
-                engine = 'dllm'
+                engine = 'damendaemon'
             with socket.socket() as reserved:
                 reserved.bind(('127.0.0.1', 0))
                 port = reserved.getsockname()[1]
             base = f'http://127.0.0.1:{port}'
             manifest = dict(model_revision=args.model_revision, hardware=args.hardware, eos_ids=sorted(eos),
-                engine_revision=args.dllm_revision if engine == 'dllm' else args.llama_revision,
+                engine_revision=args.damendaemon_revision if engine == 'damendaemon' else args.llama_revision,
                 precision=dict(projections='Q8_0', input_embedding='FP16', output_head='Q8_0',
                     attention_kv='FP16', recurrent_state='FP32',
-                    convolution_history='FP16' if engine == 'dllm' else 'FP32'),
+                    convolution_history='FP16' if engine == 'damendaemon' else 'FP32'),
                 graph_policy='normal enabled', prompt_cache=False)
             if args.candidate_q8_small_batch:
                 manifest['variant'] = 'hip-q8-small-batch' if candidate else 'ordinary'
@@ -85,13 +85,13 @@ def main():
             env = dict(os.environ)
             env.update(ROCR_VISIBLE_DEVICES='0', HIP_VISIBLE_DEVICES='0', OMP_NUM_THREADS='4')
             env.pop('CUDA_VISIBLE_DEVICES', None)
-            if engine == 'dllm':
-                env.update(DLLM_DEVICE='rocm', DLLM_KERNELS='triton', DLLM_QUANTIZATION='q8_0',
-                           DLLM_ROCM_MEMORY_GIB='8', DLLM_WEIGHT_CACHE='')
-                command = [sys.executable, '-m', 'dllm', 'serve', '--port', str(port),
+            if engine == 'damendaemon':
+                env.update(DAMENDAEMON_DEVICE='rocm', DAMENDAEMON_KERNELS='triton', DAMENDAEMON_QUANTIZATION='q8_0',
+                           DAMENDAEMON_ROCM_MEMORY_GIB='8', DAMENDAEMON_WEIGHT_CACHE='')
+                command = [sys.executable, '-m', 'damendaemon', 'serve', '--port', str(port),
                            '--context', '4096', '--batch-size', '4', '--gpu-models', '1', '--model', 'a='+str(model)]
                 if candidate:
-                    command = [sys.executable, 'scripts/experiments/hip_q8_small_batch.py', '--module', 'dllm', *command[3:]]
+                    command = [sys.executable, 'scripts/experiments/hip_q8_small_batch.py', '--module', 'damendaemon', *command[3:]]
                 readiness = base+'/v1/models/status'
             else:
                 command = [args.llama_server, '--model', args.gguf, '--alias', 'a', '--host', '127.0.0.1',
@@ -101,7 +101,7 @@ def main():
                            '--ubatch-size', '512', '--no-context-shift']
                 readiness = base+'/health'
             record = dict(phase=phase, engine=engine, command=command, passed=False,
-                          readiness_semantics='HTTP ready; dllm loads on first request, llama.cpp preloads')
+                          readiness_semantics='HTTP ready; damendaemon loads on first request, llama.cpp preloads')
             report['phases'].append(record)
             start = time.monotonic()
             with (directory/f'{phase}.server.log').open('w') as log:

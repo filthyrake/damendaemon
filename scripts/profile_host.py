@@ -13,9 +13,9 @@ import time
 
 import torch
 
-from dllm.device import device_name, synchronize
-from dllm.models import load
-from dllm.runtime import make_executor, require_gpu
+from damendaemon.device import device_name, synchronize
+from damendaemon.models import load
+from damendaemon.runtime import make_executor, require_gpu
 
 
 def main():

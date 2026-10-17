@@ -9,8 +9,8 @@ from pathlib import Path
 import statistics
 import time
 import torch
-from dllm.qwen2 import ModelWeights,Executor
-from dllm.runtime import make_executor
+from damendaemon.qwen2 import ModelWeights,Executor
+from damendaemon.runtime import make_executor
 
 
 @torch.inference_mode()

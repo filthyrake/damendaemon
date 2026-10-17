@@ -3,11 +3,11 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.floating_block import FloatingBlock
-from dllm.hyper_connections import reduce_streams, restore_streams
-from dllm.floating_attention import attention_prefill
-from dllm.floating_moe import floating_moe
-from dllm.expert_selection import select_experts
+from damendaemon.floating_block import FloatingBlock
+from damendaemon.hyper_connections import reduce_streams, restore_streams
+from damendaemon.floating_attention import attention_prefill
+from damendaemon.floating_moe import floating_moe
+from damendaemon.expert_selection import select_experts
 from tests.test_floating_attention import fixture as attention_fixture
 
 
@@ -82,7 +82,7 @@ class FloatingBlockTests(unittest.TestCase):
             block.decode(hidden[:,3:4],state,torch.tensor([[99]]),position=3)
         torch.testing.assert_close(state.attention.cache,before)
         self.assertEqual(state.attention.position,3)
-        with patch('dllm.floating_block.floating_moe',side_effect=RuntimeError('expert failure')):
+        with patch('damendaemon.floating_block.floating_moe',side_effect=RuntimeError('expert failure')):
             with self.assertRaisesRegex(RuntimeError,'expert failure'):
                 block.decode(hidden[:,3:4],state,ids[:,3:4],position=3)
         self.assertTrue(state.attention.poisoned)

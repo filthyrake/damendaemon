@@ -2,9 +2,9 @@
 import unittest
 import torch
 from transformers import Gemma3TextConfig,Gemma3ForCausalLM,OlmoeConfig,OlmoeForCausalLM
-from dllm.config import decoder_config
-from dllm.gemma import load_weights as gemma_weights
-from dllm.moe import load_weights as olmoe_weights
+from damendaemon.config import decoder_config
+from damendaemon.gemma import load_weights as gemma_weights
+from damendaemon.moe import load_weights as olmoe_weights
 
 
 class SpecializedCheckpointTests(unittest.TestCase):

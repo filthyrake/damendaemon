@@ -2,8 +2,8 @@ import json
 from pathlib import Path
 import unittest
 
-from dllm.gguf_model import tokenizer
-from dllm.gguf_sentencepiece import restore_tokenizer
+from damendaemon.gguf_model import tokenizer
+from damendaemon.gguf_sentencepiece import restore_tokenizer
 from tests.reference.generate_gguf_bpe_specials import metadata
 
 
@@ -24,8 +24,8 @@ class BpeSpecialTests(unittest.TestCase):
                             self.assertEqual(decoded, sample['expected']['generated_' + suffix])
 
     def test_literal_special_reference_full_batch_and_stream(self):
-        from dllm.bytelevel_stream import ByteLevelStream
-        from dllm.logprobs import TokenText
+        from damendaemon.bytelevel_stream import ByteLevelStream
+        from damendaemon.logprobs import TokenText
         from tests.reference.generate_gguf_bpe_literals import metadata as literal_metadata
         fixture = json.loads((Path(__file__).parent / 'fixtures/gguf-bpe-literals.json').read_text())
         for case in fixture['cases']:
@@ -47,8 +47,8 @@ class BpeSpecialTests(unittest.TestCase):
                             self.assertEqual(''.join(stream.feed(i) for i in ids if i not in hidden) + stream.finish(), expected)
 
     def test_unused_independent_reference_and_stream(self):
-        from dllm.bytelevel_stream import ByteLevelStream
-        from dllm.logprobs import TokenText
+        from damendaemon.bytelevel_stream import ByteLevelStream
+        from damendaemon.logprobs import TokenText
         from tests.reference.generate_gguf_bpe_unused import metadata as unused_metadata
         fixture = json.loads((Path(__file__).parent / 'fixtures/gguf-bpe-unused.json').read_text())
         for case in fixture['cases']:
@@ -84,7 +84,7 @@ class BpeSpecialTests(unittest.TestCase):
             tokenizer(source)
 
     def test_incomplete_utf8_does_not_trigger_text_stop(self):
-        from dllm.stopping import text_delta
+        from damendaemon.stopping import text_delta
         candidate, _, _ = tokenizer(metadata('qwen2', 4, False))
         ids = candidate.encode('é', add_special_tokens=False).ids
         self.assertEqual(len(ids), 2)
@@ -105,8 +105,8 @@ class BpeSpecialTests(unittest.TestCase):
                 tokenizer(source)
 
     def test_bytelevel_stream_and_logprob_presentation(self):
-        from dllm.bytelevel_stream import ByteLevelStream
-        from dllm.logprobs import TokenText
+        from damendaemon.bytelevel_stream import ByteLevelStream
+        from damendaemon.logprobs import TokenText
         original, _, _ = tokenizer(metadata('qwen2', 4, False))
         for candidate in (original, restore_tokenizer(original.to_str())):
             stream = ByteLevelStream(candidate, ('ab', 'bcx'))

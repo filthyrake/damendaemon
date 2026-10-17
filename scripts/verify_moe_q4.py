@@ -8,7 +8,7 @@ import torch
 import triton.testing
 from gguf.quants import quantize, dequantize
 from gguf.constants import GGMLQuantizationType
-from dllm.runtime import require_gpu
+from damendaemon.runtime import require_gpu
 from experiments.moe_q4 import routed_linear
 
 

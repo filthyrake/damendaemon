@@ -16,7 +16,7 @@ used in the Mamba-1 evidence. Original weights are downloaded separately.
 Configuration mapping/reference: Hugging Face Transformers Mamba2 implementation
 and its Apache-2.0 converter (state-spaces/mamba2 and Hugging Face contributors):
 https://github.com/huggingface/transformers/tree/main/src/transformers/models/mamba2
-Production generation uses dllm's loader, native CUDA/Metal recurrence, shared
+Production generation uses damendaemon's loader, native CUDA/Metal recurrence, shared
 native convolution, gated RMS normalization, projections and scheduler. It does
 not use a Transformers model or mamba-ssm runtime. The conversion utility is an
 offline preparation step, not an inference dependency.
@@ -34,7 +34,7 @@ Qualification:
 - 139 independent CPU FP32 logits checks per GPU, plus recurrent/convolution
   state and exact greedy generation, through full 2048 context. Maximum relative
   RMS: A2 0.00002930; M4 0.00002426. CPU reference is Transformers 4.51.3 with SSD
-  chunk size 16 to bound its temporary memory; dllm uses its own recurrence.
+  chunk size 16 to bound its temporary memory; damendaemon uses its own recurrence.
 - Twelve full-recomputation checks per GPU for chunking and prefix snapshots,
   including interleaved slots, suffix continuation, no rewind and invalid states.
 - Real HTTP streaming, concurrent requests, cancellation, context bounds and
@@ -51,17 +51,17 @@ tokens and five warm rounds. llama.cpp pinned commit remains
 
 | Device / engine | c1 tokens/s | c2 | c4 | First text ms c1 / c2 / c4 |
 |---|---:|---:|---:|---|
-| A2 dllm | 224.76 | 293.30 | 508.05 | 20.50 / 22.85 / 45.00 |
+| A2 damendaemon | 224.76 | 293.30 | 508.05 | 20.50 / 22.85 / 45.00 |
 | A2 llama.cpp | 149.07 | 206.48 | 301.26 | 32.69 / 53.12 / 100.79 |
 | A2 vLLM | 188.64 | 229.48 | 412.85 | 58.47 / 118.05 / 127.87 |
-| M4 dllm | 39.37 | 78.37 | 201.08 | 34.68 / 47.09 / 60.17 |
+| M4 damendaemon | 39.37 | 78.37 | 201.08 | 34.68 / 47.09 / 60.17 |
 | M4 llama.cpp | 79.43 | 85.41 | 114.85 | 33.00 / 69.88 / 85.07 |
 
 Apple single-request performance remains behind; laptop trials vary materially.
 The host profile distinguishes dispatch/readback durations but does not equate
 GPU waits inside a host call with pure Python overhead. These are narrow initial
 measurements, not broad parity claims. vLLM 0.30 runs with torch 2.13 and FP32
-model dtype; dllm uses torch 2.6 on the A2. This measures the recorded installed
+model dtype; damendaemon uses torch 2.6 on the A2. This measures the recorded installed
 configurations, not a claim that upstream has been exhaustively tuned.
 
 [Later Q8 qualification](q8/README.md) adds CUDA/Metal packed matrix execution,

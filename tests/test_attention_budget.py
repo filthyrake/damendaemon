@@ -1,5 +1,5 @@
 import unittest
-from dllm.attention_budget import query_rows
+from damendaemon.attention_budget import query_rows
 
 
 class AttentionBudgetTests(unittest.TestCase):

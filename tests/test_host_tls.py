@@ -7,10 +7,10 @@ import time
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.host_tls import ALPN,client_context,server_context,certificate_pin,wrap_peer
-from dllm.host_tensor_channel import HostTensorChannel
-from dllm.host_stage_channel import HostStageChannel
-from dllm.stage_protocol import StageState,Command,PREFILL
+from damendaemon.host_tls import ALPN,client_context,server_context,certificate_pin,wrap_peer
+from damendaemon.host_tensor_channel import HostTensorChannel
+from damendaemon.host_stage_channel import HostStageChannel
+from damendaemon.stage_protocol import StageState,Command,PREFILL
 
 from tests.tls_credentials import credentials
 

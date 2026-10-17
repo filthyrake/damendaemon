@@ -5,7 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-from dllm import models
+from damendaemon import models
 
 LIMIT = 1024 * 1024
 
@@ -22,12 +22,12 @@ class ModelConfigReaderTests(unittest.TestCase):
             for index, payload in enumerate(cases):
                 with self.subTest(case=index):
                     path.write_bytes(payload)
-                    with patch('dllm.config.decoder_config', side_effect=lambda value:value) as dispatch:
+                    with patch('damendaemon.config.decoder_config', side_effect=lambda value:value) as dispatch:
                         with self.assertRaises(ValueError): models.config(directory)
                         dispatch.assert_not_called()
 
     def test_only_supported_mamba2_time_step_infinity_is_accepted(self):
-        from dllm.config import read_config
+        from damendaemon.config import read_config
         cases=[{'model_type':'llama','time_step_limit':[0,float('inf')]},
                {'model_type':'mamba2','extra':float('inf')},
                {'model_type':'mamba2','time_step_limit':[0,float('inf')],'extra':float('inf')},
@@ -56,7 +56,7 @@ class ModelConfigReaderTests(unittest.TestCase):
                 return super().read(count)
         with tempfile.TemporaryDirectory() as directory:
             with patch.object(Path, 'open', return_value=Reader(b'{"model_type":"llama"}')), \
-                    patch('dllm.config.decoder_config', side_effect=lambda value:value):
+                    patch('damendaemon.config.decoder_config', side_effect=lambda value:value):
                 self.assertEqual(models.config(directory), {'model_type':'llama'})
             self.assertEqual(reads, [LIMIT+1])
 
@@ -66,5 +66,5 @@ class ModelConfigReaderTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)/'config.json'
             path.write_bytes(encoded + b' '*(LIMIT-len(encoded)))
-            with patch('dllm.config.decoder_config', side_effect=lambda value:value):
+            with patch('damendaemon.config.decoder_config', side_effect=lambda value:value):
                 self.assertEqual(models.config(directory), value)

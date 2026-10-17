@@ -1,7 +1,7 @@
 """Content identities for reusable independent AWQ oracle logits."""
 import hashlib
 from pathlib import Path
-from dllm.awq_model import plan
+from damendaemon.awq_model import plan
 
 
 def fingerprint(path):

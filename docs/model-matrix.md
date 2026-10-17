@@ -60,7 +60,7 @@ in [the original result](evidence/models/qwen3-small-verify_qwen2.json).
 
 A [separate precision diagnostic](evidence/models/qwen3-small-diagnose_precision.json)
 compared both implementations with FP32 Transformers on the same tokens. At the
-problematic position, the original dllm output was 0.530% from FP32, while the
+problematic position, the original damendaemon output was 0.530% from FP32, while the
 FP16 reference itself was 2.019% from FP32. Neither FP16 kernel ordering nor FP16
 SDPA can be treated as exact arithmetic. This explains that case; it does not
 excuse every numerical failure.
@@ -120,7 +120,7 @@ check](evidence/models/qwen3-medium-fallback-final.json) also passed against FP3
 
 Each engine uses the same pinned model, FP16 weights/KV, greedy decoding,
 2,048-token context capacity, four active slots, no prefix cache, and four CPU
-threads. Qwen3 thinking is disabled on both sides. dllm's FP32 residual/elementwise
+threads. Qwen3 thinking is disabled on both sides. damendaemon's FP32 residual/elementwise
 policy differs from vLLM's internal precision choices and is part of the tested
 implementation, not an all-operations precision match.
 
@@ -132,24 +132,24 @@ establish tail latency or a general engine ranking.
 
 | Model | Engine | Concurrent requests | Aggregate tokens/s | Per-request post-first tokens/s | First output (ms) |
 | --- | --- | --- | --- | --- | --- |
-| Qwen3-1.7B | dllm | 1 | 45.0 | 45.3 | 30.2 |
+| Qwen3-1.7B | damendaemon | 1 | 45.0 | 45.3 | 30.2 |
 | Qwen3-1.7B | vllm | 1 | 45.2 | 46.1 | 48.0 |
-| Qwen3-1.7B | dllm | 4 | 151.2 | 39.3 | 91.2 |
+| Qwen3-1.7B | damendaemon | 4 | 151.2 | 39.3 | 91.2 |
 | Qwen3-1.7B | vllm | 4 | 161.6 | 42.3 | 91.7 |
-| SmolLM2-360M | dllm | 1 | 137.6 | 151.6 | 49.9 |
+| SmolLM2-360M | damendaemon | 1 | 137.6 | 151.6 | 49.9 |
 | SmolLM2-360M | vllm | 1 | 159.7 | 176.5 | 43.6 |
-| SmolLM2-360M | dllm | 4 | 423.7 | 129.2 | 89.4 |
+| SmolLM2-360M | damendaemon | 4 | 423.7 | 129.2 | 89.4 |
 | SmolLM2-360M | vllm | 4 | 557.5 | 166.3 | 75.1 |
-| Qwen3-0.6B (provisional) | dllm | 1 | 108.2 | 112.9 | 31.1 |
+| Qwen3-0.6B (provisional) | damendaemon | 1 | 108.2 | 112.9 | 31.1 |
 | Qwen3-0.6B (provisional) | vllm | 1 | 113.6 | 121.1 | 42.7 |
-| Qwen3-0.6B (provisional) | dllm | 4 | 325.7 | 88.5 | 72.1 |
+| Qwen3-0.6B (provisional) | damendaemon | 4 | 325.7 | 88.5 | 72.1 |
 | Qwen3-0.6B (provisional) | vllm | 4 | 384.4 | 107.1 | 73.4 |
 
 Raw measurements (including concurrency 2):
 
-- Qwen3-1.7B: [dllm C1](evidence/models/compare-dllm-qwen3-medium-c1.json), [dllm C2](evidence/models/compare-dllm-qwen3-medium-c2.json), [dllm C4](evidence/models/compare-dllm-qwen3-medium-c4.json), [vllm C1](evidence/models/compare-vllm-qwen3-medium-c1.json), [vllm C2](evidence/models/compare-vllm-qwen3-medium-c2.json), [vllm C4](evidence/models/compare-vllm-qwen3-medium-c4.json).
-- SmolLM2-360M: [dllm C1](evidence/models/compare-dllm-smollm2-c1.json), [dllm C2](evidence/models/compare-dllm-smollm2-c2.json), [dllm C4](evidence/models/compare-dllm-smollm2-c4.json), [vllm C1](evidence/models/compare-vllm-smollm2-c1.json), [vllm C2](evidence/models/compare-vllm-smollm2-c2.json), [vllm C4](evidence/models/compare-vllm-smollm2-c4.json).
-- Qwen3-0.6B (provisional): [dllm C1](evidence/models/compare-dllm-qwen3-small-c1.json), [dllm C2](evidence/models/compare-dllm-qwen3-small-c2.json), [dllm C4](evidence/models/compare-dllm-qwen3-small-c4.json), [vllm C1](evidence/models/compare-vllm-qwen3-small-c1.json), [vllm C2](evidence/models/compare-vllm-qwen3-small-c2.json), [vllm C4](evidence/models/compare-vllm-qwen3-small-c4.json).
+- Qwen3-1.7B: [damendaemon C1](evidence/models/compare-damendaemon-qwen3-medium-c1.json), [damendaemon C2](evidence/models/compare-damendaemon-qwen3-medium-c2.json), [damendaemon C4](evidence/models/compare-damendaemon-qwen3-medium-c4.json), [vllm C1](evidence/models/compare-vllm-qwen3-medium-c1.json), [vllm C2](evidence/models/compare-vllm-qwen3-medium-c2.json), [vllm C4](evidence/models/compare-vllm-qwen3-medium-c4.json).
+- SmolLM2-360M: [damendaemon C1](evidence/models/compare-damendaemon-smollm2-c1.json), [damendaemon C2](evidence/models/compare-damendaemon-smollm2-c2.json), [damendaemon C4](evidence/models/compare-damendaemon-smollm2-c4.json), [vllm C1](evidence/models/compare-vllm-smollm2-c1.json), [vllm C2](evidence/models/compare-vllm-smollm2-c2.json), [vllm C4](evidence/models/compare-vllm-smollm2-c4.json).
+- Qwen3-0.6B (provisional): [damendaemon C1](evidence/models/compare-damendaemon-qwen3-small-c1.json), [damendaemon C2](evidence/models/compare-damendaemon-qwen3-small-c2.json), [damendaemon C4](evidence/models/compare-damendaemon-qwen3-small-c4.json), [vllm C1](evidence/models/compare-vllm-qwen3-small-c1.json), [vllm C2](evidence/models/compare-vllm-qwen3-small-c2.json), [vllm C4](evidence/models/compare-vllm-qwen3-small-c4.json).
 
 Prompt-token counts matched for each model/engine pair (26 for Qwen3, 43 for
 SmolLM2); all measured completions contained 64 tokens. Text is recorded in
@@ -172,7 +172,7 @@ from this test, not claims about all workloads or model quality.
 ## Reproduce
 
 Use the pinned model metadata in `evidence/models/` and the README's isolated
-CUDA environment. Select one GPU UUID and set `DLLM_KERNELS=triton`:
+CUDA environment. Select one GPU UUID and set `DAMENDAEMON_KERNELS=triton`:
 
 ```sh
 PYTHONPATH=. python scripts/verify_qwen2.py /path/to/qwen3 --reference-dtype float32

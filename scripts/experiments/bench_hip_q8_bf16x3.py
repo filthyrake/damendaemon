@@ -5,8 +5,8 @@ import statistics
 import time
 from pathlib import Path
 import torch
-from dllm.runtime import require_gpu
-from dllm.quantized_kernels import expand
+from damendaemon.runtime import require_gpu
+from damendaemon.quantized_kernels import expand
 from scripts.experiments.hip_q8_bf16x3 import linear
 
 

@@ -3,10 +3,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_flash_layer_pipeline import FlashLayerPipeline
-from dllm.glm_layer_pipeline import GlmLayerPipeline
-from dllm.glm_flash_reference_loader import load_reference_stage
-from dllm.glm_flash_model import FlashModelState
+from damendaemon.glm_flash_layer_pipeline import FlashLayerPipeline
+from damendaemon.glm_layer_pipeline import GlmLayerPipeline
+from damendaemon.glm_flash_reference_loader import load_reference_stage
+from damendaemon.glm_flash_model import FlashModelState
 from tests.test_glm_flash_reference_loader import fixture,floating_control
 
 
@@ -84,8 +84,8 @@ class FlashLayerPipelineTests(unittest.TestCase):
 
     def test_configuration_and_shared_block_owners_are_rejected(self):
         import copy
-        from dllm.glm_flash_layer_stage import FlashLayerStage
-        from dllm.layer_pipeline import CpuLayerPipeline
+        from damendaemon.glm_flash_layer_stage import FlashLayerStage
+        from damendaemon.layer_pipeline import CpuLayerPipeline
         stages=list(self.pipeline().stages)
         with self.assertRaises(ValueError):CpuLayerPipeline(stages)
         stages[-1].config=copy.deepcopy(stages[-1].config)

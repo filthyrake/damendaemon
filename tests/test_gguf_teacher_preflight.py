@@ -6,7 +6,7 @@ import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
-from dllm.token_workload import token_workload_digest
+from damendaemon.token_workload import token_workload_digest
 from scripts import verify_gguf_reference as verifier
 
 

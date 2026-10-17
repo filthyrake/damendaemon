@@ -1,7 +1,7 @@
 """Real-device chunk boundaries, slot isolation and abandoned-prefix reuse.
 
 This complements independent model-reference replays; the full-prompt control
-here uses dllm itself and is not independent model correctness or speed proof.
+here uses damendaemon itself and is not independent model correctness or speed proof.
 """
 if not __debug__:
     raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
@@ -10,9 +10,9 @@ import argparse
 import json
 from pathlib import Path
 import torch
-from dllm.qwen2 import ModelWeights
-from dllm.runtime import require_gpu, make_executor
-from dllm.device import device_name, selected_accelerator
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.runtime import require_gpu, make_executor
+from damendaemon.device import device_name, selected_accelerator
 
 
 @torch.inference_mode()
@@ -31,7 +31,7 @@ def main():
     checks = []
     report = dict(passed=False, device=device_name(), accelerator=selected_accelerator(),
                   model=args.model, context=512, quantization=model.quantization,
-                  reference='dllm full-prompt control; independent replays are separate', checks=checks)
+                  reference='damendaemon full-prompt control; independent replays are separate', checks=checks)
 
     def compare(actual, expected, label):
         actual, expected = actual.float().cpu(), expected.float().cpu()

@@ -1,6 +1,6 @@
 """Replay fixed/paged FP32 execution against a separately produced packed baseline.
 
-The baseline is ordinary dllm FP32, whose model accuracy is checked separately
+The baseline is ordinary damendaemon FP32, whose model accuracy is checked separately
 against independent HF. This isolates the candidate's arithmetic and graph
 behavior without incorrectly rounding its comparator's K-quant weights to FP16.
 """
@@ -14,9 +14,9 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from dllm.device import device_name, empty_cache
-from dllm.gguf_model import GgufWeights
-from dllm.runtime import make_executor, require_gpu
+from damendaemon.device import device_name, empty_cache
+from damendaemon.gguf_model import GgufWeights
+from damendaemon.runtime import make_executor, require_gpu
 
 
 def digest(path):
@@ -33,7 +33,7 @@ def main():
     experiments.add_argument('--experimental-prefill-f32',action='store_true')
     parser.add_argument('--long-prefill',action='store_true',help='include 128/256/384-token prompts and 128-token chunks')
     parser.add_argument('--output',required=True);args=parser.parse_args()
-    if args.write_reference and (args.experimental_residual_f32 or args.experimental_prefill_f32 or os.environ.get('DLLM_KQUANT_RESIDUAL_F32_LIBRARY') or os.environ.get('DLLM_KQUANT_PREFILL_F32')=='1'):
+    if args.write_reference and (args.experimental_residual_f32 or args.experimental_prefill_f32 or os.environ.get('DAMENDAEMON_KQUANT_RESIDUAL_F32_LIBRARY') or os.environ.get('DAMENDAEMON_KQUANT_PREFILL_F32')=='1'):
         parser.error('the reference must use ordinary packed FP32 dispatch')
     require_gpu();torch.set_num_threads(4);torch.backends.cuda.matmul.allow_tf32=False
     experiment=None
@@ -48,11 +48,11 @@ def main():
                   model_type=source.config['model_type'])
     report=dict(**metadata,device=device_name(),torch=torch.__version__,experiment=experiment,
                 mode='compare' if args.reference else 'write ordinary packed FP32 baseline',comparisons=[],passed=False)
-    production_library=os.environ.get('DLLM_KQUANT_RESIDUAL_F32_LIBRARY')
+    production_library=os.environ.get('DAMENDAEMON_KQUANT_RESIDUAL_F32_LIBRARY')
     if production_library:
         report['production_library']=dict(path=production_library,sha256=digest(production_library))
-    if os.environ.get('DLLM_KQUANT_PREFILL_F32')=='1':
-        from dllm import kquant_prefill_kernels
+    if os.environ.get('DAMENDAEMON_KQUANT_PREFILL_F32')=='1':
+        from damendaemon import kquant_prefill_kernels
         report['production_prefill_kernel_sha256']=digest(kquant_prefill_kernels.__file__)
     reference=np.load(args.reference,allow_pickle=False) if args.reference else None
     saved={};visited=set()
@@ -78,8 +78,8 @@ def main():
             return expected.argmax(-1).tolist()
         with torch.inference_mode():
             for paged in (False,True):
-                if paged:os.environ['DLLM_KV_CACHE_TOKENS']='1024'
-                else:os.environ.pop('DLLM_KV_CACHE_TOKENS',None)
+                if paged:os.environ['DAMENDAEMON_KV_CACHE_TOKENS']='1024'
+                else:os.environ.pop('DAMENDAEMON_KV_CACHE_TOKENS',None)
                 for graph in (False,True):
                     executor=make_executor(source,use_graph=graph,max_batch=4)
                     if executor.compute_dtype!=torch.float32:raise ValueError('select an FP32 executor policy')
@@ -114,7 +114,7 @@ def main():
         raise
     finally:
         if reference is not None:reference.close()
-        os.environ.pop('DLLM_KV_CACHE_TOKENS',None)
+        os.environ.pop('DAMENDAEMON_KV_CACHE_TOKENS',None)
         Path(args.output).write_text(json.dumps(report,indent=2)+'\n')
 
 

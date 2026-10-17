@@ -3,19 +3,19 @@ import argparse
 from contextlib import closing
 import json
 from pathlib import Path
-from dllm.checkpoint import _unique_fields
-from dllm.glm_text import _read
-from dllm.glm_generation import validate_text_config
-from dllm.glm_flash_generation import flash_text_config
-from dllm.glm_flash_image_text import FlashImageText
-from dllm.glm_flash_image_tool_text import FlashImageToolText
-from dllm.glm_flash_image_tool_generation import FlashImageToolReferenceGenerator
-from dllm.glm_flash_inline_images import decode_inline_images
-from dllm.glm_flash_images import plan_images,validate_processor
-from dllm.glm_flash_vision import vision_specs,audit_vision,ROOT
-from dllm.glm_flash_reference_loader import load_reference_model
-from dllm.glm_flash_vision_loader import load_reference_vision
-from dllm.glm_flash_image_generation import FlashImageReferenceGenerator
+from damendaemon.checkpoint import _unique_fields
+from damendaemon.glm_text import _read
+from damendaemon.glm_generation import validate_text_config
+from damendaemon.glm_flash_generation import flash_text_config
+from damendaemon.glm_flash_image_text import FlashImageText
+from damendaemon.glm_flash_image_tool_text import FlashImageToolText
+from damendaemon.glm_flash_image_tool_generation import FlashImageToolReferenceGenerator
+from damendaemon.glm_flash_inline_images import decode_inline_images
+from damendaemon.glm_flash_images import plan_images,validate_processor
+from damendaemon.glm_flash_vision import vision_specs,audit_vision,ROOT
+from damendaemon.glm_flash_reference_loader import load_reference_model
+from damendaemon.glm_flash_vision_loader import load_reference_vision
+from damendaemon.glm_flash_image_generation import FlashImageReferenceGenerator
 from scripts.run_glm_flash_reference import _positive
 
 
@@ -63,8 +63,8 @@ def main(argv=None):
                           projection_workspace_bytes=byte_options['projection_workspace_mib'],
                           max_workspace_bytes=byte_options['workspace_mib'],max_output_bytes=byte_options['output_mib'])
         if args.layer_splits is not None:
-            from dllm.glm_flash_checkpoint_pipeline import load_reference_pipeline
-            from dllm.glm_flash_pipeline_image_generation import FlashPipelineImageReferenceGenerator,FlashPipelineImageToolReferenceGenerator
+            from damendaemon.glm_flash_checkpoint_pipeline import load_reference_pipeline
+            from damendaemon.glm_flash_pipeline_image_generation import FlashPipelineImageReferenceGenerator,FlashPipelineImageToolReferenceGenerator
             model=load_reference_pipeline(args.snapshot,args.layer_splits,**load_options)
             runner_type=FlashPipelineImageToolReferenceGenerator if args.tools else FlashPipelineImageReferenceGenerator
         else:

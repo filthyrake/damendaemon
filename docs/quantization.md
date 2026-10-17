@@ -9,13 +9,13 @@ Choose a storage and arithmetic policy together. Qualification is specific to th
 Quantization can be selected per alias at registration:
 
 ```sh
-dllm add chat /path/to/chat/snapshot --quantization q8_0
-dllm add encoder /path/to/minilm/snapshot --quantization none
+damendaemon add chat /path/to/chat/snapshot --quantization q8_0
+damendaemon add encoder /path/to/minilm/snapshot --quantization none
 ```
 
 `POST /v1/models/register` accepts the same `quantization` field (`none`,
 `q8_0`, or `q4_0`), and `/v1/models/status` reports each alias's policy. Omission uses the
-server's `DLLM_QUANTIZATION` default captured at startup. Policies are part of
+server's `DAMENDAEMON_QUANTIZATION` default captured at startup. Policies are part of
 alias identity and remain stable across eviction/reload; register another alias
 for a different precision. Qwen2, Qwen3, Llama and Mamba-1/2 Q8 also run on Metal.
 [Metal Q8 evidence and performance limits](evidence/quantization/metal/README.md).
@@ -26,7 +26,7 @@ unquantized encoder can share one server and its GPU/host residency budgets.
 
 ## Qwen3 arithmetic
 
-For accurate CUDA Qwen3 arithmetic, set `DLLM_QWEN3_PRECISION=float32`.
+For accurate CUDA Qwen3 arithmetic, set `DAMENDAEMON_QWEN3_PRECISION=float32`.
 This retains compact FP16 matrix storage but uses FP32 operations and KV; it
 clears the Qwen3-0.6B long-context numerical gate. The default `standard` path
 remains faster for batched decoding but retains that checkpoint's documented
@@ -39,13 +39,13 @@ this is qualified numerical approximation, not bitwise FP32 equivalence.
 
 ## Experimental packed four-bit weights
 
-`dllm add compact /path/to/snapshot --quantization q4_0` enables native
+`damendaemon add compact /path/to/snapshot --quantization q4_0` enables native
 Q4_0 projection weights with FP16 block scales. Input embeddings and norms keep
-their existing precision. `DLLM_QUANTIZATION=q4_0` sets the startup default;
+their existing precision. `DAMENDAEMON_QUANTIZATION=q4_0` sets the startup default;
 per-model policies can mix Q4, Q8 and unquantized models in the same server.
 
 For hybrid Qwen3.5/Qwen3.8 text, the AMD branch adds a separate experimental
-Q4 path: `DLLM_EXPERIMENTAL_HYBRID_Q4=1`, `DLLM_HYBRID_PRECISION=compensated`,
+Q4 path: `DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4=1`, `DAMENDAEMON_HYBRID_PRECISION=compensated`,
 ROCm, no graphs, context at most 512 and at most four request slots. An A30-only
 CUDA path uses the same opt-in and bounds; it does not enable Q8 compensated
 CUDA or other NVIDIA devices. HOMER
@@ -59,7 +59,7 @@ also passes on HOMER: streaming, four-request batching, model switching,
 cancellation/error recovery and repeated release/reload. Host weights return
 to zero and GPU allocations return to a stable 32 MiB library baseline.
 Original-weight quality and other devices remain unqualified;
-follow [issue #23](https://github.com/filthyrake/dllm/issues/23).
+follow [issue #23](https://github.com/filthyrake/damendaemon/issues/23).
 A30 also passes all 84 [numerical comparisons](evidence/hybrid/a30-qwen38-27b-q4-native-replay512-chunks.json)
 and the [ordinary HTTP lifecycle](evidence/hybrid/a30-qwen38-27b-q4-service512.json)
 at these bounds, including four-request batching and both residency capacities.
@@ -88,8 +88,8 @@ numerical/HTTP checks, plus changed-weight graph and partial-repack recovery.
 It repacks existing device buffers; host checkpoints and the output head retain
 their original format/path. This does not change ordinary single-GPU Q4 dispatch.
 
-Set `DLLM_Q4_STAGE_ADJACENT=0` for the legacy stage arithmetic and its conservative
-sequential-prefill default. `DLLM_PARTITION_PACKED_PREFILL=0` independently disables
+Set `DAMENDAEMON_Q4_STAGE_ADJACENT=0` for the legacy stage arithmetic and its conservative
+sequential-prefill default. `DAMENDAEMON_PARTITION_PACKED_PREFILL=0` independently disables
 prompt packing. Both distributed workers must agree on both policies; model
 status reports the active layout. See
 [the numerical investigation and measured tradeoffs](evidence/quantization/cuda/q4-arithmetic/README.md).
@@ -98,7 +98,7 @@ Those adjacent Q4 stages use selective runtime row bounds by default. This
 reuses compiled kernels across prompt lengths
 within selected tile families; down-projection families that regressed in GPU
 timing retain static bounds. Same-host stage status exposes `runtime_row_bounds`.
-Set `DLLM_Q4_STAGE_RUNTIME_ROWS=0` to restore static bounds. Integrated
+Set `DAMENDAEMON_Q4_STAGE_RUNTIME_ROWS=0` to restore static bounds. Integrated
 fresh-compiler-cache measurements reduce activation/compilation from 21.95 to
 14.93 seconds and a 15-length first-use sweep from 47.28 to 18.95 seconds on
 A2/A30. Warm model and A2/3090 HTTP comparisons show no observed throughput
@@ -107,7 +107,7 @@ above separates these measurements and records numerical and recovery gates.
 
 Those adjacent Q4 stages also reuse the rotary/cache kernel across prompt
 lengths by passing its query-output stride at runtime. Set
-`DLLM_Q4_STAGE_RUNTIME_ROPE=0` for static stride selection. Stage status reports
+`DAMENDAEMON_Q4_STAGE_RUNTIME_ROPE=0` for static stride selection. Stage status reports
 `runtime_rope_tokens`. With runtime row bounds already enabled, integrated
 A2/A30 private-cache trials reduce the first-use sweep from 18.49 to 14.97
 seconds, while activation/compilation rises slightly from 14.89 to 15.09 seconds.
@@ -140,9 +140,9 @@ in the evidence rather than described as passing results.
 
 For the qualified Qwen2.5-0.5B and Qwen3-4B AWQ geometries on NVIDIA A2, an optional native
 Marlin backend replaces GPU packing and uses shared, accounted scratch memory.
-Build it with `-DDLLM_BUILD_AWQ_MARLIN=ON -DCMAKE_CUDA_ARCHITECTURES=86`, then set
-`DLLM_AWQ_MARLIN_LIBRARY` to the absolute path of `libdllm-awq-marlin.so` before
-starting dllm. The backend reports `triton+awq-marlin`; other devices, model
+Build it with `-DDAMENDAEMON_BUILD_AWQ_MARLIN=ON -DCMAKE_CUDA_ARCHITECTURES=86`, then set
+`DAMENDAEMON_AWQ_MARLIN_LIBRARY` to the absolute path of `libdamendaemon-awq-marlin.so` before
+starting damendaemon. The backend reports `triton+awq-marlin`; other devices, model
 geometries, contexts above 2048 and batch capacities above four retain the regular
 AWQ path. A missing or incompatible library in the selected scope fails explicitly. The vendored
 Marlin device kernels retain their Apache-2.0 license and attribution; there
@@ -155,8 +155,8 @@ A2. Build for your GPU architecture (86 in this A2 example):
 
 ```sh
 cmake -S . -B build -DCMAKE_CUDA_ARCHITECTURES=86 -DCMAKE_BUILD_TYPE=Release
-cmake --build build --target dllm-q4 -j2
-export DLLM_Q4_CUDA_LIBRARY="$PWD/build/libdllm-q4.so"
+cmake --build build --target damendaemon-q4 -j2
+export DAMENDAEMON_Q4_CUDA_LIBRARY="$PWD/build/libdamendaemon-q4.so"
 ```
 
 Set the library path before starting the server. The runtime checks its ABI
@@ -170,8 +170,8 @@ runtime compilation requirement when this option is unset.
 An additional experimental integer-dot path is available for the qualified
 Mistral-style GGUF topology (Llama metadata, 32 layers, width 4096, intermediate
 14336, 32 attention/8 KV heads, vocabulary 32000), Q4_0, mixed precision and
-context at most 512. Build `dllm-q4-residual` and set
-`DLLM_Q4_RESIDUAL_LIBRARY` to that library before starting dllm. Its per-model
+context at most 512. Build `damendaemon-q4-residual` and set
+`DAMENDAEMON_Q4_RESIDUAL_LIBRARY` to that library before starting damendaemon. Its per-model
 selector only changes one-row decode; other shapes and models fall back.
 It preserves packed weights but applies scaling in FP32 instead of rounding
 each coefficient to FP16. The original residual implementation reduced
@@ -196,9 +196,9 @@ precision, fused projections, context 1–512 and batch sizes 1–4. It handles
 all projection rows, including single-token decode. Build and select it with:
 
 ```sh
-cmake -S . -B build -DCMAKE_CUDA_ARCHITECTURES=86 -DCMAKE_BUILD_TYPE=Release -DDLLM_BUILD_Q4_MARLIN=ON
-cmake --build build --target dllm-q4-marlin -j2
-export DLLM_Q4_MARLIN_LIBRARY="$PWD/build/libdllm-q4-marlin.so"
+cmake -S . -B build -DCMAKE_CUDA_ARCHITECTURES=86 -DCMAKE_BUILD_TYPE=Release -DDAMENDAEMON_BUILD_Q4_MARLIN=ON
+cmake --build build --target damendaemon-q4-marlin -j2
+export DAMENDAEMON_Q4_MARLIN_LIBRARY="$PWD/build/libdamendaemon-q4-marlin.so"
 ```
 
 New builds produce **ABI 2**, whose implicit zero point removes the extra
@@ -234,8 +234,8 @@ FP16 coefficient rounding before FP32 accumulation:
 
 ```sh
 cmake -S . -B build -DCMAKE_CUDA_ARCHITECTURES=86 -DCMAKE_BUILD_TYPE=Release
-cmake --build build --target dllm-kquant -j2
-export DLLM_KQUANT_CUDA_LIBRARY="$PWD/build/libdllm-kquant.so"
+cmake --build build --target damendaemon-kquant -j2
+export DAMENDAEMON_KQUANT_CUDA_LIBRARY="$PWD/build/libdamendaemon-kquant.so"
 ```
 
 Set this before starting the server. It selects native FP16 decode for batches
@@ -247,8 +247,8 @@ An additional opt-in uses two int8 activation terms for faster single-request
 Llama Q4/Q6 decoding:
 
 ```sh
-cmake --build build --target dllm-kquant-residual -j2
-export DLLM_KQUANT_RESIDUAL_LIBRARY="$PWD/build/libdllm-kquant-residual.so"
+cmake --build build --target damendaemon-kquant-residual -j2
+export DAMENDAEMON_KQUANT_RESIDUAL_LIBRARY="$PWD/build/libdamendaemon-kquant-residual.so"
 ```
 
 Keep the ordinary K-quant library configured for fallback. The residual option
@@ -267,7 +267,7 @@ Other Llama models retain the 512-context residual-selection limit.
 Backend status includes `cuda-kquant-residual` when selected.
 
 For the qualified TinyLlama Q4_K_M checkpoint on CUDA, optionally set
-`DLLM_KQUANT_DENSE_CACHE_MIB=2048` to retain 1973 MiB of FP16-expanded projection
+`DAMENDAEMON_KQUANT_DENSE_CACHE_MIB=2048` to retain 1973 MiB of FP16-expanded projection
 copies for multi-row execution. Default is zero. Core weights, KV and workspace
 reserves take priority; an insufficient cache budget or free VRAM leaves packed
 execution in place. `/v1/models/status` reports `gpu_projection_cache_bytes`.
@@ -278,7 +278,7 @@ this is an explicit memory-for-speed tradeoff, qualified through context 2048.
 
 The pinned Qwen3-1.7B Q4_K_M conversion also supports this cache through context
 2048 in its standard Qwen3 precision mode. Use
-`DLLM_KQUANT_DENSE_CACHE_MIB=4096`; the selected projections occupy 3281.5 MiB.
+`DAMENDAEMON_KQUANT_DENSE_CACHE_MIB=4096`; the selected projections occupy 3281.5 MiB.
 Normal A2 serving reduces four-request latency about 22% (84 to 107 aggregate
 output tokens/s), with exact output agreement and verified reloads, swaps and
 insufficient-budget fallback. This remains an optional additional allocation;
@@ -289,9 +289,9 @@ long-context FP16 numerical gap. An optional FP32 residual library accelerates
 its decode without rounding inputs or output to FP16:
 
 ```sh
-cmake --build build --target dllm-kquant-residual-f32 -j2
-export DLLM_LLAMA_PRECISION=float32
-export DLLM_KQUANT_RESIDUAL_F32_LIBRARY="$PWD/build/libdllm-kquant-residual-f32.so"
+cmake --build build --target damendaemon-kquant-residual-f32 -j2
+export DAMENDAEMON_LLAMA_PRECISION=float32
+export DAMENDAEMON_KQUANT_RESIDUAL_F32_LIBRARY="$PWD/build/libdamendaemon-kquant-residual-f32.so"
 ```
 
 Selection requires CUDA, Llama hidden width 2048, FP32 execution, context at most
@@ -307,7 +307,7 @@ FP32 prompt processing remains a performance target.
 The same Llama FP32 scope also has optional compensated prompt processing:
 
 ```sh
-export DLLM_KQUANT_PREFILL_F32=1
+export DAMENDAEMON_KQUANT_PREFILL_F32=1
 ```
 
 This selects prompts of at least 128 rows at widths 2048/8192. Packed weights
@@ -323,7 +323,7 @@ See the [K-quant qualification and performance evidence](evidence/gguf/README.md
 
 ## Prepared weight cache
 
-Set `DLLM_WEIGHT_CACHE=/path/to/trusted/cache` before starting dllm to reuse
+Set `DAMENDAEMON_WEIGHT_CACHE=/path/to/trusted/cache` before starting damendaemon to reuse
 prepared Q4/Q8 weights across processes and cold model activations. This is
 currently available for dense Qwen2, Qwen3, Llama, Phi-3 and Mistral. The first
 load converts weights and writes a safetensors file; subsequent loads reuse it.
@@ -340,16 +340,16 @@ cache files when desired. No files are created unless this option is set.
 
 ## Standalone GGUF files
 
-Install `dllm[gguf]` alongside the runtime extra. Local `.gguf` files work with
+Install `damendaemon[gguf]` alongside the runtime extra. Local `.gguf` files work with
 `run`, `serve --model NAME=PATH`, and `add`, including normal host/GPU residency
 and model swapping. Keep conversion policy `none`: existing Q4_0/Q8_0 matrix
-values and scales are imported directly into dllm's kernels, without
+values and scales are imported directly into damendaemon's kernels, without
 requantization or another inference engine.
 
 ```sh
 python -m pip install -e '.[runtime,gguf]'
-dllm run /models/qwen.gguf --context 512 --prompt 'Explain binary search.'
-dllm add qwen /models/qwen.gguf --quantization none
+damendaemon run /models/qwen.gguf --context 512 --prompt 'Explain binary search.'
+damendaemon add qwen /models/qwen.gguf --quantization none
 ```
 
 Import supports dense Qwen2/Qwen3 and Llama 3 BPE checkpoints, little-endian
@@ -395,7 +395,7 @@ from the embedded vocabulary without an HF sidecar. The published TinyLlama
 2048 context, including server lifecycle checks and cross-model swapping. It
 matches llama.cpp output in the 512-context workload while remaining 26–79%
 slower there. The 2048-context comparison retains long-prompt and concurrent
-output differences; independent HF checks agree with dllm on those exact prompts.
+output differences; independent HF checks agree with damendaemon on those exact prompts.
 Broader qualification remains in issue #46. Structured output on the
 positional tokenizer, unused tokens on that path, Unigram and custom
 normalization are rejected explicitly.

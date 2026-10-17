@@ -6,8 +6,8 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-from dllm.remote_quota_transport import _timeout
-from dllm.remote_quota_config import frontend_client, authority_listener
+from damendaemon.remote_quota_transport import _timeout
+from damendaemon.remote_quota_config import frontend_client, authority_listener
 from scripts.serve_quota_authority import main
 
 
@@ -32,7 +32,7 @@ class QuotaTimeoutTests(unittest.TestCase):
                 for value in (10**400,-(10**400)):
                     path.write_text(json.dumps(dict(config,timeout=value)));path.chmod(0o600)
                     with self.subTest(reader=read.__name__,timeout=value), \
-                            patch('dllm.remote_quota_config._tls') as context, \
+                            patch('damendaemon.remote_quota_config._tls') as context, \
                             patch('socket.create_connection') as connect:
                         with self.assertRaisesRegex(ValueError,'quota timeout'):
                             read(path)

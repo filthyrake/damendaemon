@@ -40,7 +40,7 @@ Encoder timing alone will not establish multimodal request performance.
 
 ## RGB preprocessing
 
-`dllm.vision_inputs.prepare_images` matches the independent reference pixel
+`damendaemon.vision_inputs.prepare_images` matches the independent reference pixel
 tensors exactly for all five fixtures on the production Torch 2.6 environment.
 This includes resizing 320x192 to 352x224 and preserving paired-image ordering.
 Byte-domain antialiased bicubic interpolation and fused normalization are
@@ -152,7 +152,7 @@ error 0.0643835; every greedy choice agrees. Changed-image and slot-reuse contro
 also pass. This is on-load text quantization, not a claim of quantized vision
 weights or arbitrary quantized multimodal checkpoint compatibility.
 
-The image-aware execution class now lives in `dllm.vision_hybrid` and shares
+The image-aware execution class now lives in `damendaemon.vision_hybrid` and shares
 `HybridExecutor.forward_embeddings` with the text-only path. Normal serving
 dispatch remains unchanged. Both FP16 and Q8 variants pass all 54 independent
 checks again with four request slots and graph replay after this consolidation.
@@ -181,7 +181,7 @@ and actual HTTP measurements. Keep the intermediate encoder limitations visible.
 
 ## Opt-in HTTP serving
 
-`DLLM_EXPERIMENTAL_VISION=1` activates this backend for the qualified Qwen3.5
+`DAMENDAEMON_EXPERIMENTAL_VISION=1` activates this backend for the qualified Qwen3.5
 1024-wide, 24-layer geometry. Execution is restricted to NVIDIA A2, context at
 most 1024, and at most four slots. Other text-model geometries retain their
 normal execution. Install the `vision` extra for PNG/JPEG decoding. HTTP retains
@@ -263,7 +263,7 @@ streaming, changed-image cancellation recovery, swaps, and repeated release.
 After each complete unload, both host model bytes and MPS tensor allocations
 return to zero. This reports live tensor allocations, not all Metal driver memory.
 
-Use `DLLM_DEVICE=mps DLLM_EXPERIMENTAL_VISION=1`, context at most 1024 and at
+Use `DAMENDAEMON_DEVICE=mps DAMENDAEMON_EXPERIMENTAL_VISION=1`, context at most 1024 and at
 most four slots. This first Apple checkpoint uses FP16 text and the separate
 vision precision policy; subsequent Q8 qualification is recorded below. Three warm square-image/eight-token HTTP requests
 took 1.075/1.083/1.079 seconds, with first-token latency 0.636–0.642 seconds and
@@ -273,7 +273,7 @@ the next optimization target. The local regression suite passes 367 tests.
 
 ### Native Metal recurrent scan
 
-The independent SIMD-group kernel in `dllm/hybrid_metal.py` keeps FP32 recurrent
+The independent SIMD-group kernel in `damendaemon/hybrid_metal.py` keeps FP32 recurrent
 state in registers across prompt tokens, eliminating the Python loop's per-token
 GPU dispatches. It owns only the selected state slots. Twenty CPU-oracle
 output/state checks cover reset and continuation at lengths 1, 7, 87, 185 and
@@ -287,12 +287,12 @@ Four sequential ABBA HTTP runs use the same M4, pinned model, FP16 precision,
 Each run passes all 23 service checks. Pooled medians: ordinary Torch versus
 Metal scan HTTP 1.0871→0.5324 seconds (51.0% lower), first-token latency
 0.6449→0.1404 seconds (78.2% lower), decode throughput 15.80→17.91 tokens/s
-(13.4% higher). This compares dllm implementations, not another runtime.
+(13.4% higher). This compares damendaemon implementations, not another runtime.
 
 The final default path also passes all 20 HTTP checks with repeated complete
 release back to zero live MPS tensor bytes. Automatic selection is limited to
 the qualified Qwen3.5-0.8B geometry, context <=1024, and at most four slots.
-`DLLM_HYBRID_METAL_SCAN=0` retains the Torch diagnostic fallback; explicit `1`
+`DAMENDAEMON_HYBRID_METAL_SCAN=0` retains the Torch diagnostic fallback; explicit `1`
 rejects unsupported geometry. Other configurations retain their existing path.
 All 367 regression tests pass. Raw ABBA, operator, long-context, full-model, and
 HTTP reports are committed under `evidence/vision/`.
@@ -320,7 +320,7 @@ versus 1,840,168,192 bytes. These are distinct precision policies, each validate
 against its own independent reference, not a matched-precision speed comparison.
 Vision precision remains unchanged.
 
-Use `DLLM_DEVICE=mps DLLM_EXPERIMENTAL_VISION=1 DLLM_QUANTIZATION=q8_0`.
+Use `DAMENDAEMON_DEVICE=mps DAMENDAEMON_EXPERIMENTAL_VISION=1 DAMENDAEMON_QUANTIZATION=q8_0`.
 Hybrid Q8 remains restricted to the qualified 0.8B geometry, context <=1024 and
 at most four slots, and requires the native Metal scan. Other Apple decoder
 quantization support remains unchanged. Raw numerical, lifecycle, timing and

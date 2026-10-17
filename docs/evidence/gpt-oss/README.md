@@ -1,6 +1,6 @@
 # GPT-OSS primitive qualification
 
-Tracking: [#39](https://github.com/filthyrake/dllm/issues/39). The initial reports below qualify primitives. Subsequent full-model and raw
+Tracking: [#39](https://github.com/filthyrake/damendaemon/issues/39). The initial reports below qualify primitives. Subsequent full-model and raw
 HTTP qualification is recorded separately at the end. Text Harmony chat is
 now qualified in `harmony/`; function handoffs remain unqualified.
 

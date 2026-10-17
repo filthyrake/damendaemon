@@ -2,7 +2,7 @@ import math
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_flash_kda import recurrent_attention
+from damendaemon.glm_flash_kda import recurrent_attention
 
 
 def inputs():
@@ -59,7 +59,7 @@ class FlashKdaTests(unittest.TestCase):
     def test_preallocation_budget_and_invalid_inputs(self):
         args=inputs()
         for option in ('max_workspace_bytes','max_output_bytes'):
-            with patch('dllm.glm_flash_kda._finite',side_effect=AssertionError('scan before admission')):
+            with patch('damendaemon.glm_flash_kda._finite',side_effect=AssertionError('scan before admission')):
                 with self.assertRaisesRegex(ValueError,'budget'):recurrent_attention(*args,**{option:1})
         for index,bad in ((0,args[0].double()),(1,args[1][:,:,:,:2]),(3,args[3]+10),(4,args[4]+2),
                           (5,args[5][:,:,:,:2]),(0,args[0]*1e30),(2,args[2]+float('nan'))):

@@ -3,11 +3,11 @@ import argparse
 import json
 from pathlib import Path
 import re
-from dllm.checkpoint import _unique_fields
-from dllm.glm_text import _read
-from dllm.glm_generation import validate_text_config
-from dllm.glm_tool_text import GlmToolText
-from dllm.http_auth import AuthPolicy
+from damendaemon.checkpoint import _unique_fields
+from damendaemon.glm_text import _read
+from damendaemon.glm_generation import validate_text_config
+from damendaemon.glm_tool_text import GlmToolText
+from damendaemon.http_auth import AuthPolicy
 from scripts.serve_cpu_reference import bounded_integer,serve,image_metadata
 
 
@@ -49,35 +49,35 @@ def prepare(args):
         raise ValueError('CUDA still-image HTTP requires a Flash snapshot')
     import torch
     if config.get('model_type')=='glm_moe_dsa':
-        from dllm.glm_reference_loader import load_reference_model
-        from dllm.cuda_glm_placement import place_cuda_glm as place
-        from dllm.cuda_glm_generation import CudaGlmToolGenerator as generator_type
-        from dllm.cuda_reference_serving import CudaGlmReferenceRuntime as runtime_type
+        from damendaemon.glm_reference_loader import load_reference_model
+        from damendaemon.cuda_glm_placement import place_cuda_glm as place
+        from damendaemon.cuda_glm_generation import CudaGlmToolGenerator as generator_type
+        from damendaemon.cuda_reference_serving import CudaGlmReferenceRuntime as runtime_type
         text=GlmToolText(path,vocab_size=config.get('vocab_size'))
         text_config=config
     elif config.get('model_type')=='glm5_next':
-        from dllm.glm_flash_generation import flash_text_config
-        from dllm.glm_flash_tool_text import FlashToolText
-        from dllm.glm_flash_reference_loader import load_reference_model
-        from dllm.cuda_glm_flash_placement import place_cuda_flash as place
-        from dllm.cuda_glm_flash_generation import CudaFlashToolGenerator as generator_type
-        from dllm.cuda_reference_serving import CudaFlashReferenceRuntime as runtime_type
+        from damendaemon.glm_flash_generation import flash_text_config
+        from damendaemon.glm_flash_tool_text import FlashToolText
+        from damendaemon.glm_flash_reference_loader import load_reference_model
+        from damendaemon.cuda_glm_flash_placement import place_cuda_flash as place
+        from damendaemon.cuda_glm_flash_generation import CudaFlashToolGenerator as generator_type
+        from damendaemon.cuda_reference_serving import CudaFlashReferenceRuntime as runtime_type
         text_config=flash_text_config(config)
         if args.flash_images:
             image_metadata(config,args)
-            from dllm.glm_flash_image_tool_text import FlashImageToolText
-            from dllm.cuda_glm_flash_image_generation import CudaFlashImageToolGenerator as generator_type
-            from dllm.cuda_reference_serving import CudaFlashImageReferenceRuntime as runtime_type
+            from damendaemon.glm_flash_image_tool_text import FlashImageToolText
+            from damendaemon.cuda_glm_flash_image_generation import CudaFlashImageToolGenerator as generator_type
+            from damendaemon.cuda_reference_serving import CudaFlashImageReferenceRuntime as runtime_type
             text=FlashImageToolText(path,vocab_size=text_config.get('vocab_size'))
             if config.get('image_token_id')!=text.image_token_id:raise ValueError('Flash image token disagrees with tokenizer')
         else:text=FlashToolText(path,vocab_size=text_config.get('vocab_size'))
     elif config.get('model_type')=='deepseek_v4':
-        from dllm.deepseek_reference_loader import load_reference_model
-        from dllm.deepseek_text import DeepSeekText
-        from dllm.deepseek_generation import validate_text_config as validate_deepseek_text
-        from dllm.cuda_deepseek_placement import place_cuda_deepseek as place
-        from dllm.cuda_deepseek_generation import CudaDeepSeekGenerator as generator_type
-        from dllm.cuda_reference_serving import CudaDeepSeekReferenceRuntime as runtime_type
+        from damendaemon.deepseek_reference_loader import load_reference_model
+        from damendaemon.deepseek_text import DeepSeekText
+        from damendaemon.deepseek_generation import validate_text_config as validate_deepseek_text
+        from damendaemon.cuda_deepseek_placement import place_cuda_deepseek as place
+        from damendaemon.cuda_deepseek_generation import CudaDeepSeekGenerator as generator_type
+        from damendaemon.cuda_reference_serving import CudaDeepSeekReferenceRuntime as runtime_type
         text=DeepSeekText(path,vocab_size=config.get('vocab_size'))
         text_config=config
         validate_deepseek_text(config,text,args.context)
@@ -104,8 +104,8 @@ def prepare(args):
             projection_workspace_bytes=args.projection_workspace_mib*1024**2,
             max_workspace_bytes=args.workspace_mib*1024**2,max_output_bytes=args.output_mib*1024**2)
         if args.flash_images:
-            from dllm.glm_flash_vision_loader import load_reference_vision
-            from dllm.cuda_glm_flash_image_placement import place_cuda_flash_image
+            from damendaemon.glm_flash_vision_loader import load_reference_vision
+            from damendaemon.cuda_glm_flash_image_placement import place_cuda_flash_image
             vision=load_reference_vision(path,max_weight_bytes=(args.vision_weight_mib or 256)*1024**2,
                 max_tokens=args.max_patches or 4096,max_workspace_bytes=args.workspace_mib*1024**2,
                 max_output_bytes=args.output_mib*1024**2)

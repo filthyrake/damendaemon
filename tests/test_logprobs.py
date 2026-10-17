@@ -6,8 +6,8 @@ import weakref
 import torch
 from tokenizers import Tokenizer,decoders,models,AddedToken
 
-from dllm.logprobs import TokenText,options,scores
-from dllm.sampling import Sampler,Sampling,sample_rows
+from damendaemon.logprobs import TokenText,options,scores
+from damendaemon.sampling import Sampler,Sampling,sample_rows
 
 
 class LogprobTests(unittest.TestCase):
@@ -46,7 +46,7 @@ class LogprobTests(unittest.TestCase):
     def test_default_fast_path_does_not_score_and_requests_are_isolated(self):
         left,right=Sampler(Sampling()),Sampler(Sampling())
         logits=torch.tensor([[3.,1.],[0.,2.]])
-        with patch('dllm.logprobs.scores',side_effect=AssertionError('unexpected scoring')):
+        with patch('damendaemon.logprobs.scores',side_effect=AssertionError('unexpected scoring')):
             self.assertEqual(sample_rows(logits,[left,right]),[0,1])
         right.logprobs_top=1
         self.assertEqual(sample_rows(logits,[left,right]),[0,1])
@@ -107,7 +107,7 @@ class LogprobTests(unittest.TestCase):
         self.assertIsNone(ref())
 
     def test_native_bytelevel_added_tokens_report_generated_bytes(self):
-        from dllm.bytelevel_stream import BYTE_VALUES
+        from damendaemon.bytelevel_stream import BYTE_VALUES
         tokenizer=Tokenizer(models.BPE({char:i for i,char in enumerate(BYTE_VALUES)},[]))
         tokenizer.decoder=decoders.ByteLevel()
         pieces=('Ġcustom','Ã','©','aé','aé🙂')
@@ -142,7 +142,7 @@ class LogprobTests(unittest.TestCase):
         self.assertEqual(raw,b'a custom')
 
     def test_gguf_added_literal_keeps_its_distinct_byte_contract(self):
-        from dllm.gguf_tokenizer import SpecialTokenTokenizer
+        from damendaemon.gguf_tokenizer import SpecialTokenTokenizer
         tokenizer=Tokenizer(models.BPE({'a':0},[]));tokenizer.decoder=decoders.ByteLevel()
         tokenizer.add_tokens([AddedToken('Ġcustom',special=False)])
         token=tokenizer.token_to_id('Ġcustom')
@@ -161,7 +161,7 @@ class LogprobTests(unittest.TestCase):
         self.assertIsNone(TokenText(tokenizer).token(0)[1])
 
     def test_selected_out_of_range_fails_without_unchecked_gather(self):
-        from dllm.logprobs import score_rows
+        from damendaemon.logprobs import score_rows
         for selected in (-1,3,2**40):
             with self.subTest(selected=selected),self.assertRaisesRegex(RuntimeError,'non-finite'):
                 score_rows(torch.tensor([[1.,2.,3.]]),torch.tensor([selected]),[1])

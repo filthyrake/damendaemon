@@ -8,14 +8,14 @@ Start with the qualified same-host configuration below. Cross-host execution rem
 
 `--layer-split 12` runs the first 12 decoder layers on the first visible GPU
 and the remaining 12 on the second. Currently qualified for Qwen2.5-0.5B,
-FP16, dllm Q8 or dllm Q4, context up to 512 and batch size up to four. It shares the
+FP16, damendaemon Q8 or damendaemon Q4, context up to 512 and batch size up to four. It shares the
 normal HTTP scheduler, streaming, cancellation and model residency controls.
 Sampling stays on the output GPU; status includes both devices' allocations
 and per-stage weights, scales and KV bytes.
 
 ```sh
-CUDA_VISIBLE_DEVICES=GPU-first-uuid,GPU-second-uuid DLLM_QUANTIZATION=q8_0 \
-  dllm serve --layer-split 12 --context 512 --batch-size 4 \
+CUDA_VISIBLE_DEVICES=GPU-first-uuid,GPU-second-uuid DAMENDAEMON_QUANTIZATION=q8_0 \
+  damendaemon serve --layer-split 12 --context 512 --batch-size 4 \
   --model small=/path/to/Qwen2.5-0.5B-Instruct
 ```
 
@@ -27,7 +27,7 @@ cache. Cross-host A2/3090 execution has a separate experimental correctness
 proof; it is not exposed by this serving option. RDMA remains unqualified.
 See [multi-GPU evidence and limits](evidence/multi-gpu/README.md).
 
-Set `DLLM_QUANTIZATION=q4_0` for the qualified native four-bit path. Packed
+Set `DAMENDAEMON_QUANTIZATION=q4_0` for the qualified native four-bit path. Packed
 weights and scales stay with their owning stage; this is not GGUF or AWQ
 partition support. Independent eager/graph, changed-weight swap, HTTP and
 release checks are recorded in the [Q4 qualification](evidence/multi-gpu/README.md#native-q4-same-host-partition).
@@ -35,7 +35,7 @@ The separate distributed CLI also admits Q4 after its own network qualification.
 
 ## Compatible model swaps
 
-Host-cached checkpoints with identical configuration, precision and weight/scale layouts reuse GPU buffers and captured graphs. This fast path is enabled by default; `DLLM_PARTITION_REBIND=0` disables it. Incompatible layouts rebuild normally. An interrupted upload removes the old residency and closes the executor before a fresh activation can occur.
+Host-cached checkpoints with identical configuration, precision and weight/scale layouts reuse GPU buffers and captured graphs. This fast path is enabled by default; `DAMENDAEMON_PARTITION_REBIND=0` disables it. Incompatible layouts rebuild normally. An interrupted upload removes the old residency and closes the executor before a fresh activation can occur.
 
 Matched A2/A30 Q8 tests reduced median HTTP host restoration from 1.512 s to 0.211 s (about 7.2x). FP16 and Q8 each pass 410 independent checks across changed-weight swaps and recovery. These measurements apply to the qualified checkpoint pair, not arbitrary models or network transfers. See [complete measurements and limitations](evidence/multi-gpu/README.md#compatible-checkpoint-hot-swaps).
 
@@ -60,7 +60,7 @@ No available test host exposes RDMA, so RDMA and GPUDirect RDMA remain unqualifi
 
 `distributed-run` is an experimental single-request, greedy command launched
 under torchrun. Prepare the same qualified Qwen2.5-0.5B-Instruct snapshot on both
-workers with `dllm pull`; paths may differ, but prepared weight identities,
+workers with `damendaemon pull`; paths may differ, but prepared weight identities,
 precision and context must agree. The command supports FP16 (`none`), Q8 and Q4,
 context up to 512, and a 12/12 layer split.
 
@@ -68,7 +68,7 @@ For two GPUs on one host:
 
 ```sh
 CUDA_VISIBLE_DEVICES=GPU-first-uuid,GPU-second-uuid OMP_NUM_THREADS=4 \
-  torchrun --standalone --nproc-per-node=2 --module dllm distributed-run \
+  torchrun --standalone --nproc-per-node=2 --module damendaemon distributed-run \
   /path/to/Qwen2.5-0.5B-Instruct --quantization q8_0 \
   --prompt 'What is 2 + 2? Answer with just the number.' --max-tokens 32
 ```
@@ -84,7 +84,7 @@ Coordinator host:
 CUDA_VISIBLE_DEVICES=GPU-coordinator-uuid OMP_NUM_THREADS=4 \
 NCCL_NET=Socket NCCL_SOCKET_FAMILY=AF_INET NCCL_SOCKET_IFNAME=your-interface \
   torchrun --nnodes=2 --nproc-per-node=1 --node-rank=0 \
-  --master-addr=10.0.0.10 --master-port=29571 --module dllm distributed-run \
+  --master-addr=10.0.0.10 --master-port=29571 --module damendaemon distributed-run \
   /local/model/snapshot --quantization q8_0 \
   --prompt 'Explain binary search briefly.' --max-tokens 64
 ```
@@ -95,7 +95,7 @@ Output-worker host:
 CUDA_VISIBLE_DEVICES=GPU-output-worker-uuid OMP_NUM_THREADS=4 \
 NCCL_NET=Socket NCCL_SOCKET_FAMILY=AF_INET NCCL_SOCKET_IFNAME=your-interface \
   torchrun --nnodes=2 --nproc-per-node=1 --node-rank=1 \
-  --master-addr=10.0.0.10 --master-port=29571 --module dllm distributed-run \
+  --master-addr=10.0.0.10 --master-port=29571 --module damendaemon distributed-run \
   /other/local/model/snapshot --quantization q8_0
 ```
 
@@ -169,7 +169,7 @@ A2/3090 protocol checks and an actual seven-request network session; see the
 The same-host layer-partition server packs FP16/Q8/Q4 prompts by default:
 linear layers share work across prompt rows while attention and KV remain
 isolated. Each temporary group stays within the configured context budget.
-Set `DLLM_PARTITION_PACKED_PREFILL=0` for sequential prompt processing.
+Set `DAMENDAEMON_PARTITION_PACKED_PREFILL=0` for sequential prompt processing.
 The resident distributed server uses the same policy when multiple slots are
 configured. Set policy overrides identically on both workers; startup rejects
 mismatches.
@@ -178,7 +178,7 @@ The qualified Q4 stages use adjacent-nibble body storage by default. Existing
 device buffers are repacked without changing Q4 coefficients, checkpoint bytes,
 or the output head. A2/A30 and A2/3090 pass the expanded numerical trace and real
 HTTP checks; same-host rebinds preserve graph storage and fail closed on partial
-uploads or repacking. `DLLM_Q4_STAGE_ADJACENT=0` restores legacy arithmetic and
+uploads or repacking. `DAMENDAEMON_Q4_STAGE_ADJACENT=0` restores legacy arithmetic and
 its sequential-prefill default (the explicit prompt-packing flag still overrides
 that default). Model status reports `weight_layout`. See the
 [Q4 layout qualification and performance tradeoffs](evidence/quantization/cuda/q4-arithmetic/README.md).
@@ -186,12 +186,12 @@ that default). Model status reports `weight_layout`. See the
 Qualified adjacent Q4 stages also use selective runtime row bounds to avoid
 compiling a new body kernel for every prompt length. Static bounds remain for
 down-projection tile families where GPU measurements found regressions.
-`DLLM_Q4_STAGE_RUNTIME_ROWS=0` restores entirely static bounds. This changes
+`DAMENDAEMON_Q4_STAGE_RUNTIME_ROWS=0` restores entirely static bounds. This changes
 compilation behavior, not the wire protocol or stored coefficients. Same-host
 stage status exposes `runtime_row_bounds`; measured first-use savings and warm
 A2/A30 and A2/3090 comparisons are in the Q4 evidence above.
 The same stages reuse rotary query-output strides across prompt lengths by
-default; `DLLM_Q4_STAGE_RUNTIME_ROPE=0` restores static stride selection.
+default; `DAMENDAEMON_Q4_STAGE_RUNTIME_ROPE=0` restores static stride selection.
 Same-host stage status reports `runtime_rope_tokens`. This has separately
 qualified first-use savings and small mixed warm network timing differences.
 
@@ -199,17 +199,17 @@ qualified first-use savings and small mixed warm network timing differences.
 
 `distributed-serve` keeps the qualified two-rank pair resident behind the
 existing chat/completion API. Start it under torchrun on both workers, using
-matching model snapshots, precision, context, batch capacity and dllm versions:
+matching model snapshots, precision, context, batch capacity and damendaemon versions:
 
 ```bash
 # Coordinator; select its GPU UUID and network interface as above.
 torchrun --nnodes=2 --nproc-per-node=1 --node-rank=0 \
-  --master-addr=10.0.0.10 --master-port=29571 --module dllm distributed-serve \
+  --master-addr=10.0.0.10 --master-port=29571 --module damendaemon distributed-serve \
   /local/model/snapshot --quantization q8_0 --batch-size 4 --alias a --port 8000
 
 # Output worker; it exposes no HTTP listener.
 torchrun --nnodes=2 --nproc-per-node=1 --node-rank=1 \
-  --master-addr=10.0.0.10 --master-port=29571 --module dllm distributed-serve \
+  --master-addr=10.0.0.10 --master-port=29571 --module damendaemon distributed-serve \
   /other/local/model/snapshot --quantization q8_0 --batch-size 4
 ```
 
@@ -257,7 +257,7 @@ this adds no successful-path collective. CUDA context corruption, broken
 transport or process death may still abort workers and need the outer process
 owner to terminate the job. The service does not promise graceful HTTP errors
 for those fatal failures.
-Both workers must use the same dllm revision. Startup also checks a fixed-size
+Both workers must use the same damendaemon revision. Startup also checks a fixed-size
 digest of prepared weights, protocol version, context, batch capacity and packing policy before
 opening the command channel. See the
 [HTTP qualification evidence](evidence/multi-gpu/README.md#resident-distributed-http).
@@ -303,7 +303,7 @@ admission, remote transport, real-device transfer or performance claim is added.
 
 ## CPU host-staged transport foundation
 
-`dllm.host_tensor_channel.HostTensorChannel` exchanges contiguous CPU tensors
+`damendaemon.host_tensor_channel.HostTensorChannel` exchanges contiguous CPU tensors
 through an already-connected stream socket supplied by its owner. It creates no
 listener and is not wired into model workers or public serving admission. Peers
 must agree on a 32-byte model/session identity, protocol version, opposite ranks
@@ -329,7 +329,7 @@ cancellation. Remote worker lifecycle, model-state acknowledgement, secure socke
 provisioning, GPU copies, cross-vendor execution, RDMA and throughput remain
 unqualified. No model-serving or hardware-support claim follows from these tests.
 
-`dllm.host_stage_channel.HostStageChannel` binds the owned host tensor transport
+`damendaemon.host_stage_channel.HostStageChannel` binds the owned host tensor transport
 to fixed stage command and completion records. Its setup exchange checks epoch,
 context, slot count and vocabulary after the caller-supplied model/session
 identity agrees. Both peers admit a command before the caller may transfer
@@ -396,7 +396,7 @@ Neither result qualifies practical checkpoint context, quality or hardware speed
 
 `host_tls.client_context` and `server_context` load an explicit trust CA and
 local certificate/key, require peer certificates and TLS 1.3, and negotiate
-`dllm-host/1`. `wrap_peer` takes an already-connected TCP socket, a context, the
+`damendaemon-host/1`. `wrap_peer` takes an already-connected TCP socket, a context, the
 exact expected SHA-256 DER certificate pin and (on the client) a server hostname.
 It checks hostname/trust, protocol and pin before returning the owned TLS socket
 for `HostTensorChannel`. Model/session digest agreement and stage setup still
@@ -420,7 +420,7 @@ hardware, network throughput or GPU qualification is claimed.
 
 ### Prepared CPU quantized stage reference
 
-`dllm.cpu_hybrid_stage.CpuHybridStage` accepts explicitly prepared CPU
+`damendaemon.cpu_hybrid_stage.CpuHybridStage` accepts explicitly prepared CPU
 Qwen3.5 text tensors in floating, canonical Q4_0 or Q8_0 form. Each stage owns
 only its layer caches and selected weight/scale bindings. Packed projections
 remain tiled; floating controls use FP32. Constructor limits admit retained

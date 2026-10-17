@@ -1,11 +1,11 @@
 # Completion streams over prepared CPU host workers
 
-`dllm.host_completion.HostCompletion` exclusively owns an already authenticated,
+`damendaemon.host_completion.HostCompletion` exclusively owns an already authenticated,
 handshaken rank-0 `HostHybridWorker`. The peer owner must keep calling rank 1's
 `step()` until its session closes. The adapter creates no listener or peer thread.
 
 ```python
-from dllm.host_completion import HostCompletion
+from damendaemon.host_completion import HostCompletion
 
 runner = HostCompletion(coordinator, eos_ids=text.eos_ids)
 try:

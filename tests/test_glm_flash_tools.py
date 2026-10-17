@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 import unittest
 
-from dllm.glm_flash_tools import FlashTools, MAX_TEXT_BYTES
+from damendaemon.glm_flash_tools import FlashTools, MAX_TEXT_BYTES
 
 
 def tools(properties=None, required=None):
@@ -68,9 +68,9 @@ class FlashToolsTests(unittest.TestCase):
         self.assertEqual(len(codec.parse(' \n'+valid+'\t'+valid+'\r')),2)
 
     def test_escaped_nested_controls_fail_before_atomic_publication(self):
-        from dllm.glm_flash_tools import RESERVED
-        from dllm.glm_flash_tool_output import FlashToolOutput
-        from dllm.glm_text import END_THINK,EOS
+        from damendaemon.glm_flash_tools import RESERVED
+        from damendaemon.glm_flash_tool_output import FlashToolOutput
+        from damendaemon.glm_text import END_THINK,EOS
         codec=FlashTools(tools({'obj':{'type':'object','additionalProperties':True}}))
         valid=codec.render([call({'obj':{'x':'ordinary é🙂'}})])
         for marker in RESERVED:

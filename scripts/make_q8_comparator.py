@@ -1,7 +1,7 @@
-"""Benchmark-only GGUF conversion matching dllm's quantized matrix storage policy.
+"""Benchmark-only GGUF conversion matching damendaemon's quantized matrix storage policy.
 
 Requires upstream gguf-py on PYTHONPATH. Input must be an unquantized GGUF
-converted from the same pinned checkpoint; this is not a dllm model importer.
+converted from the same pinned checkpoint; this is not a damendaemon model importer.
 """
 import argparse
 from pathlib import Path
@@ -56,7 +56,7 @@ def main():
             if args.unquantized_dtype!='source':
                 data=data.astype(getattr(np,args.unquantized_dtype))
                 # llama.cpp normalization/bias kernels expect FP32 vectors.
-                # Widening after rounding preserves dllm's exact values.
+                # Widening after rounding preserves damendaemon's exact values.
                 if data.ndim==1:data=data.astype(np.float32)
             writer.add_tensor(name, data)
     writer.write_header_to_file()

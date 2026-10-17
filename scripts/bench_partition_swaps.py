@@ -37,17 +37,17 @@ def main():
     try:
         for rebind in (False,True,True,False):
             group=dict(rebind=rebind,warmups=[],runs=[]);report['groups'].append(group)
-            with tempfile.TemporaryDirectory(prefix='dllm-swap-bench-') as directory:
+            with tempfile.TemporaryDirectory(prefix='damendaemon-swap-bench-') as directory:
                 logpath=Path(directory)/'server.log'
                 with logpath.open('w') as log:
-                    env={**os.environ,'DLLM_PARTITION_REBIND':str(int(rebind)),'DLLM_QUANTIZATION':quantization}
-                    process=subprocess.Popen([sys.executable,'-m','dllm','serve','--port','0','--layer-split','12',
+                    env={**os.environ,'DAMENDAEMON_PARTITION_REBIND':str(int(rebind)),'DAMENDAEMON_QUANTIZATION':quantization}
+                    process=subprocess.Popen([sys.executable,'-m','damendaemon','serve','--port','0','--layer-split','12',
                         '--context','512','--batch-size','4','--gpu-models','1','--host-models','2','--host-gib','8',
                         '--model','a='+traces['a']['path'],'--model','b='+traces['b']['path']],env=env,stdout=log,stderr=log)
                     try:
                         deadline=time.monotonic()+120
                         while time.monotonic()<deadline and process.poll() is None:
-                            ready=[s for s in logpath.read_text().splitlines() if s.startswith('dllm listening on ')]
+                            ready=[s for s in logpath.read_text().splitlines() if s.startswith('damendaemon listening on ')]
                             if ready:base=ready[-1].split()[-1];break
                             time.sleep(.1)
                         else:raise RuntimeError(logpath.read_text())

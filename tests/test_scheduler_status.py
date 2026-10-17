@@ -10,15 +10,15 @@ from unittest.mock import patch
 from urllib.request import urlopen
 from urllib.error import HTTPError
 
-from dllm.cli import main
-from dllm.scheduler import BatchedRuntime
-from dllm.server import handler_for
+from damendaemon.cli import main
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import handler_for
 from tests.test_scheduler import FakeRuntime
 
 
 class SchedulerStatusTests(unittest.TestCase):
     def setUp(self):
-        with patch('dllm.scheduler.Runtime', FakeRuntime):
+        with patch('damendaemon.scheduler.Runtime', FakeRuntime):
             self.runtime = BatchedRuntime({'a': 'a', 'b': 'b'}, batch_size=2, queue_size=4)
         self.executor = self.runtime.runtime.executor
         self.addCleanup(self.runtime.close)
@@ -66,7 +66,7 @@ class SchedulerStatusTests(unittest.TestCase):
                     self.assertEqual(snapshot['worker_owned_commands'], 0)
                     self.assertGreater(snapshot['oldest_queued_seconds'], 0)
                     output = io.StringIO()
-                    with patch('sys.argv', ['dllm', 'status', '--server', base]), patch('sys.stdout', output):
+                    with patch('sys.argv', ['damendaemon', 'status', '--server', base]), patch('sys.stdout', output):
                         main()
                     cli_snapshot = json.loads(output.getvalue())
                     self.assertEqual(cli_snapshot['queued_commands'], 2)
@@ -104,7 +104,7 @@ class SchedulerStatusTests(unittest.TestCase):
                     self.assertTrue(entered.wait(1))
                     self.assertEqual(self.runtime.scheduler_status()['worker_owned_commands'], 1)
                     queued = pool.submit(self.generate, 'b')
-                    from dllm.runtime import BusyError
+                    from damendaemon.runtime import BusyError
                     with self.assertRaises(BusyError):
                         queued.result(1)
                     snapshot = self.runtime.scheduler_status()
@@ -126,7 +126,7 @@ class SchedulerStatusTests(unittest.TestCase):
 
     def test_http_cli_drain_preserves_admitted_work_and_rejects_new_work(self):
         from urllib.request import Request
-        from dllm.runtime import BusyError
+        from damendaemon.runtime import BusyError
         server = ThreadingHTTPServer(('127.0.0.1', 0), handler_for(self.runtime))
         thread = threading.Thread(target=server.serve_forever, kwargs={'poll_interval': .01}, daemon=True)
         thread.start()
@@ -141,7 +141,7 @@ class SchedulerStatusTests(unittest.TestCase):
                     futures.append(pool.submit(self.runtime.manage, 'load', 'a'))
                     self.wait_queued(2)
                     output = io.StringIO()
-                    with patch('sys.argv', ['dllm', 'drain', '--server', base]), patch('sys.stdout', output):
+                    with patch('sys.argv', ['damendaemon', 'drain', '--server', base]), patch('sys.stdout', output):
                         main()
                     state = json.loads(output.getvalue())
                     self.assertTrue(state['draining'])

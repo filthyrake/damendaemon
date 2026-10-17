@@ -14,9 +14,9 @@ import time
 import torch
 import triton.testing
 
-from dllm.gguf_model import GgufWeights
-from dllm.quantization import dequantize_q4
-from dllm.quantized_kernels_q4 import linear
+from damendaemon.gguf_model import GgufWeights
+from damendaemon.quantization import dequantize_q4
+from damendaemon.quantized_kernels_q4 import linear
 from scripts.experiments.q4_marlin import Library
 
 
@@ -78,11 +78,11 @@ def main():
                 ('scripts/experiments/q4_marlin_symmetric.cu','scripts/experiments/q4_marlin_symmetric.py',
                  'scripts/experiments/q4_marlin_direct.py','scripts/experiments/q4_marlin_repack.py')}
         elif args.production:
-            from dllm.native_q4_marlin import Library as ProductionLibrary
+            from damendaemon.native_q4_marlin import Library as ProductionLibrary
             library=ProductionLibrary(args.library)
             library.allocate_workspace(torch.device('cuda',torch.cuda.current_device()))
             report['production_sources']={name:digest(name) for name in
-                ('dllm/native_q4_marlin.py','dllm/q4_marlin_repack.py','native/q4_marlin.cu')}
+                ('damendaemon/native_q4_marlin.py','damendaemon/q4_marlin_repack.py','native/q4_marlin.cu')}
         elif args.direct_repack:
             from scripts.experiments.q4_marlin_direct import DirectLibrary
             library = DirectLibrary(args.library)
@@ -105,7 +105,7 @@ def main():
                 if args.symmetric:
                     return reference_library.linear(value,control_prepared[offset is not None])
                 if value.shape[0] == 1 and args.residual_baseline:
-                    from dllm.native_q4_residual import linear as residual_linear
+                    from damendaemon.native_q4_residual import linear as residual_linear
                     return residual_linear(value, weight, scales, offset, library_path=args.residual_baseline)
                 return linear(value, weight, scales, offset)
             bias = torch.randn(n, dtype=torch.float16, device='cuda')

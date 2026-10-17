@@ -1,6 +1,6 @@
 """Bounded client-side evidence for disconnecting a nonterminal HTTP stream."""
 import json
-from dllm.bench import events
+from damendaemon.bench import events
 
 
 def consume_nonterminal_prefix(response, count=2):

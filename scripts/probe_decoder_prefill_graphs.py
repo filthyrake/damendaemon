@@ -5,7 +5,7 @@ import json
 import statistics
 import time
 import torch
-from dllm.runtime import Runtime
+from damendaemon.runtime import Runtime
 
 
 def measure(fn):

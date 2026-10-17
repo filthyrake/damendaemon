@@ -14,7 +14,7 @@ import time
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from dllm.bench import events
+from damendaemon.bench import events
 from scripts.validation_stream import consume_nonterminal_prefix
 
 
@@ -28,10 +28,10 @@ def main():
     models = {'old': args.qwen2, 'new': args.qwen3, 'llama': args.llama}
     reports = []
     for capacity in (1, 3):
-        with tempfile.TemporaryDirectory(prefix='dllm-model-matrix-') as directory:
+        with tempfile.TemporaryDirectory(prefix='damendaemon-model-matrix-') as directory:
             logpath = Path(directory) / 'server.log'
             with logpath.open('w') as log:
-                command = [sys.executable, '-m', 'dllm', 'serve', '--port', '0', '--context', '2048',
+                command = [sys.executable, '-m', 'damendaemon', 'serve', '--port', '0', '--context', '2048',
                            '--gpu-models', str(capacity), '--host-models', '3', '--host-gib', str(args.host_gib)]
                 for alias, path in models.items():
                     command += ['--model', alias+'='+path]
@@ -39,7 +39,7 @@ def main():
                 try:
                     deadline = time.monotonic()+60
                     while time.monotonic() < deadline and process.poll() is None:
-                        ready = [line for line in logpath.read_text().splitlines() if line.startswith('dllm listening on ')]
+                        ready = [line for line in logpath.read_text().splitlines() if line.startswith('damendaemon listening on ')]
                         if ready:
                             base = ready[-1].split()[-1]
                             break
@@ -65,9 +65,9 @@ def main():
                         text = result['choices'][0]['message']['content']
                         if alias in baselines:
                             assert text == baselines[alias]
-                            assert result['dllm_timing']['source_tier'] == ('host' if capacity == 1 else 'gpu')
+                            assert result['damendaemon_timing']['source_tier'] == ('host' if capacity == 1 else 'gpu')
                         baselines[alias] = text
-                        transitions.append({'model':alias, 'usage':result['usage'], 'timing':result['dllm_timing']})
+                        transitions.append({'model':alias, 'usage':result['usage'], 'timing':result['damendaemon_timing']})
                     # Different models cannot corrupt one another's cache or template controls.
                     with ThreadPoolExecutor(6) as pool:
                         aliases = ('old', 'new', 'llama', 'new', 'old', 'llama')
@@ -76,7 +76,7 @@ def main():
                         assert result['choices'][0]['message']['content'] == baselines[alias], alias
                     with ThreadPoolExecutor(4) as pool:
                         batched = list(pool.map(request, ['new']*4))
-                    assert max(r['dllm_timing']['max_batch_size'] for r in batched) == 4
+                    assert max(r['damendaemon_timing']['max_batch_size'] for r in batched) == 4
                     for result in batched:
                         assert result['choices'][0]['message']['content'] == baselines['new']
                     reasoning = request('new', chat_template_kwargs={'enable_thinking':True}, max_tokens=16)

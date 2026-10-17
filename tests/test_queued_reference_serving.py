@@ -8,9 +8,9 @@ import unittest
 from unittest.mock import patch
 from urllib.request import urlopen
 
-from dllm.queued_reference_serving import QueuedReferenceRuntime,BUFFER_EVENTS
-from dllm.request_scope import cache_scope
-from dllm.runtime import BusyError
+from damendaemon.queued_reference_serving import QueuedReferenceRuntime,BUFFER_EVENTS
+from damendaemon.request_scope import cache_scope
+from damendaemon.runtime import BusyError
 from tests import test_reference_serving as fixtures
 
 
@@ -35,8 +35,8 @@ class QueuedReferenceTests(unittest.TestCase):
         import gc
         import weakref
         from types import SimpleNamespace
-        from dllm.queued_native_host_serving import QueuedNativeHostReferenceRuntime
-        from dllm.native_host_serving import NativeHostReferenceRuntime
+        from damendaemon.queued_native_host_serving import QueuedNativeHostReferenceRuntime
+        from damendaemon.native_host_serving import NativeHostReferenceRuntime
         class Allocation:pass
         runtime=QueuedNativeHostReferenceRuntime.__new__(QueuedNativeHostReferenceRuntime)
         runtime.alias='model';runtime.failure=None;runtime.stopping=threading.Event()
@@ -143,7 +143,7 @@ class QueuedReferenceTests(unittest.TestCase):
             for result in results:
                 message=result['choices'][0]['message'];self.assertEqual(message['reasoning_content'],'reason')
                 self.assertEqual(message['content'].strip(),'answer');self.assertEqual(result['choices'][0]['finish_reason'],'tool_calls')
-                ids.append(message['tool_calls'][0]['id']);self.assertGreaterEqual(result['dllm_timing']['queue_seconds'],0)
+                ids.append(message['tool_calls'][0]['id']);self.assertGreaterEqual(result['damendaemon_timing']['queue_seconds'],0)
             self.assertEqual(len(set(ids)),3);self.assertEqual(len(model.states),3)
             self.assertTrue(all(s.closed for s in model.states))
             with urlopen(base+'/v1/scheduler/status') as response:self.assertEqual(json.load(response)['batch_capacity'],1)
@@ -283,7 +283,7 @@ class QueuedReferenceTests(unittest.TestCase):
         dumps=json.dumps
         def snapshot(*args,**kwargs):
             entered.set();self.assertTrue(resume.wait(3));return dumps(*args,**kwargs)
-        with patch('dllm.queued_reference_serving.json.dumps',side_effect=snapshot),ThreadPoolExecutor(1) as pool:
+        with patch('damendaemon.queued_reference_serving.json.dumps',side_effect=snapshot),ThreadPoolExecutor(1) as pool:
             result=pool.submit(lambda:list(self.generate(runtime)));self.assertTrue(entered.wait(3))
             runtime.close();resume.set()
             with self.assertRaises(BusyError):result.result(3)

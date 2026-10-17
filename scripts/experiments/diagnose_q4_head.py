@@ -30,12 +30,12 @@ def main():
     body.add_argument('--single-dot-body',action='store_true',help='diagnostic control: contiguous K-order packed products')
     p.add_argument('--torch-norm',action='store_true',help='diagnostic control: unfused FP16 RMS normalization')
     p.add_argument('--packed',action='store_true');args=p.parse_args()
-    os.environ.update(DLLM_DEVICE='cuda',DLLM_QUANTIZATION='q4_0',DLLM_Q4_STAGE_ADJACENT='0',
-                      DLLM_PARTITION_PACKED_PREFILL=str(int(args.packed)))
+    os.environ.update(DAMENDAEMON_DEVICE='cuda',DAMENDAEMON_QUANTIZATION='q4_0',DAMENDAEMON_Q4_STAGE_ADJACENT='0',
+                      DAMENDAEMON_PARTITION_PACKED_PREFILL=str(int(args.packed)))
     import torch
-    from dllm.qwen2 import ModelWeights
-    from dllm.partition import PartitionExecutor
-    from dllm.quantized_kernels_q4 import expand
+    from damendaemon.qwen2 import ModelWeights
+    from damendaemon.partition import PartitionExecutor
+    from damendaemon.quantized_kernels_q4 import expand
     torch.set_num_threads(4)
     torch.backends.cuda.matmul.allow_tf32=False
     trace=torch.load(args.trace,map_location='cpu',weights_only=True)
@@ -46,7 +46,7 @@ def main():
         reference_dtype=trace['reference_dtype'],packed=args.packed,dense_body=args.dense_body,
         single_dot_body=args.single_dot_body,torch_norm=args.torch_norm,tf32=False,checks=[],
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-                 ('dllm/quantized_kernels_q4.py','dllm/qwen2.py','dllm/layer_stage.py','dllm/partition.py',
+                 ('damendaemon/quantized_kernels_q4.py','damendaemon/qwen2.py','damendaemon/layer_stage.py','damendaemon/partition.py',
                   'scripts/experiments/q4_prefill.py','scripts/experiments/diagnose_q4_head.py')})
     with torch.inference_mode():
         executor=PartitionExecutor(ModelWeights(trace['path'],trace['context']),12,use_graph=False,max_batch=capacity)

@@ -13,8 +13,8 @@ import time
 from urllib.request import Request, urlopen
 
 from tokenizers import Tokenizer
-from dllm.gguf_sentencepiece import restore_tokenizer
-from dllm.gguf_model import plan
+from damendaemon.gguf_sentencepiece import restore_tokenizer
+from damendaemon.gguf_model import plan
 
 
 CASES = [

@@ -1,15 +1,15 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.cuda_compressed_pool import pool_projected,reorder_pool,_budget
-from dllm.compressed_pool import pool_projected as cpu_pool
+from damendaemon.cuda_compressed_pool import pool_projected,reorder_pool,_budget
+from damendaemon.compressed_pool import pool_projected as cpu_pool
 from tests import test_compressed_pool
 
 
 class CudaPoolAdmissionTests(unittest.TestCase):
     def test_cpu_inputs_rejected_before_core(self):
         values,gates,offsets=test_compressed_pool.CompressedPoolTests().fixture(4)
-        with patch('dllm.cuda_compressed_pool._pool',side_effect=AssertionError('core entered')):
+        with patch('damendaemon.cuda_compressed_pool._pool',side_effect=AssertionError('core entered')):
             with self.assertRaisesRegex(ValueError,'same-device'):pool_projected(values,gates,offsets)
         _,state,_=cpu_pool(values,gates,offsets)
         with self.assertRaisesRegex(ValueError,'state'):reorder_pool(state,torch.tensor([0]))

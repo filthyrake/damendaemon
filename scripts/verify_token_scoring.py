@@ -11,16 +11,16 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from urllib.request import Request,urlopen
 import torch
-from dllm.device import synchronize,device_name
-from dllm.runtime import request_kv
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer,handler_for
+from damendaemon.device import synchronize,device_name
+from damendaemon.runtime import request_kv
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer,handler_for
 
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--other-model',required=True)
     p.add_argument('--device',required=True,choices=('cuda','mps'));args=p.parse_args()
-    os.environ['DLLM_DEVICE']=args.device;torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_DEVICE']=args.device;torch.set_num_threads(4)
     runtime=BatchedRuntime({'a':args.model,'b':args.other_model},context=2048,batch_size=4,
         gpu_models=1,host_models=2,host_gib=16)
     server=BoundedHTTPServer(('127.0.0.1',0),handler_for(runtime))
@@ -66,7 +66,7 @@ def main():
                     logits.softmax(-1).cpu(),atol=.004,rtol=.02)
                 assert getattr(executor,'_candidate_head',None) is None
             reports.append({'model':path,'rows':rows,'http_response':response})
-        restored=request('a');assert restored['dllm_timing']['source_tier']=='host'
+        restored=request('a');assert restored['damendaemon_timing']['source_tier']=='host'
         sets=[[0,1],[17,33,65],[100,1000,2000],[7,19,101,999]]
         baseline=[request(ids=ids)['data'] for ids in sets]
         with ThreadPoolExecutor(4) as pool:outputs=list(pool.map(lambda ids:request(ids=ids),sets))

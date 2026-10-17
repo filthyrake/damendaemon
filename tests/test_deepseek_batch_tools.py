@@ -6,13 +6,13 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from dllm.deepseek_batch_generation import BatchReferenceGenerator
-from dllm.deepseek_text import EOS, END_THINK
-from dllm.deepseek_tools import render_tool_calls
+from damendaemon.deepseek_batch_generation import BatchReferenceGenerator
+from damendaemon.deepseek_text import EOS, END_THINK
+from damendaemon.deepseek_tools import render_tool_calls
 from scripts import run_deepseek_reference as cli
 from tests.test_deepseek_batch_generation import ScriptedDeepSeek
 from tests.test_deepseek_generation import text_fixture,ScriptedModel
-from dllm.deepseek_generation import ReferenceGenerator
+from damendaemon.deepseek_generation import ReferenceGenerator
 from tests.test_deepseek_reference_loader import fixture
 
 

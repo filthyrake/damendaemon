@@ -8,10 +8,10 @@ import runpy
 import sys
 from unittest.mock import patch
 import torch
-from dllm.config import decoder_config
-from dllm.qwen2 import ModelWeights
-from dllm.quantization import Linear
-from dllm import quantized_metal_q4
+from damendaemon.config import decoder_config
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.quantization import Linear
+from damendaemon import quantized_metal_q4
 
 
 def main():
@@ -20,7 +20,7 @@ def main():
     parser.add_argument('script')
     parser.add_argument('arguments', nargs=argparse.REMAINDER)
     args = parser.parse_args()
-    if os.environ.get('DLLM_DEVICE') != 'mps' or os.environ.get('DLLM_QUANTIZATION') != 'q4_0':
+    if os.environ.get('DAMENDAEMON_DEVICE') != 'mps' or os.environ.get('DAMENDAEMON_QUANTIZATION') != 'q4_0':
         parser.error('explicit MPS and Q4 environment required')
     report = dict(completed=False, selected_calls=0, fallback_calls=0,
                   scope='isolated Metal Q4 full-model experiment; public runtime admission unchanged',
@@ -38,7 +38,7 @@ def main():
             raise ValueError('experiment requires Qwen2.5-0.5B Q4, context <=2048')
         # Only host preparation bypasses the existing Metal admission guard.
         # Restore device selection before constructing any GPU executor.
-        with patch('dllm.qwen2.selected_device', return_value='cuda'):
+        with patch('damendaemon.qwen2.selected_device', return_value='cuda'):
             original_init(model, path, max_context, quantization)
 
     def dispatch(owner, x, weight, bias=None):

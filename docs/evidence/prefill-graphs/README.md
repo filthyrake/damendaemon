@@ -1,7 +1,7 @@
 # Bounded CUDA prompt graph reuse
 
-Issue #34. `DLLM_PREFILL_GRAPHS=1..8` enables a per-executor LRU of captured
-single-prompt CUDA forwards. Default is0. `DLLM_PREFILL_GRAPH_MAX_TOKENS` defaults
+Issue #34. `DAMENDAEMON_PREFILL_GRAPHS=1..8` enables a per-executor LRU of captured
+single-prompt CUDA forwards. Default is0. `DAMENDAEMON_PREFILL_GRAPH_MAX_TOKENS` defaults
 to128 and accepts1..512. The cache key includes exact prompt length, cache slot and optional ordered candidate IDs;
 Input IDs are copied into stable graph-owned storage before each replay.
 
@@ -23,7 +23,7 @@ this is not a user-configurable byte budget or a latency guarantee.
 
 A2 / torch2.6+cu124, pinned Qwen2.5-0.5B-Instruct
 `7ae557604adf67be50417f59c2c2f167def9a775` (standard precision) and Qwen3-0.6B
-`c1899de289a04d12100db370d81485cdf75e47ca` (`DLLM_QWEN3_PRECISION=float32`).
+`c1899de289a04d12100db370d81485cdf75e47ca` (`DAMENDAEMON_QWEN3_PRECISION=float32`).
 Both pass changed IDs, cache hit/miss, multiple slots, LRU eviction,128-token
 boundary and129-token fallback and subsequent captured decode. The original
 reports predate candidate-specific graph support and also checked scoring bypass;

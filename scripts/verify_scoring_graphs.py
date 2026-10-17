@@ -10,7 +10,7 @@ import statistics
 import time
 import weakref
 import torch
-from dllm.runtime import Runtime
+from damendaemon.runtime import Runtime
 
 
 def measure(fn):
@@ -23,7 +23,7 @@ def measure(fn):
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');args=p.parse_args()
-    os.environ['DLLM_PREFILL_GRAPHS']='3';torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_PREFILL_GRAPHS']='3';torch.set_num_threads(4)
     runtime=Runtime({'a':args.model},context=256,batch_size=4)
     checks=[];timings=[]
     try:

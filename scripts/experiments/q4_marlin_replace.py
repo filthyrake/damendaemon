@@ -8,8 +8,8 @@ import hashlib
 from pathlib import Path
 
 import torch
-from dllm import quantization
-from dllm.qwen2 import Executor
+from damendaemon import quantization
+from damendaemon.qwen2 import Executor
 from .q4_marlin_direct import DirectLibrary
 
 

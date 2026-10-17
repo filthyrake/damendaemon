@@ -7,11 +7,11 @@ import unittest
 from unittest.mock import patch
 import torch
 
-from dllm.glm_model import GlmModel
-from dllm.glm_generation import ReferenceGenerator
-from dllm.glm_batch_generation import BatchReferenceGenerator
-from dllm.glm_reference_loader import load_reference_model
-from dllm.glm_text import END_THINK,EOS
+from damendaemon.glm_model import GlmModel
+from damendaemon.glm_generation import ReferenceGenerator
+from damendaemon.glm_batch_generation import BatchReferenceGenerator
+from damendaemon.glm_reference_loader import load_reference_model
+from damendaemon.glm_text import END_THINK,EOS
 from scripts import run_glm_reference as cli
 from tests.test_glm_generation import text_fixture
 from tests.test_glm_reference_loader import fixture,floating_control

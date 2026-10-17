@@ -1,6 +1,6 @@
 import json, os, signal, subprocess, sys, time
 from pathlib import Path
-from dllm.rocm_policy import host_available
+from damendaemon.rocm_policy import host_available
 from scripts.experiments.host_memory_watchdog import HostMemoryWatchdog
 output=Path(sys.argv[1]); command=sys.argv[2:]
 if output.exists(): raise SystemExit('refusing to overwrite evidence')

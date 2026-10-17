@@ -1,6 +1,6 @@
 # Bounded authenticated host endpoints
 
-`dllm.host_endpoint` adds explicit TCP setup around the existing host TLS policy.
+`damendaemon.host_endpoint` adds explicit TCP setup around the existing host TLS policy.
 It does not bind an address, discover hosts, provision certificates, launch a
 worker or register a service. Tests use local loopback only.
 
@@ -40,7 +40,7 @@ with other readers or writers.
 The shared `host_tls.wrap_peer` now uses cancellable nonblocking handshakes and
 restores the supplied socket's prior timeout on success. Existing requirements
 remain TLS 1.3, mutual trusted certificates, exact SHA-256 DER peer pins, client
-hostname verification and `dllm-host/1` ALPN. Configuration errors before ownership
+hostname verification and `damendaemon-host/1` ALPN. Configuration errors before ownership
 leave the raw socket with its caller. The endpoint helpers close their own raw
 sockets even if that policy validation fails later.
 

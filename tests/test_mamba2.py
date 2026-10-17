@@ -5,26 +5,26 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 import torch
-from dllm.mamba2 import config
+from damendaemon.mamba2 import config
 
 
 class Mamba2Tests(unittest.TestCase):
     def test_compensated_projection_rejects_lossy_weights_before_gpu_allocation(self):
-        from dllm.mamba2 import Mamba2Executor
+        from damendaemon.mamba2 import Mamba2Executor
         for value in (1.0001,1.e5,float('inf'),float('nan')):
             model=SimpleNamespace(quantization='none',config={'hidden_size':768,'intermediate_size':1536},
                 weights={'0.in_proj':torch.tensor([[value]])})
-            with self.subTest(value=value),patch.dict('os.environ',{'DLLM_MAMBA2_COMPENSATED':'1'}),\
-                    patch('dllm.mamba2.selected_device',return_value='cuda'),\
+            with self.subTest(value=value),patch.dict('os.environ',{'DAMENDAEMON_MAMBA2_COMPENSATED':'1'}),\
+                    patch('damendaemon.mamba2.selected_device',return_value='cuda'),\
                     self.assertRaisesRegex(ValueError,'exactly representable'):
                 Mamba2Executor(model)
 
     def test_compensated_projection_rejects_unqualified_device_and_quantization(self):
-        from dllm.mamba2 import Mamba2Executor
+        from damendaemon.mamba2 import Mamba2Executor
         for device,quantization in (('mps','none'),('cuda','q8_0')):
             with self.subTest(device=device,quantization=quantization),\
-                    patch.dict('os.environ',{'DLLM_MAMBA2_COMPENSATED':'1'}),\
-                    patch('dllm.mamba2.selected_device',return_value=device),\
+                    patch.dict('os.environ',{'DAMENDAEMON_MAMBA2_COMPENSATED':'1'}),\
+                    patch('damendaemon.mamba2.selected_device',return_value=device),\
                     self.assertRaisesRegex(ValueError,'CUDA and unquantized'):
                 Mamba2Executor(SimpleNamespace(quantization=quantization))
 
@@ -39,7 +39,7 @@ class Mamba2Tests(unittest.TestCase):
             parsed=config(directory)
             self.assertEqual(parsed['conv_dim'],1792)
             self.assertEqual(parsed['intermediate_size'],1536)
-            from dllm.models import config as dispatched_config
+            from damendaemon.models import config as dispatched_config
             file.write_text(json.dumps({**value,'time_step_limit':[0.0,float('inf')]}))
             for reader in (config,dispatched_config):
                 with self.subTest(reader=reader.__module__):
@@ -56,7 +56,7 @@ class Mamba2Tests(unittest.TestCase):
     def test_saved_eos_replaces_default_before_weights(self):
         from transformers import Mamba2Config,Mamba2ForCausalLM,GenerationConfig
         from tokenizers import Tokenizer,models
-        from dllm.mamba2 import Mamba2Weights
+        from damendaemon.mamba2 import Mamba2Weights
         with TemporaryDirectory() as directory:
             reference=Mamba2ForCausalLM(Mamba2Config(hidden_size=8,state_size=4,
                 num_hidden_layers=1,expand=2,conv_kernel=4,num_heads=4,head_dim=4,
@@ -71,5 +71,5 @@ class Mamba2Tests(unittest.TestCase):
             self.assertEqual(Mamba2Weights(directory,16).eos,{1})
             for bad in (None,True,[],[16],-1,'5'):
                 generation.write_text(json.dumps({'eos_token_id':bad}))
-                with self.subTest(bad=bad),patch('dllm.qwen2.weight_files',side_effect=AssertionError('weights opened')):
+                with self.subTest(bad=bad),patch('damendaemon.qwen2.weight_files',side_effect=AssertionError('weights opened')):
                     with self.assertRaises(ValueError):Mamba2Weights(directory,16)

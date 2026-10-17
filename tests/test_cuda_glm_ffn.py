@@ -2,9 +2,9 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock
 import torch
-from dllm.cuda_glm_ffn import CudaPackedGlmFeedForward,_select,_routed,_routed_batched
-from dllm.cuda_packed_expert import CudaPackedExpert
-from dllm.glm_ffn import select_glm_experts
+from damendaemon.cuda_glm_ffn import CudaPackedGlmFeedForward,_select,_routed,_routed_batched
+from damendaemon.cuda_packed_expert import CudaPackedExpert
+from damendaemon.glm_ffn import select_glm_experts
 
 
 class CudaGlmTests(unittest.TestCase):

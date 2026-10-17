@@ -14,11 +14,11 @@ import time
 from unittest.mock import patch
 
 import torch
-from dllm.device import empty_cache, device_name
-from dllm.gguf_model import GgufWeights
-from dllm.quantization import dequantize, dequantize_q4
-from dllm.quantized_embedding import embedding
-from dllm.runtime import require_gpu, make_executor
+from damendaemon.device import empty_cache, device_name
+from damendaemon.gguf_model import GgufWeights
+from damendaemon.quantization import dequantize, dequantize_q4
+from damendaemon.quantized_embedding import embedding
+from damendaemon.runtime import require_gpu, make_executor
 
 
 def expanded(model):
@@ -74,8 +74,8 @@ def main():
             report.update(path=str(Path(args.model).resolve()), packed_host_bytes=model.bytes,
                           expanded_host_bytes=reference.bytes, saved_host_bytes=reference.bytes-model.bytes)
             for paged in (False, True):
-                if paged:os.environ['DLLM_KV_CACHE_TOKENS']='1024'
-                else:os.environ.pop('DLLM_KV_CACHE_TOKENS',None)
+                if paged:os.environ['DAMENDAEMON_KV_CACHE_TOKENS']='1024'
+                else:os.environ.pop('DAMENDAEMON_KV_CACHE_TOKENS',None)
                 for graph in (False, True):
                     a=make_executor(reference,use_graph=graph,max_batch=4)
                     b=make_executor(model,use_graph=graph,max_batch=4)
@@ -99,7 +99,7 @@ def main():
                     assert torch.equal(expected,actual),('chunk',paged,graph)
                     del a,b,expected,actual
                     gc.collect();empty_cache()
-            os.environ.pop('DLLM_KV_CACHE_TOKENS',None)
+            os.environ.pop('DAMENDAEMON_KV_CACHE_TOKENS',None)
             report['batch_and_chunk_exact'] = True
             del model,reference
             gc.collect();empty_cache()
@@ -110,7 +110,7 @@ def main():
                 for turn in range(4):
                     for mode in (('packed','expanded') if turn%2==0 else ('expanded','packed')):
                         started=time.perf_counter()
-                        with patch('dllm.gguf_model.selected_device',return_value='cuda' if mode=='packed' else 'mps'):
+                        with patch('damendaemon.gguf_model.selected_device',return_value='cuda' if mode=='packed' else 'mps'):
                             model=GgufWeights(args.model,512,'none')
                         loaded=time.perf_counter()
                         before=torch.cuda.memory_allocated()

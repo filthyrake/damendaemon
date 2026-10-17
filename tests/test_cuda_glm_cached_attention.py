@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.cuda_glm_cached_attention import CudaCachedGlmAttention,CudaGlmIndexer
-from dllm.glm_cached_attention import CachedGlmAttention
+from damendaemon.cuda_glm_cached_attention import CudaCachedGlmAttention,CudaGlmIndexer
+from damendaemon.glm_cached_attention import CachedGlmAttention
 from tests.test_glm_cached_attention import fixture
 
 
@@ -16,7 +16,7 @@ class CudaGlmCacheTests(unittest.TestCase):
         model,_=fixture()
         from torch._subclasses.fake_tensor import FakeTensorMode
         options=dict(heads=2,nope_dim=2,rope_dim=4,value_dim=3,index_top_k=3)
-        with FakeTensorMode(),patch('dllm.glm_cached_attention._finite_parameter',return_value=True),patch('dllm.glm_indexer._finite_parameter',return_value=True):
+        with FakeTensorMode(),patch('damendaemon.glm_cached_attention._finite_parameter',return_value=True),patch('damendaemon.glm_indexer._finite_parameter',return_value=True):
             weights={name:torch.empty(value.shape,dtype=value.dtype,device='cuda:0') for name,value in model.weights.items()}
             prepared=CudaCachedGlmAttention(weights,**options)
             with self.assertRaises(ValueError):CachedGlmAttention(weights,**options)

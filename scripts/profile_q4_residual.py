@@ -7,9 +7,9 @@ from pathlib import Path
 
 import torch
 import triton.testing
-from dllm.runtime import require_gpu
-from dllm.quantization import quantize_q4, dequantize_q4
-from dllm.quantized_kernels_q4 import linear as production
+from damendaemon.runtime import require_gpu
+from damendaemon.quantization import quantize_q4, dequantize_q4
+from damendaemon.quantized_kernels_q4 import linear as production
 from experiments.q4_residual import linear as candidate, activation_terms
 
 
@@ -19,20 +19,20 @@ def main():
     p.add_argument('--production',action='store_true');args=p.parse_args()
     require_gpu();torch.set_num_threads(4);torch.manual_seed(713)
     torch.backends.cuda.matmul.allow_tf32=False
-    path=Path(os.environ['DLLM_Q4_RESIDUAL_LIBRARY' if args.production else 'DLLM_EXPERIMENTAL_Q4_RESIDUAL_LIBRARY'])
+    path=Path(os.environ['DAMENDAEMON_Q4_RESIDUAL_LIBRARY' if args.production else 'DAMENDAEMON_EXPERIMENTAL_Q4_RESIDUAL_LIBRARY'])
     evaluate=candidate
     if args.production:
-        from dllm.native_q4_residual import linear
+        from damendaemon.native_q4_residual import linear
         evaluate=lambda x,w,s,b:linear(x,w,s,b,library_path=str(path))
     control=None
     if args.two_term_library:
-        from dllm.native_q4_residual import linear as two_term
+        from damendaemon.native_q4_residual import linear as two_term
         control=lambda x,w,s,b:two_term(x,w,s,b,library_path=args.two_term_library)
     report=dict(production=args.production, device=torch.cuda.get_device_name(),torch=torch.__version__,passed=False,
                 activation_terms=2 if args.production else activation_terms(str(path)),
                 two_term_library_sha256=hashlib.sha256(Path(args.two_term_library).read_bytes()).hexdigest() if control else None,
                 candidate_library_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
-                production_library_sha256=hashlib.sha256(Path(os.environ['DLLM_Q4_CUDA_LIBRARY']).read_bytes()).hexdigest(),
+                production_library_sha256=hashlib.sha256(Path(os.environ['DAMENDAEMON_Q4_CUDA_LIBRARY']).read_bytes()).hexdigest(),
                 scope='synthetic matrices; FP16-rounded coefficient oracle; not model or serving qualification',checks=[])
     try:
         for n,k in ((113,4096),(6144,4096),(4096,4096),(28672,4096),(4096,14336),(32000,4096)):

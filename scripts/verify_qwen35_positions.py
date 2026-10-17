@@ -9,7 +9,7 @@ import torch
 import transformers
 from transformers import AutoConfig
 from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5Model, Qwen3_5TextRotaryEmbedding
-from dllm.vision_positions import image_positions, rotary_tables
+from damendaemon.vision_positions import image_positions, rotary_tables
 
 
 def main():
@@ -22,7 +22,7 @@ def main():
     reference.get_vision_position_ids=MethodType(Qwen3_5Model.get_vision_position_ids,reference)
     rotary=Qwen3_5TextRotaryEmbedding(config.text_config)
     report=dict(passed=False,transformers=transformers.__version__,torch=str(torch.__version__),cases=[],
-                source_sha256=hashlib.sha256(Path('dllm/vision_positions.py').read_bytes()).hexdigest())
+                source_sha256=hashlib.sha256(Path('damendaemon/vision_positions.py').read_bytes()).hexdigest())
     fixtures=[[],[[1,16,16]],[[1,16,24]],[[1,14,22]],[[1,32,32]],
               [[1,16,16],[1,16,24]],[[1,2,2],[1,4,2]]]
     for grids in fixtures:

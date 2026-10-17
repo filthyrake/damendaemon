@@ -14,8 +14,8 @@ import time
 from urllib.request import Request, urlopen
 
 import torch
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer, handler_for
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer, handler_for
 
 
 A2 = 'GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283'
@@ -49,19 +49,19 @@ def main():
                     pair = (value['choices'], value['usage'])
                     if expected is None: expected = pair
                     assert pair == expected
-                    activation.append(dict(model=alias, wall_seconds=elapsed, timing=value['dllm_timing']))
+                    activation.append(dict(model=alias, wall_seconds=elapsed, timing=value['damendaemon_timing']))
                 rows = []
                 for trial in range(10):
                     for alias in (order if trial % 2 == 0 else tuple(reversed(order))):
                         for _ in range(3): request(alias)
                         value, elapsed = request(alias)
                         assert (value['choices'], value['usage']) == expected
-                        assert value['dllm_timing']['source_tier'] == 'gpu'
+                        assert value['damendaemon_timing']['source_tier'] == 'gpu'
                         telemetry = subprocess.check_output(['nvidia-smi', '-i', A2,
                             '--query-gpu=pstate,clocks.current.graphics,clocks.current.memory,power.draw',
                             '--format=csv,noheader,nounits'], text=True).strip()
                         rows.append(dict(model=alias, wall_seconds=elapsed, usage=value['usage'],
-                                         timing=value['dllm_timing'], telemetry=telemetry))
+                                         timing=value['damendaemon_timing'], telemetry=telemetry))
                 result = dict(gpu_capacity=capacity, initial_load_order=order, activation=activation, exact_responses=True,
                               trials=rows, medians={alias:statistics.median(r['wall_seconds'] for r in rows if r['model'] == alias) for alias in order})
                 results.append(result); print(json.dumps({'progress':result['medians'], 'capacity':capacity, 'order':order}), flush=True)

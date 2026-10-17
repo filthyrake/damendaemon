@@ -7,8 +7,8 @@ from unittest.mock import patch
 
 import torch
 from safetensors.torch import save_file
-from dllm.capacity import plan_local
-from dllm.cli import main
+from damendaemon.capacity import plan_local
+from damendaemon.cli import main
 from tests import test_config
 
 
@@ -40,15 +40,15 @@ def fixture(path):
 
 class CapacityCliTests(unittest.TestCase):
     def test_header_plan_matches_runtime_weight_budget_including_tied_packed_head(self):
-        from dllm.qwen2 import weight_bytes
+        from damendaemon.qwen2 import weight_bytes
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
             fixture(path)
-            with patch.dict('os.environ', DLLM_DEVICE='rocm', DLLM_EXPERIMENTAL_VISION='0'), \
+            with patch.dict('os.environ', DAMENDAEMON_DEVICE='rocm', DAMENDAEMON_EXPERIMENTAL_VISION='0'), \
                     patch('torch.cuda._lazy_init', side_effect=AssertionError('GPU initialized')), \
-                    patch('dllm.rocm_policy.require_host_headroom', side_effect=AssertionError('meta mapping read host reserve')):
+                    patch('damendaemon.rocm_policy.require_host_headroom', side_effect=AssertionError('meta mapping read host reserve')):
                 report = plan_local(path, [512, 32768], [1, 4], 'float32')
-                with patch('dllm.hybrid_q4_policy.validate'):
+                with patch('damendaemon.hybrid_q4_policy.validate'):
                     for mode in ('none', 'q8_0', 'q4_0'):
                         self.assertEqual(report['weight_bytes'][mode], weight_bytes(path, mode))
             # One full-attention layer + one FP32 recurrent/convolution layer.
@@ -64,8 +64,8 @@ class CapacityCliTests(unittest.TestCase):
             self.assertEqual(report['runtime_qualification'], 'not assessed')
             self.assertNotIn('runtime_supported_quantization', report)
             output = io.StringIO()
-            with patch('sys.argv', ['dllm', 'plan-hybrid', directory, '--contexts', '512', '--batches', '1']), \
-                    patch('sys.stdout', output), patch('dllm.cli.download', side_effect=AssertionError('downloaded')):
+            with patch('sys.argv', ['damendaemon', 'plan-hybrid', directory, '--contexts', '512', '--batches', '1']), \
+                    patch('sys.stdout', output), patch('damendaemon.cli.download', side_effect=AssertionError('downloaded')):
                 main()
             self.assertEqual(json.loads(output.getvalue())['contexts']['512']['1']['state_bytes'], state)
 
@@ -124,7 +124,7 @@ class CapacityCliTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 plan_local(path, [512], [1], 'float32', None, 'float32')
             output = io.StringIO()
-            with patch('sys.argv', ['dllm', 'plan-hybrid', directory, '--contexts', '512',
+            with patch('sys.argv', ['damendaemon', 'plan-hybrid', directory, '--contexts', '512',
                                     '--batches', '1', '--layer-splits', '1', '--stage-weight-dtype', 'float32']), \
                     patch('sys.stdout', output):
                 main()
@@ -134,7 +134,7 @@ class CapacityCliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             fixture(Path(directory))
             output = io.StringIO()
-            with patch('sys.argv', ['dllm', 'plan-hybrid', directory, '--contexts', '512', '--batches', '1',
+            with patch('sys.argv', ['damendaemon', 'plan-hybrid', directory, '--contexts', '512', '--batches', '1',
                                     '--device-budgets-mib', '1024', '1024']), patch('sys.stdout', output):
                 main()
             report = json.loads(output.getvalue())['pipeline_placement']
@@ -157,7 +157,7 @@ class CapacityCliTests(unittest.TestCase):
             self.assertGreater(report['weight_bytes']['none'], 0)
             (path/'weights'/'part.safetensors').write_bytes(b'bad header')
             errors = io.StringIO()
-            with patch('sys.argv', ['dllm', 'plan-hybrid', directory]), patch('sys.stderr', errors):
+            with patch('sys.argv', ['damendaemon', 'plan-hybrid', directory]), patch('sys.stderr', errors):
                 with self.assertRaises(SystemExit) as error:
                     main()
             self.assertEqual(error.exception.code, 2)

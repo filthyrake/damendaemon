@@ -6,9 +6,9 @@ import os
 from pathlib import Path
 
 import torch
-from dllm.qwen2 import ModelWeights
-from dllm.vision_qwen35 import VisionWeights, VisionEncoder
-from dllm.vision_inputs import prepare_images
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.vision_qwen35 import VisionWeights, VisionEncoder
+from damendaemon.vision_inputs import prepare_images
 from experiments.vision_qwen35 import ImageHybridExecutor
 
 
@@ -23,14 +23,14 @@ def main():
     parser.add_argument('--batch-size',type=int,choices=(1,2,3,4),default=3)
     parser.add_argument('--messages',action='store_true',help='exercise inline PNG chat messages and model-owned vision weights')
     args=parser.parse_args()
-    os.environ['DLLM_DEVICE']=args.device
+    os.environ['DAMENDAEMON_DEVICE']=args.device
     torch.set_num_threads(4)
     torch.backends.cuda.matmul.allow_tf32=False
     reference=torch.load(args.reference,map_location='cpu',weights_only=True)
     model_path=args.model or reference['model']
     model=ModelWeights(model_path,1024,quantization=reference.get('text_quantization','none'))
     if args.messages:
-        from dllm.vision_model import VisionModelWeights
+        from damendaemon.vision_model import VisionModelWeights
         model=VisionModelWeights(model,VisionWeights(model_path))
     executor=ImageHybridExecutor(model,max_batch=args.batch_size,use_graph=args.graph)
     vision=executor.vision if args.messages else VisionEncoder(VisionWeights(model_path),device=args.device)
@@ -43,9 +43,9 @@ def main():
                 model=str(model_path),reference_model=reference['model'],torch=str(torch.__version__),checks=[],
                 reference_sha256=hashlib.sha256(Path(args.reference).read_bytes()).hexdigest(),
                 sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-                    ('dllm/qwen2.py','dllm/quantization.py','dllm/vision_qwen35.py','dllm/vision_inputs.py','dllm/vision_positions.py',
-                     'dllm/hybrid.py','dllm/hybrid_metal.py','dllm/quantized_metal.py','dllm/vision_hybrid.py','dllm/vision_model.py',
-                     'dllm/vision_messages.py','scripts/experiments/vision_qwen35.py')})
+                    ('damendaemon/qwen2.py','damendaemon/quantization.py','damendaemon/vision_qwen35.py','damendaemon/vision_inputs.py','damendaemon/vision_positions.py',
+                     'damendaemon/hybrid.py','damendaemon/hybrid_metal.py','damendaemon/quantized_metal.py','damendaemon/vision_hybrid.py','damendaemon/vision_model.py',
+                     'damendaemon/vision_messages.py','scripts/experiments/vision_qwen35.py')})
     def check(actual,target,label):
         actual=actual.float().cpu().reshape(-1)
         target=target.reshape(-1)

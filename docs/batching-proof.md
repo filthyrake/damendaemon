@@ -3,7 +3,7 @@
 Measured 2026-10-03 on the authorized NVIDIA A2, FP16 Qwen2.5. This extends the
 [first runtime proof](runtime-proof.md). The A30 workload was left running.
 Both immutable model revisions, driver, and hardware are the same as that proof.
-dllm uses PyTorch 2.6.0+cu124 and Triton 3.2.0; the independent comparison stack
+damendaemon uses PyTorch 2.6.0+cu124 and Triton 3.2.0; the independent comparison stack
 uses vLLM 0.30.0 with its resolved PyTorch 2.13.0. These are different software
 stacks on the same GPU, not a controlled comparison of one isolated kernel.
 
@@ -15,7 +15,7 @@ attention added work around the weight matrix operations. CUDA graphs removed
 Python dispatch but did not fuse those operations. The service also serialized
 requests, repeatedly reading the same weights for each user.
 
-dllm now implements fused Triton RMSNorm, SwiGLU, RoPE/cache writes, and
+damendaemon now implements fused Triton RMSNorm, SwiGLU, RoPE/cache writes, and
 live-prefix attention. FP32 reductions and explicit FP16 rounding preserve the
 reference calculation. Attention partitions long contexts into 256-position
 blocks and merges them with log-sum-exp weights, skipping blocks past the live
@@ -94,20 +94,20 @@ and HTTP delivery. Per-request post-first-output rate is a different metric.
 
 | Engine | Concurrent requests | Aggregate output tokens/s | Per-request post-first tokens/s | First output (ms) |
 | --- | --- | --- | --- | --- |
-| dllm | 1 | 133.3 | 138.8 | 26.0 |
+| damendaemon | 1 | 133.3 | 138.8 | 26.0 |
 | vllm | 1 | 138.9 | 149.1 | 38.1 |
-| dllm | 2 | 225.6 | 121.2 | 41.5 |
+| damendaemon | 2 | 225.6 | 121.2 | 41.5 |
 | vllm | 2 | 247.3 | 136.5 | 52.3 |
-| dllm | 4 | 432.7 | 117.3 | 60.2 |
+| damendaemon | 4 | 432.7 | 117.3 | 60.2 |
 | vllm | 4 | 496.9 | 138.1 | 56.8 |
 
-Raw final trials: [dllm, C1](evidence/compare-dllm-batched-c1.json), [dllm, C2](evidence/compare-dllm-batched-c2.json), [dllm, C4](evidence/compare-dllm-batched-c4.json), [vllm, C1](evidence/compare-vllm-batched-c1.json), [vllm, C2](evidence/compare-vllm-batched-c2.json), [vllm, C4](evidence/compare-vllm-batched-c4.json).
+Raw final trials: [damendaemon, C1](evidence/compare-damendaemon-batched-c1.json), [damendaemon, C2](evidence/compare-damendaemon-batched-c2.json), [damendaemon, C4](evidence/compare-damendaemon-batched-c4.json), [vllm, C1](evidence/compare-vllm-batched-c1.json), [vllm, C2](evidence/compare-vllm-batched-c2.json), [vllm, C4](evidence/compare-vllm-batched-c4.json).
 
 All final generated response texts matched across the two engines at each concurrency.
 
 The final single-request aggregate rate is about 4% below vLLM, while its
 post-first-output rate is about 7% below. At four requests, aggregate throughput
-is about 13% below vLLM. The original serialized dllm post-first rate of 106.1
+is about 13% below vLLM. The original serialized damendaemon post-first rate of 106.1
 rose to 138.8 tokens/s, approximately a 31% improvement. The final executor-only
 batched test at context 512 measured approximately 145 / 261 / 530 aggregate
 decode tokens/s for 0.5B at batch sizes 1 / 2 / 4, and 50 / 96 / 188 for 1.5B.
@@ -148,20 +148,20 @@ matching Python headers. Select exactly one GPU UUID. Require the fast backend
 for performance runs:
 
 ```sh
-export DLLM_KERNELS=triton
+export DAMENDAEMON_KERNELS=triton
 python -m unittest discover -s tests -v
 PYTHONPATH=. python scripts/verify_kernels.py
 PYTHONPATH=. python scripts/verify_qwen2.py /path/to/model
 PYTHONPATH=. python scripts/verify_batch.py /path/to/model
-DLLM_KERNELS=torch PYTHONPATH=. python scripts/verify_batch.py /path/to/model
+DAMENDAEMON_KERNELS=torch PYTHONPATH=. python scripts/verify_batch.py /path/to/model
 PYTHONPATH=. python scripts/verify_backend.py /path/to/model
 PYTHONPATH=. python scripts/verify_service.py /path/to/0.5b /path/to/1.5b
 PYTHONPATH=. python scripts/profile_decode.py /path/to/model
 PYTHONPATH=. python scripts/profile_scheduler.py /path/to/model
-PYTHONPATH=. python scripts/compare_llama.py http://127.0.0.1:8088/v1 --engine dllm --concurrency 4
+PYTHONPATH=. python scripts/compare_llama.py http://127.0.0.1:8088/v1 --engine damendaemon --concurrency 4
 ```
 
-`scripts/compare_a2.py` reproduces the lab's sequential dllm/vLLM comparison
+`scripts/compare_a2.py` reproduces the lab's sequential damendaemon/vLLM comparison
 using its existing isolated virtual environments and `model-a.json`. It refuses
 any GPU UUID other than the authorized A2 and only terminates its own process
-groups. vLLM remains a separate benchmark dependency; dllm never imports it.
+groups. vLLM remains a separate benchmark dependency; damendaemon never imports it.

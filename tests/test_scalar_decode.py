@@ -1,8 +1,8 @@
 """Single-request callers must use the executor's graph and authoritative slot length."""
 import unittest
 from unittest.mock import Mock,patch
-from dllm.batch import BatchExecutor
-from dllm.qwen2 import Executor
+from damendaemon.batch import BatchExecutor
+from damendaemon.qwen2 import Executor
 
 
 class ScalarDecodeTests(unittest.TestCase):

@@ -7,7 +7,7 @@ import time
 
 import torch
 
-from dllm.runtime import require_gpu
+from damendaemon.runtime import require_gpu
 from scripts.experiments.hip_q8_bf16x3 import linear
 
 

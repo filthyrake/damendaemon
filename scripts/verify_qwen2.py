@@ -1,7 +1,7 @@
 """Real GPU correctness gate against a separately implemented HF reference.
 
 Run with CUDA_VISIBLE_DEVICES=<one GPU UUID> python scripts/verify_qwen2.py PATH.
-Transformers is a validation-only dependency, not the dllm inference runtime.
+Transformers is a validation-only dependency, not the damendaemon inference runtime.
 """
 if not __debug__:
     raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
@@ -14,10 +14,10 @@ import time
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from dllm.qwen2 import ModelWeights, Executor
-from dllm.runtime import require_gpu, make_executor
+from damendaemon.qwen2 import ModelWeights, Executor
+from damendaemon.runtime import require_gpu, make_executor
 from reference_model import load_reference
-from dllm.device import selected_device, synchronize, empty_cache, device_name
+from damendaemon.device import selected_device, synchronize, empty_cache, device_name
 
 
 def main():

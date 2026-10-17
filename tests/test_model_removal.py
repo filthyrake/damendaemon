@@ -11,17 +11,17 @@ from unittest.mock import Mock, patch
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from dllm.cli import main
-from dllm.model_manifest import load
-from dllm.runtime import Runtime
-from dllm.scheduler import BatchedRuntime
-from dllm.server import handler_for
+from damendaemon.cli import main
+from damendaemon.model_manifest import load
+from damendaemon.runtime import Runtime
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import handler_for
 
 
 class ModelRemovalTests(unittest.TestCase):
     def test_http_cli_remove_preserves_shared_path_and_exports_corrected_registry(self):
-        with tempfile.TemporaryDirectory() as directory, patch('dllm.runtime.require_gpu'), \
-                patch('dllm.runtime.synchronize'), patch('dllm.runtime.empty_cache'):
+        with tempfile.TemporaryDirectory() as directory, patch('damendaemon.runtime.require_gpu'), \
+                patch('damendaemon.runtime.synchronize'), patch('damendaemon.runtime.empty_cache'):
             root = Path(directory)
             (root/'tokenizer_config.json').write_text('{}')
             checkpoint = root/'weights.safetensors'
@@ -39,7 +39,7 @@ class ModelRemovalTests(unittest.TestCase):
             try:
                 with patch.object(inner, '_status', side_effect=lambda: {'ids': inner.model_ids()}):
                     output = io.StringIO()
-                    with patch('sys.argv', ['dllm', 'remove', 'wrong', '--server', base]), patch('sys.stdout', output):
+                    with patch('sys.argv', ['damendaemon', 'remove', 'wrong', '--server', base]), patch('sys.stdout', output):
                         main()
                     self.assertEqual(json.loads(output.getvalue()), {'ids': ['keep']})
                     removed_executor.close.assert_called_once()
@@ -57,11 +57,11 @@ class ModelRemovalTests(unittest.TestCase):
                     self.assertEqual(error.exception.code, 400)
                     error.exception.close()
                     exported = root/'models.json'
-                    with patch('sys.argv', ['dllm', 'models', '--server', base, '--save-config', str(exported)]), patch('sys.stdout'):
+                    with patch('sys.argv', ['damendaemon', 'models', '--server', base, '--save-config', str(exported)]), patch('sys.stdout'):
                         main()
                     self.assertEqual(set(load(exported, Mock())[0]), {'keep'})
-                    with patch('dllm.models.config', return_value={'max_position_embeddings': 4096}), \
-                            patch('dllm.models.weight_bytes', return_value=1), patch('tokenizers.Tokenizer.from_file'):
+                    with patch('damendaemon.models.config', return_value={'max_position_embeddings': 4096}), \
+                            patch('damendaemon.models.weight_bytes', return_value=1), patch('tokenizers.Tokenizer.from_file'):
                         request = Request(base+'/v1/models/register', data=json.dumps({
                             'model': 'wrong', 'path': directory, 'quantization': 'q8_0'}).encode(),
                             headers={'Content-Type': 'application/json'})
@@ -77,7 +77,7 @@ class ModelRemovalTests(unittest.TestCase):
                 runtime.close()
 
     def test_failed_eviction_preserves_registered_identity_and_host_owner(self):
-        with patch('dllm.runtime.require_gpu'):
+        with patch('damendaemon.runtime.require_gpu'):
             runtime = Runtime({'a': Path('/snapshot')}, quantizations={'a': 'q4_0'})
         runtime.gpu['a'] = object()
         runtime.host['a'] = object()

@@ -36,7 +36,7 @@ def failure_client(runtime, args, base, report):
             with urlopen(Request(base+'/v1/completions',data=json.dumps(body).encode(),
                          headers={'Content-Type':'application/json'}),timeout=45) as response:
                 if not body['stream']:raise AssertionError('failed batch returned success: '+response.read().decode())
-                from dllm.bench import events
+                from damendaemon.bench import events
                 chunks=list(events(response, require_terminated=True))
                 require_gate('[DONE]' not in chunks, 'failed stream published DONE')
                 parsed=[json.loads(chunk) for chunk in chunks]
@@ -75,11 +75,11 @@ def failure_client(runtime, args, base, report):
 
 def worker(args):
     if not args.run_id:raise ValueError('worker requires a parent invocation ID')
-    from dllm.distributed_server_cli import main as serve
+    from damendaemon.distributed_server_cli import main as serve
     options=[args.model,'--quantization',args.quantization,'--batch-size','4','--alias','a','--port','0']
     output=Path(args.output)
     if os.environ['RANK']=='1':
-        from dllm.layer_stage import LayerStage
+        from damendaemon.layer_stage import LayerStage
         methods=('run_prefill','run_prefill_packed') if args.operation=='prefill' else ('run_decode',)
         originals={method:getattr(LayerStage,method) for method in methods}
         def wrap(method):
@@ -97,13 +97,13 @@ def worker(args):
         finally:
             for method,original in originals.items():setattr(LayerStage,method,original)
         raise AssertionError('no batched output-stage failure was injected')
-    from dllm.distributed_serving import DistributedRuntime
-    from dllm.server import BoundedHTTPServer
+    from damendaemon.distributed_serving import DistributedRuntime
+    from damendaemon.server import BoundedHTTPServer
     original_init=BoundedHTTPServer.__init__;original_run=DistributedRuntime.run
     base=None
     report=dict(run_id=args.run_id,passed=False,quantization=args.quantization,streaming=args.stream,scope='Real output-stage execution failure; no recovery/performance claim',
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-                 ('dllm/distributed.py','dllm/distributed_serving.py','dllm/distributed_server_cli.py')})
+                 ('damendaemon/distributed.py','damendaemon/distributed_serving.py','damendaemon/distributed_server_cli.py')})
     def capture(server,*positional,**keywords):
         nonlocal base
         original_init(server,*positional,**keywords);base=f'http://127.0.0.1:{server.server_port}'

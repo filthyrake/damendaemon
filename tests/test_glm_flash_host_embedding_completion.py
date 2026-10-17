@@ -3,8 +3,8 @@ import threading
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.host_completion import HostCompletion
-from dllm.hybrid_pipeline import PipelineCancelled
+from damendaemon.host_completion import HostCompletion
+from damendaemon.hybrid_pipeline import PipelineCancelled
 from tests import test_glm_flash_host_embeddings as fixtures
 
 

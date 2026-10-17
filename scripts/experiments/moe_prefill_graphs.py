@@ -5,8 +5,8 @@ import torch
 
 
 def install_validation_dispatch():
-    from dllm.moe import OlmoeExecutor
-    from dllm.prefill_graphs import configuration, PrefillGraphs
+    from damendaemon.moe import OlmoeExecutor
+    from damendaemon.prefill_graphs import configuration, PrefillGraphs
     if torch.cuda.get_device_name() != 'NVIDIA A2':
         raise ValueError('OLMoE prefill graph experiment is limited to A2')
     original = OlmoeExecutor.configure_prefill_graphs

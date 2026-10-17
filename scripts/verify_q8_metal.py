@@ -5,7 +5,7 @@ if not __debug__:
 import json
 import torch
 from torch.nn import functional as F
-from dllm.quantized_metal import linear
+from damendaemon.quantized_metal import linear
 
 
 @torch.inference_mode()

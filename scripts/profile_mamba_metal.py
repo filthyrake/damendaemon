@@ -2,8 +2,8 @@
 import json
 import time
 import torch
-from dllm import metal_kernels as linear
-from dllm import mamba_metal as recurrent
+from damendaemon import metal_kernels as linear
+from damendaemon import mamba_metal as recurrent
 
 
 @torch.inference_mode()

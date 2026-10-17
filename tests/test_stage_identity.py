@@ -2,7 +2,7 @@ import copy
 from types import SimpleNamespace
 import unittest
 import torch
-from dllm.stage_identity import fingerprint
+from damendaemon.stage_identity import fingerprint
 
 
 class StageIdentityTests(unittest.TestCase):

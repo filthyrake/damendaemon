@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import torch
 from torch.nn import functional as F
-from dllm import quantized_metal_q4
+from damendaemon import quantized_metal_q4
 
 
 @torch.inference_mode()

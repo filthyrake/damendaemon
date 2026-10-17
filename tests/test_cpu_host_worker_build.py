@@ -5,14 +5,14 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.cpu_host_worker_build import build_cpu_host_worker,CpuHostWorkerBuildError
-from dllm.cpu_hybrid_checkpoint import load_cpu_checkpoint
-from dllm.cpu_hybrid_stage import CpuHybridStage
-from dllm.cpu_pipeline_build import build_cpu_pipeline
-from dllm.host_endpoint import HostPeerListener,connect_peer
-from dllm.host_tensor_channel import HostTensorChannel
+from damendaemon.cpu_host_worker_build import build_cpu_host_worker,CpuHostWorkerBuildError
+from damendaemon.cpu_hybrid_checkpoint import load_cpu_checkpoint
+from damendaemon.cpu_hybrid_stage import CpuHybridStage
+from damendaemon.cpu_pipeline_build import build_cpu_pipeline
+from damendaemon.host_endpoint import HostPeerListener,connect_peer
+from damendaemon.host_tensor_channel import HostTensorChannel
 from tests.test_host_tls import contexts,FIXTURES
-from dllm.host_tls import certificate_pin
+from damendaemon.host_tls import certificate_pin
 from tests.test_cpu_hybrid_checkpoint import snapshot
 from tests.test_cpu_stage_plan import OPTIONS
 
@@ -62,7 +62,7 @@ class CpuHostWorkerBuildTests(unittest.TestCase):
     def test_bad_control_leaves_transport_caller_owned(self):
         left,_=self.transports()
         for options in (dict(epoch=0),dict(max_context=513),dict(max_batch=5)):
-            with patch('dllm.cpu_host_worker_build.load_cpu_stage_checkpoint',side_effect=AssertionError('loaded')):
+            with patch('damendaemon.cpu_host_worker_build.load_cpu_stage_checkpoint',side_effect=AssertionError('loaded')):
                 with self.assertRaises(ValueError):build_cpu_host_worker(self.path,0,2,left,**(dict(epoch=1)|options))
             self.assertFalse(left.closed);self.assertIsNone(getattr(left,'_cpu_worker_builder_owner',None))
         with self.assertRaises(ValueError):build_cpu_host_worker(self.path,1,2,left,epoch=1,max_context=16)
@@ -73,7 +73,7 @@ class CpuHostWorkerBuildTests(unittest.TestCase):
             left,_=self.transports();initialize=CpuHybridStage.__init__;stages=[]
             def fail(stage,*args,**kwargs):
                 stages.append(stage);initialize(stage,*args,**kwargs);raise MemoryError('partial stage')
-            target='dllm.cpu_host_worker_build.load_cpu_stage_checkpoint' if kind=='load' else 'dllm.cpu_hybrid_stage.CpuHybridStage.__init__'
+            target='damendaemon.cpu_host_worker_build.load_cpu_stage_checkpoint' if kind=='load' else 'damendaemon.cpu_hybrid_stage.CpuHybridStage.__init__'
             with patch(target,side_effect=ValueError('invalid source')) if kind=='load' else patch(target,fail):
                 with self.assertRaises(CpuHostWorkerBuildError) as caught:self.build(left)
             self.assertTrue(caught.exception.closed);self.assertTrue(left.closed)

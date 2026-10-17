@@ -9,9 +9,9 @@ from pathlib import Path
 import torch
 from torch.nn import functional as F
 from transformers import AutoModel,AutoTokenizer
-from dllm.encoder import EncoderWeights,EncoderExecutor
-from dllm.runtime import require_gpu
-from dllm.device import device_name
+from damendaemon.encoder import EncoderWeights,EncoderExecutor
+from damendaemon.runtime import require_gpu
+from damendaemon.device import device_name
 
 
 def main():
@@ -19,7 +19,7 @@ def main():
     p.add_argument('path')
     p.add_argument('--device',choices=('cuda','mps'),default='cuda')
     args=p.parse_args()
-    os.environ['DLLM_DEVICE']=args.device
+    os.environ['DAMENDAEMON_DEVICE']=args.device
     require_gpu()
     torch.set_num_threads(4)
     model=EncoderWeights(args.path,2048)

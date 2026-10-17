@@ -3,7 +3,7 @@ from fractions import Fraction
 from itertools import combinations
 import unittest
 
-from dllm.hybrid_layout import choose_stage_splits, stage_budget
+from damendaemon.hybrid_layout import choose_stage_splits, stage_budget
 from tests import test_hybrid_stage
 
 

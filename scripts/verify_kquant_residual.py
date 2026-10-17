@@ -58,7 +58,7 @@ def main():
                 del graph,actual
     if args.float32_experimental:
         from experiments.kquant_residual_f32 import library
-        _,quantize,_=library(os.environ['DLLM_EXPERIMENTAL_RESIDUAL_F32_LIBRARY'])
+        _,quantize,_=library(os.environ['DAMENDAEMON_EXPERIMENTAL_RESIDUAL_F32_LIBRARY'])
         exponents=(-149,-140,-126,-120,-100,-50,0,50,100)
         cpu=torch.stack([torch.linspace(-.99,.99,32,dtype=torch.float64)*2.**e for e in exponents]).float()
         x=cpu.cuda()

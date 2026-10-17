@@ -4,8 +4,8 @@ if not __debug__:
 
 import json
 import torch
-from dllm.runtime import require_gpu
-from dllm.hybrid_kernels import scan, conv_step, output_head, norm
+from damendaemon.runtime import require_gpu
+from damendaemon.hybrid_kernels import scan, conv_step, output_head, norm
 
 
 def reference(q, k, v, decay, beta, state):

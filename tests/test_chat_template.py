@@ -3,8 +3,8 @@ import unittest
 from pathlib import Path
 
 from jinja2.exceptions import SecurityError
-from dllm.chat_template import compile_template, validate_override, read_override, MAX_TEMPLATE_BYTES
-from dllm.management import command
+from damendaemon.chat_template import compile_template, validate_override, read_override, MAX_TEMPLATE_BYTES
+from damendaemon.management import command
 
 
 class ChatTemplateTests(unittest.TestCase):
@@ -41,7 +41,7 @@ class ChatTemplateTests(unittest.TestCase):
 
     def test_checkpoint_structured_tokens_render_as_token_text(self):
         from tokenizers import Tokenizer, models, pre_tokenizers
-        from dllm.qwen2 import ModelWeights
+        from damendaemon.qwen2 import ModelWeights
         tokenizer = Tokenizer(models.WordLevel({'[UNK]':0,'BOS':1,'hello':2,'EOS':3},unk_token='[UNK]'))
         tokenizer.pre_tokenizer = pre_tokenizers.Whitespace()
         model = ModelWeights.__new__(ModelWeights)
@@ -60,7 +60,7 @@ class ChatTemplateTests(unittest.TestCase):
         from types import SimpleNamespace
         from unittest.mock import Mock
         from jinja2 import UndefinedError
-        from dllm.qwen2 import ModelWeights
+        from damendaemon.qwen2 import ModelWeights
         for error in (UndefinedError('missing field'),SecurityError('blocked'),RecursionError('nested')):
             with self.subTest(error=type(error).__name__):
                 model=SimpleNamespace(config={'model_type':'qwen2'},special_tokens={},
@@ -78,8 +78,8 @@ class ChatTemplateTests(unittest.TestCase):
     def test_actual_template_expression_failures_before_tokenization(self):
         from types import SimpleNamespace
         from unittest.mock import Mock
-        from dllm.qwen2 import ModelWeights
-        from dllm.cpu_reference_chat import CpuReferenceChat
+        from damendaemon.qwen2 import ModelWeights
+        from damendaemon.cpu_reference_chat import CpuReferenceChat
         cases = (('{{ messages[0].content + 1 }}', TypeError),
                  ('{{ range(3) | tojson }}', TypeError),
                  ('{{ 1 / (messages | length - 1) }}', ZeroDivisionError))
@@ -96,11 +96,11 @@ class ChatTemplateTests(unittest.TestCase):
     def test_expanded_prompt_bytes_are_bounded_before_tokenization(self):
         from types import SimpleNamespace
         from unittest.mock import Mock,patch
-        from dllm.qwen2 import ModelWeights
+        from damendaemon.qwen2 import ModelWeights
         template=compile_template('{% for i in range(10) %}{{ messages[0].content }}{% endfor %}')
         model=SimpleNamespace(config={'model_type':'qwen2','vocab_size':2},special_tokens={},
             template=template,tokenizer=SimpleNamespace(encode=Mock(return_value=SimpleNamespace(ids=[1]))))
-        with patch('dllm.qwen2.MAX_RENDERED_CHAT_BYTES',32):
+        with patch('damendaemon.qwen2.MAX_RENDERED_CHAT_BYTES',32):
             with self.assertRaisesRegex(ValueError,'rendered prompt'):
                 ModelWeights.chat_tokens(model,[{'role':'user','content':'éé'}])
         model.tokenizer.encode.assert_not_called()
@@ -108,7 +108,7 @@ class ChatTemplateTests(unittest.TestCase):
     def test_render_budget_stops_and_closes_generator_and_counts_tool_prefix(self):
         from types import SimpleNamespace
         from unittest.mock import Mock,patch
-        from dllm.qwen2 import ModelWeights
+        from damendaemon.qwen2 import ModelWeights
         consumed=[];closed=[]
         def generate(**options):
             try:
@@ -119,23 +119,23 @@ class ChatTemplateTests(unittest.TestCase):
         model=SimpleNamespace(config={'model_type':'qwen2','vocab_size':2},special_tokens={},
             template=SimpleNamespace(generate=generate),supports_tool_calls=True,
             tokenizer=SimpleNamespace(encode=Mock(return_value=SimpleNamespace(ids=[1]))))
-        with patch('dllm.qwen2.MAX_RENDERED_CHAT_BYTES',8):
+        with patch('damendaemon.qwen2.MAX_RENDERED_CHAT_BYTES',8):
             with self.assertRaisesRegex(ValueError,'rendered prompt'):
                 ModelWeights.chat_tokens(model,[{'role':'user','content':'hello'}])
         self.assertEqual(consumed,[0,1,2]);self.assertEqual(closed,[True])
         model.tokenizer.encode.assert_not_called()
         model.template=compile_template('éééé')
-        with patch('dllm.qwen2.MAX_RENDERED_CHAT_BYTES',8):
+        with patch('damendaemon.qwen2.MAX_RENDERED_CHAT_BYTES',8):
             self.assertEqual(ModelWeights.chat_tokens(model,[{'role':'user','content':'hello'}]),[1])
         self.assertEqual(model.tokenizer.encode.call_args.args[0],'éééé')
         tools=[{'type':'function','function':{'name':'weather','parameters':{'type':'object','properties':{}}}}]
         model.tokenizer.encode.reset_mock()
         budget=8+len('<tool_call>\n')
-        with patch('dllm.qwen2.MAX_RENDERED_CHAT_BYTES',budget):
+        with patch('damendaemon.qwen2.MAX_RENDERED_CHAT_BYTES',budget):
             self.assertEqual(ModelWeights.chat_tokens(model,[{'role':'user','content':'hello'}],tools=tools,tool_json=True),[1])
         self.assertEqual(model.tokenizer.encode.call_args.args[0],'éééé<tool_call>\n')
         model.tokenizer.encode.reset_mock()
-        with patch('dllm.qwen2.MAX_RENDERED_CHAT_BYTES',budget-1):
+        with patch('damendaemon.qwen2.MAX_RENDERED_CHAT_BYTES',budget-1):
             with self.assertRaisesRegex(ValueError,'rendered prompt'):
                 ModelWeights.chat_tokens(model,[{'role':'user','content':'hello'}],tools=tools,tool_json=True)
         model.tokenizer.encode.assert_not_called()
@@ -145,8 +145,8 @@ class NamedTemplateCompatibilityTests(unittest.TestCase):
     def test_default_rendering_matches_local_transformers(self):
         from tokenizers import Tokenizer, models
         from transformers import PreTrainedTokenizerFast
-        from dllm.tokenizer_metadata import checkpoint_template
-        from dllm.qwen2 import ModelWeights
+        from damendaemon.tokenizer_metadata import checkpoint_template
+        from damendaemon.qwen2 import ModelWeights
         template = "{% for message in messages %}{{ message['role'] }}:{{ message['content'] }};{% endfor %}{% if add_generation_prompt %}assistant:{% endif %}"
         messages = [{'role':'system','content':'Be brief'}, {'role':'user','content':'héllo'}]
         tokenizer = Tokenizer(models.WordLevel({'[UNK]':0},unk_token='[UNK]'))
@@ -166,8 +166,8 @@ class NamedTemplateCompatibilityTests(unittest.TestCase):
         from types import SimpleNamespace
         from tokenizers import Tokenizer, models
         from transformers import PreTrainedTokenizerFast
-        from dllm.tokenizer_metadata import checkpoint_template
-        from dllm.qwen2 import ModelWeights
+        from damendaemon.tokenizer_metadata import checkpoint_template
+        from damendaemon.qwen2 import ModelWeights
         default = 'DEFAULT {{ messages[-1]["content"] }}'
         variant = '{# <tool_call> </tool_call> tool_calls tools #}TOOL {% if tools %}{{ tools[0]["function"]["name"] }}{% else %}history{% endif %}'
         named = [{'name':'default','template':default},{'name':'tool_use','template':variant}]

@@ -74,7 +74,7 @@ if case in ('score-empty-trailer','score-null-trailer'):
 stream = ''.join('data: ' + json.dumps(chunk) + '\n\n' for chunk in chunks)
 if case == 'duplicate-json': stream = 'data: {"choices":[],"choices":[{"delta":{"content":"hello"}}]}\n\n' + stream
 if case != 'no-done': stream += 'data: [DONE]\n\n'
-args = ['compare', 'http://unused.invalid/v1', '--engine', 'dllm', '--max-tokens', '2']
+args = ['compare', 'http://unused.invalid/v1', '--engine', 'damendaemon', '--max-tokens', '2']
 if case.startswith('raw-'): args += ['--raw']
 if case in ('no-scores','scored') or case.startswith('score-'):
     args += ['--top-logprobs', '1' if case.startswith('score-top-') else '0']
@@ -97,7 +97,7 @@ body = UnreadBody(b'private body')
 error = HTTPError('http://unused.invalid', 503, 'private reason', {}, body)
 output = io.StringIO()
 try:
-    with patch('sys.argv', ['compare', 'http://unused.invalid', '--engine', 'dllm']), patch.object(compare_llama, 'urlopen', side_effect=error), contextlib.redirect_stdout(output):
+    with patch('sys.argv', ['compare', 'http://unused.invalid', '--engine', 'damendaemon']), patch.object(compare_llama, 'urlopen', side_effect=error), contextlib.redirect_stdout(output):
         try:
             compare_llama.main()
         except RuntimeError as caught:
@@ -123,7 +123,7 @@ from unittest.mock import patch
 from scripts import compare_llama
 body = io.BytesIO(b': ping\n\n' * 20)
 output = io.StringIO()
-with patch('sys.argv', ['compare', 'http://unused.invalid', '--engine', 'dllm']), patch.object(compare_llama, 'urlopen', return_value=body), patch.object(compare_llama, 'MAX_RESPONSE_BYTES', 16, create=True), contextlib.redirect_stdout(output):
+with patch('sys.argv', ['compare', 'http://unused.invalid', '--engine', 'damendaemon']), patch.object(compare_llama, 'urlopen', return_value=body), patch.object(compare_llama, 'MAX_RESPONSE_BYTES', 16, create=True), contextlib.redirect_stdout(output):
     try:
         compare_llama.main()
     except ValueError as error:

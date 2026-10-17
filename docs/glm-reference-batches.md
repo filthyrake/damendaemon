@@ -1,6 +1,6 @@
 # GLM-5.3 sparse-attention CPU text batches
 
-`dllm.glm_batch_generation.BatchReferenceGenerator` adds bounded conversation
+`damendaemon.glm_batch_generation.BatchReferenceGenerator` adds bounded conversation
 batches to the packed GLM sparse-attention CPU reference. It reuses the shared
 owned batch lifecycle already used by Flash and DeepSeek, with GLM's tokenizer,
 reasoning/content parser and mapped vocabulary policy.

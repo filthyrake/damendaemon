@@ -12,8 +12,8 @@ import time
 from urllib.request import Request,urlopen
 
 import torch
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer,handler_for
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer,handler_for
 
 
 def main():
@@ -22,7 +22,7 @@ def main():
     if any(n<1 or n+8>256 for n in args.lengths) or args.rounds<1:parser.error('invalid workload')
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
-    os.environ.update(DLLM_DEVICE='cuda',DLLM_GPT_OSS_PREFILL='grouped');torch.set_num_threads(4)
+    os.environ.update(DAMENDAEMON_DEVICE='cuda',DAMENDAEMON_GPT_OSS_PREFILL='grouped');torch.set_num_threads(4)
     runtime=BatchedRuntime({'oss':args.model},context=256,batch_size=2,host_gib=18)
     server=BoundedHTTPServer(('127.0.0.1',0),handler_for(runtime));thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
     def post(ids):
@@ -48,7 +48,7 @@ def main():
                     result,elapsed=post(ids)
                     assert (result['choices'],result['usage'])==expected,(length,mode)
                     measurements.append({'mode':mode,'http_seconds':elapsed,
-                        'first_token_seconds':result['dllm_timing']['first_token_seconds'],
+                        'first_token_seconds':result['damendaemon_timing']['first_token_seconds'],
                         'peak_allocated_bytes':torch.cuda.max_memory_allocated()})
             rows.append({'prompt_tokens':length,'completion_tokens':result['usage']['completion_tokens'],
                 'exact_response':True,'measurements':measurements,'median_seconds':{

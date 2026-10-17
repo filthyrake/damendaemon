@@ -6,7 +6,7 @@ from torch.nn import functional as F
 
 
 def install_validation_dispatch():
-    from dllm.moe import OlmoeExecutor
+    from damendaemon.moe import OlmoeExecutor
     report = dict(kind='experimental offset-aware OLMoE prefill', selected_calls=0,
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest())
 

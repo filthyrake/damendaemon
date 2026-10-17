@@ -5,8 +5,8 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.packed_projection import packed_linear
-from dllm.packed_tiles import decode_tile
+from damendaemon.packed_projection import packed_linear
+from damendaemon.packed_tiles import decode_tile
 
 
 def fixture(format, rows=133, columns=160):
@@ -57,18 +57,18 @@ class PackedProjectionTests(unittest.TestCase):
             previous = weakref.ref(result)
             return result
         budget = 128*(3*17+3+17)+8*17+8*3
-        with patch('dllm.packed_projection.decode_tile',side_effect=bounded):
+        with patch('damendaemon.packed_projection.decode_tile',side_effect=bounded):
             actual = packed_linear(hidden,raw,scales,format='e2m1',row_chunk=3,column_chunk=17,workspace_bytes=budget)
         self.assertEqual(len(calls),12)
         self.assertTrue(all(r*c <= 51 for r,c in calls))
         torch.testing.assert_close(actual,hidden@dense.T,rtol=2e-5,atol=1e-5)
-        with patch('dllm.packed_projection.decode_tile',side_effect=AssertionError('decode started')):
+        with patch('damendaemon.packed_projection.decode_tile',side_effect=AssertionError('decode started')):
             with self.assertRaisesRegex(ValueError,'workspace'):
                 packed_linear(hidden,raw,scales,format='e2m1',row_chunk=3,column_chunk=17,workspace_bytes=budget-1)
 
     def test_empty_and_invalid_inputs_do_not_decode(self):
         hidden,raw,scales,_ = fixture('e2m1',rows=3,columns=32)
-        with patch('dllm.packed_projection.decode_tile',side_effect=AssertionError('decode started')):
+        with patch('damendaemon.packed_projection.decode_tile',side_effect=AssertionError('decode started')):
             self.assertEqual(packed_linear(hidden[:0],raw,scales,format='e2m1').shape,(0,3))
             for override in ({'row_chunk':True},{'column_chunk':0},{'row_chunk':257,'column_chunk':256},
                              {'workspace_bytes':1},{'format':'unsupported'}):

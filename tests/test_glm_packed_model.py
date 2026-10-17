@@ -1,11 +1,11 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_packed_ffn import PackedGlmFeedForward
-from dllm.glm_ffn import GlmFeedForward
-from dllm.glm_block import GlmBlock
-from dllm.glm_model import GlmModel
-from dllm.packed_moe import PackedExpert,PackedMatrix
+from damendaemon.glm_packed_ffn import PackedGlmFeedForward
+from damendaemon.glm_ffn import GlmFeedForward
+from damendaemon.glm_block import GlmBlock
+from damendaemon.glm_model import GlmModel
+from damendaemon.packed_moe import PackedExpert,PackedMatrix
 from tests.test_glm_packed_attention import packed_pair,models
 from tests.test_glm_block import ffn_weights,dense
 

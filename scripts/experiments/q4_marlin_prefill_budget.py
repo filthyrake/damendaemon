@@ -6,7 +6,7 @@ an activation reserve to admission and cannot establish production support.
 import hashlib
 from pathlib import Path
 
-from dllm.batch import BatchExecutor
+from damendaemon.batch import BatchExecutor
 
 
 def install_validation_budget(budget):

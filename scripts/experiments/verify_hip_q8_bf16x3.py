@@ -9,8 +9,8 @@ from pathlib import Path
 
 import torch
 
-from dllm.runtime import require_gpu
-from dllm.compensated_q8 import linear as linear_q8, linear_q4
+from damendaemon.runtime import require_gpu
+from damendaemon.compensated_q8 import linear as linear_q8, linear_q4
 
 
 @torch.inference_mode()

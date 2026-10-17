@@ -15,9 +15,9 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
-    from dllm.cuda_floating_attention import attention_prefill,attention_decode
-    from dllm.floating_attention import attention_prefill as cpu_prefill
-    from dllm.cuda_prepared_projection import CudaPackedProjection
+    from damendaemon.cuda_floating_attention import attention_prefill,attention_decode
+    from damendaemon.floating_attention import attention_prefill as cpu_prefill
+    from damendaemon.cuda_prepared_projection import CudaPackedProjection
     from tests.test_floating_attention import fixture
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')
     torch.set_num_threads(1);torch.backends.cuda.matmul.allow_tf32=False
@@ -34,7 +34,7 @@ def main():
                     output[b,t,h]=torch.cat((logits,sink[h:h+1])).softmax(0)[:-1]@vectors
         return output
     def reference(hidden,weights,freq,ratio):
-        with patch('dllm.floating_attention.selected_attention',side_effect=dense):
+        with patch('damendaemon.floating_attention.selected_attention',side_effect=dense):
             output,state=cpu_prefill(hidden,weights,freq,groups=2,window=4,ratio=ratio,index_top_k=2,query_chunk=8)
         state.close();return output
     try:

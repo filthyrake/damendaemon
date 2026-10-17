@@ -7,15 +7,15 @@
 
 // Override only for isolated launch-geometry measurements. Normal builds retain
 // four warp-owned output rows per block and exactly the same arithmetic.
-#ifndef DLLM_KQUANT_THREADS
-#define DLLM_KQUANT_THREADS 128
+#ifndef DAMENDAEMON_KQUANT_THREADS
+#define DAMENDAEMON_KQUANT_THREADS 128
 #endif
-static_assert(DLLM_KQUANT_THREADS >= 32 && DLLM_KQUANT_THREADS <= 1024
-              && DLLM_KQUANT_THREADS % 32 == 0, "threads must be whole CUDA warps");
+static_assert(DAMENDAEMON_KQUANT_THREADS >= 32 && DAMENDAEMON_KQUANT_THREADS <= 1024
+              && DAMENDAEMON_KQUANT_THREADS % 32 == 0, "threads must be whole CUDA warps");
 
 template<typename T>
 __device__ __forceinline__ T weight_load(const T* pointer) {
-#ifdef DLLM_KQUANT_BYPASS_L1
+#ifdef DAMENDAEMON_KQUANT_BYPASS_L1
     return __ldcg(pointer);
 #else
     return *pointer;
@@ -106,8 +106,8 @@ __global__ void kquant_gemv(const half* __restrict__ x,
 template<int Kind>
 void launch(const half* x, const uint8_t* weights, const half* bias, half* output,
             int rows, int n, int k, int first, int count, cudaStream_t stream) {
-    constexpr int warps = DLLM_KQUANT_THREADS / 32;
-    const dim3 block(DLLM_KQUANT_THREADS), grid((count + warps - 1) / warps);
+    constexpr int warps = DAMENDAEMON_KQUANT_THREADS / 32;
+    const dim3 block(DAMENDAEMON_KQUANT_THREADS), grid((count + warps - 1) / warps);
     #define LAUNCH(R) kquant_gemv<Kind,R><<<grid,block,0,stream>>>(x,weights,bias,output,n,k,first,count)
     switch (rows) {
         case 1: LAUNCH(1); break;
@@ -118,7 +118,7 @@ void launch(const half* x, const uint8_t* weights, const half* bias, half* outpu
     #undef LAUNCH
 }
 
-extern "C" int dllm_kquant_gemv(const void* x, const void* weights, const void* bias,
+extern "C" int damendaemon_kquant_gemv(const void* x, const void* weights, const void* bias,
                                void* output, int rows, int n, int k, int first,
                                int count, int kind, void* stream_pointer) {
     if (!x || !weights || !output || rows < 1 || rows > 4 || n <= 0 || k <= 0 || k % 256
@@ -136,4 +136,4 @@ extern "C" int dllm_kquant_gemv(const void* x, const void* weights, const void* 
     return static_cast<int>(cudaGetLastError());
 }
 
-extern "C" int dllm_kquant_abi_version() { return 1; }
+extern "C" int damendaemon_kquant_abi_version() { return 1; }

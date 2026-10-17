@@ -1,18 +1,18 @@
 {
-  "model": "/home/damen/dllm-dev/baselines/llama32-1b-import-q4_k_m.gguf",
+  "model": "/home/damen/damendaemon-dev/baselines/llama32-1b-import-q4_k_m.gguf",
   "model_sha256": "0f94fa98d163d9e70e97026f256da3876a9049e0d88eb6b8e880d754a01d7377",
-  "native_library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+  "native_library": "/home/damen/damendaemon-dev/build-kquant/libdamendaemon-kquant.so",
   "native_library_sha256": "2896d777ef22e1658e1f3f2cae1b67126bf886f071a624f241f1ee816638a61c",
   "llama_server": null,
   "llama_server_sha256": null,
-  "residual_library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant-residual-f32.so",
+  "residual_library": "/home/damen/damendaemon-dev/build-kquant/libdamendaemon-kquant-residual-f32.so",
   "residual_library_sha256": "d18812c724bc892b64a8669e5dacfec0250bf08993ea20a41d5b8df3faaab35d",
   "experimental_arithmetic": "FP32 prefill rows >=128; scaled high/low FP16 operands, three products; same production residual decode in both engines",
   "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
   "context_per_slot": 512,
   "slots": 4,
   "kv_dtype": "float32",
-  "dllm_precision": "FP32 matrices, residual/nonlinear and KV",
+  "damendaemon_precision": "FP32 matrices, residual/nonlinear and KV",
   "output_tokens": 16,
   "prompts": {
     "16": [
@@ -572,14 +572,14 @@
   "runs": [
     {
       "phase": 0,
-      "engine": "dllm",
+      "engine": "damendaemon",
       "command": [
-        "/home/damen/dllm-dev/venv/bin/python",
+        "/home/damen/damendaemon-dev/venv/bin/python",
         "-m",
-        "dllm",
+        "damendaemon",
         "serve",
         "--model",
-        "a=/home/damen/dllm-dev/baselines/llama32-1b-import-q4_k_m.gguf",
+        "a=/home/damen/damendaemon-dev/baselines/llama32-1b-import-q4_k_m.gguf",
         "--port",
         "48989",
         "--context",
@@ -595,7 +595,7 @@
         "--prefix-cache-tokens",
         "0"
       ],
-      "log": "results/llama32-q4-k-m-prefill-f32-http-a2-0-dllm.log",
+      "log": "results/llama32-q4-k-m-prefill-f32-http-a2-0-damendaemon.log",
       "cases": [
         {
           "prompt_tokens": 16,
@@ -1388,12 +1388,12 @@
       "phase": 1,
       "engine": "compensated-prefill-fp32",
       "command": [
-        "/home/damen/dllm-dev/venv/bin/python",
+        "/home/damen/damendaemon-dev/venv/bin/python",
         "-m",
         "scripts.experiments.serve_prefill_f32",
         "serve",
         "--model",
-        "a=/home/damen/dllm-dev/baselines/llama32-1b-import-q4_k_m.gguf",
+        "a=/home/damen/damendaemon-dev/baselines/llama32-1b-import-q4_k_m.gguf",
         "--port",
         "60871",
         "--context",
@@ -2202,12 +2202,12 @@
       "phase": 2,
       "engine": "compensated-prefill-fp32",
       "command": [
-        "/home/damen/dllm-dev/venv/bin/python",
+        "/home/damen/damendaemon-dev/venv/bin/python",
         "-m",
         "scripts.experiments.serve_prefill_f32",
         "serve",
         "--model",
-        "a=/home/damen/dllm-dev/baselines/llama32-1b-import-q4_k_m.gguf",
+        "a=/home/damen/damendaemon-dev/baselines/llama32-1b-import-q4_k_m.gguf",
         "--port",
         "54709",
         "--context",
@@ -3014,14 +3014,14 @@
     },
     {
       "phase": 3,
-      "engine": "dllm",
+      "engine": "damendaemon",
       "command": [
-        "/home/damen/dllm-dev/venv/bin/python",
+        "/home/damen/damendaemon-dev/venv/bin/python",
         "-m",
-        "dllm",
+        "damendaemon",
         "serve",
         "--model",
-        "a=/home/damen/dllm-dev/baselines/llama32-1b-import-q4_k_m.gguf",
+        "a=/home/damen/damendaemon-dev/baselines/llama32-1b-import-q4_k_m.gguf",
         "--port",
         "39657",
         "--context",
@@ -3037,7 +3037,7 @@
         "--prefix-cache-tokens",
         "0"
       ],
-      "log": "results/llama32-q4-k-m-prefill-f32-http-a2-3-dllm.log",
+      "log": "results/llama32-q4-k-m-prefill-f32-http-a2-3-damendaemon.log",
       "cases": [
         {
           "prompt_tokens": 16,

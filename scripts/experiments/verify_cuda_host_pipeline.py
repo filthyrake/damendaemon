@@ -15,13 +15,13 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report required')
     import torch
-    from dllm.cuda_host_pipeline_build import build_cuda_host_pipeline_worker
-    from dllm.glm_host_pipeline_build import build_glm_host_pipeline_worker
-    from dllm.glm_flash_host_pipeline_build import build_glm_flash_host_pipeline_worker
-    from dllm.deepseek_host_pipeline_build import build_deepseek_host_pipeline_worker
-    from dllm.cpu_snapshot_identity import fingerprint
-    from dllm.host_topology import HostTopology
-    from dllm import glm_reference_loader,glm_flash_reference_loader,deepseek_reference_loader
+    from damendaemon.cuda_host_pipeline_build import build_cuda_host_pipeline_worker
+    from damendaemon.glm_host_pipeline_build import build_glm_host_pipeline_worker
+    from damendaemon.glm_flash_host_pipeline_build import build_glm_flash_host_pipeline_worker
+    from damendaemon.deepseek_host_pipeline_build import build_deepseek_host_pipeline_worker
+    from damendaemon.cpu_snapshot_identity import fingerprint
+    from damendaemon.host_topology import HostTopology
+    from damendaemon import glm_reference_loader,glm_flash_reference_loader,deepseek_reference_loader
     from tests import test_glm_reference_loader as glm_fixture,test_glm_flash_reference_loader as flash_fixture,test_deepseek_reference_loader as ds_fixture
     from tests.test_cpu_host_pipeline_build import CpuHostPipelineBuildTests
     from tests.test_host_pipeline_worker import HostPipelineWorkerTests

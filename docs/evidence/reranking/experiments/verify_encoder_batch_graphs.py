@@ -8,14 +8,14 @@ import time
 import weakref
 
 import torch
-from dllm.encoder import EncoderExecutor,EncoderWeights
+from damendaemon.encoder import EncoderExecutor,EncoderWeights
 
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');args=p.parse_args()
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
-    os.environ['DLLM_DEVICE']='cuda';os.environ['DLLM_ENCODER_GRAPH_MAX_BATCH']='64'
+    os.environ['DAMENDAEMON_DEVICE']='cuda';os.environ['DAMENDAEMON_ENCODER_GRAPH_MAX_BATCH']='64'
     torch.set_num_threads(4)
     model=EncoderWeights(args.model,512);executor=EncoderExecutor(model)
     docs=['Berlin had a population of 3,520,031 in 2015.','Berlin is well known for its museums.',

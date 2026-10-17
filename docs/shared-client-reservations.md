@@ -2,7 +2,7 @@
 
 `SharedClientReservations` is an explicit POSIX local-storage backend for
 named-client outstanding request counts and declared-output token caps. HTTP
-admission opts in with `DLLM_CLIENT_RESERVATION_DB=/private/path/claims.sqlite`.
+admission opts in with `DAMENDAEMON_CLIENT_RESERVATION_DB=/private/path/claims.sqlite`.
 Without this variable, ordinary servers still create no reservation store. These counts do not reserve model memory,
 establish cross-host quotas or demonstrate an inference SLO.
 
@@ -53,7 +53,7 @@ named-client caps. Request claims span the entire HTTP handler, including invali
 body rejection and response cleanup. Separate output claims cover declared output
 through generator cleanup. Shared/admin keys retain their existing bypass policy;
 client keys, model allowlists and opaque scheduling identities are unchanged.
-Use a separate `DLLM_CLIENT_RATE_DB` when rolling rates must also be shared:
+Use a separate `DAMENDAEMON_CLIENT_RATE_DB` when rolling rates must also be shared:
 returning outstanding capacity never refunds an accepted rate charge.
 
 A cap rejection returns 429. Unavailable accounting returns a redacted 503 before

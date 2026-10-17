@@ -5,13 +5,13 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.deepseek_stage_slots import DeepSeekStageSlots
-from dllm.deepseek_reference_loader import load_reference_stage,load_reference_model
-from dllm.host_topology import HostTopology
-from dllm.host_pipeline_worker import HostPipelineCoordinator,HostPipelineWorker
-from dllm.host_tensor_channel import HostTensorChannel
-from dllm.planned_host_stage_channel import PlannedHostStageChannel
-from dllm.stage_protocol import StageState
+from damendaemon.deepseek_stage_slots import DeepSeekStageSlots
+from damendaemon.deepseek_reference_loader import load_reference_stage,load_reference_model
+from damendaemon.host_topology import HostTopology
+from damendaemon.host_pipeline_worker import HostPipelineCoordinator,HostPipelineWorker
+from damendaemon.host_tensor_channel import HostTensorChannel
+from damendaemon.planned_host_stage_channel import PlannedHostStageChannel
+from damendaemon.stage_protocol import StageState
 from tests import test_host_tls,test_glm_host_pipeline as glm_tests
 from tests.test_deepseek_reference_loader import fixture
 from tests.test_deepseek_checkpoint import config as geometry
@@ -81,7 +81,7 @@ class DeepSeekHostPipelineTests(unittest.TestCase):
         config=deepcopy(self.config);config['hc_mult']=3
         changed=self.plan(config,frame_bytes=49152);self.assertNotEqual(changed.identity,plan.identity)
         self.assertNotEqual(plan.identity,self.plan(excluded_ids=[13]).identity)
-        from dllm.glm_flash_host_pipeline_build import build_glm_flash_host_pipeline_worker
+        from damendaemon.glm_flash_host_pipeline_build import build_glm_flash_host_pipeline_worker
         with self.assertRaises(ValueError):build_glm_flash_host_pipeline_worker('/unused',plan,0,[],epoch=1)
         _,owners,_=self.session()
         with self.assertRaises(ValueError):owners[0].prefill([14])

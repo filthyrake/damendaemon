@@ -7,24 +7,24 @@ from unittest.mock import patch
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError
 
-from dllm.reference_serving import ReferenceRuntime,handler_for_reference
-from dllm.runtime import BusyError
-from dllm.server import BoundedHTTPServer
-from dllm.http_auth import AuthPolicy
-from dllm.glm_tool_text import GlmToolText
-from dllm.glm_tool_generation import GlmToolReferenceGenerator
-from dllm.glm_flash_tool_text import FlashToolText
-from dllm.glm_flash_tool_generation import FlashToolReferenceGenerator
-from dllm.deepseek_generation import ReferenceGenerator as DeepSeekGenerator
-from dllm.glm_flash_tools import FlashTools
-from dllm.deepseek_tools import render_tool_calls
-from dllm.glm_text import END_THINK,EOS
-from dllm import deepseek_text
+from damendaemon.reference_serving import ReferenceRuntime,handler_for_reference
+from damendaemon.runtime import BusyError
+from damendaemon.server import BoundedHTTPServer
+from damendaemon.http_auth import AuthPolicy
+from damendaemon.glm_tool_text import GlmToolText
+from damendaemon.glm_tool_generation import GlmToolReferenceGenerator
+from damendaemon.glm_flash_tool_text import FlashToolText
+from damendaemon.glm_flash_tool_generation import FlashToolReferenceGenerator
+from damendaemon.deepseek_generation import ReferenceGenerator as DeepSeekGenerator
+from damendaemon.glm_flash_tools import FlashTools
+from damendaemon.deepseek_tools import render_tool_calls
+from damendaemon.glm_text import END_THINK,EOS
+from damendaemon import deepseek_text
 from tests import test_glm_generation as glm
 from tests import test_glm_flash_generation as flash
 from tests import test_deepseek_generation as deepseek
 from tests.test_glm_reference_loader import fixture
-from dllm.glm_reference_loader import load_reference_model
+from damendaemon.glm_reference_loader import load_reference_model
 
 TOOLS=[dict(type='function',function=dict(name='lookup',strict=True,parameters={
     'type':'object','properties':{'value':{'type':'string'}},'required':['value'],'additionalProperties':False}))]
@@ -105,8 +105,8 @@ class ReferenceServingTests(unittest.TestCase):
                 call=message['tool_calls'][0];ids.append(call['id'])
                 self.assertEqual(json.loads(call['function']['arguments']),{'value':'false'})
                 self.assertEqual(result['usage']['total_tokens'],result['usage']['prompt_tokens']+result['usage']['completion_tokens'])
-                self.assertEqual(result['dllm_timing']['source_tier'],'cpu_reference')
-                self.assertFalse(result['dllm_timing']['official_model_qualified']);self.assertTrue(model.states[-1].closed)
+                self.assertEqual(result['damendaemon_timing']['source_tier'],'cpu_reference')
+                self.assertFalse(result['damendaemon_timing']['official_model_qualified']);self.assertTrue(model.states[-1].closed)
             self.assertNotEqual(*ids)
             with urlopen(base+'/v1/models/status') as response:self.assertEqual(json.load(response)['device'],'cpu')
 

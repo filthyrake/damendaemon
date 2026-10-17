@@ -2,7 +2,7 @@
 from pathlib import Path
 import time
 
-from dllm.rocm_policy import host_available
+from damendaemon.rocm_policy import host_available
 
 
 class CoolingGuard:

@@ -7,14 +7,14 @@ import gc
 import json
 import os
 import torch
-from dllm.models import load,weight_bytes
-from dllm.runtime import require_gpu,make_executor
-from dllm.device import empty_cache,synchronize
+from damendaemon.models import load,weight_bytes
+from damendaemon.runtime import require_gpu,make_executor
+from damendaemon.device import empty_cache,synchronize
 
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');args=p.parse_args()
-    os.environ['DLLM_DEVICE']='mps';os.environ['DLLM_METAL_WEIGHT_DTYPE']='float16'
+    os.environ['DAMENDAEMON_DEVICE']='mps';os.environ['DAMENDAEMON_METAL_WEIGHT_DTYPE']='float16'
     require_gpu();torch.set_num_threads(4);reports=[]
     for quantization in ('none','q8_0'):
         model=load(args.model,512,quantization=quantization)

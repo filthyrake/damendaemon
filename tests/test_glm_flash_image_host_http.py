@@ -6,12 +6,12 @@ import unittest
 from unittest.mock import patch
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError
-from dllm.glm_flash_host_image_serving import HostFlashImageReferenceRuntime,QueuedHostFlashImageReferenceRuntime
-from dllm.glm_flash_host_serving import HostFlashReferenceRuntime
-from dllm.reference_serving import ReferenceRuntime
-from dllm.runtime import BusyError
-from dllm.glm_flash_tools import FlashTools
-from dllm.glm_text import END_THINK,EOS
+from damendaemon.glm_flash_host_image_serving import HostFlashImageReferenceRuntime,QueuedHostFlashImageReferenceRuntime
+from damendaemon.glm_flash_host_serving import HostFlashReferenceRuntime
+from damendaemon.reference_serving import ReferenceRuntime
+from damendaemon.runtime import BusyError
+from damendaemon.glm_flash_tools import FlashTools
+from damendaemon.glm_text import END_THINK,EOS
 from tests import test_glm_flash_host_image_generation as native,test_glm_flash_host_serving as http
 from tests.test_glm_flash_inline_images import messages as inline_messages
 from tests.test_glm_tools import TOOLS,CALLS
@@ -40,7 +40,7 @@ class FlashImageHostHttpTests(unittest.TestCase):
         self.assertTrue(condition())
 
     def test_authenticated_json_sse_full_control_modality_and_verified_status(self):
-        from dllm.glm_flash_inline_images import decode_inline_images
+        from damendaemon.glm_flash_inline_images import decode_inline_images
         runtime,owners=self.runtime();base=self.serve(runtime);decoded=decode_inline_images(inline_messages())
         expected=list(self.control().generate_images(decoded.messages,decoded.images,max_new_tokens=3))
         with self.assertRaises(HTTPError) as error:urlopen(base+'/v1/models/status',timeout=3)
@@ -49,8 +49,8 @@ class FlashImageHostHttpTests(unittest.TestCase):
         message=actual['choices'][0]['message']
         for key in ('content','reasoning_content'):self.assertEqual(message.get(key) or '', ''.join(event.get(key,'') for event in expected))
         self.assertEqual(actual['usage']['prompt_tokens'],expected[-1]['usage']['prompt_tokens'])
-        self.assertTrue(actual['dllm_timing']['vision_identity_verified'])
-        self.assertEqual(actual['dllm_timing']['vision_device'],'cpu')
+        self.assertTrue(actual['damendaemon_timing']['vision_identity_verified'])
+        self.assertEqual(actual['damendaemon_timing']['vision_device'],'cpu')
         with self.post(stream=True,stream_options={'include_usage':True}) as response:wire=response.read().decode()
         self.assertIn('data: [DONE]',wire);self.assertIn('host_topology',wire)
         with urlopen(Request(base+'/v1/models/status',headers=self.admin),timeout=3) as response:status=json.load(response)
@@ -61,7 +61,7 @@ class FlashImageHostHttpTests(unittest.TestCase):
         self.assertTrue(all(owner.stage.states==[None,None] for owner in owners))
 
     def test_native_image_tool_json_sse_and_output_exclusion(self):
-        from dllm.glm_flash_inline_images import decode_inline_images
+        from damendaemon.glm_flash_inline_images import decode_inline_images
         runtime,owners=self.runtime();self.serve(runtime);decoded=decode_inline_images(inline_messages(),tools=TOOLS)
         self.prompt_length=len(self.text.image_tool_chat_tokens(decoded.messages,[[1,8,8]],TOOLS))
         wire='reason'+END_THINK+FlashTools(TOOLS).render(CALLS)+EOS
@@ -111,7 +111,7 @@ class FlashImageHostHttpTests(unittest.TestCase):
             with self.post() as response:return json.load(response)
         with ThreadPoolExecutor(3) as pool:results=list(pool.map(lambda _:request(),range(3)))
         self.assertTrue(all(result['choices']==results[0]['choices'] for result in results))
-        self.assertTrue(all(result['dllm_timing']['queue_seconds']>=0 for result in results))
+        self.assertTrue(all(result['damendaemon_timing']['queue_seconds']>=0 for result in results))
         with self.post(tools=TOOLS,max_tokens=1) as response:self.assertEqual(json.load(response)['usage']['completion_tokens'],1)
         self.assertTrue(all(owner.stage.states==[None,None] for owner in owners))
         with urlopen(Request(self.base+'/v1/scheduler/drain',b'{}',self.admin),timeout=3) as response:self.assertTrue(json.load(response)['drained'])

@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.compressed_pool import PoolState, pool_projected
+from damendaemon.compressed_pool import PoolState, pool_projected
 
 
 def scalar_pool(values, gates, offsets):

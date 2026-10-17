@@ -18,14 +18,14 @@ def main():
     def terminate(number,frame):raise SystemExit(128+number)
     signal.signal(signal.SIGTERM,terminate)
     # Own only this disposable compiler cache, never invalidate the user's cache.
-    with tempfile.TemporaryDirectory(prefix='dllm-q4-shape-') as cache:
+    with tempfile.TemporaryDirectory(prefix='damendaemon-q4-shape-') as cache:
         os.environ['TRITON_CACHE_DIR']=cache
         import torch
         import triton as tr
         import triton.testing
-        from dllm.q4_stage import repack_adjacent
-        from dllm.q4_stage_kernels import single_dot_adjacent
-        from dllm.quantization import quantize_q4,dequantize_q4
+        from damendaemon.q4_stage import repack_adjacent
+        from damendaemon.q4_stage_kernels import single_dot_adjacent
+        from damendaemon.quantization import quantize_q4,dequantize_q4
         from scripts.experiments.q4_dynamic_rows import single_dot_dynamic_rows
         assert torch.cuda.device_count()==1,'select exactly one GPU'
         torch.set_num_threads(4);torch.manual_seed(43)
@@ -33,7 +33,7 @@ def main():
             torch=str(torch.__version__),triton=tr.__version__,large=args.large,
             scope='Real CUDA matrix experiment. Fresh private compiler cache; The first row shape of each projection primes both kernels outside timing. First dispatch includes host specialization/loading and GPU completion. Warm timings use CUDA graphs. Not model throughput or complete cold startup.',
             sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-                     ('dllm/q4_stage_kernels.py','scripts/experiments/q4_dynamic_rows.py',__file__)})
+                     ('damendaemon/q4_stage_kernels.py','scripts/experiments/q4_dynamic_rows.py',__file__)})
         try:
             with torch.inference_mode():
                 for n,k in ((1152,896),(896,896),(9728,896),(896,4864)):

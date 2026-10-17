@@ -9,9 +9,9 @@ not production networks, practical model concurrency or performance.
 Use owned, mode-0600, single-link regular JSON files with absolute paths; symlink
 inputs, duplicate/unknown fields and inputs above 64 KiB are rejected. Ledger
 storage requires a private POSIX directory. TLS uses the existing TLS 1.3 mutual
-authentication, CA verification, exact certificate pins and `dllm-quota/1` ALPN.
+authentication, CA verification, exact certificate pins and `damendaemon-quota/1` ALPN.
 Private keys remain external files. Encrypted keys may use
-`DLLM_REMOTE_QUOTA_TLS_PASSWORD`; credentials never belong in repository files.
+`DAMENDAEMON_REMOTE_QUOTA_TLS_PASSWORD`; credentials never belong in repository files.
 
 ## Bootstrap and enrollment
 
@@ -28,7 +28,7 @@ python -m scripts.serve_quota_authority register \
 
 Create a stable owner ID from 16 random bytes encoded as 32 lowercase hex
 characters. Supply an independent 32-byte random owner credential as 64 lowercase
-hex characters in `DLLM_REMOTE_QUOTA_OWNER_KEY` through the secret manager or
+hex characters in `DAMENDAEMON_REMOTE_QUOTA_OWNER_KEY` through the secret manager or
 process environment. Enrollment stores only its hash; stdout contains public
 ledger and owner IDs. Repeating enrollment with identical policy/credential is
 idempotent. Retired owners cannot be resurrected. Identities, including retired
@@ -59,14 +59,14 @@ Frontend JSON requires literal `address`, `port` (1–65535), `server_hostname`
 (the certificate name), `ledger`, `owner`, `server_pin`, and absolute `ca_file`,
 `cert_file`, `key_file`; optional `timeout` has the same bounds. The owner and
 ledger IDs are 32 lowercase hex characters and the pin is 64. Set
-`DLLM_REMOTE_QUOTA_CONFIG` to that private file and supply the owner credential
-through `DLLM_REMOTE_QUOTA_OWNER_KEY`. Existing named-client configuration stays
-in `DLLM_CLIENT_KEYS`; administrator/shared API keys retain their existing
+`DAMENDAEMON_REMOTE_QUOTA_CONFIG` to that private file and supply the owner credential
+through `DAMENDAEMON_REMOTE_QUOTA_OWNER_KEY`. Existing named-client configuration stays
+in `DAMENDAEMON_CLIENT_KEYS`; administrator/shared API keys retain their existing
 policy. Do not give those keys to tenants who must be capped.
 
 All frontends using `ClientAdmission` opt in through this environment setting,
 including the CPU reference command. Startup verifies authenticated authority
-policy and empty owner claims. Simultaneous `DLLM_CLIENT_RESERVATION_DB` and remote
+policy and empty owner claims. Simultaneous `DAMENDAEMON_CLIENT_RESERVATION_DB` and remote
 configuration is rejected; there is no fallback when the authority is unavailable.
 Explicit library injection takes precedence over environment selection. Rolling
 rate quotas remain independent; their optional SQLite store is same-host only.

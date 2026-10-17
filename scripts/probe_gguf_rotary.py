@@ -6,8 +6,8 @@ import torch
 from transformers import AutoConfig
 from transformers.models.llama.modeling_llama import LlamaRotaryEmbedding
 
-from dllm.gguf_model import plan, read_tensor
-from dllm.rotary import inverse_frequencies
+from damendaemon.gguf_model import plan, read_tensor
+from damendaemon.rotary import inverse_frequencies
 
 
 def main():

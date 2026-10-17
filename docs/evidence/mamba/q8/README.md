@@ -22,17 +22,17 @@ Prepared bytes, including scales, exactly match the preflight estimates:
 
 `make_q8_comparator.py` creates benchmark GGUF files with the same tensor policy.
 `verify_mamba_gguf.py` independently dequantizes every GGUF tensor and confirms
-bitwise equality with dllm's prepared weights (243/483 tensors). This verifies
+bitwise equality with damendaemon's prepared weights (243/483 tensors). This verifies
 stored weights, not identical arithmetic across engines. **Greedy text differs
-between dllm and llama.cpp**, and llama.cpp's 130M output also varies with batch
+between damendaemon and llama.cpp**, and llama.cpp's 130M output also varies with batch
 size. The cause is not isolated. These measurements are not output-equivalence
 proof or an assertion that either quantized engine preserves FP32 output.
 
 | Model / engine | c1 tokens/s | c2 | c4 | TTFT ms c1 / c2 / c4 |
 |---|---:|---:|---:|---|
-| 130M dllm | 405.27 | 413.50 | 533.08 | 25.86 / 44.82 / 70.31 |
+| 130M damendaemon | 405.27 | 413.50 | 533.08 | 25.86 / 44.82 / 70.31 |
 | 130M llama.cpp | 223.69 | 301.47 | 314.26 | 33.54 / 38.42 / 84.31 |
-| 370M dllm | 176.26 | 213.27 | 306.65 | 66.24 / 90.44 / 102.69 |
+| 370M damendaemon | 176.26 | 213.27 | 306.65 | 66.24 / 90.44 / 102.69 |
 | 370M llama.cpp | 103.24 | 125.98 | 155.82 | 58.60 / 79.56 / 103.71 |
 
 Raw commands, samples, timing trials and tensor/storage checks accompany this
@@ -49,9 +49,9 @@ rows and activations above FP16 range. Mamba-2/Mamba-1 Q8 hot-switching, chunks,
 prefix snapshots and real HTTP proof are in the Mamba-2 Q8 evidence.
 
 Matched 130M M4 Q8 context512/32-output/five-round throughput c1/c2/c4:
-dllm 58.63/114.09/272.00 tokens/s; llama.cpp 158.09/302.56/333.84. First text:
-dllm 28.09/45.84/57.42 ms; llama.cpp 22.80/28.85/62.14 ms. All Apple trial text
-agrees and matches dllm CUDA Q8. Apple still trails; these results do not imply
+damendaemon 58.63/114.09/272.00 tokens/s; llama.cpp 158.09/302.56/333.84. First text:
+damendaemon 28.09/45.84/57.42 ms; llama.cpp 22.80/28.85/62.14 ms. All Apple trial text
+agrees and matches damendaemon CUDA Q8. Apple still trails; these results do not imply
 parity. Raw results are under `metal/`.
 
 Separate ten-passage CPU drift study (192 predicted tokens) versus FP32:

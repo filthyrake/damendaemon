@@ -10,7 +10,7 @@ from tokenizers import Tokenizer
 
 HAS_GGUF = importlib.util.find_spec('gguf') is not None
 if HAS_GGUF:
-    from dllm.gguf_model import tokenizer
+    from damendaemon.gguf_model import tokenizer
 
 
 def metadata():
@@ -34,7 +34,7 @@ class SentencePieceGgufTests(unittest.TestCase):
         self.assertEqual(result.encode(' ab', add_special_tokens=False).ids, [259, 264])
         self.assertEqual(result.encode('', add_special_tokens=False).ids, [])
         self.assertEqual(result.encode('').ids, [1])
-        from dllm.gguf_sentencepiece import restore_tokenizer
+        from damendaemon.gguf_sentencepiece import restore_tokenizer
         restored = restore_tokenizer(result.to_str())
         for text in ('ab', ' ab', '  ab  ab', '\t ab\n', 'café e\u0301 中文 😀', 'a\x00b'):
             with self.subTest(text=text):
@@ -55,7 +55,7 @@ class SentencePieceGgufTests(unittest.TestCase):
         self.assertIsInstance(result.backend_tokenizer, Tokenizer)
 
     def test_generation_preserves_leading_space_without_changing_text_decode(self):
-        from dllm.prompts import decode_output
+        from damendaemon.prompts import decode_output
         result, _, _ = tokenizer(metadata())
         self.assertEqual(result.decode([264]), 'ab')
         self.assertEqual(decode_output(SimpleNamespace(tokenizer=result), [264]), ' ab')
@@ -83,7 +83,7 @@ class SentencePieceGgufTests(unittest.TestCase):
     def test_full_gguf_load_preserves_decode_policy_and_chat_template(self):
         import numpy as np
         from gguf import GGUFWriter
-        from dllm.gguf_model import GgufWeights, tensor_groups
+        from damendaemon.gguf_model import GgufWeights, tensor_groups
         source = metadata()
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / 'sentencepiece.gguf'
@@ -112,7 +112,7 @@ class SentencePieceGgufTests(unittest.TestCase):
             self.assertEqual(model.chat_tokens([{'role': 'user', 'content': 'ab'}]), [1, 264])
 
     def test_positional_ties_roundtrip_and_special_boundaries(self):
-        from dllm.gguf_sentencepiece import restore_tokenizer
+        from damendaemon.gguf_sentencepiece import restore_tokenizer
         source = metadata()
         source['tokenizer.ggml.tokens'] += ['c', 'bc']
         source['tokenizer.ggml.token_type'] += [1, 1]
@@ -147,7 +147,7 @@ class SentencePieceGgufTests(unittest.TestCase):
         self.assertEqual(result.encode('abcx',add_special_tokens=False).ids,[263,266])
         self.assertEqual(result.encode('ab',add_special_tokens=False).ids,[262])
     def test_overlapping_special_reference_matrix(self):
-        from dllm.gguf_sentencepiece import restore_tokenizer
+        from damendaemon.gguf_sentencepiece import restore_tokenizer
         fixture = json.loads((Path(__file__).parent / 'fixtures/sentencepiece-specials.json').read_text())
         for case in fixture['cases']:
             source = metadata()
@@ -172,7 +172,7 @@ class SentencePieceGgufTests(unittest.TestCase):
                             self.assertEqual(candidate.decode_generated(ids, skip_special_tokens=skip).encode().hex(), expected['generated_' + suffix])
 
     def test_literal_special_reference_prefix_and_generated(self):
-        from dllm.gguf_sentencepiece import restore_tokenizer
+        from damendaemon.gguf_sentencepiece import restore_tokenizer
         from tests.reference.generate_sentencepiece_literals import metadata as literal_metadata
         fixture = json.loads((Path(__file__).parent / 'fixtures/sentencepiece-literals.json').read_text())
         for case in fixture['cases']:
@@ -192,8 +192,8 @@ class SentencePieceGgufTests(unittest.TestCase):
                             self.assertEqual(candidate.decode_generated(ids, skip_special_tokens=skip), generated)
 
     def test_unused_reference_matrix_and_roundtrip(self):
-        from dllm.gguf_sentencepiece import restore_tokenizer
-        from dllm.logprobs import TokenText
+        from damendaemon.gguf_sentencepiece import restore_tokenizer
+        from damendaemon.logprobs import TokenText
         fixture = json.loads((Path(__file__).parent / 'fixtures/sentencepiece-unused.json').read_text())
         for case in fixture['cases']:
             source = metadata()

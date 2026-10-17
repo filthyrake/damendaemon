@@ -5,11 +5,11 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.cpu_hybrid_stage import CpuHybridStage
-from dllm.quantization import quantize,quantize_q4,dequantize,dequantize_q4
-from dllm.host_hybrid_worker import HostHybridWorker
-from dllm.host_stage_channel import HostStageChannel
-from dllm.stage_protocol import StageState
+from damendaemon.cpu_hybrid_stage import CpuHybridStage
+from damendaemon.quantization import quantize,quantize_q4,dequantize,dequantize_q4
+from damendaemon.host_hybrid_worker import HostHybridWorker
+from damendaemon.host_stage_channel import HostStageChannel
+from damendaemon.stage_protocol import StageState
 from tests import test_host_tensor_channel
 
 

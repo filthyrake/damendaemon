@@ -6,9 +6,9 @@ import unittest
 from unittest.mock import patch
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError
-from dllm.deepseek_host_generation import HostDeepSeekGenerator
-from dllm.queued_deepseek_host_serving import QueuedHostDeepSeekReferenceRuntime
-from dllm.runtime import BusyError
+from damendaemon.deepseek_host_generation import HostDeepSeekGenerator
+from damendaemon.queued_deepseek_host_serving import QueuedHostDeepSeekReferenceRuntime
+from damendaemon.runtime import BusyError
 from tests import test_deepseek_host_serving as hosts
 
 
@@ -42,7 +42,7 @@ class QueuedDeepSeekHostServingTests(unittest.TestCase):
         for result in results:
             self.assertEqual(result['choices'][0]['message'].get('content') or '', ''.join(e.get('content','') for e in expected))
             self.assertEqual(result['usage']['completion_tokens'],expected[-1]['usage']['completion_tokens'])
-            self.assertGreaterEqual(result['dllm_timing']['queue_seconds'],0)
+            self.assertGreaterEqual(result['damendaemon_timing']['queue_seconds'],0)
         self.assertTrue(all(worker.stage.states==[None,None] for worker in workers))
         with urlopen(Request(self.base+'/v1/scheduler/drain',b'{}',self.admin),timeout=3) as response:self.assertTrue(json.load(response)['drained'])
         with self.assertRaises(HTTPError) as error:self.post()
@@ -105,7 +105,7 @@ class QueuedDeepSeekHostServingTests(unittest.TestCase):
         self.assertTrue(runtime.closed)
 
     def test_client_turns_and_input_snapshot_are_preserved(self):
-        from dllm.request_scope import cache_scope
+        from damendaemon.request_scope import cache_scope
         runtime,workers,_=self.runtime(queue_size=3);seen=[];entered=threading.Event();release=threading.Event()
         original=workers[0].prefill_chunk
         def prefill(tokens,*args):

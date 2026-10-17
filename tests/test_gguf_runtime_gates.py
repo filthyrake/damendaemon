@@ -28,7 +28,7 @@ class Executor:
     def decode(self,token):return self.prefill([]),None
 process=NS(poll=Mock(return_value=None),send_signal=Mock(),wait=Mock(),kill=Mock())
 def popen(*args,**kwargs):
-    kwargs['stdout'].write('dllm listening on http://fixture\n');kwargs['stdout'].flush();return process
+    kwargs['stdout'].write('damendaemon listening on http://fixture\n');kwargs['stdout'].flush();return process
 def response(request,**kwargs):
     body=json.loads(request.data);route=request.full_url.rsplit('/',1)[-1]
     if case in ('http-error','http-error-decode'):
@@ -49,7 +49,7 @@ def response(request,**kwargs):
         tier='disk' if unloaded[0] else 'host'
         if (case=='host-tier' and n==4) or (case=='disk-tier' and unloaded[0]):tier='wrong'
         payload={'choices':[{'text':text,'message':{'content':text}}],
-                 'usage':{'prompt_tokens':1,'completion_tokens':count},'dllm_timing':{'source_tier':tier}}
+                 'usage':{'prompt_tokens':1,'completion_tokens':count},'damendaemon_timing':{'source_tier':tier}}
     if body.get('stream'):
         text='wrong' if case=='stream-text' else '1'*body['max_tokens']
         parts=[text] if case=='cancel-done' and n==8 else [text[:1],text[1:]]

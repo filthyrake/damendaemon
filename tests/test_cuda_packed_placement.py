@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.cuda_packed_placement import _plan, place_cuda_experts
+from damendaemon.cuda_packed_placement import _plan, place_cuda_experts
 from tests.test_packed_moe import expert
 
 
@@ -9,7 +9,7 @@ class CudaPlacementTests(unittest.TestCase):
     def test_complete_bank_admitted_before_any_copy(self):
         a,_=expert('e2m1');b,_=expert('e4m3fn')
         _,_,needed=_plan([a,b],None,10**6)
-        with patch('dllm.cuda_packed_placement._copy',side_effect=AssertionError('copied')) as copy:
+        with patch('damendaemon.cuda_packed_placement._copy',side_effect=AssertionError('copied')) as copy:
             with self.assertRaises(ValueError):place_cuda_experts([a,b],device='cuda:0',max_bytes=needed-1)
             b.options['column_chunk']=0
             with self.assertRaises(ValueError):place_cuda_experts([a,b],device='cuda:0',max_bytes=10**6)
@@ -22,8 +22,8 @@ class CudaPlacementTests(unittest.TestCase):
         _,tensors,needed=_plan([a,a],a,10**6)
         self.assertEqual(needed,sum(t.numel()*t.element_size() for t in tensors.values()))
         # CPU copies/constructor substitute verify ownership graph only.
-        with patch('dllm.cuda_packed_placement._copy',side_effect=lambda t,d:t.clone()) as copy, \
-             patch('dllm.cuda_packed_placement.CudaPackedExpert',side_effect=lambda *m,**kw:(m,kw)):
+        with patch('damendaemon.cuda_packed_placement._copy',side_effect=lambda t,d:t.clone()) as copy, \
+             patch('damendaemon.cuda_packed_placement.CudaPackedExpert',side_effect=lambda *m,**kw:(m,kw)):
             bank=place_cuda_experts([a,a],shared=a,device='cuda:0',max_bytes=needed)
         self.assertEqual(copy.call_count,len(tensors))
         self.assertIs(bank.experts[0],bank.experts[1]);self.assertIs(bank.shared,bank.experts[0])
@@ -34,8 +34,8 @@ class CudaPlacementTests(unittest.TestCase):
 
     def test_copy_failure_does_not_construct_partial_bank(self):
         a,_=expert('e2m1');snap=a.gate.weight.clone()
-        with patch('dllm.cuda_packed_placement._copy',side_effect=[snap,RuntimeError('allocation')]), \
-             patch('dllm.cuda_packed_placement.CudaPackedExpert') as construct:
+        with patch('damendaemon.cuda_packed_placement._copy',side_effect=[snap,RuntimeError('allocation')]), \
+             patch('damendaemon.cuda_packed_placement.CudaPackedExpert') as construct:
             with self.assertRaisesRegex(RuntimeError,'allocation'):
                 place_cuda_experts([a],device='cuda:0',max_bytes=10**6)
             construct.assert_not_called()

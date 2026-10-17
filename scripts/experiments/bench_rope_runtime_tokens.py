@@ -10,7 +10,7 @@ import statistics
 import torch
 import triton as tr
 import triton.testing
-from dllm.kernels import _rope_store, _rope_store_runtime_tokens
+from damendaemon.kernels import _rope_store, _rope_store_runtime_tokens
 from scripts.experiments.rope_runtime_tokens import rope_store_runtime_tokens
 
 
@@ -23,7 +23,7 @@ def main():
     report=dict(passed=False,integrated=args.integrated,device=torch.cuda.get_device_name(),checks=[],
         scope='Real GPU rotary/query/KV-cache equivalence and warm kernel timing. Qualified stage geometry; no model or HTTP performance claim.',
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-                 ('dllm/kernels.py','scripts/experiments/rope_runtime_tokens.py',__file__)})
+                 ('damendaemon/kernels.py','scripts/experiments/rope_runtime_tokens.py',__file__)})
     heads,kv_heads,dim,context=14,2,64,512
     try:
         for norm,precise in ((False,False),(False,True),(True,False),(True,True)):

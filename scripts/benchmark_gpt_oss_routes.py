@@ -13,8 +13,8 @@ import time
 from urllib.request import Request,urlopen
 
 import torch
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer,handler_for
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer,handler_for
 
 
 def main():
@@ -22,7 +22,7 @@ def main():
     args=parser.parse_args()
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
-    os.environ['DLLM_DEVICE']='cuda';torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_DEVICE']='cuda';torch.set_num_threads(4)
     torch.set_float32_matmul_precision('highest')
     runtime=BatchedRuntime({'oss':args.model},context=4096,batch_size=2,host_gib=18)
     server=BoundedHTTPServer(('127.0.0.1',0),handler_for(runtime));thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
@@ -58,7 +58,7 @@ def main():
                         assert (response['choices'],response['usage'])==expected,(length,concurrency,enabled)
                     measurements.append({'optimized':enabled,'wall_seconds':elapsed,
                         'output_tokens':sum(r['usage']['completion_tokens'] for r,_ in responses),
-                        'responses':[{'http_seconds':seconds,'timing':r['dllm_timing'],'usage':r['usage']} for r,seconds in responses],
+                        'responses':[{'http_seconds':seconds,'timing':r['damendaemon_timing'],'usage':r['usage']} for r,seconds in responses],
                         'peak_allocated_bytes':torch.cuda.max_memory_allocated()})
             if concurrency>1:assert max(r['timing']['max_batch_size'] for m in measurements for r in m['responses'])==2
             row={'prompt_tokens':length,'concurrency':concurrency,'exact_responses':True,'measurements':measurements,

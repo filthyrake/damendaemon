@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 import torch
 
-from dllm.reference_batch import prepare_batch
+from damendaemon.reference_batch import prepare_batch
 from tests import test_glm_batch_generation as glm
 from tests import test_glm_flash_batch_generation as flash
 from tests import test_deepseek_batch_generation as deepseek
@@ -78,8 +78,8 @@ class RaggedReferenceTests(unittest.TestCase):
 
     def test_nested_bytelevel_decoders_work_through_generation_and_host_admission(self):
         from tokenizers import decoders
-        from dllm.native_host_generation import snapshot_text
-        from dllm.deepseek_host_generation import _snapshot
+        from damendaemon.native_host_generation import snapshot_text
+        from damendaemon.deepseek_host_generation import _snapshot
         rows = [[dict(role='user', content='Hi')]]
         for family, path, text, single, batch in self.families():
             model = family.load_reference_model(path)

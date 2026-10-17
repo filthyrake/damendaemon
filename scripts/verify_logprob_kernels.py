@@ -4,8 +4,8 @@ if not __debug__:
 
 import json
 import torch
-from dllm.logprob_kernels import score_rows
-from dllm.runtime import require_gpu
+from damendaemon.logprob_kernels import score_rows
+from damendaemon.runtime import require_gpu
 
 
 def main():

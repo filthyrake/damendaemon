@@ -5,7 +5,7 @@ Operator bootstrap, enrollment, frontend opt-in and explicit recovery are docume
 `RemoteQuotaReservations` adapts the mutually authenticated quota client to the
 existing named-client HTTP lease boundary. Embedders can construct the adapter
 and pass it as `reservation_store` to `handler_for` or `ClientAdmission`.
-Commands opt in with `DLLM_REMOTE_QUOTA_CONFIG` and the owner's runtime credential;
+Commands opt in with `DAMENDAEMON_REMOTE_QUOTA_CONFIG` and the owner's runtime credential;
 unset configuration preserves local admission without a network connection.
 
 The authority's authenticated `policy` RPC returns only that owner's allowed

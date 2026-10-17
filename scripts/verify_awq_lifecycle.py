@@ -15,11 +15,11 @@ from urllib.request import Request, urlopen
 import weakref
 
 import torch
-from dllm.bench import events
+from damendaemon.bench import events
 from scripts.validation_stream import consume_nonterminal_prefix
-from dllm.models import load
-from dllm.prompts import decode_output
-from dllm.runtime import make_executor, require_gpu
+from damendaemon.models import load
+from damendaemon.prompts import decode_output
+from damendaemon.runtime import make_executor, require_gpu
 
 
 def main():
@@ -121,20 +121,20 @@ def main():
         del source
         gc.collect()
         torch.cuda.empty_cache()
-        with tempfile.TemporaryDirectory(prefix='dllm-awq-http-') as folder:
+        with tempfile.TemporaryDirectory(prefix='damendaemon-awq-http-') as folder:
             log_path = Path(folder)/'server.log'
             with log_path.open('w') as log:
-                module = 'scripts.experiments.serve_awq_decode' if args.experimental_awq_decode else 'dllm'
+                module = 'scripts.experiments.serve_awq_decode' if args.experimental_awq_decode else 'damendaemon'
                 if args.experimental_awq_marlin:
                     module = 'scripts.experiments.serve_awq_marlin'
-                    os.environ['DLLM_EXPERIMENT_MARLIN_LIBRARY'] = str(Path(args.experimental_awq_marlin).resolve())
+                    os.environ['DAMENDAEMON_EXPERIMENT_MARLIN_LIBRARY'] = str(Path(args.experimental_awq_marlin).resolve())
                 process = subprocess.Popen([sys.executable, '-m', module, 'serve', '--port', '0',
                     '--context', str(args.context), '--gpu-models', '1', '--host-models', '2',
                     '--batch-size', '2'], stdout=log, stderr=log)
                 try:
                     deadline = time.monotonic()+120
                     while time.monotonic() < deadline and process.poll() is None:
-                        ready = [line for line in log_path.read_text().splitlines() if line.startswith('dllm listening on ')]
+                        ready = [line for line in log_path.read_text().splitlines() if line.startswith('damendaemon listening on ')]
                         if ready:
                             base = ready[-1].split()[-1]
                             break
@@ -168,9 +168,9 @@ def main():
                     check(alternate_response, alternate_expected)
                     restored = request('/v1/chat/completions', chat())
                     check(restored)
-                    report['switch_observations'] = {name: response.get('dllm_timing') for name, response in
+                    report['switch_observations'] = {name: response.get('damendaemon_timing') for name, response in
                         [('initial', first), ('alternate', alternate_response), ('restored', restored)]}
-                    if restored['dllm_timing']['source_tier'] != 'host':
+                    if restored['damendaemon_timing']['source_tier'] != 'host':
                         raise AssertionError('alias switching did not restore host weights')
                     with post('/v1/chat/completions', chat(stream=True)) as response:
                         chunks = list(events(response, require_terminated=True))
@@ -190,7 +190,7 @@ def main():
                         raise AssertionError('unload retained model residency')
                     reloaded = request('/v1/chat/completions', chat())
                     check(reloaded)
-                    if reloaded['dllm_timing']['source_tier'] != 'disk':
+                    if reloaded['damendaemon_timing']['source_tier'] != 'disk':
                         raise AssertionError('unloaded model did not reload from disk')
                     report['http'] = dict(registration=True, exact_direct_trace=True, stream=True,
                         concurrency=True, cancellation_recovery=True, host_restore=True,
@@ -214,7 +214,7 @@ def main():
         with (path/'model.safetensors').open('rb') as stream:
             report['checkpoint_sha256'] = hashlib.file_digest(stream, 'sha256').hexdigest()
         if args.other_model:
-            from dllm.qwen2 import weight_files
+            from damendaemon.qwen2 import weight_files
             report['alternate_checkpoint_sha256'] = {}
             other_path = Path(args.other_model).resolve()
             for shard in ([other_path] if other_path.is_file() else weight_files(other_path)):

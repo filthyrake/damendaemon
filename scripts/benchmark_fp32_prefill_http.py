@@ -12,9 +12,9 @@ from urllib.request import Request,urlopen
 
 import torch
 from torch.nn import functional as F
-import dllm.qwen2 as dense
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer,handler_for
+import damendaemon.qwen2 as dense
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer,handler_for
 
 
 def main():
@@ -25,8 +25,8 @@ def main():
     if any(n<1 or n+32>args.context for n in lengths):parser.error('prompt and output must fit context')
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
-    os.environ.update(DLLM_DEVICE='cuda',DLLM_LLAMA_PRECISION='float32',DLLM_QWEN3_PRECISION='float32',
-        DLLM_SPECULATIVE_TOKENS='0',DLLM_PREFILL_GRAPHS='0')
+    os.environ.update(DAMENDAEMON_DEVICE='cuda',DAMENDAEMON_LLAMA_PRECISION='float32',DAMENDAEMON_QWEN3_PRECISION='float32',
+        DAMENDAEMON_SPECULATIVE_TOKENS='0',DAMENDAEMON_PREFILL_GRAPHS='0')
     torch.set_num_threads(4)
     runtime=BatchedRuntime({'a':args.model},context=args.context,batch_size=4)
     server=BoundedHTTPServer(('127.0.0.1',0),handler_for(runtime))
@@ -39,7 +39,7 @@ def main():
             def original_linear(x,weight,bias=None):
                 if args.optimization=='tiles':
                     if weight.dtype==torch.float16 and x.shape[0]>=512:
-                        from dllm.precise_matmul import linear
+                        from damendaemon.precise_matmul import linear
                         result=linear(x.float(),weight,wide_tiles=False)
                         return result if bias is None else result+bias.float()
                     return optimized_linear(x,weight,bias)
@@ -73,7 +73,7 @@ def main():
                     torch.cuda.reset_peak_memory_stats();result,elapsed=post(tokens)
                     assert (result['choices'],result['usage'])==expected
                     (native if mode else baseline).append(elapsed)
-                    first.append({'optimized':mode,'seconds':result['dllm_timing']['first_token_seconds']})
+                    first.append({'optimized':mode,'seconds':result['damendaemon_timing']['first_token_seconds']})
                     peaks.append({'optimized':mode,'peak_allocated_bytes':torch.cuda.max_memory_allocated()})
             rows.append({'prompt_tokens':length,'completion_tokens':result['usage']['completion_tokens'],
                 'ordinary_ms':baseline,'optimized_ms':native,'median_ordinary_ms':statistics.median(baseline) if baseline else None,

@@ -1,6 +1,6 @@
 import unittest
 import torch
-from dllm.mxfp4 import validate,unpack
+from damendaemon.mxfp4 import validate,unpack
 
 
 class Mxfp4Tests(unittest.TestCase):

@@ -8,9 +8,9 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from dllm.client_admission import ClientAdmission, ClientLimitError
-from dllm.http_auth import AuthPolicy, ClientKey
-from dllm.server import handler_for
+from damendaemon.client_admission import ClientAdmission, ClientLimitError
+from damendaemon.http_auth import AuthPolicy, ClientKey
+from damendaemon.server import handler_for
 from tests.test_server import FakeRuntime
 
 ALICE = 'alice-test-key-123456789'
@@ -25,7 +25,7 @@ def policy():
 class ClientAdmissionTests(unittest.TestCase):
     def test_configuration_and_role_boundaries(self):
         value = json.dumps({'alice': {'key':ALICE, 'max_inflight':2}})
-        with patch.dict('os.environ', {'DLLM_CLIENT_KEYS':value}, clear=True):
+        with patch.dict('os.environ', {'DAMENDAEMON_CLIENT_KEYS':value}, clear=True):
             auth = AuthPolicy.from_env()
         headers = ['Bearer '+ALICE]
         self.assertIsNone(auth.authorize('POST', '/v1/completions', headers))
@@ -42,7 +42,7 @@ class ClientAdmissionTests(unittest.TestCase):
                    json.dumps({'alice':{'key':ALICE, 'max_inflight':1},
                                'bob':{'key':ALICE, 'max_inflight':1}}))
         for value in invalid:
-            with self.subTest(value=value), patch.dict('os.environ', {'DLLM_CLIENT_KEYS':value}, clear=True):
+            with self.subTest(value=value), patch.dict('os.environ', {'DAMENDAEMON_CLIENT_KEYS':value}, clear=True):
                 with self.assertRaises(ValueError) as error:
                     AuthPolicy.from_env()
                 self.assertNotIn(ALICE, str(error.exception))

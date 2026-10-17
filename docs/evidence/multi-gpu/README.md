@@ -59,7 +59,7 @@ ordinary A2 graph-enabled executor: all 82 checks pass, worst relative RMS
 embedding/head execution; ordinary entry points retain their behavior.
 
 The initial stage implementation lived under `scripts/experiments`; the narrow
-serving integration qualified below now uses `dllm/layer_stage.py`. It executes stages sequentially and copies their activations. It
+serving integration qualified below now uses `damendaemon/layer_stage.py`. It executes stages sequentially and copies their activations. It
 does not yet have a network control protocol, worker recovery, pipeline
 scheduling, or a capacity/speedup qualification. The small checkpoint fits on a
 single GPU; this proof must not be represented as a larger-model capacity win.
@@ -148,7 +148,7 @@ Prefill is unchanged and does not materially improve in this comparison.
 
 ## Same-host HTTP serving integration
 
-Explicit `--layer-split 12` / `DLLM_EXPERIMENTAL_LAYER_SPLIT=12` admits exactly
+Explicit `--layer-split 12` / `DAMENDAEMON_EXPERIMENTAL_LAYER_SPLIT=12` admits exactly
 two visible GPU UUIDs. Serving is limited to qualified Qwen2.5-0.5B geometry,
 FP16/Q8, context <=512 and batch <=4. It rejects paged KV, speculation, chunked
 prefill, prefix snapshots and unqualified layouts. The existing request scheduler
@@ -183,7 +183,7 @@ are retained library allocations, so total live CUDA allocation is not zero.
 Compatible layer partitions now restore host-cached weights into the existing
 CUDA buffers and retain captured decode graphs. Configuration, precision,
 weight/scale layouts and alias relationships must match. Other swaps rebuild
-normally. `DLLM_PARTITION_REBIND=0` disables this default fast path.
+normally. `DAMENDAEMON_PARTITION_REBIND=0` disables this default fast path.
 
 Publication is transactional: the old alias leaves GPU residency before the
 first upload, and the new alias appears only after both devices finish. An
@@ -193,7 +193,7 @@ Request lengths reset on every successful switch.
 FP16 and Q8 each pass 410 independent reference-logit checks across A/B/A/B
 switches and recovery after an injected second-upload failure. The disposable B
 checkpoint changes real weights without changing geometry; its provenance is in
-[dllm-test-fixture.json](dllm-test-fixture.json). Weight, scale, KV and graph
+[damendaemon-test-fixture.json](damendaemon-test-fixture.json). Weight, scale, KV and graph
 buffer addresses remain stable across successful swaps. Full HTTP lifecycle
 qualification passes 20 checks per precision with the fast path enabled,
 including allocation-history checks after repeated release. Retained cuBLAS
@@ -558,7 +558,7 @@ specifically resolves the observed reported-preparation-failure path.
 
 ## Actual distributed generation command
 
-`dllm distributed-run` now accepts a normal coordinator chat/raw prompt under
+`damendaemon distributed-run` now accepts a normal coordinator chat/raw prompt under
 torchrun. Its output worker receives bounded commands and activations, selects
 greedy tokens locally, and returns only token IDs. Both workers verify prepared
 model identity and startup readiness. STOP completes before normal shutdown.

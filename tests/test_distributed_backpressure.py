@@ -4,7 +4,7 @@ import time
 import unittest
 from unittest.mock import patch
 
-from dllm.distributed_serving import DistributedRuntime,Request,STREAM_BUFFER_EVENTS
+from damendaemon.distributed_serving import DistributedRuntime,Request,STREAM_BUFFER_EVENTS
 from tests.test_distributed_serving import BatchedPair,Pair,RuntimeHelpers
 
 
@@ -20,7 +20,7 @@ class BackpressureTests(RuntimeHelpers,unittest.TestCase):
             request=Request(*args,**kwargs);requests.append(request);return request
         stream=runtime.generate('model',None,maximum,raw_prompt=[1])
         self.addCleanup(stream.close)
-        with patch('dllm.distributed_serving.Request',side_effect=capture):first=next(stream)
+        with patch('damendaemon.distributed_serving.Request',side_effect=capture):first=next(stream)
         return stream,requests[0],first
 
     def test_slow_client_pauses_its_slot_while_other_clients_complete(self):

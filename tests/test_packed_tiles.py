@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.packed_tiles import decode_tile
+from damendaemon.packed_tiles import decode_tile
 
 
 class PackedTileTests(unittest.TestCase):
@@ -70,7 +70,7 @@ class PackedTileTests(unittest.TestCase):
         self.assertEqual(decode_tile(weight, scales, **options).numel(), 65536)
         invalid = ({'row_stop':257}, {'row_start':-1}, {'column_stop':257}, {'column_start':True},
                    {'row_stop':0}, {'format':'e5m2'})
-        with patch('dllm.packed_tiles._e4m3', side_effect=AssertionError('decode started')):
+        with patch('damendaemon.packed_tiles._e4m3', side_effect=AssertionError('decode started')):
             for override in invalid:
                 with self.assertRaises(ValueError):
                     decode_tile(weight, scales, **(options | override))

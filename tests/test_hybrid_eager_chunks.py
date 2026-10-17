@@ -7,9 +7,9 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.capacity import hybrid_state_bytes
-from dllm.config import decoder_config
-from dllm.hybrid import HybridExecutor, load_weights
+from damendaemon.capacity import hybrid_state_bytes
+from damendaemon.config import decoder_config
+from damendaemon.hybrid import HybridExecutor, load_weights
 from tests.test_capacity_cli import fixture
 from tests.test_xpu import ENV
 
@@ -37,8 +37,8 @@ class HybridEagerChunkTests(unittest.TestCase):
     def executor(self):
         # Execute actual shared tensor arithmetic on CPU. Device API routing has
         # separate tests; this is deliberately not presented as XPU execution.
-        with patch('dllm.hybrid.selected_device', return_value='cpu'), \
-                patch('dllm.hybrid.empty_cache'), patch('dllm.hybrid.available_memory', return_value=2**40):
+        with patch('damendaemon.hybrid.selected_device', return_value='cpu'), \
+                patch('damendaemon.hybrid.empty_cache'), patch('damendaemon.hybrid.available_memory', return_value=2**40):
             return HybridExecutor(self.model(), use_graph=False, max_batch=2, kernels='torch')
 
     def assert_state(self, left, right, slot=0):
@@ -103,7 +103,7 @@ class HybridEagerChunkTests(unittest.TestCase):
         weights = sum(t.numel()*4 for t in {id(t):t for t in model.weights.values()}.values())
         expected = weights + hybrid_state_bytes(self.config, 32, 2, 4) + 512*1024**2
         executor = HybridExecutor.__new__(HybridExecutor)
-        with patch('dllm.hybrid.empty_cache'), patch('dllm.hybrid.available_memory', return_value=expected-1):
+        with patch('damendaemon.hybrid.empty_cache'), patch('damendaemon.hybrid.available_memory', return_value=expected-1):
             with self.assertRaises(MemoryError):
                 executor.__init__(model, use_graph=False, max_batch=2, kernels='torch')
         self.assertEqual(executor.required_memory_bytes, expected)

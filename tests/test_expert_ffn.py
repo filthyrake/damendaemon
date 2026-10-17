@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.expert_ffn import expert_feed_forward
+from damendaemon.expert_ffn import expert_feed_forward
 
 
 class ExpertFeedForwardTests(unittest.TestCase):
@@ -71,7 +71,7 @@ class ExpertFeedForwardTests(unittest.TestCase):
         hidden, gate, up, down = self.fixture()
         invalid = [(hidden, gate, up[:5], down), (hidden, gate.half(), up, down),
                    (hidden, gate, up, down[:, :5]), (hidden.to(torch.int32), gate, up, down)]
-        with patch('dllm.expert_ffn.F.linear', side_effect=AssertionError('projection started')):
+        with patch('damendaemon.expert_ffn.F.linear', side_effect=AssertionError('projection started')):
             for tensors in invalid:
                 with self.assertRaises(ValueError):
                     expert_feed_forward(*tensors)

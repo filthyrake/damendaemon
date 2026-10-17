@@ -4,8 +4,8 @@ import time
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.host_stage_channel import HostStageChannel
-from dllm.stage_protocol import StageState,Command,PREFILL,PREFILL_BATCH,DECODE,RELEASE,PING,STOP
+from damendaemon.host_stage_channel import HostStageChannel
+from damendaemon.stage_protocol import StageState,Command,PREFILL,PREFILL_BATCH,DECODE,RELEASE,PING,STOP
 from tests import test_host_tensor_channel
 
 

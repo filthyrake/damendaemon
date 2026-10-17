@@ -10,7 +10,7 @@ with the single-device batch executor. It combines prompt rows for linear
 layers while keeping attention and KV ownership isolated by prompt and slot.
 Each group's total rows are bounded by one configured context; larger groups
 split without changing order. The same-host FP16/Q8 path enables this by default.
-Q4 remains sequential by default. `DLLM_PARTITION_PACKED_PREFILL=0` selects the
+Q4 remains sequential by default. `DAMENDAEMON_PARTITION_PACKED_PREFILL=0` selects the
 sequential control; `1` explicitly enables packing for experiments at any of the
 three supported precisions. The subsequent distributed implementation is
 qualified separately in [resident HTTP evidence](../http/packed-prefill/README.md).
@@ -91,7 +91,7 @@ Reproduce with `scripts/verify_partition_packed.py` and independent traces from
 `verify_stress.py --reference-only --tiny-prefixes`. The replay helper persists
 failed checks too and offers `--sequential` for the exact-trace control.
 `verify_partition_rebind.py` and `verify_partition_service.py` run with
-`DLLM_PARTITION_PACKED_PREFILL=1`. Use
+`DAMENDAEMON_PARTITION_PACKED_PREFILL=1`. Use
 `scripts/experiments/bench_partition_prefill_service.py` for the counterbalanced
 HTTP measurement. Explicit benchmark mode selection makes the control independent
 of later changes to the default policy. Run GPU jobs sequentially.

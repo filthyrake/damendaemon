@@ -8,15 +8,15 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 import torch
-from dllm.q4_stage import StageQ4Linear
-from dllm.quantization import quantize_q4,dequantize_q4
+from damendaemon.q4_stage import StageQ4Linear
+from damendaemon.quantization import quantize_q4,dequantize_q4
 
 
 @torch.inference_mode()
 def main():
     p=argparse.ArgumentParser();p.add_argument('--output',required=True);args=p.parse_args()
     report=dict(passed=False,checks=[],scope='Synthetic real CUDA coefficient/layout and row-boundary correctness; not model performance',
-        sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in ('dllm/q4_stage.py','dllm/q4_stage_kernels.py')})
+        sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in ('damendaemon/q4_stage.py','damendaemon/q4_stage_kernels.py')})
     torch.set_num_threads(4);torch.manual_seed(43)
     try:
         for device in range(torch.cuda.device_count()):

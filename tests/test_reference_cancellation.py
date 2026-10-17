@@ -4,9 +4,9 @@ import time
 import unittest
 from unittest.mock import patch
 
-from dllm.reference_cancellation import cancellation_scope,check_cancelled,ReferenceCancelled
-from dllm import deepseek_generation
-from dllm.runtime import BusyError
+from damendaemon.reference_cancellation import cancellation_scope,check_cancelled,ReferenceCancelled
+from damendaemon import deepseek_generation
+from damendaemon.runtime import BusyError
 from tests import test_queued_reference_serving as queues
 from tests import test_reference_serving as fixtures
 

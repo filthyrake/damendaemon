@@ -4,8 +4,8 @@ if not __debug__:
 
 import json
 import torch
-from dllm.runtime import require_gpu
-from dllm.kernels import linear_fp32
+from damendaemon.runtime import require_gpu
+from damendaemon.kernels import linear_fp32
 
 require_gpu()
 torch.manual_seed(17)

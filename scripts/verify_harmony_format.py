@@ -11,13 +11,13 @@ from pathlib import Path
 import torch
 from transformers import AutoTokenizer
 from openai_harmony import load_harmony_encoding,HarmonyEncodingName,Role,StreamableParser
-from dllm.qwen2 import ModelWeights
-from dllm.harmony import TextStream
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.harmony import TextStream
 
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('model');parser.add_argument('--output',required=True);parser.add_argument('--generated');args=parser.parse_args()
-    os.environ['DLLM_DEVICE']='cuda';torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_DEVICE']='cuda';torch.set_num_threads(4)
     model=ModelWeights(args.model,512)
     reference=AutoTokenizer.from_pretrained(args.model,local_files_only=True)
     rows=[]

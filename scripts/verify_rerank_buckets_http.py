@@ -12,16 +12,16 @@ import time
 from urllib.request import Request,urlopen
 
 import torch
-import dllm.reranking as reranking
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer,handler_for
+import damendaemon.reranking as reranking
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer,handler_for
 
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--device',required=True,choices=('cuda','mps'));args=p.parse_args()
     if args.device=='cuda' and os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
-    os.environ['DLLM_DEVICE']=args.device;torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_DEVICE']=args.device;torch.set_num_threads(4)
     runtime=BatchedRuntime({'rank':args.model},context=512,batch_size=4)
     server=BoundedHTTPServer(('127.0.0.1',0),handler_for(runtime))
     thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()

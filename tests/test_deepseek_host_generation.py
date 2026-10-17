@@ -5,14 +5,14 @@ from pathlib import Path
 import unittest
 import torch
 from unittest.mock import patch
-from dllm.deepseek_host_generation import HostDeepSeekGenerator,native_session_identity
-from dllm.deepseek_host_pipeline_build import build_deepseek_host_pipeline_worker
-from dllm.deepseek_generation import TokenStream
-from dllm.deepseek_batch_generation import BatchReferenceGenerator
-from dllm.deepseek_reference_loader import load_reference_model
-from dllm.deepseek_text import DeepSeekText,END_THINK,EOS
-from dllm.host_topology import HostTopology
-from dllm.reference_cancellation import cancellation_scope,ReferenceCancelled
+from damendaemon.deepseek_host_generation import HostDeepSeekGenerator,native_session_identity
+from damendaemon.deepseek_host_pipeline_build import build_deepseek_host_pipeline_worker
+from damendaemon.deepseek_generation import TokenStream
+from damendaemon.deepseek_batch_generation import BatchReferenceGenerator
+from damendaemon.deepseek_reference_loader import load_reference_model
+from damendaemon.deepseek_text import DeepSeekText,END_THINK,EOS
+from damendaemon.host_topology import HostTopology
+from damendaemon.reference_cancellation import cancellation_scope,ReferenceCancelled
 from tests import test_glm_host_generation as glm,test_serve_cpu_reference as serving
 from tests.test_deepseek_batch_tools import completion
 
@@ -74,7 +74,7 @@ class DeepSeekHostGenerationTests(unittest.TestCase):
         text.eos=set();text.tokenizer.enable_truncation(1)
         self.assertEqual(runner.text.eos,original);self.assertGreater(len(runner.text.chat_tokens([dict(role='user',content='Hi')])),1)
         with self.assertRaises(ValueError):HostDeepSeekGenerator(worker,runner.text)
-        from dllm.reference_serving import ReferenceRuntime
+        from damendaemon.reference_serving import ReferenceRuntime
         with self.assertRaises(ValueError):ReferenceRuntime(runner)
 
     def test_invalid_requests_leave_healthy_epoch_without_dispatch(self):

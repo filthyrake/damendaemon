@@ -5,7 +5,7 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import Mock
-from dllm.model_manifest import load
+from damendaemon.model_manifest import load
 
 
 def deep_manifest(path):
@@ -24,7 +24,7 @@ class ManifestPreflightTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'models.json';deep_manifest(path)
             flags=['-S']+(['-O'] if sys.flags.optimize else [])
-            result=subprocess.run([sys.executable,*flags,'-m','dllm','serve','--model-config',str(path)],
+            result=subprocess.run([sys.executable,*flags,'-m','damendaemon','serve','--model-config',str(path)],
                 cwd=Path(__file__).resolve().parents[1],capture_output=True,text=True,timeout=10)
             self.assertEqual(result.returncode,2,result.stderr)
             self.assertIn('manifest nesting',result.stderr)

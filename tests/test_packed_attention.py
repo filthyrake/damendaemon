@@ -2,10 +2,10 @@ import unittest
 
 import torch
 
-from dllm.floating_attention import attention_prefill, attention_decode
-from dllm.floating_block import FloatingBlock
-from dllm.floating_model import FloatingModel
-from dllm.prepared_projection import PackedProjection
+from damendaemon.floating_attention import attention_prefill, attention_decode
+from damendaemon.floating_block import FloatingBlock
+from damendaemon.floating_model import FloatingModel
+from damendaemon.prepared_projection import PackedProjection
 from tests.test_floating_attention import fixture as attention_fixture
 from tests.test_packed_projection import fixture as projection_fixture
 from tests.test_packed_model import fixture as model_fixture

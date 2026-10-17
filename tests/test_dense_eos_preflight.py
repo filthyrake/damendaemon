@@ -6,7 +6,7 @@ from contextlib import ExitStack
 from pathlib import Path
 from unittest.mock import patch
 from tokenizers import Tokenizer, models
-from dllm.qwen2 import ModelWeights
+from damendaemon.qwen2 import ModelWeights
 
 
 class DenseEosPreflightTests(unittest.TestCase):
@@ -23,11 +23,11 @@ class DenseEosPreflightTests(unittest.TestCase):
                     generation=root/'generation_config.json';generation.unlink(missing_ok=True)
                     if generation_eos is not None:generation.write_text(json.dumps({'eos_token_id':generation_eos}))
                     config={'model_type':'qwen2','max_position_embeddings':32,'vocab_size':3,'eos_token_id':config_eos}
-                    stack.enter_context(patch('dllm.qwen2.decoder_config',return_value=config))
-                    stack.enter_context(patch('dllm.qwen2.selected_device',return_value='cpu'))
-                    stack.enter_context(patch('dllm.qwen2.weight_files',return_value=[]))
-                    stack.enter_context(patch('dllm.layer_stream.enabled',return_value=False))
-                    cache=stack.enter_context(patch('dllm.weight_cache.configured_cache',side_effect=RuntimeError('cache boundary reached')))
+                    stack.enter_context(patch('damendaemon.qwen2.decoder_config',return_value=config))
+                    stack.enter_context(patch('damendaemon.qwen2.selected_device',return_value='cpu'))
+                    stack.enter_context(patch('damendaemon.qwen2.weight_files',return_value=[]))
+                    stack.enter_context(patch('damendaemon.layer_stream.enabled',return_value=False))
+                    cache=stack.enter_context(patch('damendaemon.weight_cache.configured_cache',side_effect=RuntimeError('cache boundary reached')))
                     if valid:
                         with self.assertRaisesRegex(RuntimeError,'cache boundary reached'):ModelWeights(root,16,'none')
                         cache.assert_called_once()
@@ -42,12 +42,12 @@ class DenseEosPreflightTests(unittest.TestCase):
             (root/'tokenizer_config.json').write_text('{}')
             Tokenizer(models.WordLevel({'unknown':0,'one':1,'two':2},unk_token='unknown')).save(str(root/'tokenizer.json'))
             config={'model_type':'qwen2','max_position_embeddings':32,'vocab_size':3,'eos_token_id':1}
-            stack.enter_context(patch('dllm.qwen2.decoder_config',return_value=config))
-            stack.enter_context(patch('dllm.qwen2.selected_device',return_value='cpu'))
-            stack.enter_context(patch('dllm.qwen2.weight_files',return_value=[]))
-            stack.enter_context(patch('dllm.layer_stream.enabled',return_value=False))
+            stack.enter_context(patch('damendaemon.qwen2.decoder_config',return_value=config))
+            stack.enter_context(patch('damendaemon.qwen2.selected_device',return_value='cpu'))
+            stack.enter_context(patch('damendaemon.qwen2.weight_files',return_value=[]))
+            stack.enter_context(patch('damendaemon.layer_stream.enabled',return_value=False))
             cache=Mock();cache.load.return_value=({}, {})
-            stack.enter_context(patch('dllm.weight_cache.configured_cache',return_value=cache))
+            stack.enter_context(patch('damendaemon.weight_cache.configured_cache',return_value=cache))
             stack.enter_context(patch.object(ModelWeights,'finalize_weights'))
             for saved,expected in (({'eos_token_id':2},{2}),({}, {1})):
                 (root/'generation_config.json').write_text(json.dumps(saved))

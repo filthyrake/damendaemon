@@ -23,20 +23,20 @@ def main():
     report=dict(passed=False,scope='one input token, 32 output tokens; normal scheduler; alternating complete HTTP requests',
                 quantization='q8_0',model=json.loads(Path(args.model_metadata).read_text()),
                 baseline_sha256=hashlib.sha256(Path(args.baseline_source).read_bytes()).hexdigest(),
-                candidate_sha256=hashlib.sha256(Path('dllm/moe.py').read_bytes()).hexdigest(),
+                candidate_sha256=hashlib.sha256(Path('damendaemon/moe.py').read_bytes()).hexdigest(),
                 phases=[],comparisons=[])
     documents={}
     try:
         for kind,iteration in phases:
             label=f'{args.label}-{kind}-{iteration}'
-            command=[sys.executable,'scripts/compare_a2.py','--engines','dllm',
+            command=[sys.executable,'scripts/compare_a2.py','--engines','damendaemon',
                      '--model-metadata',args.model_metadata,'--label',label,'--context','2048',
                      '--host-gib','16','--max-tokens','32','--prompt-token-ids',str(prompt)]
             if kind=='control':command+=['--experimental-olmoe-baseline',args.baseline_source]
             subprocess.run(command,check=True,timeout=900)
             files=[]
             for concurrency in (1,2,4):
-                path=Path(f'compare-dllm-{label}-c{concurrency}.json')
+                path=Path(f'compare-damendaemon-{label}-c{concurrency}.json')
                 documents[(kind,iteration,concurrency)]=json.loads(path.read_text())
                 files.append(str(path))
             report['phases'].append(dict(kind=kind,iteration=iteration,files=files,command=command))

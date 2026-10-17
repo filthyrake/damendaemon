@@ -7,9 +7,9 @@ import sys
 import torch
 import triton as tr
 
-from dllm import quantized_kernels as kernels
-from dllm.device import selected_accelerator
-from dllm.runtime import require_gpu
+from damendaemon import quantized_kernels as kernels
+from damendaemon.device import selected_accelerator
+from damendaemon.runtime import require_gpu
 
 ordinary = kernels.linear
 
@@ -41,9 +41,9 @@ if __name__ == '__main__':
     activate()
     if len(sys.argv) < 2:
         raise SystemExit('supply the trusted local validation script to execute')
-    if sys.argv[1:3] == ['--module', 'dllm']:
+    if sys.argv[1:3] == ['--module', 'damendaemon']:
         del sys.argv[1:3]
-        runpy.run_module('dllm', run_name='__main__')
+        runpy.run_module('damendaemon', run_name='__main__')
     else:
         script = sys.argv.pop(1)
         sys.argv[0] = script

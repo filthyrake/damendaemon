@@ -3,7 +3,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import torch
-from dllm.q4_prefill_policy import _is_a2, use_small_tile
+from damendaemon.q4_prefill_policy import _is_a2, use_small_tile
 
 
 class Q4PrefillPolicyTests(unittest.TestCase):

@@ -43,7 +43,7 @@ class CpuHostServeCommandTests(unittest.TestCase):
         self.fail('CPU host HTTP service did not become ready')
 
     def test_two_process_http_sse_auth_and_idle_stop(self):
-        environment=dict(self.fixture.environment,DLLM_API_KEY=secrets.token_urlsafe(32))
+        environment=dict(self.fixture.environment,DAMENDAEMON_API_KEY=secrets.token_urlsafe(32))
         service,worker,ready,path=self.start_service(environment=environment)
         base=ready['url'];self.assertTrue(base.startswith('http://127.0.0.1:'))
         self.assertFalse(ready['official_model_qualified'])
@@ -52,19 +52,19 @@ class CpuHostServeCommandTests(unittest.TestCase):
         with self.assertRaises(HTTPError) as error:urlopen(Request(base+'/v1/completions',data=payload,headers={'Content-Type':'application/json'}))
         self.assertEqual(error.exception.code,401)
         with urlopen(Request(base+'/v1/completions',data=payload,headers={'Content-Type':'application/json',
-                'Authorization':'Bearer '+environment['DLLM_API_KEY']}),timeout=5) as response:wire=response.read().decode()
+                'Authorization':'Bearer '+environment['DAMENDAEMON_API_KEY']}),timeout=5) as response:wire=response.read().decode()
         self.assertIn('data: [DONE]',wire)
         events=[json.loads(line[6:]) for line in wire.splitlines() if line.startswith('data: ') and line!='data: [DONE]']
         self.assertEqual(events[-1]['usage']['completion_tokens'],3)
-        self.assertEqual(events[-1]['dllm_timing']['kernel_backend'],'cpu-host-reference')
+        self.assertEqual(events[-1]['damendaemon_timing']['kernel_backend'],'cpu-host-reference')
         _,error=service.communicate(timeout=6);worker_output,worker_error=worker.communicate(timeout=6)
         self.assertEqual(service.returncode,0,error);self.assertEqual(worker.returncode,0,worker_error)
         self.assertEqual(json.loads(worker_output.splitlines()[-1])['event'],'stopped')
         self.assertEqual(json.loads(path.read_text().splitlines()[-1])['event'],'stopped')
-        self.assertNotIn(environment['DLLM_API_KEY'],path.read_text()+error+worker_error)
+        self.assertNotIn(environment['DAMENDAEMON_API_KEY'],path.read_text()+error+worker_error)
 
     def test_verified_http_snapshot_ready_and_completion(self):
-        from dllm.cpu_snapshot_identity import fingerprint
+        from damendaemon.cpu_snapshot_identity import fingerprint
         identity=fingerprint(self.fixture.path).model_id
         extra=['--verify-model-id','--model-id',identity]
         service,worker,ready,_=self.start_service(extra=extra,worker_extra=extra)
@@ -105,14 +105,14 @@ class CpuHostServeCommandTests(unittest.TestCase):
         self.assertEqual(service.returncode,0,error);self.assertEqual(worker.returncode,0,peer_error)
 
     def test_admin_drain_stops_both_peers_with_acknowledged_success(self):
-        environment=dict(self.fixture.environment,DLLM_API_KEY=secrets.token_urlsafe(32),DLLM_ADMIN_API_KEY=secrets.token_urlsafe(32))
+        environment=dict(self.fixture.environment,DAMENDAEMON_API_KEY=secrets.token_urlsafe(32),DAMENDAEMON_ADMIN_API_KEY=secrets.token_urlsafe(32))
         service,worker,ready,path=self.start_service(idle='0',environment=environment,extra=['--stop-after-drain'])
         payload=json.dumps(dict(model='model',prompt=[1,2],max_tokens=3,stream=True)).encode()
         response=urlopen(Request(ready['url']+'/v1/completions',payload,{'Content-Type':'application/json',
-            'Authorization':'Bearer '+environment['DLLM_API_KEY']}),timeout=5)
+            'Authorization':'Bearer '+environment['DAMENDAEMON_API_KEY']}),timeout=5)
         with response:
             with urlopen(Request(ready['url']+'/v1/scheduler/drain',b'{}',{'Content-Type':'application/json',
-                'Authorization':'Bearer '+environment['DLLM_ADMIN_API_KEY']}),timeout=5) as drained:
+                'Authorization':'Bearer '+environment['DAMENDAEMON_ADMIN_API_KEY']}),timeout=5) as drained:
                 self.assertTrue(json.load(drained)['draining'])
             self.assertIn('data: [DONE]',response.read().decode())
         _,error=service.communicate(timeout=6);peer_output,peer_error=worker.communicate(timeout=6)
@@ -141,7 +141,7 @@ class CpuHostServeCommandTests(unittest.TestCase):
             with self.subTest(extra=extra),patch.object(cli,'connect_peer',side_effect=AssertionError('network')),redirect_stderr(io.StringIO()):
                 with self.assertRaises(SystemExit) as error:cli.main(self.args(1234)+extra)
                 self.assertEqual(error.exception.code,2)
-        with patch.dict('os.environ',{'DLLM_API_KEY':''}),patch.object(cli,'connect_peer',side_effect=AssertionError('network')),redirect_stderr(io.StringIO()):
+        with patch.dict('os.environ',{'DAMENDAEMON_API_KEY':''}),patch.object(cli,'connect_peer',side_effect=AssertionError('network')),redirect_stderr(io.StringIO()):
             with self.assertRaises(SystemExit) as error:cli.main(self.args(1234))
             self.assertEqual(error.exception.code,2)
 

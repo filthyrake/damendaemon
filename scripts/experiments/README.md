@@ -54,7 +54,7 @@ FP64 checks, alternating warm timings and incremental memory peaks. Omitting
 for the 4K windowed case. `sink_attention.py` explains the sink normalization.
 
 This uses PyTorch's version-specific efficient-attention operator to obtain
-log-sum-exp. The bounded layout has now been integrated in `dllm/sink_attention.py`
+log-sum-exp. The bounded layout has now been integrated in `damendaemon/sink_attention.py`
 with a 256-row threshold and model-level/lifecycle verification; the earlier
 layouts remain here for comparison. `replay_fused_attention.py` runs the existing numerical
 gates using `gpt_oss_fused_attention.py`; optional `--ieee-attention` also applies
@@ -83,8 +83,8 @@ under a 4 GiB cap so the Qwen3-1.7B fixture can be evaluated; it is not GPU
 admission-accounted and does not change normal runtime qualification.
 `verify_gguf_reference.py --experimental-dense-cache` requires a nonempty cache
 and checks independently expanded HF logits. Layout and HTTP comparisons have
-separate gates. Normal `DLLM_KQUANT_DENSE_CACHE_MIB` remains restricted to its
-qualified model scopes in `dllm/kquant_cache.py`.
+separate gates. Normal `DAMENDAEMON_KQUANT_DENSE_CACHE_MIB` remains restricted to its
+qualified model scopes in `damendaemon/kquant_cache.py`.
 
 ## Q4 prompt dispatch without resident copies
 
@@ -115,7 +115,7 @@ This experiment has no production installation hook and retains no dense cache.
 For the normal hardware-bounded 33–64-row policy, use
 `--q4-small-tiles --production-q4-small-tiles` in the HTTP benchmark. Its control
 server disables only the new tile selector; its candidate is the ordinary
-`dllm` entrypoint. This differs from the earlier 64/129-row experimental
+`damendaemon` entrypoint. This differs from the earlier 64/129-row experimental
 override. The normal-path reference/layout verifiers accept
 `--require-q4-small-tiles` to reject a run that silently used a fallback.
 

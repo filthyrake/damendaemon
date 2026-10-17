@@ -7,8 +7,8 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.packed_checkpoint import read_packed_matrix, MAX_HEADER_BYTES
-from dllm.packed_projection import packed_linear
+from damendaemon.packed_checkpoint import read_packed_matrix, MAX_HEADER_BYTES
+from damendaemon.packed_projection import packed_linear
 from tests.test_packed_projection import fixture
 
 
@@ -52,7 +52,7 @@ class PackedCheckpointTests(unittest.TestCase):
             path=Path(temp)/'a.safetensors'
             _,raw,scales,_=fixture('e2m1',3,32)
             write_shard(path,[('w','U8',raw),('s','F8_E8M0',scales)])
-            with patch('dllm.packed_checkpoint._payload',side_effect=AssertionError('payload read')):
+            with patch('damendaemon.packed_checkpoint._payload',side_effect=AssertionError('payload read')):
                 with self.assertRaisesRegex(ValueError,'budget'):
                     read_packed_matrix(path,'w',path,'s',format='e2m1',max_bytes=raw.numel()+scales.numel()-1)
                 for names,format in ((('missing','s'),'e2m1'),(('w','s'),'e4m3fn'),(('w','w'),'e2m1')):
@@ -72,7 +72,7 @@ class PackedCheckpointTests(unittest.TestCase):
         cases.extend([b'{"w":{},"w":{}}',b'[]',b'not-json',{'__metadata__':{'bad':1}}])
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp)/'bad.safetensors'
-            with patch('dllm.packed_checkpoint._payload',side_effect=AssertionError('payload read')):
+            with patch('damendaemon.packed_checkpoint._payload',side_effect=AssertionError('payload read')):
                 for header in cases:
                     write_raw(path,header,bytes(17))
                     with self.assertRaises(ValueError):read_packed_matrix(path,'w',path,'s',format='e2m1')
@@ -83,7 +83,7 @@ class PackedCheckpointTests(unittest.TestCase):
                     with self.assertRaises(ValueError):read_packed_matrix(path,'w',path,'s',format='e2m1')
 
     def test_failure_closes_readers_and_midread_change_is_rejected(self):
-        from dllm import packed_checkpoint
+        from damendaemon import packed_checkpoint
         with tempfile.TemporaryDirectory() as temp:
             a,b=Path(temp)/'a.safetensors',Path(temp)/'b.safetensors'
             write_shard(a,[('w','U8',torch.zeros(1,16,dtype=torch.uint8))])
@@ -93,8 +93,8 @@ class PackedCheckpointTests(unittest.TestCase):
             def record(reader):
                 readers.append(reader)
                 return original_header(reader)
-            with patch('dllm.packed_checkpoint._header',side_effect=record), \
-                    patch('dllm.packed_checkpoint._payload',side_effect=OSError('read failed')):
+            with patch('damendaemon.packed_checkpoint._header',side_effect=record), \
+                    patch('damendaemon.packed_checkpoint._payload',side_effect=OSError('read failed')):
                 with self.assertRaisesRegex(OSError,'read failed'):
                     read_packed_matrix(a,'w',b,'s',format='e2m1')
             self.assertEqual(len(readers),2)
@@ -104,6 +104,6 @@ class PackedCheckpointTests(unittest.TestCase):
                 result=original_payload(reader,base,entry)
                 with a.open('ab') as changed:changed.write(b'x')
                 return result
-            with patch('dllm.packed_checkpoint._payload',side_effect=modify):
+            with patch('damendaemon.packed_checkpoint._payload',side_effect=modify):
                 with self.assertRaisesRegex(ValueError,'changed'):
                     read_packed_matrix(a,'w',b,'s',format='e2m1')

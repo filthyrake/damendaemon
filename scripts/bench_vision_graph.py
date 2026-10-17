@@ -9,8 +9,8 @@ from pathlib import Path
 import statistics
 import time
 import torch
-from dllm.vision_inputs import prepare_images
-from dllm.vision_qwen35 import VisionWeights,VisionEncoder
+from damendaemon.vision_inputs import prepare_images
+from damendaemon.vision_qwen35 import VisionWeights,VisionEncoder
 from experiments.vision_encoder_graph import GraphVisionEncoder
 
 
@@ -25,7 +25,7 @@ def main():
         gpu=torch.cuda.get_device_name(),torch=str(torch.__version__),
         reference_sha256=hashlib.sha256(Path(args.reference).read_bytes()).hexdigest(),
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-            ('dllm/vision_qwen35.py','scripts/experiments/vision_encoder_graph.py')},cases=[])
+            ('damendaemon/vision_qwen35.py','scripts/experiments/vision_encoder_graph.py')},cases=[])
     try:
         for case in reference['cases']:
             if not case['images']:continue

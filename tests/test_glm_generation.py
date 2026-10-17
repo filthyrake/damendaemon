@@ -6,11 +6,11 @@ import unittest
 from unittest.mock import patch
 import torch
 from tokenizers import Tokenizer,models,decoders,pre_tokenizers,AddedToken
-from dllm.bytelevel_stream import BYTE_VALUES
-from dllm.glm_text import GlmText,CONTROLS,EOS,USER,OBSERVATION,THINK,END_THINK
-from dllm.glm_output import GlmOutput
-from dllm.glm_generation import TokenStream,ReferenceGenerator
-from dllm.glm_model import GlmModel
+from damendaemon.bytelevel_stream import BYTE_VALUES
+from damendaemon.glm_text import GlmText,CONTROLS,EOS,USER,OBSERVATION,THINK,END_THINK
+from damendaemon.glm_output import GlmOutput
+from damendaemon.glm_generation import TokenStream,ReferenceGenerator
+from damendaemon.glm_model import GlmModel
 from tests.test_deepseek_generation import State
 
 
@@ -112,7 +112,7 @@ class GlmGenerationTests(unittest.TestCase):
 
     def test_loaded_packed_snapshot_generation_matches_fresh_prefix(self):
         from tests.test_glm_reference_loader import fixture
-        from dllm.glm_reference_loader import load_reference_model
+        from damendaemon.glm_reference_loader import load_reference_model
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp);fixture(path,vocab_size=self.text.vocab_size);model=load_reference_model(path)
             model.head.zero_() # ordinary byte zero wins; no untrained control-token claims
@@ -132,7 +132,7 @@ class GlmGenerationTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):parser.finish(truncated=True)
         parser=GlmOutput();parser.feed('reason')
         with self.assertRaises(ValueError):parser.finish()
-        with patch('dllm.glm_output.MAX_TEXT_BYTES',4):
+        with patch('damendaemon.glm_output.MAX_TEXT_BYTES',4):
             parser=GlmOutput()
             with self.assertRaisesRegex(ValueError,'byte limit'):parser.feed('hello')
 

@@ -3,11 +3,11 @@ import tempfile
 import unittest
 import torch
 from unittest.mock import patch
-from dllm.cuda_glm_generation import CudaGlmGenerator,CudaGlmToolGenerator
-from dllm.cuda_reference_serving import CudaGlmReferenceRuntime
-from dllm.reference_serving import ReferenceRuntime
-from dllm.glm_generation import ReferenceGenerator
-from dllm.glm_tool_text import GlmToolText
+from damendaemon.cuda_glm_generation import CudaGlmGenerator,CudaGlmToolGenerator
+from damendaemon.cuda_reference_serving import CudaGlmReferenceRuntime
+from damendaemon.reference_serving import ReferenceRuntime
+from damendaemon.glm_generation import ReferenceGenerator
+from damendaemon.glm_tool_text import GlmToolText
 from tests.test_glm_generation import text_fixture,ScriptedModel
 
 

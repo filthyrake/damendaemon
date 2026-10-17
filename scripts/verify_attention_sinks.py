@@ -6,7 +6,7 @@ import json
 import os
 
 import torch
-from dllm import kernels
+from damendaemon import kernels
 
 
 def main():

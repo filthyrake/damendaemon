@@ -17,8 +17,8 @@ from urllib.request import Request,urlopen
 import weakref
 
 import torch
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer,handler_for
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer,handler_for
 
 
 def main():
@@ -34,7 +34,7 @@ def main():
     families={name:json.loads((Path(path)/'config.json').read_text())['model_type'] for name,path in models.items()}
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
-    os.environ['DLLM_DEVICE']='cuda';os.environ['DLLM_SPECULATIVE_TOKENS']='8';torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_DEVICE']='cuda';os.environ['DAMENDAEMON_SPECULATIVE_TOKENS']='8';torch.set_num_threads(4)
     runtime=BatchedRuntime(models,context=512,batch_size=4,gpu_models=1,host_models=2,host_gib=8)
     server=BoundedHTTPServer(('127.0.0.1',0),handler_for(runtime));thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
     url=f'http://127.0.0.1:{server.server_port}/v1/chat/completions'
@@ -92,7 +92,7 @@ def main():
                 data=body(alias,text)
                 with baseline(alias):reference,_=post(data)
                 candidate,_=post(data);equal(candidate,reference)
-                if name=='repetition':assert candidate['dllm_timing']['speculative_matched_drafts']>0
+                if name=='repetition':assert candidate['damendaemon_timing']['speculative_matched_drafts']>0
                 normal=[];speculative=[]
                 for step in range(6):
                     for enabled in ([False,True] if step%2==0 else [True,False]):
@@ -115,7 +115,7 @@ def main():
                 data=body(alias,**changes)
                 with baseline(alias):reference,_=post(data)
                 result,_=post(data);equal(result,reference)
-                assert result['dllm_timing']['speculative_blocks']==0
+                assert result['damendaemon_timing']['speculative_blocks']==0
                 fallback.append({'options':changes,'passed':True})
             data=body(alias)
             result,_=post(data)
@@ -135,7 +135,7 @@ def main():
                 with baseline(alias):references=list(pool.map(lambda _:post(data)[0],range(4)))
                 concurrent=list(pool.map(lambda _:post(data)[0],range(4)))
             for actual,expected_response in zip(concurrent,references):equal(actual,expected_response)
-            assert max(r['dllm_timing']['max_batch_size'] for r in concurrent)>1
+            assert max(r['damendaemon_timing']['max_batch_size'] for r in concurrent)>1
             with runtime.runtime.session(alias) as (executor,_,_):
                 graph_ref=weakref.ref(executor.speculative_verifier.graph)
                 verifier_ref=weakref.ref(executor.speculative_verifier)
@@ -143,7 +143,7 @@ def main():
             runtime.manage('unload',model=alias,release_host=False);gc.collect();torch.cuda.synchronize()
             assert graph_ref() is None and verifier_ref() is None
             restored,_=post(data);equal(restored,result)
-            assert restored['dllm_timing']['source_tier']=='host'
+            assert restored['damendaemon_timing']['source_tier']=='host'
             reports.append({'model':alias,'precision':precision,'rows':rows,'fallback':fallback,'stream_equivalence':True,
                 'disconnect_recovery':True,'backpressure':True,'concurrent_equivalence':True,
                 'graph_reclaimed_on_unload':True,'host_restore':True})

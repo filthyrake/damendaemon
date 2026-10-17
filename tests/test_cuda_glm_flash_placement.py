@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.cuda_glm_flash_placement import place_cuda_flash,_tensors,_build
+from damendaemon.cuda_glm_flash_placement import place_cuda_flash,_tensors,_build
 from tests.test_glm_flash_model import fixture as model_fixture
 from tests.test_glm_flash_ffn import packed_ffn
 from tests.test_glm_flash_sparse import fixture as sparse_fixture
@@ -16,7 +16,7 @@ def fixture():
 class CudaFlashPlacementTests(unittest.TestCase):
     def test_aggregate_and_late_invalid_before_copy(self):
         source=fixture();tensors=_tensors(source);size=sum(v.numel()*v.element_size() for v in tensors.values())
-        with patch('dllm.cuda_glm_flash_placement._copy',side_effect=AssertionError('copied')) as copy:
+        with patch('damendaemon.cuda_glm_flash_placement._copy',side_effect=AssertionError('copied')) as copy:
             with self.assertRaises(ValueError):place_cuda_flash(source,device='cuda:0',max_bytes=size-1)
             source.blocks[-1].post_norm=torch.ones(1)
             with self.assertRaises(ValueError):place_cuda_flash(source,device='cuda:0',max_bytes=size+100)
@@ -40,7 +40,7 @@ class CudaFlashPlacementTests(unittest.TestCase):
 
     def test_copy_failure_preserves_source_and_explicit_device(self):
         source=fixture();before=source.embedding.clone()
-        with patch('dllm.cuda_glm_flash_placement._copy',side_effect=MemoryError('allocation')):
+        with patch('damendaemon.cuda_glm_flash_placement._copy',side_effect=MemoryError('allocation')):
             with self.assertRaises(MemoryError):place_cuda_flash(source,device='cuda:0',max_bytes=10**6)
         torch.testing.assert_close(source.embedding,before,atol=0,rtol=0)
         _,state=source.prefill(torch.tensor([[1]]),capacity=1);state.close()

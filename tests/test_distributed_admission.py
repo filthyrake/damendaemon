@@ -3,9 +3,9 @@ import queue
 import threading
 import time
 import unittest
-from dllm.distributed_admission import DistributedAdmission
-from dllm.distributed_serving import Request
-from dllm.request_scope import CacheScope,cache_scope
+from damendaemon.distributed_admission import DistributedAdmission
+from damendaemon.distributed_serving import Request
+from damendaemon.request_scope import CacheScope,cache_scope
 
 
 def request(scope,token):

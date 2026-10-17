@@ -3,7 +3,7 @@
 Run from the lab workspace containing model-a.json and baselines/vllm-venv.
 Never starts both engines at once. Only terminates process groups it creates.
 """
-from dllm.evidence_environment import report_environment
+from damendaemon.evidence_environment import report_environment
 import argparse
 import json
 import math
@@ -15,8 +15,8 @@ import subprocess
 import sys
 import time
 from urllib.request import urlopen
-from dllm.bench import llama_context
-from dllm.token_workload import load_token_prompt
+from damendaemon.bench import llama_context
+from damendaemon.token_workload import load_token_prompt
 
 
 def main():
@@ -26,7 +26,7 @@ def main():
     parser.add_argument('--context', type=int, default=256)
     parser.add_argument('--gpu-memory-utilization', type=float, default=.5)
     parser.add_argument('--startup-timeout', type=int, default=900)
-    parser.add_argument('--engines', nargs='+', choices=('dllm', 'vllm', 'llama.cpp'), default=['dllm', 'vllm'])
+    parser.add_argument('--engines', nargs='+', choices=('damendaemon', 'vllm', 'llama.cpp'), default=['damendaemon', 'vllm'])
     parser.add_argument('--gguf', help='matching checkpoint and precision for llama.cpp')
     parser.add_argument('--llama-kv-dtype', choices=('f16','f32'), default='f16', help='match the selected runtime KV precision')
     parser.add_argument('--thinking', choices=('auto', 'on', 'off'), default='auto')
@@ -76,17 +76,17 @@ def main():
             sock.bind(('127.0.0.1', 0))
             port = sock.getsockname()[1]
         env = dict(os.environ)
-        if engine == 'dllm':
-            module = 'scripts.experiments.serve_awq_decode' if args.experimental_awq_decode else 'dllm'
+        if engine == 'damendaemon':
+            module = 'scripts.experiments.serve_awq_decode' if args.experimental_awq_decode else 'damendaemon'
             if args.experimental_awq_marlin:
                 module = 'scripts.experiments.serve_awq_marlin'
-                env['DLLM_EXPERIMENT_MARLIN_LIBRARY'] = str(Path(args.experimental_awq_marlin).resolve())
+                env['DAMENDAEMON_EXPERIMENT_MARLIN_LIBRARY'] = str(Path(args.experimental_awq_marlin).resolve())
             moe_baseline = args.experimental_olmoe_baseline or args.experimental_olmoe_prefill_baseline
             if moe_baseline:
                 module = 'scripts.experiments.serve_moe_baseline'
-                env['DLLM_EXPERIMENT_MOE_BASELINE'] = str(Path(moe_baseline).resolve())
-                env['DLLM_EXPERIMENT_MOE_METHOD'] = ('prefill_batch' if args.experimental_olmoe_prefill_baseline else 'experts')
-                env['DLLM_EXPERIMENT_MOE_REPORT'] = str(root / f'compare-{engine}-{args.label}-source.json')
+                env['DAMENDAEMON_EXPERIMENT_MOE_BASELINE'] = str(Path(moe_baseline).resolve())
+                env['DAMENDAEMON_EXPERIMENT_MOE_METHOD'] = ('prefill_batch' if args.experimental_olmoe_prefill_baseline else 'experts')
+                env['DAMENDAEMON_EXPERIMENT_MOE_REPORT'] = str(root / f'compare-{engine}-{args.label}-source.json')
             command = [sys.executable, '-m', module, 'serve', '--port', str(port), '--context', str(args.context),
                        '--batch-size', str(args.batch_size), '--host-gib', str(args.host_gib), '--model', 'a=' + model['path']]
         elif engine == 'llama.cpp':

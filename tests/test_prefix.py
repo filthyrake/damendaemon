@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.prefix import PrefixCache
+from damendaemon.prefix import PrefixCache
 
 
 class Executor:
@@ -14,7 +14,7 @@ class PrefixTests(unittest.TestCase):
         self.executor.kv=[torch.zeros(2,2,1,16,2)]
         self.executor.lengths=[0,0]
         self.cache=PrefixCache(self.executor,12,max_entries=2)
-        memory=patch('dllm.prefix.available_memory',return_value=1024**3)
+        memory=patch('damendaemon.prefix.available_memory',return_value=1024**3)
         memory.start();self.addCleanup(memory.stop)
 
     def remember(self,prompt,value=1):
@@ -56,7 +56,7 @@ class PrefixTests(unittest.TestCase):
         self.assertEqual(self.cache.restore([4]*16,1),(12,None))
 
     def test_low_device_memory_skips_snapshot(self):
-        with patch('dllm.prefix.available_memory',return_value=0),patch('dllm.prefix.empty_cache'):
+        with patch('damendaemon.prefix.available_memory',return_value=0),patch('damendaemon.prefix.empty_cache'):
             self.remember([1,2,3])
         self.assertFalse(self.cache.entries)
         self.assertEqual(self.cache.tokens,0)
@@ -106,13 +106,13 @@ class PrefixTests(unittest.TestCase):
         self.assertIsNone(reference())
 
     def test_allocation_failure_discards_incomplete_snapshot(self):
-        with patch.object(torch.Tensor,'clone',side_effect=torch.OutOfMemoryError('test')), patch('dllm.prefix.empty_cache'):
+        with patch.object(torch.Tensor,'clone',side_effect=torch.OutOfMemoryError('test')), patch('damendaemon.prefix.empty_cache'):
             self.remember([1,2,3])
         self.assertEqual(self.cache.tokens,0)
         self.assertFalse(self.cache.entries)
 
     def test_scope_capacity_evicts_own_lru_before_global(self):
-        from dllm.request_scope import CacheScope
+        from damendaemon.request_scope import CacheScope
         self.cache=PrefixCache(self.executor,32,max_entries=8)
         alice,bob=CacheScope(8),CacheScope(8)
         logits=torch.zeros(1,2)
@@ -130,7 +130,7 @@ class PrefixTests(unittest.TestCase):
         self.assertEqual(self.cache.restore([9]*4,1,scope=bob)[0],4)
 
     def test_scope_zero_recurrent_and_global_caps(self):
-        from dllm.request_scope import CacheScope
+        from damendaemon.request_scope import CacheScope
         logits=torch.zeros(1,2)
         with patch.object(torch.Tensor,'clone',side_effect=AssertionError('disabled snapshot')):
             self.cache.remember([1,2],0,logits,scope=CacheScope(0))

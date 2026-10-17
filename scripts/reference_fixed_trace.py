@@ -22,7 +22,7 @@ def main():
         p.error('positive threads and nonnegative last event required')
     torch.set_num_threads(args.threads)
     if args.device == 'cuda':
-        from dllm.runtime import require_gpu
+        from damendaemon.runtime import require_gpu
         require_gpu()
         torch.backends.cuda.matmul.allow_tf32 = False
         torch.backends.cudnn.allow_tf32 = False

@@ -7,7 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 import torch
-from dllm.hybrid_metal import scan
+from damendaemon.hybrid_metal import scan
 
 
 def cpu_scan(q,k,v,decay,beta,state,slots,reset):
@@ -27,7 +27,7 @@ def main():
     p=argparse.ArgumentParser();p.add_argument('--output',required=True);args=p.parse_args()
     torch.set_num_threads(4);torch.manual_seed(31051)
     report=dict(passed=False,device='Apple MPS',torch=str(torch.__version__),checks=[],
-                source_sha256=hashlib.sha256(Path('dllm/hybrid_metal.py').read_bytes()).hexdigest())
+                source_sha256=hashlib.sha256(Path('damendaemon/hybrid_metal.py').read_bytes()).hexdigest())
     try:
         for length in (1,7,87,185,1024):
             for reset in (True,False):

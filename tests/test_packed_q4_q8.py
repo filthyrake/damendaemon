@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.packed_tiles import decode_tile,validate_layout
-from dllm.packed_projection import packed_linear
-from dllm.prepared_projection import PackedProjection
+from damendaemon.packed_tiles import decode_tile,validate_layout
+from damendaemon.packed_projection import packed_linear
+from damendaemon.prepared_projection import PackedProjection
 
 
 def fixture(format,rows=5,columns=96):
@@ -42,7 +42,7 @@ class PackedIntegerTests(unittest.TestCase):
             original_weight=weight.clone();original_scales=scales.clone();shapes=[]
             def tile(*args,**kwargs):
                 value=decode_tile(*args,**kwargs);shapes.append(value.shape);return value
-            with patch('dllm.packed_projection.decode_tile',side_effect=tile):
+            with patch('damendaemon.packed_projection.decode_tile',side_effect=tile):
                 actual=packed_linear(hidden,weight,scales,format=format,row_chunk=2,column_chunk=17,workspace_bytes=16384)
                 adapter=PackedProjection(weight,scales,format=format,row_chunk=2,column_chunk=17,workspace_bytes=16384).rows(1,4)
                 viewed=adapter.linear(hidden.unsqueeze(0))
@@ -63,7 +63,7 @@ class PackedIntegerTests(unittest.TestCase):
             weight,scales,_=fixture(format)
             for w,s in ((weight,scales.float()),(weight.float(),scales),(weight,scales[:,:1]),(weight[:,:-1],scales)):
                 with self.assertRaises(ValueError):validate_layout(w,s,format=format)
-            with patch('dllm.packed_projection.decode_tile',side_effect=AssertionError('decoded before admission')):
+            with patch('damendaemon.packed_projection.decode_tile',side_effect=AssertionError('decoded before admission')):
                 with self.assertRaises(ValueError):packed_linear(torch.zeros(1,96),weight,scales,format=format,workspace_bytes=1)
             large=torch.zeros((257,256 if format=='q4_0_f16' else 512),dtype=weight.dtype)
             with self.assertRaisesRegex(ValueError,'65536'):decode_tile(large,torch.ones(257,16,dtype=torch.float16),format=format,row_start=0,row_stop=257,column_start=0,column_stop=256)

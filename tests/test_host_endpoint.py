@@ -6,9 +6,9 @@ import time
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.host_endpoint import HostPeerListener,connect_peer
-from dllm.host_tls import HostTlsCancelled,certificate_pin
-from dllm.host_tensor_channel import HostTensorChannel
+from damendaemon.host_endpoint import HostPeerListener,connect_peer
+from damendaemon.host_tls import HostTlsCancelled,certificate_pin
+from damendaemon.host_tensor_channel import HostTensorChannel
 from tests.test_host_tls import contexts,FIXTURES
 
 
@@ -101,7 +101,7 @@ class HostEndpointTests(unittest.TestCase):
         invalid=socket.socket();self.addCleanup(invalid.close)
         with self.assertRaises(ValueError):HostPeerListener(invalid,self.server_context,peer_pin=self.client_pin)
         self.assertGreaterEqual(invalid.fileno(),0)
-        with patch('socket.getaddrinfo',side_effect=AssertionError('DNS')),patch('dllm.host_endpoint.socket.socket',side_effect=AssertionError('allocated')):
+        with patch('socket.getaddrinfo',side_effect=AssertionError('DNS')),patch('damendaemon.host_endpoint.socket.socket',side_effect=AssertionError('allocated')):
             for address,port in (('localhost',42),('127.0.0.1',True),('127.0.0.1',0),('::1%lo0',42),('',42)):
                 with self.assertRaises(ValueError):self.connect((address,port),timeout=1)
             with self.assertRaises(HostTlsCancelled):self.connect(('127.0.0.1',42),timeout=1,cancelled=lambda:True)

@@ -210,8 +210,8 @@ integration must independently pass correctness, lifecycle and serving gates.
 
 ## Integrated stage implementation
 
-`DLLM_Q4_STAGE_ADJACENT=1` selects the runtime implementation in
-`dllm/q4_stage.py` and `dllm/q4_stage_kernels.py`. It is restricted to the qualified
+`DAMENDAEMON_Q4_STAGE_ADJACENT=1` selects the runtime implementation in
+`damendaemon/q4_stage.py` and `damendaemon/q4_stage_kernels.py`. It is restricted to the qualified
 Qwen2.5-0.5B stage geometry, split 12/12, context at most 512 and up to four
 slots. Canonical host/checkpoint data stays unchanged; only device body weights
 are repacked. The head retains its current path. Rebind refresh now occurs
@@ -439,7 +439,7 @@ tile family still compiles, and retained down-projection specializations still
 incur first-use cost. These results are not end-to-end cold server startup or
 HTTP throughput, and they do not imply every prompt is faster by that ratio.
 
-`DLLM_Q4_STAGE_RUNTIME_ROWS=1` now selects an integrated runtime implementation
+`DAMENDAEMON_Q4_STAGE_RUNTIME_ROWS=1` now selects an integrated runtime implementation
 of that policy. Static and dynamic entry points share one arithmetic body;
 32/128-row down-projection tile families retain static bounds. The flag defaults
 off during integrated-path qualification. The integrated kernels pass 88 GPU
@@ -516,7 +516,7 @@ preserved. Transport was NCCL sockets; RDMA remains unverified.
 
 With integrated numerical, lifecycle, compiler-cache and warm serving gates
 passing, selective runtime row bounds become the default for qualified adjacent
-Q4 stages. `DLLM_Q4_STAGE_RUNTIME_ROWS=0` is the static control. Earlier sections
+Q4 stages. `DAMENDAEMON_Q4_STAGE_RUNTIME_ROWS=0` is the static control. Earlier sections
 retain the historical opt-in qualification sequence. The rotary experiment below
 is separate and is not enabled by this change.
 After promotion, the real same-host HTTP verifier passes all 19 checks with
@@ -530,7 +530,7 @@ loopback access passes without code changes.
 The existing rotary/cache kernel specializes its token count even though that
 value is only a query-output address stride. The isolated experimental kernel
 uses a runtime stride with unchanged floating-point operations. Production
-`dllm/kernels.py` is unchanged.
+`damendaemon/kernels.py` is unchanged.
 
 On A2, 68 cases cover 17 lengths from 1 through 255, with normalization and
 precise arithmetic each on/off, head geometry 14/2/64 and context 512. Queries
@@ -563,7 +563,7 @@ first-use sweep 18.73→14.19 seconds (24.2% lower), and repeated sweep
 The same 15 prompt lengths and cache exclusions apply. These prototype reports
 are `qwen2-rope-first-shapes-*`; they are not integrated rotary results.
 
-The separate `DLLM_Q4_STAGE_RUNTIME_ROPE=1` integration is default-off while
+The separate `DAMENDAEMON_Q4_STAGE_RUNTIME_ROPE=1` integration is default-off while
 qualified. Only adjacent Q4 layer stages opt into the runtime token stride;
 ordinary executors keep static stride selection. Both entry points share the
 rotary arithmetic body. Each stage owns its selected rotary callable, without
@@ -628,7 +628,7 @@ early: lab 2026-10-06 06:51:06–06:54:50 UTC, desktop 06:51:09–06:54:53 UTC.
 The existing desktop rule and 10,835 MiB baseline GPU allocation were preserved.
 
 Runtime rotary stride becomes the default only for the qualified adjacent Q4
-layer stages. `DLLM_Q4_STAGE_RUNTIME_ROPE=0` preserves the static control.
+layer stages. `DAMENDAEMON_Q4_STAGE_RUNTIME_ROPE=0` preserves the static control.
 Ordinary executors keep static dispatch. Earlier opt-in sections describe the
 qualification sequence, not the current default. The historical global-dispatch
 experiment explicitly disables the integrated stage policy when installed.

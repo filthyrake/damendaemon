@@ -9,10 +9,10 @@ from unittest.mock import Mock, patch
 from urllib.error import HTTPError
 from urllib.request import Request
 
-from dllm.http_auth import AuthPolicy, authenticated_urlopen
-from dllm.server import handler_for
-from dllm.cli import main
-from dllm.bench import request_one as benchmark_request
+from damendaemon.http_auth import AuthPolicy, authenticated_urlopen
+from damendaemon.server import handler_for
+from damendaemon.cli import main
+from damendaemon.bench import request_one as benchmark_request
 from tests.test_server import FakeRuntime
 
 API_KEY = 'inference-test-key-123456'
@@ -74,7 +74,7 @@ class HttpAuthTests(unittest.TestCase):
             connection.endheaders()  # Deliberately never send the body.
             response = connection.getresponse()
             self.assertEqual(response.status, 401)
-            self.assertEqual(response.getheader('WWW-Authenticate'), 'Bearer realm="dllm"')
+            self.assertEqual(response.getheader('WWW-Authenticate'), 'Bearer realm="damendaemon"')
             response.read()
             self.runtime.manage.assert_not_called()
         finally:
@@ -95,8 +95,8 @@ class HttpAuthTests(unittest.TestCase):
 
     def test_cli_admin_and_benchmark_inference_credentials(self):
         output = io.StringIO()
-        with patch.dict('os.environ', DLLM_API_KEY=API_KEY, DLLM_ADMIN_API_KEY=ADMIN_KEY), \
-                patch('sys.argv', ['dllm', 'status', '--server', self.url]), patch('sys.stdout', output):
+        with patch.dict('os.environ', DAMENDAEMON_API_KEY=API_KEY, DAMENDAEMON_ADMIN_API_KEY=ADMIN_KEY), \
+                patch('sys.argv', ['damendaemon', 'status', '--server', self.url]), patch('sys.stdout', output):
             main()
         self.assertEqual(json.loads(output.getvalue()), {'drained':False})
         # FakeRuntime emits two tokens; keep this auth control within the request budget.
@@ -125,30 +125,30 @@ class AuthPolicyTests(unittest.TestCase):
 
     def test_bad_server_key_rejects_before_model_resolution(self):
         errors = io.StringIO()
-        with patch.dict('os.environ', {'DLLM_API_KEY': 'short'}, clear=True), \
-                patch('sys.argv', ['dllm', 'serve', '--model', 'a=Qwen/not-downloaded']), \
-                patch('sys.stderr', errors), patch('dllm.cli.resolve_model') as resolve:
+        with patch.dict('os.environ', {'DAMENDAEMON_API_KEY': 'short'}, clear=True), \
+                patch('sys.argv', ['damendaemon', 'serve', '--model', 'a=Qwen/not-downloaded']), \
+                patch('sys.stderr', errors), patch('damendaemon.cli.resolve_model') as resolve:
             with self.assertRaises(SystemExit):
                 main()
             resolve.assert_not_called()
-        self.assertIn('DLLM_API_KEY', errors.getvalue())
+        self.assertIn('DAMENDAEMON_API_KEY', errors.getvalue())
         self.assertNotIn('short', errors.getvalue())
 
     def test_deep_client_configuration_is_sanitized_before_model_resolution(self):
         payload = '{"client":{"key":"' + API_KEY + '","max_inflight":1,"models":' + '['*10000 + '0' + ']'*10000 + '}}'
-        with patch.dict('os.environ', {'DLLM_CLIENT_KEYS':payload}, clear=True):
-            with self.assertRaisesRegex(ValueError, 'DLLM_CLIENT_KEYS') as raised:
+        with patch.dict('os.environ', {'DAMENDAEMON_CLIENT_KEYS':payload}, clear=True):
+            with self.assertRaisesRegex(ValueError, 'DAMENDAEMON_CLIENT_KEYS') as raised:
                 AuthPolicy.from_env()
             self.assertNotIn(API_KEY, str(raised.exception))
             self.assertTrue(raised.exception.__suppress_context__)
             errors = io.StringIO()
-            with patch('sys.argv', ['dllm','serve','--model','a=Qwen/not-downloaded']), \
-                    patch('sys.stderr', errors), patch('dllm.cli.resolve_model') as resolve:
+            with patch('sys.argv', ['damendaemon','serve','--model','a=Qwen/not-downloaded']), \
+                    patch('sys.stderr', errors), patch('damendaemon.cli.resolve_model') as resolve:
                 with self.assertRaises(SystemExit) as exit_status:
                     main()
                 self.assertEqual(exit_status.exception.code, 2)
                 resolve.assert_not_called()
-            self.assertIn('DLLM_CLIENT_KEYS', errors.getvalue())
+            self.assertIn('DAMENDAEMON_CLIENT_KEYS', errors.getvalue())
             self.assertNotIn(API_KEY, errors.getvalue())
             self.assertNotIn('Traceback', errors.getvalue())
 

@@ -2,9 +2,9 @@
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch,Mock
-from dllm.partition_policy import selected_split,validate
-from dllm.partition import PartitionExecutor
-from dllm.runtime import require_gpu
+from damendaemon.partition_policy import selected_split,validate
+from damendaemon.partition import PartitionExecutor
+from damendaemon.runtime import require_gpu
 
 
 class PartitionTests(unittest.TestCase):
@@ -16,15 +16,15 @@ class PartitionTests(unittest.TestCase):
     def test_explicit_policy_and_distinct_visible_devices(self):
         with patch.dict('os.environ',{},clear=True):self.assertIsNone(selected_split())
         for value in ('0','-1','1.2','１２',''):
-            with patch.dict('os.environ',{'DLLM_EXPERIMENTAL_LAYER_SPLIT':value},clear=True):
+            with patch.dict('os.environ',{'DAMENDAEMON_EXPERIMENTAL_LAYER_SPLIT':value},clear=True):
                 with self.assertRaises(ValueError):selected_split()
         cuda=SimpleNamespace(is_available=lambda:True,device_count=lambda:2,set_device=Mock())
-        with patch.dict('os.environ',{'DLLM_EXPERIMENTAL_LAYER_SPLIT':'12','CUDA_VISIBLE_DEVICES':'GPU-a,GPU-b'},clear=True),patch.dict('sys.modules',{'torch':SimpleNamespace(cuda=cuda)}):
+        with patch.dict('os.environ',{'DAMENDAEMON_EXPERIMENTAL_LAYER_SPLIT':'12','CUDA_VISIBLE_DEVICES':'GPU-a,GPU-b'},clear=True),patch.dict('sys.modules',{'torch':SimpleNamespace(cuda=cuda)}):
             require_gpu();cuda.set_device.assert_called_once_with(0)
         for visible in ('GPU-a','GPU-a,GPU-a','0,1'):
-            with patch.dict('os.environ',{'DLLM_EXPERIMENTAL_LAYER_SPLIT':'12','CUDA_VISIBLE_DEVICES':visible},clear=True):
+            with patch.dict('os.environ',{'DAMENDAEMON_EXPERIMENTAL_LAYER_SPLIT':'12','CUDA_VISIBLE_DEVICES':visible},clear=True):
                 with self.assertRaises(ValueError):require_gpu()
-        with patch.dict('os.environ',{'DLLM_EXPERIMENTAL_LAYER_SPLIT':'12','DLLM_DEVICE':'mps'},clear=True):
+        with patch.dict('os.environ',{'DAMENDAEMON_EXPERIMENTAL_LAYER_SPLIT':'12','DAMENDAEMON_DEVICE':'mps'},clear=True):
             with self.assertRaises(ValueError):selected_split()
 
     def test_unqualified_modes_fail_before_gpu_construction(self):
@@ -38,7 +38,7 @@ class PartitionTests(unittest.TestCase):
             with self.assertRaises(ValueError):validate(model,12,4)
             model=self.model();model.max_context=513
             with self.assertRaises(ValueError):validate(model,12,4)
-        for flag in ({'DLLM_KV_CACHE_TOKENS':'512'},{'DLLM_SPECULATIVE_TOKENS':'2'},{'DLLM_KERNELS':'torch'}):
+        for flag in ({'DAMENDAEMON_KV_CACHE_TOKENS':'512'},{'DAMENDAEMON_SPECULATIVE_TOKENS':'2'},{'DAMENDAEMON_KERNELS':'torch'}):
             with patch.dict('os.environ',flag,clear=True):
                 with self.assertRaises(ValueError):validate(self.model(),12,4)
 
@@ -62,7 +62,7 @@ class PartitionTests(unittest.TestCase):
     def test_rebind_rejects_precision_config_or_tensor_layout_changes(self):
         import copy
         import torch
-        from dllm.layer_stage import shard_model
+        from damendaemon.layer_stage import shard_model
         model=self.model();model.weights={'embed':torch.zeros(2,32),'norm':torch.ones(32),'head':torch.zeros(2,32,dtype=torch.int8)}
         model.weights.update({f'{i}.out':torch.zeros(2,32,dtype=torch.int8) for i in range(24)})
         model.scales={name:torch.ones(2,1,dtype=torch.float16) for name in model.weights if name not in ('embed','norm')}
@@ -71,7 +71,7 @@ class PartitionTests(unittest.TestCase):
             shard=shard_model(model,start,end)
             executor.stages.append(SimpleNamespace(layer_range=(start,end),model=shard,w=shard.weights,
                 quant_linear=SimpleNamespace(scales={id(shard.weights[name]):value for name,value in shard.scales.items()})))
-        with patch.dict('os.environ',{'DLLM_PARTITION_REBIND':'1'}):
+        with patch.dict('os.environ',{'DAMENDAEMON_PARTITION_REBIND':'1'}):
             self.assertTrue(executor.can_rebind(model))
             changed=copy.copy(model);changed.quantization='none'
             self.assertFalse(executor.can_rebind(changed))

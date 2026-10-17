@@ -7,9 +7,9 @@ from urllib.error import HTTPError
 from urllib.request import urlopen
 from unittest.mock import patch
 
-from dllm.runtime import Runtime
-from dllm.scheduler import BatchedRuntime
-from dllm.server import handler_for
+from damendaemon.runtime import Runtime
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import handler_for
 from tests.test_scheduler import FakeRuntime
 
 
@@ -43,7 +43,7 @@ class NativeHealthTests(unittest.TestCase):
             self.assert_health(runtime, 503)
 
     def test_scheduler_health_tracks_worker_and_admission(self):
-        with patch('dllm.scheduler.Runtime', FakeRuntime):
+        with patch('damendaemon.scheduler.Runtime', FakeRuntime):
             runtime = BatchedRuntime({'a': 'a'})
         try:
             self.assert_health(runtime, 200)

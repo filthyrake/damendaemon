@@ -6,7 +6,7 @@ import argparse
 import json
 import time
 import torch
-from dllm.qwen2 import ModelWeights
+from damendaemon.qwen2 import ModelWeights
 from scripts.experiments.layer_stage import LayerStage
 
 

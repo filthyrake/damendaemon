@@ -15,9 +15,9 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
-    from dllm.cuda_floating_compressor import compress_hidden
-    from dllm.deepseek_position import frequencies
-    from dllm.activation_simulation import simulate_fp8,simulate_fp4,normalized_hadamard
+    from damendaemon.cuda_floating_compressor import compress_hidden
+    from damendaemon.deepseek_position import frequencies
+    from damendaemon.activation_simulation import simulate_fp8,simulate_fp4,normalized_hadamard
     from tests.test_compressed_pool import scalar_pool
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')
     torch.set_num_threads(1);torch.backends.cuda.matmul.allow_tf32=False
@@ -52,14 +52,14 @@ def main():
                     out,current,_=compress_hidden(device[0][:,begin:begin+3],*device[1:],state=current,cache_transform=transform);parts.append(out)
                 torch.testing.assert_close(torch.cat(parts,1),actual,atol=2e-6,rtol=3e-5)
                 _,prior,_=compress_hidden(device[0][:,:3],*device[1:]);old=(prior.values.clone(),prior.scores.clone())
-                with patch('dllm.floating_compressor.rotate_pairs',side_effect=RuntimeError('injected rotation failure')):
+                with patch('damendaemon.floating_compressor.rotate_pairs',side_effect=RuntimeError('injected rotation failure')):
                     try:compress_hidden(device[0][:,3:11],*device[1:],state=prior)
                     except RuntimeError as error:assert 'injected rotation failure' in str(error)
                     else:raise AssertionError('injected failure ignored')
                 for a,b in zip((prior.values,prior.scores),old):torch.testing.assert_close(a,b,atol=0,rtol=0)
                 assert prior.position==3
                 for option in ('max_workspace_bytes','max_output_bytes'):
-                    with patch('dllm.floating_compressor.F.linear',side_effect=AssertionError('projected before budget')):
+                    with patch('damendaemon.floating_compressor.F.linear',side_effect=AssertionError('projected before budget')):
                         rejected(lambda:compress_hidden(*device,**{option:1}))
                 rejected(lambda:compress_hidden(device[0],host[1],*device[2:]))
                 # Finite projected/pool values whose squared variance overflows.

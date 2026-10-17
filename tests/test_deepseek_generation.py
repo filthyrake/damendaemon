@@ -7,9 +7,9 @@ from unittest.mock import patch
 import torch
 from tokenizers import Tokenizer,models,decoders,pre_tokenizers,AddedToken
 
-from dllm.deepseek_generation import BYTE_VALUES,TokenStream,ReferenceGenerator
-from dllm.deepseek_text import DeepSeekText,BOS,EOS,USER,ASSISTANT,THINK,END_THINK
-from dllm.floating_model import FloatingModel
+from damendaemon.deepseek_generation import BYTE_VALUES,TokenStream,ReferenceGenerator
+from damendaemon.deepseek_text import DeepSeekText,BOS,EOS,USER,ASSISTANT,THINK,END_THINK
+from damendaemon.floating_model import FloatingModel
 
 
 def text_fixture(path):
@@ -54,7 +54,7 @@ class ReferenceGenerationTests(unittest.TestCase):
 
     def test_loaded_packed_model_generation_matches_fresh_prefix_logits(self):
         from tests.test_deepseek_reference_loader import fixture
-        from dllm.deepseek_reference_loader import load_reference_model
+        from damendaemon.deepseek_reference_loader import load_reference_model
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp);fixture(path,vocab_size=self.text.vocab_size)
             model=load_reference_model(path)
@@ -148,7 +148,7 @@ class ReferenceGenerationTests(unittest.TestCase):
         ReferenceGenerator(model,self.text,max_context=128)
 
     def test_tool_token_stream_opt_in_preserves_added_dsml_marker(self):
-        from dllm.deepseek_tools import render_tool_calls
+        from damendaemon.deepseek_tools import render_tool_calls
         self.text.tokenizer.add_special_tokens([AddedToken('｜DSML｜',special=True)])
         self.text.vocab_size=self.text.tokenizer.get_vocab_size()
         calls=[{'type':'function','function':{'name':'f','arguments':'{"x": "🙂"}'}}]
@@ -164,7 +164,7 @@ class ReferenceGenerationTests(unittest.TestCase):
             for token in tokens:stream.feed(token)
 
     def test_reference_tools_finish_reason_cleanup_and_undeclared_rejection(self):
-        from dllm.deepseek_tools import render_tool_calls
+        from damendaemon.deepseek_tools import render_tool_calls
         tools=[{'type':'function','function':{'name':'f','parameters':{'type':'object'}}}]
         calls=[{'type':'function','function':{'name':'f','arguments':'{"x": "🙂"}'}}]
         completion='\n\n'+render_tool_calls(calls)+EOS

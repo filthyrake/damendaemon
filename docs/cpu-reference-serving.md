@@ -1,6 +1,6 @@
 # Modern CPU reference chat HTTP
 
-`dllm.reference_serving.ReferenceRuntime` explicitly owns one prepared
+`damendaemon.reference_serving.ReferenceRuntime` explicitly owns one prepared
 `GlmToolReferenceGenerator`, `FlashToolReferenceGenerator` or DeepSeek
 `ReferenceGenerator`. Use `handler_for_reference` with the existing bounded HTTP
 server to expose it on a caller-chosen loopback listener. This adapter does not
@@ -62,8 +62,8 @@ python -m scripts.serve_cpu_reference glm /path/to/snapshot --alias local-glm --
 ```
 
 Select `glm`, `flash` or `deepseek` explicitly. The command checks the selected
-family, tokenizer/configuration and the existing `DLLM_API_KEY`,
-`DLLM_ADMIN_API_KEY` and `DLLM_CLIENT_KEYS` policy before loading tensor payloads.
+family, tokenizer/configuration and the existing `DAMENDAEMON_API_KEY`,
+`DAMENDAEMON_ADMIN_API_KEY` and `DAMENDAEMON_CLIENT_KEYS` policy before loading tensor payloads.
 It does not download weights. Authentication is optional under the existing
 loopback policy; `/health` remains public. With a key configured, model listing and
 inference require it. No credentials are printed.

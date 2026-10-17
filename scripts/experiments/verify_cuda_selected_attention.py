@@ -14,7 +14,7 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
-    from dllm.cuda_selected_attention import selected_attention
+    from damendaemon.cuda_selected_attention import selected_attention
     from tests.test_selected_attention import SelectedAttentionTests,scalar_attention
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')
     torch.set_num_threads(1);torch.backends.cuda.matmul.allow_tf32=False
@@ -39,7 +39,7 @@ def main():
         assert selected_attention(q[:,:0],kv,ids[:,:0],sink).shape==(2,0,3,4)
         rejected(lambda:selected_attention(q,poison,ids,sink))
         # Invalid positive IDs must never reach CUDA's gather (which can poison a context).
-        with patch('dllm.cuda_selected_attention._selected_attention',side_effect=AssertionError('gather entered')):
+        with patch('damendaemon.cuda_selected_attention._selected_attention',side_effect=AssertionError('gather entered')):
             rejected(lambda:selected_attention(q,kv,torch.full_like(ids,kv.shape[1]),sink))
             for option in ('max_workspace_bytes','max_output_bytes'):
                 rejected(lambda:selected_attention(*device,**{option:1}))

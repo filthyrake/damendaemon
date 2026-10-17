@@ -38,7 +38,7 @@ class DeepSeekPipelineCommandTests(unittest.TestCase):
 
     def test_bad_cuts_context_dtype_and_tools_fail_before_payload(self):
         path=self.snapshot('deepseek');tools=self.path/'bad.json';tools.write_text('[{}]')
-        with patch('dllm.deepseek_reference_loader._payload',side_effect=AssertionError('payload')):
+        with patch('damendaemon.deepseek_reference_loader._payload',side_effect=AssertionError('payload')):
             for options in (['--layer-splits','3'],['--layer-splits','1','1'],['--layer-splits','1','--dtype','float16'],['--layer-splits','1','--context','1'],['--layer-splits','1','--tools',str(tools)],['--output-mib','1']):
                 with self.subTest(options=options),contextlib.redirect_stderr(io.StringIO()),self.assertRaises(SystemExit):
                     generate.main([str(path),'--prompt','Hi','--max-new-tokens','1',*options])
@@ -50,7 +50,7 @@ class DeepSeekPipelineCommandTests(unittest.TestCase):
         path=self.snapshot('deepseek');results=[]
         for cuts in ([],['--layer-splits','1','2']):
             key=secrets.token_urlsafe(32);admin=secrets.token_urlsafe(32)
-            process=subprocess.Popen([sys.executable,'-m','scripts.serve_cpu_reference','deepseek',str(path),'--context','128','--port','0','--queue-size','3',*cuts],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,env=self.env|{'DLLM_API_KEY':key,'DLLM_ADMIN_API_KEY':admin})
+            process=subprocess.Popen([sys.executable,'-m','scripts.serve_cpu_reference','deepseek',str(path),'--context','128','--port','0','--queue-size','3',*cuts],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,env=self.env|{'DAMENDAEMON_API_KEY':key,'DAMENDAEMON_ADMIN_API_KEY':admin})
             try:
                 ready=self.event(process);base=ready['url'];headers={'Authorization':'Bearer '+key,'Content-Type':'application/json'};admin_headers=headers|{'Authorization':'Bearer '+admin}
                 with self.assertRaises(HTTPError) as denied:urlopen(base+'/v1/models/status',timeout=3)
@@ -76,7 +76,7 @@ class DeepSeekPipelineCommandTests(unittest.TestCase):
         self.assertEqual(*results)
 
     def test_partial_prefill_cleanup_remains_visible_until_retry(self):
-        from dllm.deepseek_layer_stage import DeepSeekStageState
+        from damendaemon.deepseek_layer_stage import DeepSeekStageState
         path=self.snapshot('deepseek')
         with patch.dict(os.environ,self.env,clear=True):runtime,_=serve.prepare(self.args('deepseek',path,'--layer-splits','1'))
         self.addCleanup(runtime.close);model=runtime.runner.model

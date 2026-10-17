@@ -3,7 +3,7 @@ import json
 import statistics
 import time
 import torch
-from dllm.quantized_metal import library, _WIDE_SOURCE
+from damendaemon.quantized_metal import library, _WIDE_SOURCE
 
 
 @torch.inference_mode()

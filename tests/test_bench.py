@@ -9,7 +9,7 @@ import time
 from unittest.mock import patch
 from concurrent.futures import ThreadPoolExecutor
 
-from dllm.bench import Result, events, request_one, summarize, llama_context, fixed_arrivals, distribution, evaluate_profile, profile_summary
+from damendaemon.bench import Result, events, request_one, summarize, llama_context, fixed_arrivals, distribution, evaluate_profile, profile_summary
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -80,7 +80,7 @@ class Handler(BaseHTTPRequestHandler):
         if model.startswith('queue-'):
             values = {'queue-known': .125, 'queue-negative': -1, 'queue-nan': float('nan'),
                       'queue-inf': float('inf'), 'queue-bool': True, 'queue-huge': 10**400, 'queue-large': sys.float_info.max}
-            chunks.append({'choices': [], 'dllm_timing': {'queue_seconds': values[model]}})
+            chunks.append({'choices': [], 'damendaemon_timing': {'queue_seconds': values[model]}})
         try:
             for chunk in chunks:
                 self.wfile.write(f"data: {json.dumps(chunk)}\n\n".encode())
@@ -121,7 +121,7 @@ class BenchTests(unittest.TestCase):
         for raw in (b'{"default_generation_settings":{"n_ctx":512,"n_ctx":1024}}',
                     b'{"default_generation_settings":{"n_ctx":512},"default_generation_settings":{"n_ctx":1024}}'):
             response=io.BytesIO(raw)
-            with self.subTest(raw=raw),patch('dllm.bench.urlopen',return_value=response):
+            with self.subTest(raw=raw),patch('damendaemon.bench.urlopen',return_value=response):
                 with self.assertRaisesRegex(ValueError,'duplicate'):llama_context('http://local',1024)
             self.assertTrue(response.closed)
 
@@ -135,7 +135,7 @@ class BenchTests(unittest.TestCase):
                   'data: [DONE]\n\n').encode()
             response=io.BytesIO(wire)
             response.headers=SimpleNamespace(get_content_type=lambda:'text/event-stream')
-            with self.subTest(raw=raw),patch('dllm.bench.urlopen',return_value=response):
+            with self.subTest(raw=raw),patch('damendaemon.bench.urlopen',return_value=response):
                 result=request_one('http://local','model','hello',8,5,0)
                 self.assertEqual(result.error,'ValueError')
             self.assertTrue(response.closed)
@@ -144,12 +144,12 @@ class BenchTests(unittest.TestCase):
         from types import SimpleNamespace
         raw=b'['*10000+b'0'+b']'*10000
         response=io.BytesIO(raw)
-        with patch('dllm.bench.urlopen',return_value=response):
+        with patch('damendaemon.bench.urlopen',return_value=response):
             with self.assertRaisesRegex(ValueError,'nesting'):llama_context('http://local',1024)
         self.assertTrue(response.closed)
         response=io.BytesIO(b'data: '+raw+b'\n\n')
         response.headers=SimpleNamespace(get_content_type=lambda:'text/event-stream')
-        with patch('dllm.bench.urlopen',return_value=response):
+        with patch('damendaemon.bench.urlopen',return_value=response):
             self.assertEqual(request_one('http://local','model','hello',8,5,0).error,'ValueError')
         self.assertTrue(response.closed)
 
@@ -164,7 +164,7 @@ class BenchTests(unittest.TestCase):
                                   (1024 * 1024 + 1 - len(prefix), False)):
             response = TrackedResponse(prefix + b' ' * padding)
             response.sizes = []
-            with patch('dllm.bench.urlopen', return_value=response):
+            with patch('damendaemon.bench.urlopen', return_value=response):
                 if accepted:
                     self.assertEqual(llama_context('http://local', 1024)['actual_context'], 1024)
                 else:
@@ -179,13 +179,13 @@ class BenchTests(unittest.TestCase):
                       {'default_generation_settings': None}):
             with self.subTest(props=props):
                 response = io.BytesIO(json.dumps(props).encode())
-                with patch('dllm.bench.urlopen', return_value=response):
+                with patch('damendaemon.bench.urlopen', return_value=response):
                     with self.assertRaises(ValueError):
                         llama_context('http://local', 1024)
                 self.assertTrue(response.closed)
         response = io.BytesIO(b'private error details')
         error = HTTPError('http://local/props', 503, 'unavailable', {}, response)
-        with patch('dllm.bench.urlopen', side_effect=error):
+        with patch('damendaemon.bench.urlopen', side_effect=error):
             with self.assertRaises(HTTPError):
                 llama_context('http://local', 1024)
         self.assertTrue(response.closed)
@@ -305,14 +305,14 @@ class BenchTests(unittest.TestCase):
         profile = dict(max_first_output_seconds=5, max_output_event_gap_seconds=5,
                        min_request_output_tokens_per_second=.001)
         for field, values in (('error', ({}, [], False, 0, '')),
-                              ('dllm_timing', ([], False, 0, ''))):
+                              ('damendaemon_timing', ([], False, 0, ''))):
             for value in values:
                 with self.subTest(field=field,value=value):
                     result = self.request('envelope:' + field + ':' + json.dumps(value))
                     self.assertEqual(result.error, 'ValueError')
                     self.assertEqual(summarize([result],1)['succeeded'],0)
                     self.assertEqual(profile_summary([result],1,profile)['qualifying_output_tokens'],0)
-        for field,value in (('error',None),('dllm_timing',None),('dllm_timing',{})):
+        for field,value in (('error',None),('damendaemon_timing',None),('damendaemon_timing',{})):
             with self.subTest(field=field,value=value):
                 result = self.request('envelope:' + field + ':' + json.dumps(value))
                 self.assertIsNone(result.error)
@@ -448,7 +448,7 @@ class BenchTests(unittest.TestCase):
 
     def test_cli_sequential_switches_and_json(self):
         process = subprocess.run([
-            sys.executable, "-S", "-m", "dllm", "bench", "--base-url", self.url,
+            sys.executable, "-S", "-m", "damendaemon", "bench", "--base-url", self.url,
             "--models", "a", "b", "a", "--requests", "3", "--concurrency", "1",
         ], capture_output=True, text=True, timeout=10)
         self.assertEqual(process.returncode, 0, process.stderr)
@@ -498,7 +498,7 @@ class BenchTests(unittest.TestCase):
         self.assertIsNone(summarize([Result(0, 'a', 1, .1, 7)], 1)['output_event_gaps_seconds'])
 
     def test_output_sample_memory_is_bounded(self):
-        with patch('dllm.bench.MAX_OUTPUT_EVENTS', 1):
+        with patch('damendaemon.bench.MAX_OUTPUT_EVENTS', 1):
             result = self.request('normal')
         self.assertEqual(result.error, 'ValueError')
         self.assertEqual(result.output_events, 1)
@@ -506,7 +506,7 @@ class BenchTests(unittest.TestCase):
 
     def test_fixed_arrival_cli_reports_mode_and_usage(self):
         process = subprocess.run([
-            sys.executable, '-S', '-m', 'dllm', 'bench', '--base-url', self.url,
+            sys.executable, '-S', '-m', 'damendaemon', 'bench', '--base-url', self.url,
             '--models', 'a', '--requests', '3', '--concurrency', '2', '--arrival-rate', '10',
         ], capture_output=True, text=True, timeout=10)
         self.assertEqual(process.returncode, 0, process.stderr)
@@ -518,7 +518,7 @@ class BenchTests(unittest.TestCase):
         self.assertEqual(report['summary']['requests_with_output_gaps'], 3)
         self.assertTrue(all(r['dispatch_delay_seconds'] is not None for r in report['results']))
         for invalid in ('0', '-1', 'nan', 'inf'):
-            process = subprocess.run([sys.executable, '-S', '-m', 'dllm', 'bench',
+            process = subprocess.run([sys.executable, '-S', '-m', 'damendaemon', 'bench',
                 '--models', 'a', '--arrival-rate', invalid], capture_output=True, timeout=5)
             self.assertEqual(process.returncode, 2)
 
@@ -583,7 +583,7 @@ class BenchTests(unittest.TestCase):
         self.assertEqual(evaluate_profile(row, profile)['status'], 'unmeasurable')
 
     def test_cli_profile_validation_and_failure_reporting(self):
-        base = [sys.executable, '-S', '-m', 'dllm', 'bench', '--base-url', self.url,
+        base = [sys.executable, '-S', '-m', 'damendaemon', 'bench', '--base-url', self.url,
                 '--models', 'normal', '--requests', '1']
         for options in (['--slo-first-output', '1'], ['--slo-output-gap', 'nan'],
                         ['--slo-request-rate', '0']):
@@ -612,7 +612,7 @@ class BenchTests(unittest.TestCase):
 
     def test_cli_failure_exit_and_report(self):
         process = subprocess.run([
-            sys.executable, "-S", "-m", "dllm", "bench", "--base-url", self.url,
+            sys.executable, "-S", "-m", "damendaemon", "bench", "--base-url", self.url,
             "--models", "http-error", "--requests", "1",
         ], capture_output=True, text=True, timeout=10)
         self.assertEqual(process.returncode, 1, process.stderr)

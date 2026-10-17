@@ -3,8 +3,8 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.floating_block import FloatingBlock
-from dllm.floating_model import FloatingModel
+from damendaemon.floating_block import FloatingBlock
+from damendaemon.floating_model import FloatingModel
 from tests.test_floating_block import fixture as block_fixture
 from tests.test_packed_moe import expert
 
@@ -38,7 +38,7 @@ class PackedModelTests(unittest.TestCase):
         self.assertTrue(all(b.banks is None and b.shared is None for b in packed.blocks))
         self.assertTrue(all(not any(n.startswith('ffn.experts.') for n in b.weights) for b in packed.blocks))
         expected,_ = control.prefill(ids[:,:3])
-        with patch('dllm.floating_block.floating_moe',side_effect=AssertionError('floating expert fallback')):
+        with patch('damendaemon.floating_block.floating_moe',side_effect=AssertionError('floating expert fallback')):
             actual,state = packed.prefill(ids[:,:3],max_tokens=7)
         torch.testing.assert_close(actual,expected,rtol=3e-5,atol=3e-6)
         for position in range(3,7):
@@ -54,7 +54,7 @@ class PackedModelTests(unittest.TestCase):
         actual = packed.decode(torch.tensor([[0],[3]]),state,position=3)
         expected,_ = control.prefill(torch.cat((ids[:,:3].expand(2,-1),torch.tensor([[0],[3]])),1))
         torch.testing.assert_close(actual,expected,rtol=3e-5,atol=3e-6)
-        with patch('dllm.floating_block.packed_moe',side_effect=RuntimeError('packed failure')):
+        with patch('damendaemon.floating_block.packed_moe',side_effect=RuntimeError('packed failure')):
             with self.assertRaisesRegex(RuntimeError,'packed failure'):
                 packed.decode(torch.tensor([[1],[1]]),state,position=4)
         self.assertTrue(state.poisoned)

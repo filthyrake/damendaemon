@@ -11,7 +11,7 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
-    from dllm.cuda_glm_flash_vision import CudaFlashVision
+    from damendaemon.cuda_glm_flash_vision import CudaFlashVision
     from tests.test_glm_flash_vision import fixture,control
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')
     torch.set_num_threads(1);torch.backends.cuda.matmul.allow_tf32=False;torch.backends.cudnn.allow_tf32=False
@@ -39,7 +39,7 @@ def main():
             report['cases'].append(dict(grids=grids,max_absolute=float((actual-expected).abs().max())))
         for option in ('max_workspace_bytes','max_output_bytes','max_tokens'):
             bounded=CudaFlashVision(config,device_weights,**{option:1})
-            with patch('dllm.glm_flash_vision.F.linear',side_effect=AssertionError('projection before admission')):
+            with patch('damendaemon.glm_flash_vision.F.linear',side_effect=AssertionError('projection before admission')):
                 rejected(lambda:bounded.forward(gpu,grids))
         invalid=gpu.clone();invalid[0,0]=float('nan');rejected(lambda:encoder.forward(invalid,grids))
         saved=device_weights['patch_embed.proj.weight'].clone()

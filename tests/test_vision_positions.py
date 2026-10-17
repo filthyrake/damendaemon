@@ -1,7 +1,7 @@
 import unittest
 
 import torch
-from dllm.vision_positions import image_positions, rotary_tables
+from damendaemon.vision_positions import image_positions, rotary_tables
 
 
 class VisionPositionTests(unittest.TestCase):

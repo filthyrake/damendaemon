@@ -1,7 +1,7 @@
 """Print a deterministic bounded identity for a contained local CPU snapshot."""
 import argparse
 import json
-from dllm.cpu_snapshot_identity import fingerprint
+from damendaemon.cpu_snapshot_identity import fingerprint
 
 
 def main(argv=None):

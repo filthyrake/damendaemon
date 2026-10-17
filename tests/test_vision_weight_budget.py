@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from safetensors.torch import save_file
 import torch
-from dllm.qwen2 import weight_bytes
+from damendaemon.qwen2 import weight_bytes
 
 
 class VisionBudgetTests(unittest.TestCase):
@@ -25,12 +25,12 @@ class VisionBudgetTests(unittest.TestCase):
                 'mtp.unused.weight':torch.zeros(32,32),
             },str(path/'model.safetensors'))
             config={'model_type':'qwen3_5_text','tie_word_embeddings':True,'hidden_size':1024,'num_hidden_layers':24}
-            with patch('dllm.qwen2.decoder_config',return_value=config):
-                with patch.dict(os.environ,{'DLLM_EXPERIMENTAL_VISION':'0'}):
+            with patch('damendaemon.qwen2.decoder_config',return_value=config):
+                with patch.dict(os.environ,{'DAMENDAEMON_EXPERIMENTAL_VISION':'0'}):
                     self.assertEqual(weight_bytes(path,quantization='none'),6272)
                     self.assertEqual(weight_bytes(path,quantization='q8_0'),7488)
                 # 24,576 bytes patch projections, 64 positions, 32 normalization.
-                with patch.dict(os.environ,{'DLLM_EXPERIMENTAL_VISION':'1'}):
+                with patch.dict(os.environ,{'DAMENDAEMON_EXPERIMENTAL_VISION':'1'}):
                     self.assertEqual(weight_bytes(path,quantization='none'),6272+24672)
                     self.assertEqual(weight_bytes(path,quantization='q8_0'),7488+24672)
 

@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.expert_selection import select_experts, select_token_experts, validate_token_expert_table
+from damendaemon.expert_selection import select_experts, select_token_experts, validate_token_expert_table
 
 
 def oracle(row, top_k, scoring, normalize, groups, keep, bias, scale):

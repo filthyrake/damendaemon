@@ -14,14 +14,14 @@ from safetensors import safe_open
 from transformers import AutoConfig, AutoModelForCausalLM
 from transformers.modeling_utils import no_init_weights
 
-from dllm.awq_model import AwqWeights
-from dllm.qwen2 import weight_files
-from dllm.runtime import make_executor, require_gpu
+from damendaemon.awq_model import AwqWeights
+from damendaemon.qwen2 import weight_files
+from damendaemon.runtime import make_executor, require_gpu
 
 
 def install_rounded_attention_diagnostic():
     """Isolate eager FP16 attention rounding; never installed by the runtime."""
-    from dllm.qwen2 import Executor
+    from damendaemon.qwen2 import Executor
 
     def attention(self, query, key, value, positions):
         repeats = query.shape[1] // key.shape[1]
@@ -95,7 +95,7 @@ def main():
     if args.diagnostic_rounded_attention:
         install_rounded_attention_diagnostic()
     if args.diagnostic_expanded_products:
-        from dllm import awq_kernels
+        from damendaemon import awq_kernels
         awq_kernels.linear = lambda x, matrix, bias=None: torch.nn.functional.linear(
             x, awq_kernels.expand(matrix), bias)
     torch.set_num_threads(4)
@@ -107,14 +107,14 @@ def main():
             parser.error('FP16 rounding requires Qwen3 AWQ')
         source.awq_fp16_rounding = True
     if args.require_awq_decode:
-        from dllm.awq_decode_policy import use_small_rows
+        from damendaemon.awq_decode_policy import use_small_rows
         matrix = source.awq_matrices['0.qkv.weight']
         if not use_small_rows(1, matrix.inputs, matrix.outputs, torch.device('cuda:0')):
             raise AssertionError('normal AWQ decode policy was not selected')
     if args.diagnostic_separate_products:
         if not args.diagnostic_expanded_products:
             parser.error('separate products requires diagnostic expanded products')
-        from dllm import awq_kernels
+        from damendaemon import awq_kernels
         c = source.config
         q, kv = c['num_attention_heads']*c['head_dim'], c['num_key_value_heads']*c['head_dim']
         def separate_products(x, matrix, bias=None):
@@ -139,8 +139,8 @@ def main():
                   reference_reused_for_graph=args.reuse_reference_for_graph,
                   reference_offload=args.reference_offload, diagnostic_hf_fp16_control=args.diagnostic_hf_fp16_control,
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-                  loader_sha256=hashlib.sha256((Path(__file__).resolve().parents[1]/'dllm/awq_model.py').read_bytes()).hexdigest(),
-                  kernel_sha256=hashlib.sha256((Path(__file__).resolve().parents[1]/'dllm/awq_kernels.py').read_bytes()).hexdigest())
+                  loader_sha256=hashlib.sha256((Path(__file__).resolve().parents[1]/'damendaemon/awq_model.py').read_bytes()).hexdigest(),
+                  kernel_sha256=hashlib.sha256((Path(__file__).resolve().parents[1]/'damendaemon/awq_kernels.py').read_bytes()).hexdigest())
     shards = weight_files(path)
     report['checkpoint_sha256'] = {}
     for shard in shards:
@@ -155,10 +155,10 @@ def main():
         if upstream.count(dependency) != 1:
             raise ValueError('unexpected upstream validation source')
         report['upstream_source_sha256'] = hashlib.sha256(upstream.encode()).hexdigest()
-        with tempfile.TemporaryDirectory(prefix='dllm-awq-reference-') as temporary:
+        with tempfile.TemporaryDirectory(prefix='damendaemon-awq-reference-') as temporary:
             reference_path = Path(temporary)/'awq_reference.py'
             reference_path.write_text(upstream.replace(dependency, 'import triton\nimport triton.language as tl'))
-            spec = importlib.util.spec_from_file_location('dllm_awq_model_reference', reference_path)
+            spec = importlib.util.spec_from_file_location('damendaemon_awq_model_reference', reference_path)
             module = importlib.util.module_from_spec(spec)
             sys.modules[spec.name] = module
             spec.loader.exec_module(module)

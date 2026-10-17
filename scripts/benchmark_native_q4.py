@@ -7,16 +7,16 @@ import ctypes
 import json
 import torch
 import triton.testing
-from dllm.runtime import require_gpu
-from dllm.quantization import quantize_q4,dequantize_q4
-from dllm.quantized_kernels_q4 import linear
+from damendaemon.runtime import require_gpu
+from damendaemon.quantization import quantize_q4,dequantize_q4
+from damendaemon.quantized_kernels_q4 import linear
 
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('library');p.add_argument('--output',default='q4-native-tuning.json');args=p.parse_args()
     require_gpu();torch.set_num_threads(4);torch.manual_seed(97)
     lib=ctypes.CDLL(args.library)
-    fn=lib.dllm_q4_gemv
+    fn=lib.damendaemon_q4_gemv
     fn.argtypes=[ctypes.c_void_p]*5+[ctypes.c_int]*3+[ctypes.c_void_p]
     fn.restype=ctypes.c_int
     records=[]

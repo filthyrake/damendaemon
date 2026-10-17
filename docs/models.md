@@ -81,7 +81,7 @@ LongRoPE remain unsupported.
 The independent GPT-NeoX decoder supports partial rotary embeddings and parallel
 residual blocks. Pinned Pythia-160M is qualified on A2 and Apple M4 through 2048 context
 and the raw completions API. It uses FP32
-storage/arithmetic/KV. Use `dllm run PATH --raw --prompt 'Once upon a time'` or
+storage/arithmetic/KV. Use `damendaemon run PATH --raw --prompt 'Once upon a time'` or
 `/v1/completions`; the base checkpoint has no chat template. Quantization,
 chunked prefill and prefix reuse are not yet supported for this architecture.
 
@@ -120,7 +120,7 @@ encoder and decoder context lengths, native GPU projections, and CUDA graph
 replay. Use raw completions and `--context 512`, for example:
 
 ```sh
-dllm run google/flan-t5-small --raw --context 512 --max-tokens 32 \
+damendaemon run google/flan-t5-small --raw --context 512 --max-tokens 32 \
   --prompt 'translate English to German: How old are you?'
 ```
 
@@ -134,7 +134,7 @@ the corresponding model-config values. Omitted fields retain the model defaults;
 explicit null or invalid IDs are rejected. EOS lists replace the default stop
 set. This does not import saved sampling or beam-search policies.
 
-For repeated T5 prompt lengths on CUDA, `DLLM_T5_PREFILL_GRAPHS=1..8` enables
+For repeated T5 prompt lengths on CUDA, `DAMENDAEMON_T5_PREFILL_GRAPHS=1..8` enables
 bounded prompt graph caching. It recomputes each prompt with its current tokens.
 Warm latency improves, but a new shape incurs capture overhead; default 0 keeps
 it off. `--no-graph` also disables prompt graphs. See the T5 evidence for cold
@@ -215,7 +215,7 @@ partitioning halves the work. Original document indices and usage are preserved;
 
 ## Shared MoE routing foundations
 
-The shared `dllm.expert_selection.select_experts` primitive also provides
+The shared `damendaemon.expert_selection.select_experts` primitive also provides
 grouped softmax/sigmoid and square-root-softplus routing foundations for future
 modern MoE integration.
 It ranks contiguous groups by maximum score, or by the sum of the two highest
@@ -232,7 +232,7 @@ GLM/DeepSeek model loader, shared-expert executor, kernel or GPU qualification.
 Reference semantics were checked against the read-only vLLM checkout at
 `84bcbc62644356270aaaa5e2d0237d03adc9bb3a`, file
 `vllm/model_executor/layers/fused_moe/router/grouped_topk_router.py`
-(Apache-2.0); dllm does not import that runtime.
+(Apache-2.0); damendaemon does not import that runtime.
 
 The pinned [DeepSeek V4 Flash configuration](https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash/raw/60d8d70770c6776ff598c94bb586a859a38244f1/config.json)
 uses square-root-softplus scores, 256 routed experts, top-6, scale 1.5 and three
@@ -246,7 +246,7 @@ routing components; compression, hyper-connections, FP4 experts, FP8 scales,
 full-model integration and serving are still separate work. Defensive
 zero-underflow handling is not a claim of equivalence to the reference's NaN cell.
 
-`dllm.expert_ffn.expert_feed_forward` adds a floating shared/routed expert block.
+`damendaemon.expert_ffn.expert_feed_forward` adds a floating shared/routed expert block.
 It accepts already resident, consistently typed FP16/BF16/FP32 projection weights;
 it never promotes entire weight matrices implicitly. Gate/up projections feed
 FP32 SiLU activation math. Optional clamping is upper-only on the gate and
@@ -259,7 +259,7 @@ block, not routed expert placement, packed FP4/FP8 execution or full-model servi
 
 ### DeepSeek V4 residual-stream components
 
-`dllm.hyper_connections` independently implements the pinned MIT reference's
+`damendaemon.hyper_connections` independently implements the pinned MIT reference's
 learned reduction of residual streams, post-layer recombination, and final head
 reduction. Mixing and accumulation use FP32 while residual/output storage retains
 FP16, BF16 or FP32. The mixing matrix is indexed by source and destination; batched
@@ -272,7 +272,7 @@ operations do not extract tensor values to the host. Inputs and learned paramete
 must be finite. These primitives do not admit DeepSeek to serving or qualify its
 attention compression, packed weights, long context or GPU behavior.
 
-`dllm.packed_tiles.decode_tile` provides CPU diagnostics for raw checkpoint bytes:
+`damendaemon.packed_tiles.decode_tile` provides CPU diagnostics for raw checkpoint bytes:
 E2M1 expert pairs use row/32-column E8M0 scales; E4M3FN uses 128x128-block E8M0
 scales. Callers specify a nonempty logical row/column range, with a hard limit of
 65,536 decoded elements. Only that tile expands to FP32; inputs can be strided
@@ -283,7 +283,7 @@ follow [OCP MX v1.0](https://www.opencompute.org/documents/ocp-microscaling-form
 scale geometry follows the pinned DeepSeek reference above. This does not replace
 packed GPU projections or establish checkpoint numerical qualification.
 
-`dllm.selected_attention.selected_attention` computes the shared-key/value,
+`damendaemon.selected_attention.selected_attention` computes the shared-key/value,
 per-query selection and learned sink equations using FP32 accumulation. Query
 and selected-key chunks bound temporary gathers and scores; the full KV cache is
 never cast to FP32. The sink contributes only to the denominator. Negative IDs
@@ -294,7 +294,7 @@ component preserves query storage dtype but does not reproduce the reference
 accelerator's intermediate probability rounding. Cache compression, selection
 construction, model integration and GPU qualification remain separate gates.
 
-`dllm.cache_indices` builds causal selections for full-prefill storage and
+`damendaemon.cache_indices` builds causal selections for full-prefill storage and
 single-token ring-cache decode. Logical token positions remain distinct from
 physical ring slots. Compressed blocks become visible only when their complete
 input block is available. Prefill query slicing preserves the full sequence's
@@ -305,7 +305,7 @@ context. CPU integration tests compare ring attention against full-prefill
 attention while uninitialized cache entries contain NaNs. The caller still owns
 cache writes, compression and position commit/recovery.
 
-`dllm.floating_moe.floating_moe` composes selected floating expert banks and an
+`damendaemon.floating_moe.floating_moe` composes selected floating expert banks and an
 optional independent shared expert. Route chunks bound projection gathers and
 activation intermediates under an explicit workspace budget; resident weights,
 output tensors and backend matmul scratch are separate. Weights retain their
@@ -315,7 +315,7 @@ the shared contribution stays unscaled. CPU fixtures cover token-table routing,
 reordering, empty input, low-precision composition and chunk budgets. This is not
 packed execution, distributed expert placement or full-model qualification.
 
-`dllm.compressed_pool.pool_projected` incrementally pools projected FP32 values
+`damendaemon.compressed_pool.pool_projected` incrementally pools projected FP32 values
 and gate scores with learned positional offsets. Ratio four combines the previous
 block's first channel half with the current block's second half; other ratios
 use disjoint blocks. Partial blocks survive arbitrary chunking. The function
@@ -325,7 +325,7 @@ state after downstream cache writes succeed. Scalar tests cover overlap math,
 chunk invariance, reordered/shrinking slots and injected failure. Projection
 loading, normalization, RoPE, QAT and model integration remain separate gates.
 
-`dllm.compressed_indexer.select_compressed` scores compressed blocks with
+`damendaemon.compressed_indexer.select_compressed` scores compressed blocks with
 weighted ReLU query/key products and selects causal top-k IDs. Query and key
 chunks bound score tensors; deterministic equal-score ties choose lower block
 IDs. Negative learned head weights remain valid. Completion masks prevent future
@@ -334,7 +334,7 @@ entries. CPU scalar tests cover scores, IDs, block boundaries, chunk invariance,
 reordered inputs and empty caches. FP32 scoring is a component reference;
 projection/Hadamard/QAT integration and accelerator rounding remain unqualified.
 
-`dllm.floating_compressor.compress_hidden` connects explicit FP32 projection
+`damendaemon.floating_compressor.compress_hidden` connects explicit FP32 projection
 weights to pooling, storage-dtype rounding, learned RMS normalization and
 adjacent-pair RoPE at completed blocks' start positions. The DeepSeek frequency
 schedule is independent of other architectures' YaRN magnitude scaling. Scalar
@@ -348,7 +348,7 @@ E2M1 simulation. Scalar rounding and transform-matrix controls cover these modes
 including signed zero, tie-to-even rounding and chunks that complete no block.
 Accelerator rounding and real-checkpoint cache behavior remain unqualified.
 
-`dllm.deepseek_checkpoint` describes main-model checkpoint tensor names, physical
+`damendaemon.deepseek_checkpoint` describes main-model checkpoint tensor names, physical
 packed shapes and expected storage families without materializing values. The
 pinned official tensor index matches all 67,612 generated main-model names;
 1,575 MTP entries are explicitly reported as excluded and unqualified. A checked-in
@@ -366,7 +366,7 @@ It checks config plus shard headers without reading tensor values. Add
 available; this mode does not open or require shards and reports the narrower
 scope. Neither mode admits the architecture to serving.
 
-`dllm.floating_indexer.index_hidden` connects floating low-rank query projection,
+`damendaemon.floating_indexer.index_hidden` connects floating low-rank query projection,
 rotary suffix positioning, Hadamard/FP4 simulation and bounded causal selection
 against prepared indexer caches. Head-weight scaling occurs in the projection's
 storage dtype before FP32 scoring; the selector explicitly avoids applying that
@@ -375,7 +375,7 @@ Projection rows obey the query chunk limit, and reordered/empty input and cache
 fixtures pass. Packed FP8 projection arithmetic and full-model/GPU behavior remain
 unqualified.
 
-`dllm.floating_attention.attention_prefill` composes complete floating attention
+`damendaemon.floating_attention.attention_prefill` composes complete floating attention
 prefill for ordinary windows, ratio-four indexed compression and ratio-128
 compression. It connects prepared projections, normalization, cache transforms,
 causal selection, sink attention, inverse RoPE and grouped output projections.
@@ -397,7 +397,7 @@ Prepared weights/frequencies must stay immutable for the cache lifetime. Packed
 projection arithmetic, full-model scheduling, GPU synchronization/lifecycle and
 performance qualification remain separate; this path is not serving admission.
 
-`dllm.floating_block.FloatingBlock` prepares immutable floating parameters and
+`damendaemon.floating_block.FloatingBlock` prepares immutable floating parameters and
 composes hyper-connections around attention and shared/routed MoE. Hash tables
 are validated once during preparation; token lookups occur before cache mutation.
 Prefill/decode tests cover both hash and corrected-score routing, low-precision
@@ -407,7 +407,7 @@ block cache; failed prefill closes its newly created attention state. Parameter
 banks are already resident floating tensors, not a packed-checkpoint loader.
 Full model/serving and GPU qualification remain open.
 
-`dllm.floating_model.FloatingModel` connects prepared blocks to token embeddings
+`damendaemon.floating_model.FloatingModel` connects prepared blocks to token embeddings
 and the final hyper-connection reduction, learned RMS normalization and FP32
 vocabulary head. Prefill returns last-token logits and an owned model cache;
 single-token decode requires an explicit expected position. Aggregate cache
@@ -419,7 +419,7 @@ prefill, and exercise budget, owner, ordering and failure boundaries. This is a
 prepared-floating reference stack: packed checkpoint loading, real-model logit
 equivalence, serving admission and GPU qualification remain open.
 
-`dllm.packed_projection.packed_linear` supplies a CPU FP32 projection control
+`damendaemon.packed_projection.packed_linear` supplies a CPU FP32 projection control
 for raw E2M1/E4M3FN weights with E8M0 scales. It expands only one bounded weight
 tile at a time and chunks input tokens within a declared conservative tensor
 scratch allowance. Resident inputs, the final output, allocator overhead and
@@ -428,7 +428,7 @@ decoded scalar weights across scale boundaries, strided and low-precision
 inputs, and verify tile release between expansions. It is not a fused GPU
 kernel and does not reproduce accelerator activation-quantization rounding.
 
-`dllm.packed_moe.PackedExpert` prepares gate/up/down packed matrices with an
+`damendaemon.packed_moe.PackedExpert` prepares gate/up/down packed matrices with an
 explicit per-expert scratch allowance. `packed_moe` composes selected experts
 and an optional unweighted shared expert, preserving coefficient-before-cast
 ordering and additive duplicate routes. This CPU control reads route IDs on the
@@ -445,7 +445,7 @@ Two-layer model fixtures with both routing modes compare prefill and cached
 decode against independently decoded floating expert controls, exercise slot
 fanout and poison the complete cache after a packed expert failure.
 
-`dllm.prepared_projection.PackedProjection` also connects packed CPU weight
+`damendaemon.prepared_projection.PackedProjection` also connects packed CPU weight
 storage to attention query/KV/output and indexer projections. Grouped output
 row views retain original matrix coordinates so E8M0 scale blocks stay aligned.
 Compressors, norms, routing gates, embeddings and the vocabulary head remain
@@ -456,7 +456,7 @@ Scratch allowances exclude projection output buffers and backend scratch;
 accelerator activation quantization and accumulation are not emulated.
 Whole-model checkpoint loading, GPU qualification and serving admission remain open.
 
-`dllm.packed_checkpoint.read_packed_matrix` reads one packed matrix and its
+`damendaemon.packed_checkpoint.read_packed_matrix` reads one packed matrix and its
 E8M0 scales from the same or separate local safetensors shards. It validates
 bounded headers, exact payload coverage, storage/scale geometry and the combined
 raw byte budget before reading either selected payload. Returned tensors own
@@ -472,7 +472,7 @@ shard. The fallback reads metadata only and preserves cross-shard duplicate,
 index and payload-range validation. A complete synthetic DeepSeek snapshot
 passes the header audit; official checkpoint contents remain unqualified.
 
-`dllm.deepseek_reference_loader.load_reference_model` assembles a local validated
+`damendaemon.deepseek_reference_loader.load_reference_model` assembles a local validated
 main-model snapshot into that CPU reference stack. It admits all retained raw
 or converted parameter bytes plus one largest source tensor before payload reads;
 header metadata, projection workspace/outputs and KV caches have separate limits.
@@ -483,7 +483,7 @@ exact byte-budget boundaries, configuration rejection, changed-file detection an
 descriptor cleanup. This does not register HTTP support, load a tokenizer/chat
 template, or qualify official model logits, speed, long context or GPU execution.
 
-`dllm.deepseek_text.DeepSeekText` supplies bounded local tokenizer loading and
+`damendaemon.deepseek_text.DeepSeekText` supplies bounded local tokenizer loading and
 independent ordinary V4 text-chat encoding. It checks vocabulary/control markers,
 adds BOS exactly once, and preserves the pinned chat/thinking history rules.
 The complete rendered prompt, including inserted control markers, must fit the
@@ -494,14 +494,14 @@ fixture). The ordinary text path explicitly rejects tools, internal task roles,
 multimodal content and maximum-effort prompting pending their own integration.
 It remains separate from HTTP admission and real-model qualification.
 
-`dllm.deepseek_output.DeepSeekOutput` incrementally separates ordinary generated
+`damendaemon.deepseek_output.DeepSeekOutput` incrementally separates ordinary generated
 reasoning and final content. It retains only a possible control-marker suffix,
 handles arbitrary text chunk boundaries, requires EOS for normal completion,
 and reports explicit truncation separately. Malformed controls, trailing data
 and currently unsupported DSML tool output fail and make the parser unusable.
 Previously emitted deltas remain partial output when a later chunk fails.
 
-`dllm.deepseek_generation.ReferenceGenerator` connects the prepared CPU model
+`damendaemon.deepseek_generation.ReferenceGenerator` connects the prepared CPU model
 and text adapter for bounded greedy reference generation. ByteLevel tokens decode
 incrementally, including split UTF-8 sequences and ordinary non-special added
 tokens, before channel parsing. Byte-alphabet mapping and whole-piece literal
@@ -536,7 +536,7 @@ the exact HF-format shards with `scripts/prepare_gpt_oss.py`. Its prepared host
 weights occupy 12.83 GiB; use a suitable host budget, for example:
 
 ```sh
-dllm run models/gpt-oss-20b --context 512 --host-gib 18 \
+damendaemon run models/gpt-oss-20b --context 512 --host-gib 18 \
   --reasoning-effort low --prompt 'What is 2 + 2? Answer briefly.'
 ```
 
@@ -561,10 +561,10 @@ chat logprobs, 120B and longer contexts remain unqualified; unsupported combinat
 explicitly. Longer prefills use bounded fused attention and IEEE FP32 attention
 projections. These repair the tested routing-sensitive output mismatch; 4K HTTP
 and tool lifecycles pass, but long-context internal-state numerical qualification
-remains open in [issue #41](https://github.com/filthyrake/dllm/issues/41).
+remains open in [issue #41](https://github.com/filthyrake/damendaemon/issues/41).
 See [fused-prefill evidence and scope](evidence/gpt-oss/fused-prefill/README.md). See [architecture evidence](architecture-parity.md#gpt-oss-20b-packed-raw-execution).
 
-`dllm.deepseek_tools` provides a bounded, independent V4 DSML tool-call codec
+`damendaemon.deepseek_tools` provides a bounded, independent V4 DSML tool-call codec
 from the same pinned MIT format specification. `render_tool_calls` accepts
 OpenAI-shaped function calls with JSON object arguments; `parse_tool_calls`
 returns complete calls atomically. It supports Unicode strings and finite JSON
@@ -627,7 +627,7 @@ quality, model execution, context capacity or hardware support. The local header
 tests use synthetic tensors; official full-shard and model qualification remain
 open under #56.
 
-`dllm.glm_indexer.GlmIndexer` is a CPU FP32 primitive for the full-indexer layers:
+`damendaemon.glm_indexer.GlmIndexer` is a CPU FP32 primitive for the full-indexer layers:
 query/key/head projections, key LayerNorm with epsilon 1e-6, and prefix
 interleaved RoPE. `project_keys` returns rotated keys; `select` consumes resident
 keys indexed by absolute token position and returns causal top-k IDs/scores.
@@ -646,7 +646,7 @@ normalization, rotation, selection, chunking and budget rejection. Packed FP8
 execution, complete MLA attention/model arithmetic and GPU performance remain
 unqualified.
 
-`dllm.glm_attention.project_mla` implements CPU FP32 Q/KV low-rank projections,
+`damendaemon.glm_attention.project_mla` implements CPU FP32 Q/KV low-rank projections,
 RMS normalization and tail interleaved query RoPE, returning queries, query
 residuals, normalized KV latents and shared rotary keys. The indexer rotates a
 prefix instead; these layouts are intentionally distinct. `sparse_latent_attention`

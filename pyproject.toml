@@ -3,14 +3,14 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dllm"
+name = "damendaemon"
 version = "0.0.2"
 description = "Independent NVIDIA inference prototype with model residency and CUDA graphs"
 requires-python = ">=3.11"
 dependencies = []
 
 [project.scripts]
-dllm = "dllm.cli:main"
+damendaemon = "damendaemon.cli:main"
 
 [project.optional-dependencies]
 runtime = ["torch==2.6.0; sys_platform != 'darwin'", "torch==2.13.0; sys_platform == 'darwin'", "safetensors==0.5.3", "tokenizers==0.21.1", "huggingface-hub==0.30.2", "jinja2>=3.1.6,<4"]
@@ -21,4 +21,4 @@ hybrid = ["fla-core==0.4.2", "einops==0.8.1"]
 vision = ["Pillow==12.3.0"]
 
 [tool.setuptools.packages.find]
-include = ["dllm*"]
+include = ["damendaemon*"]

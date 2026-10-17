@@ -18,10 +18,10 @@ def main():
     args = parser.parse_args()
     results = []
     for backend in ('auto', 'triton'):
-        with tempfile.TemporaryDirectory(prefix='dllm-no-compiler-') as cache:
-            env = {**os.environ, 'DLLM_KERNELS': backend, 'TRITON_CACHE_DIR': cache,
+        with tempfile.TemporaryDirectory(prefix='damendaemon-no-compiler-') as cache:
+            env = {**os.environ, 'DAMENDAEMON_KERNELS': backend, 'TRITON_CACHE_DIR': cache,
                    'CC': str(Path(cache) / 'missing-compiler')}
-            result = subprocess.run([sys.executable, '-m', 'dllm', 'run', args.path,
+            result = subprocess.run([sys.executable, '-m', 'damendaemon', 'run', args.path,
                 '--prompt', 'What is 2 + 2? Answer with one number.', '--max-tokens', '8',
                 '--context', '128', '--thinking', args.thinking], capture_output=True, text=True, env=env, timeout=120)
             if backend == 'auto':

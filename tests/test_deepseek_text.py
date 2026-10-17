@@ -7,7 +7,7 @@ from unittest.mock import Mock,patch
 
 from tokenizers import Tokenizer, models, AddedToken
 
-from dllm.deepseek_text import DeepSeekText, render_chat, BOS, EOS, USER, ASSISTANT, THINK, END_THINK
+from damendaemon.deepseek_text import DeepSeekText, render_chat, BOS, EOS, USER, ASSISTANT, THINK, END_THINK
 
 
 class DeepSeekTextTests(unittest.TestCase):
@@ -54,10 +54,10 @@ class DeepSeekTextTests(unittest.TestCase):
             text.tokenizer=Mock()
             text.tokenizer.encode.return_value.ids=[1,2]
             with self.subTest(options=options):
-                with patch('dllm.deepseek_text.MAX_TEXT_BYTES',size-1):
+                with patch('damendaemon.deepseek_text.MAX_TEXT_BYTES',size-1):
                     with self.assertRaises(ValueError):text.chat_tokens(messages,**options)
                     text.tokenizer.encode.assert_not_called()
-                with patch('dllm.deepseek_text.MAX_TEXT_BYTES',size):
+                with patch('damendaemon.deepseek_text.MAX_TEXT_BYTES',size):
                     self.assertEqual(render_chat(messages,**options),expected)
                     self.assertEqual(text.chat_tokens(messages,**options),[1,2])
                     text.tokenizer.encode.assert_called_once_with(expected,add_special_tokens=False)

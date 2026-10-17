@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from dllm.qualification_scorecard import evaluate_scorecard,verify_evidence,METRICS
+from damendaemon.qualification_scorecard import evaluate_scorecard,verify_evidence,METRICS
 from scripts.evaluate_qualification_scorecard import main
 
 
@@ -23,7 +23,7 @@ def fixture():
         return dict(identity=dict(identity),engine_revision='e'*40,scope='actual_hardware',workload_passed=True,shapes_warmed=True,
                     decode_timing='engine_token_steps',warmup_rounds=dict.fromkeys(phases,3),measured_rounds=dict.fromkeys(phases,10),
                     metrics=metrics,evidence=deepcopy(refs))
-    cell=dict(id='synthetic-cell',issue='https://github.com/filthyrake/dllm/issues/54',availability='implemented',identity=identity,
+    cell=dict(id='synthetic-cell',issue='https://github.com/filthyrake/damendaemon/issues/54',availability='implemented',identity=identity,
               implementation_commit='f'*40,numerical=gate('independent_reference'),lifecycle=gate('endpoint_lifecycle'),
               measurement=measure(('A1','A2')),comparators=[dict(engine='baseline',availability='measured',exact_text_match=True,measurement=measure(('B1','B2')))])
     return dict(version=1,cells=[cell])

@@ -1,7 +1,7 @@
 import unittest
 
 import torch
-from dllm.awq import Matrix, fuse, group_size, unpack_channels
+from damendaemon.awq import Matrix, fuse, group_size, unpack_channels
 
 
 class AwqFormatTests(unittest.TestCase):

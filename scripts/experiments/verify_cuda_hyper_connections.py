@@ -12,7 +12,7 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
-    from dllm.cuda_hyper_connections import reduce_streams,restore_streams,reduce_head
+    from damendaemon.cuda_hyper_connections import reduce_streams,restore_streams,reduce_head
     from tests.test_hyper_connections import HyperConnectionTests,scalar_weights
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')
     torch.set_num_threads(1);torch.backends.cuda.matmul.allow_tf32=False
@@ -47,7 +47,7 @@ def main():
             control=torch.stack([post.cpu()[:,:,dest,None]*reduced.cpu()+sum(matrix.cpu()[:,:,src,dest,None]*host[0][:,:,src] for src in range(4)) for dest in range(4)],dim=2)
             torch.testing.assert_close(restored.cpu(),control,atol=1e-6,rtol=2e-5)
             for option in ('max_workspace_bytes','max_output_bytes'):
-                with patch('dllm.hyper_connections.finite',side_effect=AssertionError('scanned before budget')):
+                with patch('damendaemon.hyper_connections.finite',side_effect=AssertionError('scanned before budget')):
                     rejected(lambda:reduce_streams(hidden,projection,scale,bias,**{option:1}))
                     rejected(lambda:reduce_head(hidden,projection[:4],scale[:1],bias[:4],**{option:1}))
                     rejected(lambda:restore_streams(reduced,hidden,post,matrix,**{option:1}))

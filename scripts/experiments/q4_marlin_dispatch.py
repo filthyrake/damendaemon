@@ -8,7 +8,7 @@ import hashlib
 from pathlib import Path
 
 import torch
-from dllm import quantization
+from damendaemon import quantization
 from .q4_marlin import Library
 
 

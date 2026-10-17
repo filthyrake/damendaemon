@@ -3,10 +3,10 @@
 Runner implementation: `05bdc5e`. Fixed historical checkpoint SHA, prompt48,
 context64, eight teacher-forced positions including post-EOS. Independent
 `gguf.quants` expansion rounded FP16, HF eager Llama, untied embeddings,
-TF32 disabled. Accelerate 1.10.0 installed only under `/tmp/dllm-224/oracle-deps`;
+TF32 disabled. Accelerate 1.10.0 installed only under `/tmp/damendaemon-224/oracle-deps`;
 `cpu_offload` streams parameters to CUDA and back. All watched linear,
 embedding and decoder layer outputs were CUDA at all eight steps (manifest).
-The full logit payload remains on labnode3 under `/tmp/dllm-224/oracle/`, with
+The full logit payload remains on labnode3 under `/tmp/damendaemon-224/oracle/`, with
 its SHA-256 retained here; no claim of permanent storage for that scratch file.
 
 The oracle completed in 81.518 seconds under the 120-second shared guard,

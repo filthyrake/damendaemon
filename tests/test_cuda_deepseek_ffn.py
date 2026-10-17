@@ -1,6 +1,6 @@
 import unittest
 import torch
-from dllm.cuda_deepseek_ffn import CudaPackedDeepSeekFeedForward
+from damendaemon.cuda_deepseek_ffn import CudaPackedDeepSeekFeedForward
 
 
 class CudaDeepSeekFfnAdmissionTests(unittest.TestCase):
@@ -18,12 +18,12 @@ class CudaDeepSeekFfnAdmissionTests(unittest.TestCase):
         from types import SimpleNamespace
         from unittest.mock import patch
         from torch._subclasses.fake_tensor import FakeTensorMode
-        from dllm.cuda_packed_expert import CudaPackedExpert
+        from damendaemon.cuda_packed_expert import CudaPackedExpert
         expert=object.__new__(CudaPackedExpert)
         expert.device=torch.device('cuda:0');expert.width=8
         expert.workspace_bytes=65536;expert.activation_limit=10.
         expert.gate=expert.up=expert.down=SimpleNamespace(format='e4m3fn')
-        with FakeTensorMode(), patch('dllm.cuda_deepseek_ffn.finite',side_effect=lambda value,*args,**kwargs:value):
+        with FakeTensorMode(), patch('damendaemon.cuda_deepseek_ffn.finite',side_effect=lambda value,*args,**kwargs:value):
             router=torch.empty(3,8,device='cuda')
             for flag in (True,False):
                 ffn=CudaPackedDeepSeekFeedForward([expert]*3,router=router,correction_bias=torch.empty(3,device='cuda'),
@@ -37,12 +37,12 @@ class CudaDeepSeekFfnAdmissionTests(unittest.TestCase):
         from types import SimpleNamespace
         from unittest.mock import patch
         from torch._subclasses.fake_tensor import FakeTensorMode
-        from dllm.cuda_packed_expert import CudaPackedExpert
+        from damendaemon.cuda_packed_expert import CudaPackedExpert
         expert=object.__new__(CudaPackedExpert)
         expert.device=torch.device('cuda:0');expert.width=8
         expert.workspace_bytes=65536;expert.activation_limit=10.
         expert.gate=expert.up=expert.down=SimpleNamespace(format='e4m3fn')
-        with FakeTensorMode(), patch('dllm.cuda_deepseek_ffn.finite',side_effect=lambda value,*args,**kwargs:value):
+        with FakeTensorMode(), patch('damendaemon.cuda_deepseek_ffn.finite',side_effect=lambda value,*args,**kwargs:value):
             router=torch.empty(3,8,device='cuda');bias=torch.empty(3,device='cuda')
             for composition,kwargs in (('per_token',{'batched':False,'fused':False}),
                                        ('batched',{'batched':True,'fused':False}),
@@ -60,12 +60,12 @@ class CudaDeepSeekFfnAdmissionTests(unittest.TestCase):
         from types import SimpleNamespace
         from unittest.mock import patch
         from torch._subclasses.fake_tensor import FakeTensorMode
-        from dllm.cuda_packed_expert import CudaPackedExpert
+        from damendaemon.cuda_packed_expert import CudaPackedExpert
         expert=object.__new__(CudaPackedExpert)
         expert.device=torch.device('cuda:0');expert.width=8
         expert.workspace_bytes=65536;expert.activation_limit=10.
         expert.gate=expert.up=expert.down=SimpleNamespace(format='e4m3fn')
-        with FakeTensorMode(), patch('dllm.cuda_deepseek_ffn.finite',side_effect=AssertionError('scan before admission')):
+        with FakeTensorMode(), patch('damendaemon.cuda_deepseek_ffn.finite',side_effect=AssertionError('scan before admission')):
             router=torch.empty(3,8,device='cuda');bias=torch.empty(3,device='cuda')
             with self.assertRaises(ValueError):
                 CudaPackedDeepSeekFeedForward([expert]*3,router=router,correction_bias=bias,shared=expert,top_k=2,workspace_bytes=1)

@@ -5,8 +5,8 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.hybrid_pipeline_build import build_cuda_pipeline, PipelineBuildError
-from dllm.hybrid_stage import HybridLayerStage
+from damendaemon.hybrid_pipeline_build import build_cuda_pipeline, PipelineBuildError
+from damendaemon.hybrid_stage import HybridLayerStage
 from tests import test_hybrid_stage
 
 
@@ -21,9 +21,9 @@ class PipelineBuildTests(unittest.TestCase):
         self.model.weights['head'] = self.model.weights['embed']
         self.patches = {}
         replacements = {
-            'dllm.hybrid.selected_device': {'return_value': 'cpu'},
-            'dllm.hybrid.empty_cache': {},
-            'dllm.hybrid.available_memory': {'return_value': 2**40},
+            'damendaemon.hybrid.selected_device': {'return_value': 'cpu'},
+            'damendaemon.hybrid.empty_cache': {},
+            'damendaemon.hybrid.available_memory': {'return_value': 2**40},
             'torch.cuda.is_available': {'return_value': True},
             'torch.cuda.device_count': {'return_value': 2},
             'torch.cuda.mem_get_info': {'return_value': (2**40, 2**40)},
@@ -35,8 +35,8 @@ class PipelineBuildTests(unittest.TestCase):
             replacement = patch(name, **kwargs)
             self.patches[name] = replacement.start()
             self.addCleanup(replacement.stop)
-        env = patch.dict('os.environ', {'DLLM_DEVICE': 'cuda',
-             'DLLM_EXPERIMENTAL_HYBRID_PIPELINE': '1'}, clear=True)
+        env = patch.dict('os.environ', {'DAMENDAEMON_DEVICE': 'cuda',
+             'DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE': '1'}, clear=True)
         env.start()
         self.addCleanup(env.stop)
 
@@ -70,7 +70,7 @@ class PipelineBuildTests(unittest.TestCase):
                 build_cuda_pipeline(self.model, devices, budgets)
         self.patches['torch.cuda.mem_get_info'].assert_not_called()
         self.patches['torch.cuda.device'].assert_not_called()
-        with patch.dict('os.environ', DLLM_EXPERIMENTAL_HYBRID_PIPELINE='0'), self.assertRaises(ValueError):
+        with patch.dict('os.environ', DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE='0'), self.assertRaises(ValueError):
             self.build()
 
     def test_observed_memory_can_reject_before_stage_construction(self):

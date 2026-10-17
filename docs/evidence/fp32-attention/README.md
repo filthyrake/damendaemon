@@ -5,7 +5,7 @@ selects quadratic-memory math attention for FP32. Full Llama3.2-1B prefill at
 context 8192 failed with a 7.97 GiB temporary allocation request. This was a real
 runtime OOM, not a synthetic estimate.
 
-For four-dimensional CUDA FP32 queries with at least 256 tokens, dllm now expands
+For four-dimensional CUDA FP32 queries with at least 256 tokens, damendaemon now expands
 K/V to the query-head count and calls ordinary SDPA, allowing its fused efficient
 kernel. Short queries retain the existing path. FP16 Flash attention is unaffected.
 Head expansion uses linear storage; it does not materialize query×key scores.

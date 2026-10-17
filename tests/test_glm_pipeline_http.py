@@ -11,8 +11,8 @@ from urllib.error import HTTPError
 from concurrent.futures import ThreadPoolExecutor
 from scripts import serve_cpu_reference as command
 from tests import test_serve_cpu_reference as commands
-from dllm.glm_model import GlmModelState
-from dllm.glm_pipeline_generation import PipelineToolReferenceGenerator
+from damendaemon.glm_model import GlmModelState
+from damendaemon.glm_pipeline_generation import PipelineToolReferenceGenerator
 
 
 class GlmPipelineHttpTests(unittest.TestCase):
@@ -27,7 +27,7 @@ class GlmPipelineHttpTests(unittest.TestCase):
             key=secrets.token_urlsafe(32);admin=secrets.token_urlsafe(32)
             process=subprocess.Popen([sys.executable,'-m','scripts.serve_cpu_reference','glm',str(path),
                 '--context','128','--port','0','--queue-size','3',*cuts],stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,text=True,env=self.env|{'DLLM_API_KEY':key,'DLLM_ADMIN_API_KEY':admin})
+                stderr=subprocess.PIPE,text=True,env=self.env|{'DAMENDAEMON_API_KEY':key,'DAMENDAEMON_ADMIN_API_KEY':admin})
             try:
                 ready=self.event(process);base=ready['url']
                 if cuts:
@@ -64,7 +64,7 @@ class GlmPipelineHttpTests(unittest.TestCase):
 
     def test_invalid_family_or_cuts_precede_payload(self):
         path=self.snapshot('glm')
-        with patch.dict(os.environ,self.env,clear=True),patch('dllm.glm_reference_loader._payload',side_effect=AssertionError('payload')):
+        with patch.dict(os.environ,self.env,clear=True),patch('damendaemon.glm_reference_loader._payload',side_effect=AssertionError('payload')):
             for family,cuts in (('flash',['4']),('deepseek',['2']),('glm',['1']),('glm',['2','2'])):
                 with self.subTest(family=family,cuts=cuts),self.assertRaises(ValueError):
                     command.prepare(self.args(family,path,'--layer-splits',*cuts))

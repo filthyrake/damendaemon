@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from dllm.tokenizer_metadata import (read_tokenizer_config, read_generation_config,
+from damendaemon.tokenizer_metadata import (read_tokenizer_config, read_generation_config,
     MAX_TOKENIZER_CONFIG_BYTES, MAX_GENERATION_CONFIG_BYTES)
 
 
@@ -39,7 +39,7 @@ class TokenizerMetadataTests(unittest.TestCase):
                     self.assertTrue(stream.closed)
 
     def test_special_token_text_preserves_strings_and_absent_values(self):
-        from dllm.tokenizer_metadata import special_token_text
+        from damendaemon.tokenizer_metadata import special_token_text
         self.assertEqual(special_token_text({}),{'bos_token':None,'eos_token':None})
         self.assertEqual(special_token_text({'bos_token':'','eos_token':{'content':'EOS','special':True}}),
                          {'bos_token':'','eos_token':'EOS'})
@@ -51,19 +51,19 @@ class TokenizerMetadataTests(unittest.TestCase):
                          {'bos_token':'世界','eos_token':'é😀'})
 
     def test_scalar_template_unicode_and_byte_limit(self):
-        from dllm.tokenizer_metadata import checkpoint_template
+        from damendaemon.tokenizer_metadata import checkpoint_template
         from unittest.mock import patch
         with tempfile.TemporaryDirectory() as directory:
             for text in ('\ud800','prefix\udfff'):
                 with self.subTest(text=ascii(text)),self.assertRaisesRegex(ValueError,'UTF-8'):
                     checkpoint_template(directory,{'chat_template':text})
-            with patch('dllm.tokenizer_metadata.MAX_CHECKPOINT_TEMPLATE_BYTES',4):
+            with patch('damendaemon.tokenizer_metadata.MAX_CHECKPOINT_TEMPLATE_BYTES',4):
                 self.assertEqual(checkpoint_template(directory,{'chat_template':'éé'}),'éé')
                 with self.assertRaisesRegex(ValueError,'byte limit'):
                     checkpoint_template(directory,{'chat_template':'ééx'})
 
     def test_checkpoint_template_precedence_and_bounds(self):
-        from dllm.tokenizer_metadata import checkpoint_template
+        from damendaemon.tokenizer_metadata import checkpoint_template
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);fallback=root/'chat_template.jinja'
             self.assertIsNone(checkpoint_template(root,{}))
@@ -74,7 +74,7 @@ class TokenizerMetadataTests(unittest.TestCase):
             for value in ([],{},True,1):
                 with self.subTest(value=value),self.assertRaises(ValueError):
                     checkpoint_template(root,{'chat_template':value})
-            with patch('dllm.tokenizer_metadata.MAX_CHECKPOINT_TEMPLATE_BYTES',8):
+            with patch('damendaemon.tokenizer_metadata.MAX_CHECKPOINT_TEMPLATE_BYTES',8):
                 for size in (0,8,9):
                     fallback.write_bytes(b'x'*size)
                     if size==9:
@@ -87,12 +87,12 @@ class TokenizerMetadataTests(unittest.TestCase):
             with patch.object(Path,'exists',return_value=True),patch.object(Path,'open',return_value=stream), \
                     patch.object(stream,'read',wraps=stream.read) as read:
                 self.assertEqual(checkpoint_template(root,{}),'fallback')
-                from dllm.tokenizer_metadata import MAX_CHECKPOINT_TEMPLATE_BYTES
+                from damendaemon.tokenizer_metadata import MAX_CHECKPOINT_TEMPLATE_BYTES
                 read.assert_called_once_with(MAX_CHECKPOINT_TEMPLATE_BYTES+1)
             self.assertTrue(stream.closed)
 
     def test_named_templates_select_only_explicit_default(self):
-        from dllm.tokenizer_metadata import checkpoint_template
+        from damendaemon.tokenizer_metadata import checkpoint_template
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);(root/'chat_template.jinja').write_text('fallback')
             for value in ({'tool_use':'tool','default':'ordinary'},
@@ -112,8 +112,8 @@ class TokenizerMetadataTests(unittest.TestCase):
                     checkpoint_template(root,{'chat_template':value})
 
     def test_named_template_collection_has_utf8_byte_budget(self):
-        from dllm.tokenizer_metadata import checkpoint_template
-        with patch('dllm.tokenizer_metadata.MAX_CHECKPOINT_TEMPLATE_BYTES',8):
+        from damendaemon.tokenizer_metadata import checkpoint_template
+        with patch('damendaemon.tokenizer_metadata.MAX_CHECKPOINT_TEMPLATE_BYTES',8):
             self.assertEqual(checkpoint_template('.',{'chat_template':{'default':'é'*4}}),'é'*4)
             for value in ({'default':'é'*5}, {'default':'é'*4,'other':'x'},
                           {'default':'x','other':'\ud800'}):

@@ -5,7 +5,7 @@ if not __debug__:
 import json
 import xgrammar as xgr
 from transformers import AutoTokenizer
-from dllm.tool_calls import prepare_tools
+from damendaemon.tool_calls import prepare_tools
 from verify_forced_tools import TOOLS
 
 

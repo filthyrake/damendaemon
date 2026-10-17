@@ -1,19 +1,19 @@
 {
   "native_format": "q4",
-  "model": "/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+  "model": "/home/damen/damendaemon-dev/baselines/mistral-spm-q4-comparator.gguf",
   "model_sha256": "cbea665de7de1050c1741ae205422a47bd62815c84c655fba55962fdc805ed66",
-  "native_library": "/home/damen/dllm-dev/build-kquant/libdllm-q4.so",
+  "native_library": "/home/damen/damendaemon-dev/build-kquant/libdamendaemon-q4.so",
   "native_library_sha256": "29dffba1428aab9846a5b71464855a4d48e6fbd6b9ec8a89a47f64b1ef0dd063",
   "llama_server": null,
   "llama_server_sha256": null,
-  "residual_library": "/home/damen/dllm-dev/results/libdllm-q4-residual.so",
+  "residual_library": "/home/damen/damendaemon-dev/results/libdamendaemon-q4-residual.so",
   "residual_library_sha256": "df0ac87a0ad07cbdb97c506063b922e7c0668fa31b37a55a97dbf5d4af1be55b",
   "experimental_arithmetic": "Q4 single-row integer dot; two dyadic int8 activation terms; FP32 coefficient scaling rather than rounded FP16 coefficients",
   "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
   "context_per_slot": 512,
   "slots": 4,
   "kv_dtype": "float16",
-  "dllm_precision": "mixed: FP16 matrices, FP32 residual/nonlinear",
+  "damendaemon_precision": "mixed: FP16 matrices, FP32 residual/nonlinear",
   "output_tokens": 16,
   "prompts": {
     "16": [
@@ -573,14 +573,14 @@
   "runs": [
     {
       "phase": 0,
-      "engine": "dllm",
+      "engine": "damendaemon",
       "command": [
-        "/home/damen/dllm-dev/venv/bin/python",
+        "/home/damen/damendaemon-dev/venv/bin/python",
         "-m",
-        "dllm",
+        "damendaemon",
         "serve",
         "--model",
-        "a=/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+        "a=/home/damen/damendaemon-dev/baselines/mistral-spm-q4-comparator.gguf",
         "--port",
         "44765",
         "--context",
@@ -596,7 +596,7 @@
         "--prefix-cache-tokens",
         "0"
       ],
-      "log": "results/mistral-spm-q4-residual-http-a2-0-dllm.log",
+      "log": "results/mistral-spm-q4-residual-http-a2-0-damendaemon.log",
       "cases": [
         {
           "prompt_tokens": 16,
@@ -1393,12 +1393,12 @@
       "phase": 1,
       "engine": "q4-residual-int8",
       "command": [
-        "/home/damen/dllm-dev/venv/bin/python",
+        "/home/damen/damendaemon-dev/venv/bin/python",
         "-m",
         "scripts.experiments.serve_q4_residual",
         "serve",
         "--model",
-        "a=/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+        "a=/home/damen/damendaemon-dev/baselines/mistral-spm-q4-comparator.gguf",
         "--port",
         "37619",
         "--context",
@@ -2211,12 +2211,12 @@
       "phase": 2,
       "engine": "q4-residual-int8",
       "command": [
-        "/home/damen/dllm-dev/venv/bin/python",
+        "/home/damen/damendaemon-dev/venv/bin/python",
         "-m",
         "scripts.experiments.serve_q4_residual",
         "serve",
         "--model",
-        "a=/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+        "a=/home/damen/damendaemon-dev/baselines/mistral-spm-q4-comparator.gguf",
         "--port",
         "47233",
         "--context",
@@ -3027,14 +3027,14 @@
     },
     {
       "phase": 3,
-      "engine": "dllm",
+      "engine": "damendaemon",
       "command": [
-        "/home/damen/dllm-dev/venv/bin/python",
+        "/home/damen/damendaemon-dev/venv/bin/python",
         "-m",
-        "dllm",
+        "damendaemon",
         "serve",
         "--model",
-        "a=/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+        "a=/home/damen/damendaemon-dev/baselines/mistral-spm-q4-comparator.gguf",
         "--port",
         "54235",
         "--context",
@@ -3050,7 +3050,7 @@
         "--prefix-cache-tokens",
         "0"
       ],
-      "log": "results/mistral-spm-q4-residual-http-a2-3-dllm.log",
+      "log": "results/mistral-spm-q4-residual-http-a2-3-damendaemon.log",
       "cases": [
         {
           "prompt_tokens": 16,
@@ -3845,7 +3845,7 @@
     }
   ],
   "swap_model": {
-    "path": "/home/damen/dllm-dev/baselines/qwen3-small-import-q4_k_m.gguf",
+    "path": "/home/damen/damendaemon-dev/baselines/qwen3-small-import-q4_k_m.gguf",
     "sha256": "9467d0bfdf4673a4182a6a02e8a66a89f1e2b5e214fcb120f1dc5068b83468df"
   },
   "production_residual_f32": false,

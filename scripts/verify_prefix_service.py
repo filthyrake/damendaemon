@@ -2,7 +2,7 @@
 if not __debug__:
     raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
 
-from dllm.evidence_environment import report_environment
+from damendaemon.evidence_environment import report_environment
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json
@@ -15,7 +15,7 @@ import tempfile
 import time
 from urllib.request import Request,urlopen
 from tokenizers import Tokenizer
-from dllm.bench import events
+from damendaemon.bench import events
 
 
 def main():
@@ -31,17 +31,17 @@ def main():
     assert len(prompt)==1536
     rows=[];baseline=None
     for budget in (0,4096):
-        with tempfile.TemporaryDirectory(prefix='dllm-prefix-service-') as directory:
+        with tempfile.TemporaryDirectory(prefix='damendaemon-prefix-service-') as directory:
             logpath=Path(directory)/'server.log'
             with logpath.open('w') as log:
-                process=subprocess.Popen([sys.executable,'-m','dllm','serve','--port','0','--device',args.device,
+                process=subprocess.Popen([sys.executable,'-m','damendaemon','serve','--port','0','--device',args.device,
                     '--context','2048','--batch-size','4','--gpu-models','1','--host-models','2',
                     '--host-gib',str(args.host_gib),
                     '--prefix-cache-tokens',str(budget),'--prefill-chunk-size',str(args.chunk_size),'--model','a='+args.model,'--model','b='+args.model],stdout=log,stderr=log)
                 try:
                     deadline=time.monotonic()+120
                     while time.monotonic()<deadline and process.poll() is None:
-                        lines=[v for v in logpath.read_text().splitlines() if v.startswith('dllm listening on ')]
+                        lines=[v for v in logpath.read_text().splitlines() if v.startswith('damendaemon listening on ')]
                         if lines:base=lines[-1].split()[-1];break
                         time.sleep(.1)
                     else:raise RuntimeError(logpath.read_text())
@@ -52,14 +52,14 @@ def main():
                         result['measured_http_seconds']=time.perf_counter()-start
                         return result
                     cold=request()
-                    assert cold['dllm_timing']['cached_prompt_tokens']==0
+                    assert cold['damendaemon_timing']['cached_prompt_tokens']==0
                     baseline=cold['choices'] if baseline is None else baseline
                     assert cold['choices']==baseline
                     trials=[request() for _ in range(5)]
                     for result in trials:
                         assert result['choices']==baseline
                         assert result['usage']['prompt_tokens']==1536
-                        assert result['dllm_timing']['cached_prompt_tokens']==(1536 if budget else 0)
+                        assert result['damendaemon_timing']['cached_prompt_tokens']==(1536 if budget else 0)
                     with ThreadPoolExecutor(4) as pool:concurrent=list(pool.map(lambda _:request(),range(4)))
                     assert all(r['choices']==baseline for r in concurrent)
                     # Close a real streaming client after output, then reuse its prefix.
@@ -79,22 +79,22 @@ def main():
                     # The second alias uses identical weights but owns independent cache state.
                     other=request('b')
                     restored=request()
-                    assert other['dllm_timing']['cached_prompt_tokens']==0
-                    assert restored['dllm_timing']['cached_prompt_tokens']==0
-                    assert restored['dllm_timing']['source_tier']=='host'
+                    assert other['damendaemon_timing']['cached_prompt_tokens']==0
+                    assert restored['damendaemon_timing']['cached_prompt_tokens']==0
+                    assert restored['damendaemon_timing']['source_tier']=='host'
                     assert restored['choices']==baseline
                     divergent=request(tokens=prompt+[1,2,3])
-                    assert divergent['dllm_timing']['cached_prompt_tokens']==(1536 if budget else 0)
+                    assert divergent['damendaemon_timing']['cached_prompt_tokens']==(1536 if budget else 0)
                     assert divergent['usage']['prompt_tokens']==1539
                     partial_trials=[request(tokens=prompt+[token,2,3]) for token in range(20,25)]
-                    assert all(r['dllm_timing']['cached_prompt_tokens']==(1536 if budget else 0) for r in partial_trials)
+                    assert all(r['damendaemon_timing']['cached_prompt_tokens']==(1536 if budget else 0) for r in partial_trials)
                     rows.append({'token_budget':budget,'trials':[{'http_seconds':r['measured_http_seconds'],
-                        'timing':r['dllm_timing'],'usage':r['usage']} for r in trials],
-                        'median_first_token_ms':statistics.median(r['dllm_timing']['first_token_seconds'] for r in trials)*1000,
+                        'timing':r['damendaemon_timing'],'usage':r['usage']} for r in trials],
+                        'median_first_token_ms':statistics.median(r['damendaemon_timing']['first_token_seconds'] for r in trials)*1000,
                         'median_http_ms':statistics.median(r['measured_http_seconds'] for r in trials)*1000,
-                        'partial_trials':[{'timing':r['dllm_timing'],'http_ms':r['measured_http_seconds']*1000,'choices':r['choices']} for r in partial_trials],
-                        'median_partial_first_token_ms':statistics.median(r['dllm_timing']['first_token_seconds'] for r in partial_trials)*1000,
-                        'divergent_timing':divergent['dllm_timing'],'divergent_http_ms':divergent['measured_http_seconds']*1000,
+                        'partial_trials':[{'timing':r['damendaemon_timing'],'http_ms':r['measured_http_seconds']*1000,'choices':r['choices']} for r in partial_trials],
+                        'median_partial_first_token_ms':statistics.median(r['damendaemon_timing']['first_token_seconds'] for r in partial_trials)*1000,
+                        'divergent_timing':divergent['damendaemon_timing'],'divergent_http_ms':divergent['measured_http_seconds']*1000,
                         'divergent_choices':divergent['choices'],'model_switch_cache_isolation':True,'concurrent_output_equality':True,'disconnect_recovery':True})
                 except Exception:
                     print(logpath.read_text(),file=sys.stderr);raise

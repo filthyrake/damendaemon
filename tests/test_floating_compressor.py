@@ -4,8 +4,8 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.deepseek_position import frequencies, rotate_pairs
-from dllm.floating_compressor import compress_hidden,checked_compress_hidden
+from damendaemon.deepseek_position import frequencies, rotate_pairs
+from damendaemon.floating_compressor import compress_hidden,checked_compress_hidden
 from tests.test_compressed_pool import scalar_pool
 
 
@@ -111,7 +111,7 @@ class FloatingCompressorTests(unittest.TestCase):
         hidden, *parameters = self.fixture()
         _, state, _ = compress_hidden(hidden[:, :3], *parameters)
         before = state.values.clone(), state.scores.clone()
-        with patch('dllm.floating_compressor.rotate_pairs', side_effect=RuntimeError('rotation failed')):
+        with patch('damendaemon.floating_compressor.rotate_pairs', side_effect=RuntimeError('rotation failed')):
             with self.assertRaisesRegex(RuntimeError, 'rotation failed'):
                 compress_hidden(hidden[:, 3:7], *parameters, state=state)
         torch.testing.assert_close(state.values, before[0])
@@ -120,7 +120,7 @@ class FloatingCompressorTests(unittest.TestCase):
 
     def test_invalid_static_parameters_before_projection(self):
         hidden, value, gate, offsets, norm, freq = self.fixture()
-        with patch('dllm.floating_compressor.F.linear', side_effect=AssertionError('projection started')):
+        with patch('damendaemon.floating_compressor.F.linear', side_effect=AssertionError('projection started')):
             for args in ((hidden, value.half(), gate, offsets, norm, freq),
                          (hidden, value, gate, offsets, norm, torch.ones(3)),
                          (hidden, value, gate, offsets, norm[:1], freq)):

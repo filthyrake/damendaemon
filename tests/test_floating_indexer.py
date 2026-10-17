@@ -3,11 +3,11 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.activation_simulation import normalized_hadamard, simulate_fp4
-from dllm.compressed_indexer import select_compressed
-from dllm.deepseek_position import frequencies, rotate_pairs
-from dllm.floating_compressor import compress_hidden
-from dllm.floating_indexer import index_hidden, checked_index_hidden
+from damendaemon.activation_simulation import normalized_hadamard, simulate_fp4
+from damendaemon.compressed_indexer import select_compressed
+from damendaemon.deepseek_position import frequencies, rotate_pairs
+from damendaemon.floating_compressor import compress_hidden
+from damendaemon.floating_indexer import index_hidden, checked_index_hidden
 
 
 class FloatingIndexerTests(unittest.TestCase):
@@ -63,7 +63,7 @@ class FloatingIndexerTests(unittest.TestCase):
         def record(x, weight):
             rows.append(x.shape[1])
             return original(x, weight)
-        with patch('dllm.floating_indexer.linear', side_effect=record), \
+        with patch('damendaemon.floating_indexer.linear', side_effect=record), \
                 patch.object(torch.Tensor, 'cpu', side_effect=AssertionError('host copy')), \
                 patch.object(torch.Tensor, 'tolist', side_effect=AssertionError('host values')), \
                 patch.object(torch.Tensor, 'item', side_effect=AssertionError('host scalar')):
@@ -87,7 +87,7 @@ class FloatingIndexerTests(unittest.TestCase):
 
     def test_invalid_contracts_fail_before_projection(self):
         args = self.fixture()
-        with patch('dllm.floating_indexer.linear', side_effect=AssertionError('projection started')):
+        with patch('damendaemon.floating_indexer.linear', side_effect=AssertionError('projection started')):
             for options in ({'top_k':0}, {'top_k':3, 'offset':-1}, {'top_k':3, 'query_chunk':False}):
                 with self.assertRaises(ValueError):
                     index_hidden(*args, **options)

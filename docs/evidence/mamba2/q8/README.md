@@ -5,7 +5,7 @@ output head, with unchanged FP32 embeddings, convolution, norms, discretization
 parameters and recurrent state. Prepared weights shrink from 515,958,528 to
 292,337,664 bytes, including scales and a separate packed tied output head.
 All 49 packed matrices are included in exact preflight accounting. The Q8 GGUF
-comparison verifies all 219 dequantized tensors bitwise against dllm weights.
+comparison verifies all 219 dequantized tensors bitwise against damendaemon weights.
 
 Both CUDA and Metal pass 139 independent quantized-reference logits checks,
 state checks and exact greedy generation through 2048 context. Both also pass
@@ -21,12 +21,12 @@ Same context512, input IDs and 32 outputs as the FP32 comparison; five warm roun
 
 | GPU / engine | c1 tokens/s | c2 | c4 | First text ms c1 / c2 / c4 |
 |---|---:|---:|---:|---|
-| A2 dllm Q8 | 420.67 | 415.84 | 589.72 | 22.42 / 48.36 / 52.31 |
+| A2 damendaemon Q8 | 420.67 | 415.84 | 589.72 | 22.42 / 48.36 / 52.31 |
 | A2 llama.cpp Q8 | 287.33 | 302.13 | 339.09 | 25.15 / 52.63 / 93.91 |
-| M4 dllm Q8 | 64.11 | 117.26 | 229.84 | 29.18 / 39.74 / 65.40 |
+| M4 damendaemon Q8 | 64.11 | 117.26 | 229.84 | 29.18 / 39.74 / 65.40 |
 | M4 llama.cpp Q8 | 152.72 | 114.81 | 123.00 | 21.89 / 47.12 / 88.57 |
 
-dllm text is stable across these concurrency levels and both GPUs. All Apple
+damendaemon text is stable across these concurrency levels and both GPUs. All Apple
 comparison text agrees. **CUDA llama.cpp Q8 output differs**, including among
 its own trials/batch sizes. Matching stored tensors does not mean matching
 backend arithmetic; the cause has not been isolated. These are not cross-engine

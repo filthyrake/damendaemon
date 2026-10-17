@@ -13,7 +13,7 @@ import tempfile
 import time
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
-from dllm.bench import events
+from damendaemon.bench import events
 
 
 def main():
@@ -28,15 +28,15 @@ def main():
         'required':['name','ok','values'],'additionalProperties':False}
     fmt={'type':'json_schema','json_schema':{'name':'test','strict':True,'schema':schema}}
     prompt='Return only a JSON object with name café, ok true, and values an empty array.'
-    with tempfile.TemporaryDirectory(prefix='dllm-structured-') as directory:
+    with tempfile.TemporaryDirectory(prefix='damendaemon-structured-') as directory:
         logpath=Path(directory)/'server.log'
         with logpath.open('w') as log:
-            process=subprocess.Popen([sys.executable,'-m','dllm','serve','--port','0','--context','512',
+            process=subprocess.Popen([sys.executable,'-m','damendaemon','serve','--port','0','--context','512',
                 '--device',args.device,'--host-gib',str(args.host_gib),'--model','a='+args.path],stdout=log,stderr=log)
             try:
                 deadline=time.monotonic()+180
                 while time.monotonic()<deadline and process.poll() is None:
-                    ready=[s for s in logpath.read_text().splitlines() if s.startswith('dllm listening on ')]
+                    ready=[s for s in logpath.read_text().splitlines() if s.startswith('damendaemon listening on ')]
                     if ready:
                         base=ready[-1].split()[-1];break
                     time.sleep(.1)
@@ -67,7 +67,7 @@ def main():
                 plain=request(response_format={'type':'text'})
                 with ThreadPoolExecutor(4) as pool:
                     mixed=list(pool.map(lambda i:request(response_format=fmt if i%2 else {'type':'text'}),range(4)))
-                assert max(item["dllm_timing"]["max_batch_size"] for item in mixed)>=2
+                assert max(item["damendaemon_timing"]["max_batch_size"] for item in mixed)>=2
                 for i,item in enumerate(mixed):
                     if i%2:check(item)
                     else:assert text(item)==text(plain)

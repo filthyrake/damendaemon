@@ -1,10 +1,10 @@
 # Owned CPU host-worker construction
 
-`dllm.cpu_host_worker_build.build_cpu_host_worker` composes stage-local checkpoint
+`damendaemon.cpu_host_worker_build.build_cpu_host_worker` composes stage-local checkpoint
 loading, a prepared CPU stage and host-worker protocol ownership:
 
 ```python
-from dllm.cpu_host_worker_build import build_cpu_host_worker
+from damendaemon.cpu_host_worker_build import build_cpu_host_worker
 
 worker = build_cpu_host_worker(
     snapshot, start, end, fresh_transport,

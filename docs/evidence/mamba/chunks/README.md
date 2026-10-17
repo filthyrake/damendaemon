@@ -43,7 +43,7 @@ Warm 1536-token prefix, chunk128, five HTTP trials, first-token milliseconds:
 | A2 | 188.47 | 1.47 | 15.34 |
 | M4 | 415.22 | 1.21 | 9.09 |
 
-These compare dllm configurations, not competitors. Apple timings are a single
+These compare damendaemon configurations, not competitors. Apple timings are a single
 laptop run and may vary. Raw measurements, configuration and samples accompany
 this file. Unit suite: 177 passing tests, including existing attention-prefix
 rewind behavior and new recurrent no-rewind/memory-budget cases.

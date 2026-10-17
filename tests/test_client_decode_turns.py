@@ -4,9 +4,9 @@ import queue
 import unittest
 from unittest.mock import patch
 
-from dllm.client_decode_turns import ClientDecodeTurns
-from dllm.scheduler import BatchedRuntime,Pending
-from dllm.request_scope import CacheScope,cache_scope
+from damendaemon.client_decode_turns import ClientDecodeTurns
+from damendaemon.scheduler import BatchedRuntime,Pending
+from damendaemon.request_scope import CacheScope,cache_scope
 from tests import test_scheduler as fixtures
 
 
@@ -63,12 +63,12 @@ class ClientDecodeTurnTests(unittest.TestCase):
     def exercise_scheduler_paths(self,weight):
         for executor_type in (fixtures.FakeExecutor,fixtures.ChunkExecutor,fixtures.FakePagedExecutor,fixtures.PagedChunkExecutor):
             with self.subTest(path=executor_type.__name__):
-                with patch('dllm.scheduler.Runtime',fixtures.FakeRuntime):
+                with patch('damendaemon.scheduler.Runtime',fixtures.FakeRuntime):
                     runtime=BatchedRuntime({'a':'a'},batch_size=4,queue_size=8,client_decode_turns=True,
                         prefill_chunk_size=1 if issubclass(executor_type,fixtures.ChunkExecutor) else 0)
                 executor=executor_type();runtime.runtime.executor=executor
                 if hasattr(executor,'pool'):
-                    from dllm.pages import PagePool
+                    from damendaemon.pages import PagePool
                     executor.pool=PagePool(128,4,executor.context)
                 a,b=CacheScope(decode_weight=weight),CacheScope();observed=[];choose=runtime.decode_turns.choose
                 service={id(a):0,id(b):0}
@@ -108,10 +108,10 @@ class ClientDecodeTurnTests(unittest.TestCase):
 
     def test_option_validation_and_cli_forwarding(self):
         for invalid in (1,None,'yes'):
-            with patch('dllm.scheduler.Runtime',side_effect=AssertionError('runtime created')):
+            with patch('damendaemon.scheduler.Runtime',side_effect=AssertionError('runtime created')):
                 with self.assertRaises(ValueError):BatchedRuntime({},client_decode_turns=invalid)
-        from dllm.cli import main
+        from damendaemon.cli import main
         for flag in ([],['--client-decode-turns']):
-            with patch('sys.argv',['dllm','serve','--model','a=/local/snapshot',*flag]),patch('dllm.scheduler.BatchedRuntime') as runtime,patch('dllm.server.serve'):
+            with patch('sys.argv',['damendaemon','serve','--model','a=/local/snapshot',*flag]),patch('damendaemon.scheduler.BatchedRuntime') as runtime,patch('damendaemon.server.serve'):
                 main()
             self.assertEqual(runtime.call_args.kwargs['client_decode_turns'],bool(flag))

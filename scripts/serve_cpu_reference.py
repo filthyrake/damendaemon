@@ -5,11 +5,11 @@ from pathlib import Path
 import signal
 import threading
 
-from dllm.checkpoint import _unique_fields
-from dllm.glm_text import _read
-from dllm.http_auth import AuthPolicy
-from dllm.reference_serving import ReferenceRuntime,handler_for_reference
-from dllm.server import BoundedHTTPServer
+from damendaemon.checkpoint import _unique_fields
+from damendaemon.glm_text import _read
+from damendaemon.http_auth import AuthPolicy
+from damendaemon.reference_serving import ReferenceRuntime,handler_for_reference
+from damendaemon.server import BoundedHTTPServer
 
 
 def bounded_integer(low,high):
@@ -44,8 +44,8 @@ def parser_for_command():
 
 
 def image_metadata(config,args):
-    from dllm.glm_flash_vision import vision_specs,audit_vision,ROOT
-    from dllm.glm_flash_images import validate_processor
+    from damendaemon.glm_flash_vision import vision_specs,audit_vision,ROOT
+    from damendaemon.glm_flash_images import validate_processor
     specs=vision_specs(config.get('vision_config'));audit_vision(config,[ROOT+n for n in specs])
     vc=config['vision_config']
     if (vc['in_channels'],vc['patch_size'],vc['temporal_patch_size'],vc['spatial_merge_size'])!=(3,14,2,2):
@@ -72,29 +72,29 @@ def prepare(args):
     expected={'glm':'glm_moe_dsa','flash':'glm5_next','deepseek':'deepseek_v4'}[args.family]
     if not isinstance(config,dict) or config.get('model_type')!=expected:raise ValueError('snapshot does not match explicit family')
     if args.family=='deepseek':
-        from dllm.deepseek_text import DeepSeekText as Text
-        from dllm.deepseek_generation import ReferenceGenerator as Runner,validate_text_config
-        from dllm.deepseek_reference_loader import load_reference_model
+        from damendaemon.deepseek_text import DeepSeekText as Text
+        from damendaemon.deepseek_generation import ReferenceGenerator as Runner,validate_text_config
+        from damendaemon.deepseek_reference_loader import load_reference_model
         text_config=config
         options=dict(workspace_bytes=args.projection_workspace_mib*1024**2)
         if args.layer_splits is not None:options['max_output_bytes']=(args.output_mib or 64)*1024**2
     else:
-        from dllm.glm_generation import validate_text_config
+        from damendaemon.glm_generation import validate_text_config
         if args.family=='glm':
-            from dllm.glm_tool_text import GlmToolText as Text
-            from dllm.glm_tool_generation import GlmToolReferenceGenerator as Runner
-            from dllm.glm_reference_loader import load_reference_model
+            from damendaemon.glm_tool_text import GlmToolText as Text
+            from damendaemon.glm_tool_generation import GlmToolReferenceGenerator as Runner
+            from damendaemon.glm_reference_loader import load_reference_model
             text_config=config
         else:
-            from dllm.glm_flash_tool_text import FlashToolText as Text
-            from dllm.glm_flash_tool_generation import FlashToolReferenceGenerator as Runner
-            from dllm.glm_flash_reference_loader import load_reference_model
-            from dllm.glm_flash_generation import flash_text_config
+            from damendaemon.glm_flash_tool_text import FlashToolText as Text
+            from damendaemon.glm_flash_tool_generation import FlashToolReferenceGenerator as Runner
+            from damendaemon.glm_flash_reference_loader import load_reference_model
+            from damendaemon.glm_flash_generation import flash_text_config
             text_config=flash_text_config(config)
             if args.flash_images:
                 image_metadata(config,args)
-                from dllm.glm_flash_image_tool_text import FlashImageToolText as Text
-                from dllm.glm_flash_image_tool_generation import FlashImageToolReferenceGenerator as Runner
+                from damendaemon.glm_flash_image_tool_text import FlashImageToolText as Text
+                from damendaemon.glm_flash_image_tool_generation import FlashImageToolReferenceGenerator as Runner
         options=dict(projection_workspace_bytes=args.projection_workspace_mib*1024**2,
             max_workspace_bytes=(args.workspace_mib or 64)*1024**2,max_output_bytes=(args.output_mib or 64)*1024**2)
     text=Text(args.snapshot,vocab_size=text_config.get('vocab_size'))
@@ -103,22 +103,22 @@ def prepare(args):
         raise ValueError('Flash image token disagrees with tokenizer')
     if args.layer_splits is not None:
         if args.family=='deepseek':
-            from dllm.deepseek_checkpoint_pipeline import load_reference_pipeline
-            from dllm.deepseek_pipeline_generation import DeepSeekPipelineReferenceGenerator as Runner
+            from damendaemon.deepseek_checkpoint_pipeline import load_reference_pipeline
+            from damendaemon.deepseek_pipeline_generation import DeepSeekPipelineReferenceGenerator as Runner
         elif args.family=='glm':
-            from dllm.glm_checkpoint_pipeline import load_reference_pipeline
-            from dllm.glm_pipeline_generation import PipelineToolReferenceGenerator as Runner
+            from damendaemon.glm_checkpoint_pipeline import load_reference_pipeline
+            from damendaemon.glm_pipeline_generation import PipelineToolReferenceGenerator as Runner
         else:
-            from dllm.glm_flash_checkpoint_pipeline import load_reference_pipeline
-            from dllm.glm_flash_pipeline_generation import FlashPipelineToolReferenceGenerator as Runner
+            from damendaemon.glm_flash_checkpoint_pipeline import load_reference_pipeline
+            from damendaemon.glm_flash_pipeline_generation import FlashPipelineToolReferenceGenerator as Runner
             if args.flash_images:
-                from dllm.glm_flash_pipeline_image_generation import FlashPipelineImageToolReferenceGenerator as Runner
+                from damendaemon.glm_flash_pipeline_image_generation import FlashPipelineImageToolReferenceGenerator as Runner
         model=load_reference_pipeline(args.snapshot,args.layer_splits,max_weight_bytes=args.weight_mib*1024**2,**options)
     else:model=load_reference_model(args.snapshot,max_weight_bytes=args.weight_mib*1024**2,**options)
     try:
         image_options={}
         if args.flash_images:
-            from dllm.glm_flash_vision_loader import load_reference_vision
+            from damendaemon.glm_flash_vision_loader import load_reference_vision
             vision=load_reference_vision(args.snapshot,max_weight_bytes=(args.vision_weight_mib or 256)*1024**2,
                 max_tokens=args.max_patches or 4096,max_workspace_bytes=(args.workspace_mib or 64)*1024**2,
                 max_output_bytes=(args.output_mib or 64)*1024**2)
@@ -126,7 +126,7 @@ def prepare(args):
                 image_output_bytes=(args.image_output_mib or 64)*1024**2)
         runner=Runner(model,text,max_context=args.context,max_cache_bytes=args.cache_mib*1024**2,**image_options)
         if args.queue_size:
-            from dllm.queued_reference_serving import QueuedReferenceRuntime
+            from damendaemon.queued_reference_serving import QueuedReferenceRuntime
             runtime=QueuedReferenceRuntime(runner,args.alias,queue_size=args.queue_size,queue_timeout=args.queue_timeout)
         else:runtime=ReferenceRuntime(runner,args.alias)
     except BaseException as error:

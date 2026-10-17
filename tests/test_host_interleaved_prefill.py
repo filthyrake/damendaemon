@@ -3,9 +3,9 @@ import time
 import unittest
 from unittest.mock import patch
 
-from dllm.distributed_serving import Request,DistributedRuntime
-from dllm.cpu_hybrid_checkpoint import load_cpu_checkpoint
-from dllm.cpu_pipeline_generation import CpuPipelineReferenceGenerator
+from damendaemon.distributed_serving import Request,DistributedRuntime
+from damendaemon.cpu_hybrid_checkpoint import load_cpu_checkpoint
+from damendaemon.cpu_pipeline_generation import CpuPipelineReferenceGenerator
 from tests import test_host_serving as host
 from tests.test_cpu_pipeline_generation import OPTIONS
 from tests.test_distributed_serving import Pair

@@ -25,8 +25,8 @@ if __package__:
     from .benchmark_modern_http import request
 else:
     from benchmark_modern_http import request
-from dllm.bench import distribution
-from dllm.report_io import save_report
+from damendaemon.bench import distribution
+from damendaemon.report_io import save_report
 
 
 MAX_CONTEXT_TOKENS = 1024 * 1024
@@ -223,13 +223,13 @@ def main():
         context=args.context, output_tokens=512, prefill_chunk_size=args.chunk_size,
         gap_budget_seconds=args.gap_budget_seconds, tokenizer_sha256=hashlib.sha256(tokenizer_path.read_bytes()).hexdigest(),
         host=socket.gethostname(), torch=version('torch'),
-        environment={key: os.environ.get(key) for key in ('DLLM_DEVICE', 'DLLM_KERNELS',
-            'DLLM_QUANTIZATION', 'DLLM_ROCM_MEMORY_GIB', 'ROCR_VISIBLE_DEVICES', 'HIP_VISIBLE_DEVICES',
-            'TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL', 'DLLM_HYBRID_PRECISION',
-            'DLLM_EXPERIMENTAL_HYBRID_Q4', 'CUDA_VISIBLE_DEVICES')},
+        environment={key: os.environ.get(key) for key in ('DAMENDAEMON_DEVICE', 'DAMENDAEMON_KERNELS',
+            'DAMENDAEMON_QUANTIZATION', 'DAMENDAEMON_ROCM_MEMORY_GIB', 'ROCR_VISIBLE_DEVICES', 'HIP_VISIBLE_DEVICES',
+            'TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL', 'DAMENDAEMON_HYBRID_PRECISION',
+            'DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4', 'CUDA_VISIBLE_DEVICES')},
         prompts=dict(short=short, long=long), prompt_preparation=preparation, rounds=[],
         limitation='Client visible SSE chunk gaps are not internal per-token latency. Independent numerical and task quality gates are separate.')
-    module = 'scripts.experiments.hybrid_context_probe' if args.experimental_hybrid_context else 'dllm'
+    module = 'scripts.experiments.hybrid_context_probe' if args.experimental_hybrid_context else 'damendaemon'
     if args.experimental_hybrid_q4_context:
         module = 'scripts.experiments.hybrid_q4_context_probe'
     command = [sys.executable, '-m', module, 'serve', '--port', '0', '--context', str(args.context),
@@ -253,7 +253,7 @@ def main():
     signal.signal(signal.SIGTERM, terminate)
     signal.signal(signal.SIGINT, terminate)
     try:
-        if args.experimental_hybrid_q4_context and os.environ.get('DLLM_DEVICE') == 'cuda':
+        if args.experimental_hybrid_q4_context and os.environ.get('DAMENDAEMON_DEVICE') == 'cuda':
             from scripts.experiments.cuda_capacity_guard import A30CapacityGuard
             report['cuda_capacity_guard'] = {}
             cuda_guard = A30CapacityGuard(report['cuda_capacity_guard'])
@@ -263,7 +263,7 @@ def main():
         log_path = args.output.with_suffix('.server.log')
         with log_path.open('w') as log:
             process = subprocess.Popen(command, stdout=log, stderr=log, start_new_session=True)
-            if os.environ.get('DLLM_DEVICE') == 'rocm' or cuda_guard is not None:
+            if os.environ.get('DAMENDAEMON_DEVICE') == 'rocm' or cuda_guard is not None:
                 from scripts.experiments.host_memory_watchdog import HostMemoryWatchdog
                 report['host_memory_guard'] = {}
                 guard_options = {'read': cuda_guard.read} if cuda_guard is not None else {}
@@ -275,7 +275,7 @@ def main():
                 if process.poll() is not None:
                     raise RuntimeError('server exited; see server log')
                 for line in log_path.read_text().splitlines():
-                    if line.startswith('dllm listening on '):
+                    if line.startswith('damendaemon listening on '):
                         base = line.split()[-1]
                 if base:
                     break
@@ -287,7 +287,7 @@ def main():
                 def expire(phase):
                     expire_owned_request(process, report, phase)
                 return collect_with_deadlines(
-                    lambda: request(base, 'a', tokens, 'dllm', eos, threading.Barrier(1),
+                    lambda: request(base, 'a', tokens, 'damendaemon', eos, threading.Barrier(1),
                                     output_tokens=512, timeout=args.request_timeout, first_output_event=visible),
                     visible, args.first_output_budget, args.request_timeout, expire)
             report['phase'] = 'long_request'

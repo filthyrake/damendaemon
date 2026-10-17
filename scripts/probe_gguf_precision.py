@@ -17,9 +17,9 @@ import torch
 from transformers import AutoConfig, AutoModelForCausalLM
 from transformers.modeling_utils import no_init_weights
 from verify_gguf_reference import reference_weights
-from dllm.gguf_model import GgufWeights
-from dllm.runtime import make_executor
-from dllm.rotary import inverse_frequencies, attention_factor
+from damendaemon.gguf_model import GgufWeights
+from damendaemon.runtime import make_executor
+from damendaemon.rotary import inverse_frequencies, attention_factor
 
 
 def main():

@@ -8,7 +8,7 @@ import torch
 import transformers
 from transformers import LlamaConfig
 from transformers.modeling_rope_utils import ROPE_INIT_FUNCTIONS
-from dllm.rotary import inverse_frequencies, attention_factor
+from damendaemon.rotary import inverse_frequencies, attention_factor
 
 
 def main():

@@ -8,9 +8,9 @@ from types import SimpleNamespace
 
 import torch
 
-from dllm.grouped_attention import attention
-from dllm.gpt_oss import GptOssExecutor
-from dllm.vision_qwen35 import _eager_attention
+from damendaemon.grouped_attention import attention
+from damendaemon.gpt_oss import GptOssExecutor
+from damendaemon.vision_qwen35 import _eager_attention
 
 
 class GroupedAttentionOverflowTests(unittest.TestCase):

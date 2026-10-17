@@ -6,8 +6,8 @@ from pathlib import Path
 import time
 import torch
 from torch.nn import functional as F
-from dllm.qwen2 import ModelWeights
-from dllm.gpt_oss import GptOssExecutor
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.gpt_oss import GptOssExecutor
 from scripts.experiments.precise_projection import linear as experimental_linear
 
 

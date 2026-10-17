@@ -1,5 +1,5 @@
 """Measure active-stream stalls when a long prompt joins the same model group."""
-from dllm.evidence_environment import report_environment
+from damendaemon.evidence_environment import report_environment
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json
@@ -12,7 +12,7 @@ import tempfile
 import time
 from urllib.request import Request,urlopen
 from tokenizers import Tokenizer
-from dllm.bench import events
+from damendaemon.bench import events
 
 
 
@@ -40,16 +40,16 @@ def main():
     measurements=[]
     short_expected=long_expected=None
     for chunk in (0,128,256):
-        with tempfile.TemporaryDirectory(prefix='dllm-chunk-bench-') as directory:
+        with tempfile.TemporaryDirectory(prefix='damendaemon-chunk-bench-') as directory:
             logpath=Path(directory)/'server.log'
             with logpath.open('w') as log:
-                process=subprocess.Popen([sys.executable,'-m','dllm','serve','--port','0','--device',args.device,
+                process=subprocess.Popen([sys.executable,'-m','damendaemon','serve','--port','0','--device',args.device,
                     '--context','2048','--batch-size','4','--prefill-chunk-size',str(chunk),
                     '--model','a='+args.model],stdout=log,stderr=log)
                 try:
                     deadline=time.monotonic()+120
                     while time.monotonic()<deadline and process.poll() is None:
-                        ready=[s for s in logpath.read_text().splitlines() if s.startswith('dllm listening on ')]
+                        ready=[s for s in logpath.read_text().splitlines() if s.startswith('damendaemon listening on ')]
                         if ready:base=ready[-1].split()[-1];break
                         time.sleep(.1)
                     else:raise RuntimeError(logpath.read_text())

@@ -14,8 +14,8 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
-    from dllm.cuda_deepseek_layer_stage import CudaDeepSeekLayerStage
-    from dllm.floating_model import FloatingModel
+    from damendaemon.cuda_deepseek_layer_stage import CudaDeepSeekLayerStage
+    from damendaemon.floating_model import FloatingModel
     from scripts.experiments.cuda_deepseek_fixture import prepare_block
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')
     torch.set_num_threads(1);torch.backends.cuda.matmul.allow_tf32=False;torch.backends.cudnn.allow_tf32=False

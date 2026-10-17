@@ -3,9 +3,9 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.cuda_deepseek_generation import CudaDeepSeekGenerator
-from dllm.cuda_reference_serving import CudaDeepSeekReferenceRuntime
-from dllm.reference_serving import ReferenceRuntime
+from damendaemon.cuda_deepseek_generation import CudaDeepSeekGenerator
+from damendaemon.cuda_reference_serving import CudaDeepSeekReferenceRuntime
+from damendaemon.reference_serving import ReferenceRuntime
 from tests.test_deepseek_generation import text_fixture,ScriptedModel
 
 

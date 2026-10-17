@@ -8,12 +8,12 @@ import os
 from pathlib import Path
 import numpy as np
 import torch
-from dllm.native_kquant import linear_if_enabled
+from damendaemon.native_kquant import linear_if_enabled
 from verify_kquant_kernels import fixture
 
 
 def main():
-    path=os.environ['DLLM_KQUANT_CUDA_LIBRARY']
+    path=os.environ['DAMENDAEMON_KQUANT_CUDA_LIBRARY']
     torch.set_num_threads(4)
     rng=np.random.default_rng(913);reports=[]
     with torch.inference_mode():

@@ -7,8 +7,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from dllm.glm_flash_tools import FlashTools
-from dllm.glm_text import END_THINK,EOS
+from damendaemon.glm_flash_tools import FlashTools
+from damendaemon.glm_text import END_THINK,EOS
 from tests import test_glm_tools as glm
 from tests import test_glm_flash_batch_tools as flash
 from tests import test_deepseek_batch_tools as deepseek

@@ -8,11 +8,11 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True)
     args=parser.parse_args()
     uuid=os.environ.get('CUDA_VISIBLE_DEVICES','')
-    if not uuid.startswith('GPU-') or ',' in uuid or os.environ.get('DLLM_SHARED_CUDA_GUARD')!='1':
+    if not uuid.startswith('GPU-') or ',' in uuid or os.environ.get('DAMENDAEMON_SHARED_CUDA_GUARD')!='1':
         parser.error('requires shared CUDA guard')
     if args.output.exists():parser.error('new report path required')
     import torch
-    from dllm.cuda_packed_expert import CudaPackedExpert,CudaPackedMatrix
+    from damendaemon.cuda_packed_expert import CudaPackedExpert,CudaPackedMatrix
     from tests.test_packed_moe import expert,dense_expert
     from scripts.experiments.split_gguf import save
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')

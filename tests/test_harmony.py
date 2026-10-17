@@ -1,5 +1,5 @@
 import unittest
-from dllm.harmony import TextStream,_MARKERS
+from damendaemon.harmony import TextStream,_MARKERS
 
 
 class Tokenizer:
@@ -49,7 +49,7 @@ class HarmonyTests(unittest.TestCase):
         self.assertEqual(self.parse([MESSAGE,15,RETURN])[0],'analysis <|channel|>')
 
     def test_assistant_reasoning_history_round_trips_without_mutation(self):
-        from dllm.tool_calls import validate_messages,template_messages
+        from damendaemon.tool_calls import validate_messages,template_messages
         messages=[{'role':'assistant','content':'4','reasoning_content':'Simple.'}]
         self.assertEqual(validate_messages(messages),messages)
         self.assertEqual(template_messages(messages),messages)
@@ -107,8 +107,8 @@ class HarmonyTests(unittest.TestCase):
 
     def test_tool_history_normalization_and_unsupported_shapes(self):
         from types import SimpleNamespace
-        from dllm.qwen2 import ModelWeights
-        from dllm.tool_calls import validate_messages
+        from damendaemon.qwen2 import ModelWeights
+        from damendaemon.tool_calls import validate_messages
         class Template:
             def generate(self,**kwargs):self.arguments=kwargs;yield 'rendered'
         template=Template();model=SimpleNamespace(template=template,config={'model_type':'gpt_oss','vocab_size':2},

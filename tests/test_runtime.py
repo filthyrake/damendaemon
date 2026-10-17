@@ -4,7 +4,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 
-from dllm.runtime import Runtime, BusyError
+from damendaemon.runtime import Runtime, BusyError
 
 
 class Weights:
@@ -58,7 +58,7 @@ class RuntimeTests(unittest.TestCase):
                    (float('nan'), float('inf'), -float('inf'), True, '8', None, 1e-15)]
         invalid += [{name: value} for name in ('context', 'gpu_models', 'host_models')
                     for value in (True, 1.5, 0, -1, None, '2')]
-        with patch('dllm.runtime.require_gpu') as initialize:
+        with patch('damendaemon.runtime.require_gpu') as initialize:
             for options in invalid:
                 with self.subTest(options=options):
                     initialize.reset_mock()
@@ -67,13 +67,13 @@ class RuntimeTests(unittest.TestCase):
                     initialize.assert_not_called()
 
     def setUp(self):
-        self.gpu = patch("dllm.runtime.require_gpu")
+        self.gpu = patch("damendaemon.runtime.require_gpu")
         self.gpu.start()
         self.modules = patch.dict("sys.modules", {
             "torch": SimpleNamespace(cuda=SimpleNamespace(
                 synchronize=lambda: None, empty_cache=lambda: None,is_initialized=lambda:False)),
-            "dllm.models": SimpleNamespace(load=Weights,is_gguf=lambda _:False,weight_bytes=lambda _,**kwargs:100,config=lambda _: {"max_position_embeddings":2048}),
-            "dllm.qwen2": SimpleNamespace(ModelWeights=Weights, Executor=Executor,
+            "damendaemon.models": SimpleNamespace(load=Weights,is_gguf=lambda _:False,weight_bytes=lambda _,**kwargs:100,config=lambda _: {"max_position_embeddings":2048}),
+            "damendaemon.qwen2": SimpleNamespace(ModelWeights=Weights, Executor=Executor,
                                           weight_bytes=lambda _: 100),
         })
         self.modules.start()
@@ -179,7 +179,7 @@ class RuntimeTests(unittest.TestCase):
     def test_activation_completion_failure_is_owned_but_never_reused(self):
         from unittest.mock import Mock
         runtime = Runtime({'a':'a'})
-        with patch('dllm.runtime.synchronize', side_effect=RuntimeError('completion failure')), \
+        with patch('damendaemon.runtime.synchronize', side_effect=RuntimeError('completion failure')), \
                 self.assertRaisesRegex(RuntimeError, 'completion failure'):
             with runtime.session('a'):
                 pass
@@ -228,7 +228,7 @@ class RuntimeTests(unittest.TestCase):
         self.assertIs(runtime.failed_executors[0], resident)
         self.assertTrue(any('cleanup still busy' in note for note in failure.exception.__notes__))
         self.assertEqual(runtime.manage('status')['pending_executor_cleanup'], 1)
-        with patch('dllm.runtime.make_executor') as construct:
+        with patch('damendaemon.runtime.make_executor') as construct:
             with self.assertRaisesRegex(RuntimeError, 'cleanup still busy'):
                 with runtime.session('a'):
                     pass
@@ -268,7 +268,7 @@ class RuntimeTests(unittest.TestCase):
             references.append(weakref.ref(executor))
             return executor
         runtime=Runtime({'a':'a','b':'b'},gpu_models=1)
-        with patch('dllm.runtime.make_executor',side_effect=create):
+        with patch('damendaemon.runtime.make_executor',side_effect=create):
             with runtime.session('a'):pass
             with runtime.session('b'):pass
 
@@ -343,7 +343,7 @@ class RuntimeTests(unittest.TestCase):
             (root/'config.json').write_text('{}')
             (root/'tokenizer_config.json').write_text('{}')
             Tokenizer(models.WordLevel({'a':0})).save(str(root/'tokenizer.json'))
-            with patch('dllm.models.config',return_value={'max_position_embeddings':2048}):
+            with patch('damendaemon.models.config',return_value={'max_position_embeddings':2048}):
                 for _ in range(2):
                     self.assertEqual(runtime.manage('register','a',str(root))['models'][0]['id'],'a')
                 with self.assertRaises(ValueError):runtime.manage('register','a',str(root/'other'))
@@ -392,7 +392,7 @@ class RuntimeTests(unittest.TestCase):
                     template=root/'chat_template.jinja';template.unlink(missing_ok=True)
                     (root/'tokenizer_config.json').write_text(json.dumps({} if fallback else {'chat_template':value}))
                     if fallback:template.write_text(value)
-                    with patch('dllm.models.weight_bytes',return_value=100) as inventory:
+                    with patch('damendaemon.models.weight_bytes',return_value=100) as inventory:
                         with self.assertRaisesRegex(ValueError,'invalid local model snapshot'):
                             runtime.manage('register','bad',str(root))
                         inventory.assert_not_called()
@@ -421,7 +421,7 @@ class RuntimeTests(unittest.TestCase):
                 with self.subTest(raw=raw):
                     runtime=Runtime({})
                     (root/'tokenizer_config.json').write_text(raw)
-                    with patch('dllm.models.weight_bytes',return_value=100) as inventory:
+                    with patch('damendaemon.models.weight_bytes',return_value=100) as inventory:
                         with self.assertRaisesRegex(ValueError,'invalid local model snapshot'):
                             runtime.manage('register','bad',str(root))
                         inventory.assert_not_called()
@@ -440,7 +440,7 @@ class RuntimeTests(unittest.TestCase):
                 with self.subTest(value=value):
                     runtime=Runtime({})
                     (root/'tokenizer_config.json').write_text(json.dumps({'eos_token':value}))
-                    with patch('dllm.models.weight_bytes',return_value=100) as inventory:
+                    with patch('damendaemon.models.weight_bytes',return_value=100) as inventory:
                         with self.assertRaisesRegex(ValueError,'invalid local model snapshot'):
                             runtime.manage('register','bad',str(root))
                         inventory.assert_not_called()
@@ -457,8 +457,8 @@ class RuntimeTests(unittest.TestCase):
             (root/'chat_template.jinja').write_text('x'*33)
             Tokenizer(models.WordLevel({'a':0})).save(str(root/'tokenizer.json'))
             runtime=Runtime({})
-            with patch('dllm.tokenizer_metadata.MAX_CHECKPOINT_TEMPLATE_BYTES',32), \
-                    patch('dllm.models.weight_bytes',return_value=100) as inventory:
+            with patch('damendaemon.tokenizer_metadata.MAX_CHECKPOINT_TEMPLATE_BYTES',32), \
+                    patch('damendaemon.models.weight_bytes',return_value=100) as inventory:
                 with self.assertRaisesRegex(ValueError,'invalid local model snapshot'):
                     runtime.manage('register','bad',str(root))
                 inventory.assert_not_called()
@@ -478,7 +478,7 @@ class RuntimeTests(unittest.TestCase):
                 try:
                     (root/'tokenizer_config.json').write_text(json.dumps({'chat_template':[
                         {'name':'default','template':'DEFAULT'}, {'name':'tool_use','template':variant}]}))
-                    with patch('dllm.models.weight_bytes',return_value=100) as inventory:
+                    with patch('damendaemon.models.weight_bytes',return_value=100) as inventory:
                         if variant.startswith('{%'):
                             with self.assertRaisesRegex(ValueError,'invalid local model snapshot'):
                                 runtime.manage('register','named',str(root))
@@ -503,7 +503,7 @@ class RuntimeTests(unittest.TestCase):
                             {'model_type':'mamba'},{'model_type':'mamba2'},{'model_type':'t5'}):
                 with self.subTest(changes=changes):
                     runtime=Runtime({})
-                    with patch('dllm.models.config',return_value={'max_position_embeddings':2048,**changes}):
+                    with patch('damendaemon.models.config',return_value={'max_position_embeddings':2048,**changes}):
                         runtime.manage('register','valid',str(root))
                     self.assertEqual(runtime.model_ids(),['valid']);runtime.close()
 
@@ -511,7 +511,7 @@ class RuntimeTests(unittest.TestCase):
         import tempfile
         from pathlib import Path
         from tokenizers import Tokenizer,models
-        with patch.dict('os.environ',{'DLLM_QUANTIZATION':'q8_0'}):
+        with patch.dict('os.environ',{'DAMENDAEMON_QUANTIZATION':'q8_0'}):
             runtime=Runtime({'initial':'initial'})
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)
@@ -523,7 +523,7 @@ class RuntimeTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 runtime.manage('register','plain',str(root),quantization='q8_0')
             self.assertEqual(runtime.quantizations,{'initial':'q8_0','plain':'none','packed':'q8_0'})
-            with patch('dllm.models.load',side_effect=Weights) as load:
+            with patch('damendaemon.models.load',side_effect=Weights) as load:
                 runtime.manage('load','plain')
                 self.assertEqual(load.call_args.kwargs,{'quantization':'none'})
                 runtime.manage('unload','plain',release_host=True)
@@ -536,7 +536,7 @@ class RuntimeTests(unittest.TestCase):
         import tempfile
         from pathlib import Path
         from tokenizers import Tokenizer, models
-        from dllm.chat_template import compile_template, override_metadata
+        from damendaemon.chat_template import compile_template, override_metadata
         template = 'custom {{ messages }}'
         def configure(model, tokenizer, text, config):
             model.template = compile_template(text)
@@ -554,7 +554,7 @@ class RuntimeTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     runtime.manage('register', 'new', str(root), chat_template=bad)
                 self.assertNotIn('new', runtime.models)
-            with patch('dllm.models.config', return_value={'model_type':'t5'}), self.assertRaises(ValueError):
+            with patch('damendaemon.models.config', return_value={'model_type':'t5'}), self.assertRaises(ValueError):
                 runtime.manage('register', 'new', str(root), chat_template=template)
             self.assertNotIn('new', runtime.models)
             for _ in range(2):runtime.manage('register', 'new', str(root), chat_template=template)
@@ -563,7 +563,7 @@ class RuntimeTests(unittest.TestCase):
                     runtime.manage('register', 'new', str(root), chat_template=different)
             status = runtime.manage('status')['models'][1]
             self.assertEqual(status['chat_template'], override_metadata(template))
-            with patch('dllm.models.load', side_effect=load) as loader:
+            with patch('damendaemon.models.load', side_effect=load) as loader:
                 for alias, expected in (('new','disk'), ('other','disk'), ('new','host')):
                     self.assertEqual(runtime.manage('load', alias)['source_tier'], expected)
                 self.assertEqual(loader.call_count, 2)

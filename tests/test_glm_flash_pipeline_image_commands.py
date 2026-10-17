@@ -34,7 +34,7 @@ class FlashPipelineImageCommandTests(unittest.TestCase):
                 if cuts:self.assertEqual(events[0]['stage_layers'],[[0,1],[1,2],[2,3]])
                 results.append(events[1:])
             self.assertEqual(*results)
-        with patch('dllm.glm_flash_reference_loader._payload',side_effect=AssertionError('payload')),contextlib.redirect_stderr(io.StringIO()):
+        with patch('damendaemon.glm_flash_reference_loader._payload',side_effect=AssertionError('payload')),contextlib.redirect_stderr(io.StringIO()):
             for extra in (['--layer-splits','3'],['--context','1','--layer-splits','1']):
                 with self.assertRaises(SystemExit) as error:command.main([str(self.path),'--messages',str(source),*extra])
                 self.assertEqual(error.exception.code,2)
@@ -46,7 +46,7 @@ class FlashPipelineImageCommandTests(unittest.TestCase):
             process=subprocess.Popen([sys.executable,'-m','scripts.serve_cpu_reference','flash',str(self.path),
                 '--flash-images','--context','2048','--port','0','--queue-size','3',*cuts],
                 stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,
-                env=self.env|{'DLLM_API_KEY':key,'DLLM_ADMIN_API_KEY':admin})
+                env=self.env|{'DAMENDAEMON_API_KEY':key,'DAMENDAEMON_ADMIN_API_KEY':admin})
             try:
                 ready=self.event(process);base=ready['url'];headers={'Authorization':'Bearer '+key,'Content-Type':'application/json'}
                 if cuts:self.assertEqual(ready['stage_layers'],[[0,1],[1,2],[2,3]])

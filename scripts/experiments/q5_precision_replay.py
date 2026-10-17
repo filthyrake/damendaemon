@@ -52,8 +52,8 @@ def metrics(actual, expected, teacher):
 def export_cpu(model_path, config_path, teacher_path, folder):
     import numpy as np
     import torch
-    from dllm.rocm_policy import host_available
-    from dllm.gguf_model import GgufWeights
+    from damendaemon.rocm_policy import host_available
+    from damendaemon.gguf_model import GgufWeights
     from scripts.verify_gguf_reference import reference_weights
     from transformers import AutoConfig, AutoModelForCausalLM
     from transformers.modeling_utils import no_init_weights
@@ -119,10 +119,10 @@ def oracle_kinds(oracle):
 def replay(model_path, folder, precision, output):
     import numpy as np
     import torch
-    from dllm.gguf_model import GgufWeights
-    from dllm.runtime import make_executor
+    from damendaemon.gguf_model import GgufWeights
+    from damendaemon.runtime import make_executor
     uuid = os.environ.get('CUDA_VISIBLE_DEVICES', '')
-    if not uuid.startswith('GPU-') or ',' in uuid or os.environ.get('DLLM_SHARED_CUDA_GUARD') != '1':
+    if not uuid.startswith('GPU-') or ',' in uuid or os.environ.get('DAMENDAEMON_SHARED_CUDA_GUARD') != '1':
         raise ValueError('requires shared CUDA guard and explicit GPU UUID')
     if output.exists():
         raise ValueError('new output path required')
@@ -139,7 +139,7 @@ def replay(model_path, folder, precision, output):
     torch.set_num_threads(1)
     torch.backends.cuda.matmul.allow_tf32 = False
     torch.cuda.set_per_process_memory_fraction(1536*1024**2/torch.cuda.get_device_properties(0).total_memory)
-    os.environ['DLLM_LLAMA_PRECISION'] = precision
+    os.environ['DAMENDAEMON_LLAMA_PRECISION'] = precision
     report = dict(completed=False, precision=precision, historical_gpu_gate_replaced=False,
                   checkpoint_sha256=CHECKPOINT_SHA256, device=torch.cuda.get_device_name(),
                   torch=torch.__version__, context=64, steps=8)

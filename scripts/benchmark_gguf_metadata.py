@@ -1,9 +1,9 @@
 """Compare CPU metadata loading against a saved prior reader implementation.
 
 For the original baseline:
-  git show 1e5d2c1:dllm/gguf_reader.py > /tmp/gguf-reader-before.py
+  git show 1e5d2c1:damendaemon/gguf_reader.py > /tmp/gguf-reader-before.py
 
-This measures an empty dllm metadata cache, not a cold operating-system cache.
+This measures an empty damendaemon metadata cache, not a cold operating-system cache.
 It does not measure weight loading, CUDA execution, or complete model activation.
 """
 if not __debug__:
@@ -17,7 +17,7 @@ import statistics
 import time
 from pathlib import Path
 
-import dllm.gguf_model as module
+import damendaemon.gguf_model as module
 
 
 def main():

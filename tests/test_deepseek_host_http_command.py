@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import patch
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError
-from dllm.cpu_snapshot_identity import fingerprint
+from damendaemon.cpu_snapshot_identity import fingerprint
 from scripts import run_deepseek_host_topology as cli,run_cpu_host_topology as shared
 from tests import test_deepseek_native_host_command as native
 
@@ -27,7 +27,7 @@ class DeepSeekHostHttpCommandTests(unittest.TestCase):
 
     def service(self):
         key=secrets.token_urlsafe(32);admin=secrets.token_urlsafe(32)
-        self.environment.update(DLLM_API_KEY=key,DLLM_ADMIN_API_KEY=admin)
+        self.environment.update(DAMENDAEMON_API_KEY=key,DAMENDAEMON_ADMIN_API_KEY=admin)
         identity=fingerprint(self.path).model_id;extra=['--verify-model-id','--model-id',identity]
         workers=self.workers('fp4_fp8_reference',extra)
         coordinator=self.launch(self.args('serve',extra=extra));ready=self.event(coordinator)

@@ -1,7 +1,7 @@
 import unittest
 import torch
-from dllm.bloom import alibi_slopes, load_weights
-from dllm.config import decoder_config
+from damendaemon.bloom import alibi_slopes, load_weights
+from damendaemon.config import decoder_config
 
 
 def config(**changes):

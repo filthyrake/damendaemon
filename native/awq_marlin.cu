@@ -1,29 +1,29 @@
-// dllm C interface to the separately licensed Marlin device kernels.
+// damendaemon C interface to the separately licensed Marlin device kernels.
 // Initial experiment: FP16 activations/output, unsigned AWQ4, group size 128.
 #include <algorithm>
 #include <type_traits>
 #include <limits>
 #include <cuda_runtime.h>
-#define MARLIN_NAMESPACE_NAME dllm_marlin
+#define MARLIN_NAMESPACE_NAME damendaemon_marlin
 #include "marlin_template.h"
 #include "awq_repack.cuh"
 
 namespace {
 template<int Blocks, bool Small = false>
-constexpr auto kernel = dllm_marlin::Marlin<
+constexpr auto kernel = damendaemon_marlin::Marlin<
     vllm::kFloat16.id(), vllm::kU4.id(), vllm::kFloat16.id(), vllm::kFloat16.id(),
     128, Blocks, 8, 4, Small, 4, 8, false>;
-#ifdef DLLM_AWQ_EXPERIMENT_WIDE
+#ifdef DAMENDAEMON_AWQ_EXPERIMENT_WIDE
 // Isolated tuning build: leave the qualified default and prompt kernels intact.
-constexpr auto wide_decode = dllm_marlin::Marlin<
+constexpr auto wide_decode = damendaemon_marlin::Marlin<
     vllm::kFloat16.id(), vllm::kU4.id(), vllm::kFloat16.id(), vllm::kFloat16.id(),
     256, 1, 8, 8, true, 4, 8, false>;
 #endif
 }
 
-extern "C" int dllm_awq_marlin_abi() { return 2; }
+extern "C" int damendaemon_awq_marlin_abi() { return 2; }
 
-extern "C" int dllm_awq_marlin_init(int* sms, int* shared) {
+extern "C" int damendaemon_awq_marlin_init(int* sms, int* shared) {
     if (!sms || !shared) return cudaErrorInvalidValue;
     int device, major;
     cudaError_t status = cudaGetDevice(&device);
@@ -36,7 +36,7 @@ extern "C" int dllm_awq_marlin_init(int* sms, int* shared) {
     status = cudaDeviceGetAttribute(shared, cudaDevAttrMaxSharedMemoryPerBlockOptin, device);
     if (status != cudaSuccess) return status;
     int budget = *shared/2-1024;
-#ifdef DLLM_AWQ_EXPERIMENT_WIDE
+#ifdef DAMENDAEMON_AWQ_EXPERIMENT_WIDE
     status = cudaFuncSetAttribute(wide_decode, cudaFuncAttributeMaxDynamicSharedMemorySize, *shared);
     if (status != cudaSuccess) return status;
 #endif
@@ -48,20 +48,20 @@ extern "C" int dllm_awq_marlin_init(int* sms, int* shared) {
     if (status != cudaSuccess) return status;
     status = cudaFuncSetAttribute(kernel<4>, cudaFuncAttributeMaxDynamicSharedMemorySize, *shared);
     if (status != cudaSuccess) return status;
-    return cudaFuncSetAttribute(dllm_marlin::awq_marlin_repack_kernel<256, 4, false>,
+    return cudaFuncSetAttribute(damendaemon_marlin::awq_marlin_repack_kernel<256, 4, false>,
                                cudaFuncAttributeMaxDynamicSharedMemorySize, *shared);
 }
 
-extern "C" int dllm_awq_marlin_repack(const void* weights, void* packed, int k, int n,
+extern "C" int damendaemon_awq_marlin_repack(const void* weights, void* packed, int k, int n,
                                       int sms, int shared, void* stream) {
     if (!weights || !packed || k <= 0 || n <= 0 || k%128 || n%128 || sms <= 0 || shared <= 0)
         return cudaErrorInvalidValue;
-    dllm_marlin::awq_marlin_repack_kernel<256, 4, false><<<sms, 256, shared, static_cast<cudaStream_t>(stream)>>>(
+    damendaemon_marlin::awq_marlin_repack_kernel<256, 4, false><<<sms, 256, shared, static_cast<cudaStream_t>(stream)>>>(
         static_cast<const uint32_t*>(weights), static_cast<uint32_t*>(packed), k, n);
     return cudaGetLastError();
 }
 
-extern "C" int dllm_awq_marlin_gemm(const void* input, const void* weights,
+extern "C" int damendaemon_awq_marlin_gemm(const void* input, const void* weights,
                                     const void* scales, const void* zeros, const void* bias,
                                     void* output, void* scratch, void* locks,
                                     int m, int n, int k, int sms, int shared, void* stream) {
@@ -80,7 +80,7 @@ extern "C" int dllm_awq_marlin_gemm(const void* input, const void* weights,
         int budget = blocks_m == 4 ? shared : shared/2-1024;
         int blocks = blocks_m == 4 ? sms : sms*2;
         int threads = 128;
-#ifdef DLLM_AWQ_EXPERIMENT_WIDE
+#ifdef DAMENDAEMON_AWQ_EXPERIMENT_WIDE
         if (rows <= 8) {
             function = wide_decode;
             budget = shared;

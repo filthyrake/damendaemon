@@ -13,9 +13,9 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
-    from dllm.cuda_glm_flash_primitives import recurrent_attention,CudaFlashHyperConnection
-    from dllm.glm_flash_kda import recurrent_attention as cpu_recurrence
-    from dllm.glm_flash_hyper import FlashHyperConnection
+    from damendaemon.cuda_glm_flash_primitives import recurrent_attention,CudaFlashHyperConnection
+    from damendaemon.glm_flash_kda import recurrent_attention as cpu_recurrence
+    from damendaemon.glm_flash_hyper import FlashHyperConnection
     from tests.test_glm_flash_kda import inputs,scalar_control as recurrence_control
     from tests.test_glm_flash_hyper import component,scalar_control as hyper_control
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')

@@ -1,8 +1,8 @@
 """Final cleanup attempts independent reservations despite a release failure."""
 import unittest
 from unittest.mock import Mock, patch
-from dllm.scheduler import BatchedRuntime, Pending
-from dllm.sampling import Sampler, Sampling
+from damendaemon.scheduler import BatchedRuntime, Pending
+from damendaemon.sampling import Sampler, Sampling
 from tests.test_scheduler import FakeRuntime, FakePagedExecutor
 
 
@@ -11,8 +11,8 @@ class PagedCleanupTests(unittest.TestCase):
         for failing in ({0}, {0, 1}):
             with self.subTest(failing=failing):
                 # Run the group synchronously; no scheduler worker is launched.
-                with patch('dllm.scheduler.Runtime', FakeRuntime), \
-                        patch('dllm.scheduler.threading.Thread') as thread:
+                with patch('damendaemon.scheduler.Runtime', FakeRuntime), \
+                        patch('damendaemon.scheduler.threading.Thread') as thread:
                     thread.return_value.is_alive.return_value = False
                     runtime = BatchedRuntime({'a': 'a'}, batch_size=2)
                 executor = FakePagedExecutor()
@@ -43,7 +43,7 @@ class PagedCleanupTests(unittest.TestCase):
     def test_unrecovered_release_stops_owner_and_queued_requests(self):
         import threading
         from concurrent.futures import ThreadPoolExecutor
-        from dllm.runtime import BusyError
+        from damendaemon.runtime import BusyError
         entered, proceed = threading.Event(), threading.Event()
         executor = FakePagedExecutor()
         def fail_prefill(*args, **kwargs):
@@ -52,7 +52,7 @@ class PagedCleanupTests(unittest.TestCase):
             raise RuntimeError('injected prefill failure')
         executor.prefill_batch = Mock(side_effect=fail_prefill)
         executor.release_request = Mock(side_effect=RuntimeError('injected reservation release failure'))
-        with patch('dllm.scheduler.Runtime',FakeRuntime):
+        with patch('damendaemon.scheduler.Runtime',FakeRuntime):
             runtime=BatchedRuntime({'a':'a'},batch_size=1,queue_size=3)
         runtime.runtime.executor=executor
         runtime.runtime.close=Mock()

@@ -10,11 +10,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 from urllib.request import Request,urlopen
-from dllm.client_admission import ClientAdmission
-from dllm.http_auth import AuthPolicy,ClientKey
-from dllm.host_tls import certificate_pin
-from dllm.remote_quota_config import private_json,frontend_client,authority_policy,authority_listener,recovery_request
-from dllm.shared_client_reservations import SharedReservationUnavailable
+from damendaemon.client_admission import ClientAdmission
+from damendaemon.http_auth import AuthPolicy,ClientKey
+from damendaemon.host_tls import certificate_pin
+from damendaemon.remote_quota_config import private_json,frontend_client,authority_policy,authority_listener,recovery_request
+from damendaemon.shared_client_reservations import SharedReservationUnavailable
 from tests import tls_credentials,test_serve_cpu_reference as reference
 from tests.test_distributed_drain import wait_for
 
@@ -24,8 +24,8 @@ class QuotaCommandTests(unittest.TestCase):
 
     def setUp(self):
         temp=tempfile.TemporaryDirectory();self.addCleanup(temp.cleanup);self.path=Path(temp.name)
-        self.env={k:v for k,v in os.environ.items() if not k.startswith('DLLM_')}
-        self.env.update(OMP_NUM_THREADS='1',MKL_NUM_THREADS='1',DLLM_REMOTE_QUOTA_OWNER_KEY=secrets.token_hex(32))
+        self.env={k:v for k,v in os.environ.items() if not k.startswith('DAMENDAEMON_')}
+        self.env.update(OMP_NUM_THREADS='1',MKL_NUM_THREADS='1',DAMENDAEMON_REMOTE_QUOTA_OWNER_KEY=secrets.token_hex(32))
         self.owner=secrets.token_hex(16);self.key=secrets.token_urlsafe(32)
         self.client_policy=ClientKey('alice',self.key,1,max_reserved_output_tokens=8)
         self.policy=self.write('policy.json',dict(path=str(self.path/'ledger.sqlite'),clients=[dict(name='alice',max_inflight=1,max_reserved_output_tokens=8)]))
@@ -52,7 +52,7 @@ class QuotaCommandTests(unittest.TestCase):
             env=self.env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=15)
         if success:self.assertEqual(result.returncode,0,result.stderr)
         else:self.assertNotEqual(result.returncode,0)
-        self.assertNotIn(self.env['DLLM_REMOTE_QUOTA_OWNER_KEY'],result.stdout+result.stderr)
+        self.assertNotIn(self.env['DAMENDAEMON_REMOTE_QUOTA_OWNER_KEY'],result.stdout+result.stderr)
         self.assertNotIn(self.key,result.stdout+result.stderr)
         return result
 
@@ -123,7 +123,7 @@ class QuotaCommandTests(unittest.TestCase):
         self.assertEqual(client.call(request)['claim'],claim)
         rows=json.loads(self.command('claims','--config',self.config,'--limit','1').stdout)
         self.assertEqual(rows['claims'][0]['claim'],claim)
-        with patch.dict(os.environ,self.env|{'DLLM_REMOTE_QUOTA_CONFIG':str(self.config)},clear=True):
+        with patch.dict(os.environ,self.env|{'DAMENDAEMON_REMOTE_QUOTA_CONFIG':str(self.config)},clear=True):
             with self.assertRaises(SharedReservationUnavailable):ClientAdmission(AuthPolicy(clients=(self.client_policy,)))
         operation=self.operation(2,dict(op='release',claim=claim))
         first=self.command('recover','--config',self.config,'--operation',operation).stdout
@@ -134,7 +134,7 @@ class QuotaCommandTests(unittest.TestCase):
         self.operation(3,dict(op='retire'));self.command('recover','--config',self.config,'--operation',operation)
         self.command('register','--policy',self.policy,'--owner',self.owner,'--client','alice',success=False)
         self.stop(authority)
-        self.assertNotIn(self.env['DLLM_REMOTE_QUOTA_OWNER_KEY'].encode(),(self.path/'ledger.sqlite').read_bytes())
+        self.assertNotIn(self.env['DAMENDAEMON_REMOTE_QUOTA_OWNER_KEY'].encode(),(self.path/'ledger.sqlite').read_bytes())
 
     def test_recovery_refuses_reserve_wrong_identity_and_changed_shape(self):
         client=self.client()
@@ -147,11 +147,11 @@ class QuotaCommandTests(unittest.TestCase):
     def test_frontend_opt_in_defaults_conflict_and_matching_policy(self):
         with patch.dict(os.environ,{},clear=True):
             admission=ClientAdmission(AuthPolicy(clients=(self.client_policy,)));self.assertIsNone(admission.reservation_store);admission.close()
-        with patch.dict(os.environ,dict(DLLM_REMOTE_QUOTA_CONFIG=str(self.config),DLLM_CLIENT_RESERVATION_DB=str(self.path/'unused.sqlite')),clear=True):
+        with patch.dict(os.environ,dict(DAMENDAEMON_REMOTE_QUOTA_CONFIG=str(self.config),DAMENDAEMON_CLIENT_RESERVATION_DB=str(self.path/'unused.sqlite')),clear=True):
             with self.assertRaises(ValueError):ClientAdmission(AuthPolicy(clients=(self.client_policy,)))
         self.assertFalse((self.path/'unused.sqlite').exists())
         authority=self.bootstrap()
-        with patch.dict(os.environ,self.env|{'DLLM_REMOTE_QUOTA_CONFIG':str(self.config)},clear=True):
+        with patch.dict(os.environ,self.env|{'DAMENDAEMON_REMOTE_QUOTA_CONFIG':str(self.config)},clear=True):
             admission=ClientAdmission(AuthPolicy(clients=(self.client_policy,)))
             with admission.lease(['Bearer '+self.key]):self.assertEqual(self.client().call(self.client().request('status'))['claims'],1)
             admission.close()
@@ -163,8 +163,8 @@ class QuotaCommandTests(unittest.TestCase):
         authority=self.bootstrap();client=self.client()
         fixture=reference.ReferenceCommandTests();fixture.setUp();self.addCleanup(fixture.doCleanups)
         snapshot=fixture.snapshot('glm')
-        env=self.env|{'DLLM_REMOTE_QUOTA_CONFIG':str(self.config),
-            'DLLM_CLIENT_KEYS':json.dumps({'alice':dict(key=self.key,max_inflight=1,max_reserved_output_tokens=8)})}
+        env=self.env|{'DAMENDAEMON_REMOTE_QUOTA_CONFIG':str(self.config),
+            'DAMENDAEMON_CLIENT_KEYS':json.dumps({'alice':dict(key=self.key,max_inflight=1,max_reserved_output_tokens=8)})}
         process=subprocess.Popen([sys.executable,'-m','scripts.serve_cpu_reference','glm',str(snapshot),'--context','256','--port','0'],
             env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         self.processes.append(process);ready=self.event(process)
@@ -196,8 +196,8 @@ class QuotaCommandTests(unittest.TestCase):
         authority=self.bootstrap();client=self.client()
         fixture=reference.ReferenceCommandTests();fixture.setUp();self.addCleanup(fixture.doCleanups)
         snapshot=fixture.snapshot('glm')
-        env=self.env|{'DLLM_REMOTE_QUOTA_CONFIG':str(self.config),
-            'DLLM_CLIENT_KEYS':json.dumps({'alice':dict(key=self.key,max_inflight=1,max_reserved_output_tokens=8)})}
+        env=self.env|{'DAMENDAEMON_REMOTE_QUOTA_CONFIG':str(self.config),
+            'DAMENDAEMON_CLIENT_KEYS':json.dumps({'alice':dict(key=self.key,max_inflight=1,max_reserved_output_tokens=8)})}
         process=subprocess.Popen([sys.executable,'-m','scripts.serve_cpu_reference','glm',str(snapshot),'--context','256','--port','0'],
             env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         self.processes.append(process);ready=self.event(process)
@@ -210,7 +210,7 @@ class QuotaCommandTests(unittest.TestCase):
         while connection.recv(65536):pass
         out,err=process.communicate(timeout=15)
         self.assertNotEqual(process.returncode,0);self.assertNotIn('"event": "stopped"',out)
-        self.assertNotIn(self.key,out+err);self.assertNotIn(self.env['DLLM_REMOTE_QUOTA_OWNER_KEY'],out+err)
+        self.assertNotIn(self.key,out+err);self.assertNotIn(self.env['DAMENDAEMON_REMOTE_QUOTA_OWNER_KEY'],out+err)
         authority=self.start();client=self.client()
         self.assertEqual(client.call(client.request('status'))['claims'],1)
         self.stop(authority)

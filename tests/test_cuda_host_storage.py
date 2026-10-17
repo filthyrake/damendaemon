@@ -6,13 +6,13 @@ import subprocess
 import sys
 import unittest
 from unittest.mock import patch
-from dllm.cuda_host_storage import audit_cuda_host_storage
-from dllm.reference_stage_plan import inspect_reference_storage
-from dllm.cuda_stage_placement import _recipe
-from dllm import glm_reference_loader,glm_flash_reference_loader,deepseek_reference_loader
-from dllm.glm_stage_slots import GlmStageSlots
-from dllm.glm_flash_stage_slots import FlashStageSlots
-from dllm.deepseek_stage_slots import DeepSeekStageSlots
+from damendaemon.cuda_host_storage import audit_cuda_host_storage
+from damendaemon.reference_stage_plan import inspect_reference_storage
+from damendaemon.cuda_stage_placement import _recipe
+from damendaemon import glm_reference_loader,glm_flash_reference_loader,deepseek_reference_loader
+from damendaemon.glm_stage_slots import GlmStageSlots
+from damendaemon.glm_flash_stage_slots import FlashStageSlots
+from damendaemon.deepseek_stage_slots import DeepSeekStageSlots
 from tests import test_reference_stage_plan as prior,test_deepseek_reference_loader as deepseek
 from scripts import audit_cuda_host_storage as command
 

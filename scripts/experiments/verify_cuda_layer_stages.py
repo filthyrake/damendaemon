@@ -14,9 +14,9 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
-    from dllm.cuda_layer_stages import CudaGlmLayerStage,CudaFlashLayerStage
-    from dllm.cuda_glm_placement import place_cuda_glm
-    from dllm.cuda_glm_flash_placement import place_cuda_flash
+    from damendaemon.cuda_layer_stages import CudaGlmLayerStage,CudaFlashLayerStage
+    from damendaemon.cuda_glm_placement import place_cuda_glm
+    from damendaemon.cuda_glm_flash_placement import place_cuda_flash
     from tests.test_glm_packed_model import model_pair
     from tests.test_cuda_glm_flash_placement import fixture
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')

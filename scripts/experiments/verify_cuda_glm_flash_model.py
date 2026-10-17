@@ -15,14 +15,14 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
-    from dllm.cuda_glm_flash_model import CudaFlashModel,CudaFlashBlock,CudaPackedFlashFeedForward
-    from dllm.cuda_glm_flash_primitives import CudaFlashHyperConnection
-    from dllm.cuda_glm_flash_linear import CudaFlashLinearAttention
-    from dllm.cuda_glm_flash_sparse import CudaFlashSparseAttention
-    from dllm.cuda_glm_flash_indexer import CudaFlashIndexer
-    from dllm.cuda_packed_placement import place_cuda_experts
-    from dllm.cuda_prepared_projection import CudaPackedProjection
-    from dllm.prepared_projection import PackedProjection
+    from damendaemon.cuda_glm_flash_model import CudaFlashModel,CudaFlashBlock,CudaPackedFlashFeedForward
+    from damendaemon.cuda_glm_flash_primitives import CudaFlashHyperConnection
+    from damendaemon.cuda_glm_flash_linear import CudaFlashLinearAttention
+    from damendaemon.cuda_glm_flash_sparse import CudaFlashSparseAttention
+    from damendaemon.cuda_glm_flash_indexer import CudaFlashIndexer
+    from damendaemon.cuda_packed_placement import place_cuda_experts
+    from damendaemon.cuda_prepared_projection import CudaPackedProjection
+    from damendaemon.prepared_projection import PackedProjection
     from tests.test_glm_flash_model import fixture
     from tests.test_glm_block import ffn_weights
     from tests import test_glm_flash_ffn as ffn_test,test_glm_flash_sparse as sparse_test,test_glm_flash_linear as linear_test,test_glm_flash_hyper as hyper_test
@@ -56,7 +56,7 @@ def main():
                 feed=CudaPackedFlashFeedForward(bank.experts[0] if i==0 else bank.experts,activation_limit=.5,**options)
                 blocks.append(CudaFlashBlock(attention,feed,hyper(block.attention_hyper),hyper(block.ffn_hyper),block.input_norm.cuda(),block.post_norm.cuda()))
         if args.placement:
-            from dllm.cuda_glm_flash_placement import place_cuda_flash
+            from damendaemon.cuda_glm_flash_placement import place_cuda_flash
             placed=place_cuda_flash(cpu,device='cuda:0',max_bytes=1024*1024)
             model=placed.model;report['placement_raw_bytes']=placed.raw_bytes
         else:

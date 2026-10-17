@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_ffn import GlmFeedForward,select_glm_experts
-from dllm.glm_block import GlmBlock
+from damendaemon.glm_ffn import GlmFeedForward,select_glm_experts
+from damendaemon.glm_block import GlmBlock
 from tests.test_glm_cached_attention import fixture
 
 

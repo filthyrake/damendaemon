@@ -1,7 +1,7 @@
-diff --git a/dllm/metal_kernels.py b/dllm/metal_kernels.py
+diff --git a/damendaemon/metal_kernels.py b/damendaemon/metal_kernels.py
 index f4cfe1f..1956361 100644
---- a/dllm/metal_kernels.py
-+++ b/dllm/metal_kernels.py
+--- a/damendaemon/metal_kernels.py
++++ b/damendaemon/metal_kernels.py
 @@ -81,6 +81,50 @@ kernel void linear_half(device const float* x, device const half* w, device cons
      linear_impl(x,w,bias,y,m,n,k,has_bias,id,lane);
  }

@@ -5,10 +5,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.cpu_pipeline_generation import CpuPipelineReferenceGenerator
-from dllm.cpu_pipeline_build import build_cpu_pipeline
-from dllm.cpu_hybrid_checkpoint import load_cpu_checkpoint
-from dllm.hybrid_pipeline import HybridPipeline,PipelineCancelled
+from damendaemon.cpu_pipeline_generation import CpuPipelineReferenceGenerator
+from damendaemon.cpu_pipeline_build import build_cpu_pipeline
+from damendaemon.cpu_hybrid_checkpoint import load_cpu_checkpoint
+from damendaemon.hybrid_pipeline import HybridPipeline,PipelineCancelled
 from scripts.run_cpu_pipeline_reference import main
 from tests.test_cpu_hybrid_stage import model
 from tests.test_cpu_hybrid_checkpoint import snapshot
@@ -68,7 +68,7 @@ class CpuBatchTests(unittest.TestCase):
 
     def test_whole_batch_preflight_before_build(self):
         runner=self.runner()
-        with patch('dllm.cpu_pipeline_generation.build_cpu_pipeline',side_effect=AssertionError('built')):
+        with patch('damendaemon.cpu_pipeline_generation.build_cpu_pipeline',side_effect=AssertionError('built')):
             for rows,limits in (([],2),([[1]]*5,2),([[1],[60]],2),([[1],[2]],[1]),([[1],[2]],[1,16]),
                                 ([[1],[2]],[1,True]),([[1],[]],2)):
                 with self.assertRaises(ValueError):list(runner.generate_batch(rows,max_new_tokens=limits))
@@ -102,6 +102,6 @@ class CpuBatchTests(unittest.TestCase):
         for bad in (dict(tokens=[60]),dict(prompt='hello',tokens=[1]),dict(prompt=['hello']),dict(tokens='hello'),
                     dict(prompt='hello',max_new_tokens=True),dict(messages=[])):
             file.write_text(json.dumps(rows+[bad]))
-            with patch('dllm.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')),patch('sys.stderr',io.StringIO()):
+            with patch('damendaemon.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')),patch('sys.stderr',io.StringIO()):
                 with self.assertRaises(SystemExit) as caught:main(args)
                 self.assertEqual(caught.exception.code,2)

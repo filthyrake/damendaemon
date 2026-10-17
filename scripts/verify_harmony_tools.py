@@ -7,9 +7,9 @@ from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import Request,urlopen
 import torch
-from dllm.bench import events
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer
+from damendaemon.bench import events
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer
 from scripts.validation_server import owned_http_server
 
 TOOLS=[{'type':'function','function':{'name':'weather','description':'Get current weather for a city.',
@@ -26,7 +26,7 @@ def main():
     p.add_argument('--context',type=int,default=1024);p.add_argument('--prefix-tokens',type=int,default=0);args=p.parse_args()
     if args.prefix_tokens<0:raise ValueError('prefix length must be nonnegative')
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':raise RuntimeError('restricted to A2')
-    os.environ['DLLM_DEVICE']='cuda';torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_DEVICE']='cuda';torch.set_num_threads(4)
     messages=MESSAGES
     if args.prefix_tokens:
         from tokenizers import Tokenizer

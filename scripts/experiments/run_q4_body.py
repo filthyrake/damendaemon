@@ -11,11 +11,11 @@ if __name__=='__main__':
     parser.add_argument('target',choices=('serve','replay','single-replay','rebind'))
     parser.add_argument('--body-kernel',choices=('single-dot','paired-load','adjacent-gate','adjacent-all','adjacent-inplace','stage-dynamic'),default='single-dot')
     args,remaining=parser.parse_known_args()
-    os.environ['DLLM_Q4_STAGE_ADJACENT']='0'
+    os.environ['DAMENDAEMON_Q4_STAGE_ADJACENT']='0'
     install_validation_dispatch(args.body_kernel)
     if args.target=='serve':
-        sys.argv=['dllm','serve',*remaining]
-        runpy.run_module('dllm',run_name='__main__')
+        sys.argv=['damendaemon','serve',*remaining]
+        runpy.run_module('damendaemon',run_name='__main__')
     else:
         script={'replay':'verify_partition_packed','single-replay':'replay_reference','rebind':'verify_partition_rebind'}[args.target]
         sys.argv=['scripts/'+script+'.py',*remaining]

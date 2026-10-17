@@ -11,8 +11,8 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.cuda_expert_routing import select_experts_device
-from dllm.expert_selection import select_experts
+from damendaemon.cuda_expert_routing import select_experts_device
+from damendaemon.expert_selection import select_experts
 
 
 def fixture(tokens=6, experts=8, seed=5, ties=False):
@@ -119,7 +119,7 @@ class DeviceRoutingEquivalenceTests(unittest.TestCase):
     def test_device_routes_feed_prepared_experts_directly(self):
         # The routing outputs must satisfy the packed-MoE admission contract
         # (int64 device IDs, matching FP32 coefficients) without reshaping.
-        from dllm.cuda_packed_moe import _accumulate
+        from damendaemon.cuda_packed_moe import _accumulate
         logits = fixture(tokens=4)
         for case in ({}, dict(group_count=2, correction_bias=torch.zeros(8), renormalize=True)):
             with self.subTest(case=case):

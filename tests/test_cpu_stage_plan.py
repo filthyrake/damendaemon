@@ -3,8 +3,8 @@ from fractions import Fraction
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.cpu_hybrid_stage import cpu_stage_budget,CpuHybridStage
-from dllm.cpu_stage_plan import plan_cpu_stages
+from damendaemon.cpu_hybrid_stage import cpu_stage_budget,CpuHybridStage
+from damendaemon.cpu_stage_plan import plan_cpu_stages
 from tests.test_cpu_hybrid_stage import model
 
 OPTIONS=dict(max_batch=2,projection_workspace_bytes=2**20,max_workspace_bytes=2**20,max_output_bytes=65536)

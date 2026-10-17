@@ -1,5 +1,5 @@
 import unittest
-from dllm.management import command
+from damendaemon.management import command
 
 
 class ManagementValidationTests(unittest.TestCase):

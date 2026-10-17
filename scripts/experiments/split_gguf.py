@@ -31,7 +31,7 @@ def digest(file, count):
 
 
 def snapshot(path):
-    from dllm.gguf_model import plan, identity
+    from damendaemon.gguf_model import plan, identity
     source = plan(path)
     if source.config['model_type'] not in ('qwen2', 'qwen3', 'llama'):
         raise ValueError('gate supports only small dense Qwen2/Qwen3/Llama')
@@ -69,7 +69,7 @@ def prepare(single, split, output, context=128, steps=4):
     if context > a['semantics']['config']['max_position_embeddings']:
         raise ValueError('context exceeds model position limit')
     # Resolve token IDs on CPU; every subsequent phase uses exactly these IDs.
-    from dllm.gguf_model import GgufWeights
+    from damendaemon.gguf_model import GgufWeights
     model = GgufWeights(single, context, 'none')
     ids = model.raw_tokens('Hello')
     if not ids or len(ids)+steps > context:
@@ -92,8 +92,8 @@ def verify_files(source):
 
 def trace(model, ids, steps):
     import torch
-    from dllm.runtime import make_executor
-    from dllm.prompts import decode_output
+    from damendaemon.runtime import make_executor
+    from damendaemon.prompts import decode_output
     executor = make_executor(model, use_graph=False)
     tokens, hashes = [], []
     try:
@@ -118,8 +118,8 @@ def trace(model, ids, steps):
 
 
 def http_check(runtime, ids, steps, expected):
-    from dllm.server import BoundedHTTPServer, handler_for
-    from dllm.bench import events
+    from damendaemon.server import BoundedHTTPServer, handler_for
+    from damendaemon.bench import events
     server = BoundedHTTPServer(('127.0.0.1', 0), handler_for(runtime), max_connections=2)
     thread = threading.Thread(target=server.serve_forever, kwargs={'poll_interval': .05})
     thread.start()
@@ -157,7 +157,7 @@ def http_check(runtime, ids, steps, expected):
             raise ValueError('unload did not release residency')
         restored = request('/v1/completions', body)
         if (restored['choices'][0]['text'] != expected['text'] or
-                restored['usage'] != first['usage'] or restored['dllm_timing']['source_tier'] != 'disk'):
+                restored['usage'] != first['usage'] or restored['damendaemon_timing']['source_tier'] != 'disk'):
             raise ValueError('disk reload mismatch')
         return dict(text=streamed, usage=first['usage'], stream=True, unload=True, disk_reload=True, explicit_load=True)
     finally:
@@ -183,12 +183,12 @@ def worker(folder, alias, phase, run_id):
     torch.cuda.reset_peak_memory_stats()
     path = source['files'][0]['path']
     if phase == 'trace':
-        from dllm.gguf_model import GgufWeights
+        from damendaemon.gguf_model import GgufWeights
         model = GgufWeights(path, manifest['context'], 'none')
         result = trace(model, manifest['prompt_ids'], manifest['steps'])
         del model
     else:
-        from dllm.runtime import Runtime
+        from damendaemon.runtime import Runtime
         expected = json.loads((folder/f'{alias}-trace.json').read_text())['result']
         runtime = Runtime({'a': path}, context=manifest['context'], use_graph=False,
                           gpu_models=1, host_models=1, host_gib=2, queue_size=1,
@@ -269,7 +269,7 @@ def main():
         prepare(Path(args.prepare[0]), Path(args.prepare[1]), Path(args.prepare[2]))
         return
     uuid = os.environ.get('CUDA_VISIBLE_DEVICES', '')
-    if not uuid.startswith('GPU-') or ',' in uuid or os.environ.get('DLLM_SHARED_CUDA_GUARD') != '1':
+    if not uuid.startswith('GPU-') or ',' in uuid or os.environ.get('DAMENDAEMON_SHARED_CUDA_GUARD') != '1':
         parser.error('execute through guard_shared_cuda with one explicit GPU UUID')
     if args.run:
         execute(args.run)

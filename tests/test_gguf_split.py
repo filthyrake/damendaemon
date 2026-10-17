@@ -9,8 +9,8 @@ import torch
 from tests.test_gguf import HAS_GGUF, fixture
 
 if HAS_GGUF:
-    from dllm import gguf_model as importer
-    from dllm.gguf_reader import BoundedReader
+    from damendaemon import gguf_model as importer
+    from damendaemon.gguf_reader import BoundedReader
 
 
 def shards(folder, **kwargs):
@@ -30,8 +30,8 @@ def replace_integer(path, key, value):
 @unittest.skipUnless(HAS_GGUF, 'optional gguf dependency is not installed')
 class SplitGgufTests(unittest.TestCase):
     def test_registry_and_manifest_preserve_opaque_shard_namespace(self):
-        from dllm.runtime import Runtime
-        from dllm.model_manifest import snapshot, save, load
+        from damendaemon.runtime import Runtime
+        from damendaemon.model_manifest import snapshot, save, load
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder).resolve()
             source = root/'source'; source.mkdir()
@@ -42,7 +42,7 @@ class SplitGgufTests(unittest.TestCase):
                 blob = blobs/f'opaque{index}'; blob.write_bytes(part.read_bytes())
                 (cache/part.name).symlink_to(blob)
             selected = cache/parts[0].name
-            with patch('dllm.runtime.require_gpu'), patch.object(Runtime, '_status', return_value={}):
+            with patch('damendaemon.runtime.require_gpu'), patch.object(Runtime, '_status', return_value={}):
                 runtime = Runtime({}, context=64)
                 try:
                     runtime.manage('register', 'split', str(selected), quantization='none')
@@ -185,7 +185,7 @@ class SplitGgufTests(unittest.TestCase):
             self.assertTrue(all(file.closed for file in opened))
 
     def test_opaque_cache_links_preserve_sibling_namespace_and_invalidation(self):
-        from dllm.cli import resolve_model
+        from damendaemon.cli import resolve_model
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder).resolve()
             materialized = root/'source'; materialized.mkdir()

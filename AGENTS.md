@@ -1,4 +1,4 @@
-# dllm
+# damendaemon
 
 Performance is a product requirement. Never claim GPU performance from mocked
 tests or CPU-only runs. Compare identical model revisions, precision, context,

@@ -6,8 +6,8 @@ import argparse
 import json
 import time
 import torch
-from dllm.models import load
-from dllm.runtime import make_executor,require_gpu
+from damendaemon.models import load
+from damendaemon.runtime import make_executor,require_gpu
 
 
 @torch.inference_mode()

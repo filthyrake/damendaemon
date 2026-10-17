@@ -10,8 +10,8 @@ from pathlib import Path
 import torch
 from transformers import AutoTokenizer
 from openai_harmony import load_harmony_encoding,HarmonyEncodingName,Role,StreamableParser
-from dllm.qwen2 import ModelWeights
-from dllm.harmony import TextStream
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.harmony import TextStream
 from scripts.verify_harmony_tools import TOOLS,MESSAGES
 
 

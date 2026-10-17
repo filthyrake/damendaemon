@@ -4,10 +4,10 @@ import threading
 import time
 import unittest
 from unittest.mock import patch
-from dllm.fair_admission import FairAdmission
-from dllm.scheduler import BatchedRuntime,Pending
-from dllm.request_scope import CacheScope
-from dllm.runtime import BusyError
+from damendaemon.fair_admission import FairAdmission
+from damendaemon.scheduler import BatchedRuntime,Pending
+from damendaemon.request_scope import CacheScope
+from damendaemon.runtime import BusyError
 
 
 def runtime():
@@ -81,9 +81,9 @@ class FairAdmissionTests(unittest.TestCase):
 
     def test_worker_handoff_preserves_client_turns(self):
         from concurrent.futures import ThreadPoolExecutor
-        from dllm.request_scope import cache_scope
+        from damendaemon.request_scope import cache_scope
         from tests.test_scheduler import FakeRuntime
-        with patch('dllm.scheduler.Runtime',FakeRuntime):
+        with patch('damendaemon.scheduler.Runtime',FakeRuntime):
             r=BatchedRuntime({'a':'a'},batch_size=1,queue_size=8)
         executor=r.runtime.executor;order=[];original=executor.prefill
         def prefill(tokens,slot):

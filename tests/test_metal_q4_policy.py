@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
-from dllm.metal_q4_policy import validate
+from damendaemon.metal_q4_policy import validate
 
 
 class MetalQ4PolicyTests(unittest.TestCase):
@@ -20,7 +20,7 @@ class MetalQ4PolicyTests(unittest.TestCase):
             with self.assertRaises(ValueError):validate(self.config(), 512, batch)
 
     def test_unqualified_batch_rejected_before_gpu_construction(self):
-        from dllm.qwen2 import Executor
+        from damendaemon.qwen2 import Executor
         model = SimpleNamespace(config=self.config(), max_context=512, quantization='q4_0')
-        with patch('dllm.qwen2.selected_device', return_value='mps'):
+        with patch('damendaemon.qwen2.selected_device', return_value='mps'):
             with self.assertRaisesRegex(ValueError, 'request slots'):Executor(model, max_batch=5)

@@ -6,12 +6,12 @@ import argparse
 import json
 import os
 import torch
-from dllm.scheduler import BatchedRuntime
+from damendaemon.scheduler import BatchedRuntime
 
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--device',required=True,choices=('cuda','mps'));args=p.parse_args()
-    os.environ['DLLM_DEVICE']=args.device;os.environ['DLLM_SPECULATIVE_TOKENS']='8';torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_DEVICE']=args.device;os.environ['DAMENDAEMON_SPECULATIVE_TOKENS']='8';torch.set_num_threads(4)
     if args.device=='cuda' and os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
     cases=[('metal',{},None,'none')] if args.device=='mps' else [
@@ -20,9 +20,9 @@ def main():
         ('graphs_disabled',{'use_graph':False},None,'none')]
     rows=[]
     for name,kwargs,pages,quant in cases:
-        os.environ.pop('DLLM_KV_CACHE_TOKENS',None)
-        if pages:os.environ['DLLM_KV_CACHE_TOKENS']=pages
-        os.environ['DLLM_QUANTIZATION']=quant
+        os.environ.pop('DAMENDAEMON_KV_CACHE_TOKENS',None)
+        if pages:os.environ['DAMENDAEMON_KV_CACHE_TOKENS']=pages
+        os.environ['DAMENDAEMON_QUANTIZATION']=quant
         runtime=BatchedRuntime({'a':args.model},context=128,batch_size=2,host_models=1,host_gib=8,**kwargs)
         try:
             def request():

@@ -1,7 +1,7 @@
 """Bounded control: FP16 prompt projections, FP32 decoding/state/nonlinear math."""
 import runpy
 from scripts.experiments import replay_hybrid_fp32
-from dllm import hybrid
+from damendaemon import hybrid
 
 original_forward = hybrid.HybridExecutor.forward_embeddings
 original_init = hybrid.HybridExecutor.__init__

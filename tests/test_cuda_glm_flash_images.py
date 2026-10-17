@@ -3,8 +3,8 @@ from unittest.mock import patch
 from pathlib import Path
 import tempfile
 import torch
-from dllm.cuda_glm_flash_image_placement import place_cuda_flash_image
-from dllm.cuda_glm_flash_image_generation import CudaFlashImageGenerator,cuda_image_embeddings
+from damendaemon.cuda_glm_flash_image_placement import place_cuda_flash_image
+from damendaemon.cuda_glm_flash_image_generation import CudaFlashImageGenerator,cuda_image_embeddings
 from tests.test_glm_flash_image_generation import vision,text_fixture,ScriptedImageModel
 from tests.test_cuda_glm_flash_placement import fixture
 
@@ -12,7 +12,7 @@ from tests.test_cuda_glm_flash_placement import fixture
 class CudaFlashImagesTests(unittest.TestCase):
     def test_joint_budget_and_vision_metadata_precede_any_copy(self):
         model=fixture();encoder=vision(model.embedding.shape[1])
-        with patch('dllm.cuda_glm_flash_image_placement._copy',side_effect=AssertionError('copy before admission')):
+        with patch('damendaemon.cuda_glm_flash_image_placement._copy',side_effect=AssertionError('copy before admission')):
             with self.assertRaises(ValueError):place_cuda_flash_image(model,encoder,device='cuda:0',max_bytes=1)
             encoder.w['downsample.bias']=torch.zeros(1)
             with self.assertRaises(ValueError):place_cuda_flash_image(model,encoder,device='cuda:0',max_bytes=10**8)
@@ -26,7 +26,7 @@ class CudaFlashImagesTests(unittest.TestCase):
 
     def test_vision_budget_precedes_patch_transfer(self):
         from torch._subclasses.fake_tensor import FakeTensorMode
-        from dllm.cuda_glm_flash_vision import CudaFlashVision
+        from damendaemon.cuda_glm_flash_vision import CudaFlashVision
         prepared=vision(4)
         runner=object.__new__(CudaFlashImageGenerator);runner.device=torch.device('cuda:0')
         with FakeTensorMode():

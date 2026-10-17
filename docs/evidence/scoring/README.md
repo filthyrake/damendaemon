@@ -22,7 +22,7 @@ cleared even when prefill raises; ordinary captured decode retains its full head
 
 Pinned Qwen2.5-0.5B-Instruct `7ae557604adf67be50417f59c2c2f167def9a775` and
 Qwen3-0.6B `c1899de289a04d12100db370d81485cdf75e47ca`, context2048, identical
-16/256/1024-token raw ID prompts, 2/32/256 candidates. A2 uses dllm's Qwen2
+16/256/1024-token raw ID prompts, 2/32/256 candidates. A2 uses damendaemon's Qwen2
 standard path and Qwen3 FP32 path; M4 uses native Metal FP32 arithmetic. Both
 sides of each comparison use the same resident executor and weights.
 
@@ -63,7 +63,7 @@ requests and forced prefill failure cleanup.
 
 ## Optional candidate-specific CUDA graphs
 
-`DLLM_PREFILL_GRAPHS=1..8` now also covers scoring, with the same default128-token
+`DAMENDAEMON_PREFILL_GRAPHS=1..8` now also covers scoring, with the same default128-token
 ceiling. Exact ordered candidate IDs are part of the key; a selected head is
 retained with its graph so replay cannot read a freed or different head. A full
 generation head uses a separate key. Candidate heads share the existing entry

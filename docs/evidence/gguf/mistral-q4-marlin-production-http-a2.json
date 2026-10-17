@@ -3,9 +3,9 @@
     "kind": "SentencePieceTokenizer"
   },
   "native_format": "q4",
-  "model": "/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+  "model": "/home/damen/damendaemon-dev/baselines/mistral-spm-q4-comparator.gguf",
   "model_sha256": "cbea665de7de1050c1741ae205422a47bd62815c84c655fba55962fdc805ed66",
-  "native_library": "/home/damen/dllm-dev/build-kquant/libdllm-q4.so",
+  "native_library": "/home/damen/damendaemon-dev/build-kquant/libdamendaemon-q4.so",
   "native_library_sha256": "29dffba1428aab9846a5b71464855a4d48e6fbd6b9ec8a89a47f64b1ef0dd063",
   "llama_server": null,
   "llama_server_sha256": null,
@@ -16,7 +16,7 @@
   "context_per_slot": 512,
   "slots": 4,
   "kv_dtype": "float16",
-  "dllm_precision": "mixed: FP16 matrices, FP32 residual/nonlinear",
+  "damendaemon_precision": "mixed: FP16 matrices, FP32 residual/nonlinear",
   "model_type": "llama",
   "output_tokens": 16,
   "prompts": {
@@ -578,14 +578,14 @@
   "runs": [
     {
       "phase": 0,
-      "engine": "dllm",
+      "engine": "damendaemon",
       "command": [
-        "/home/damen/dllm-dev/venv/bin/python",
+        "/home/damen/damendaemon-dev/venv/bin/python",
         "-m",
-        "dllm",
+        "damendaemon",
         "serve",
         "--model",
-        "a=/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+        "a=/home/damen/damendaemon-dev/baselines/mistral-spm-q4-comparator.gguf",
         "--port",
         "60135",
         "--context",
@@ -601,7 +601,7 @@
         "--prefix-cache-tokens",
         "0"
       ],
-      "log": "results/mistral-q4-marlin-production-http-a2-0-dllm.log",
+      "log": "results/mistral-q4-marlin-production-http-a2-0-damendaemon.log",
       "cases": [
         {
           "prompt_tokens": 16,
@@ -1892,7 +1892,7 @@
       "lifecycle_timings": {
         "host_restore_request": {
           "seconds": 3.2840803370054346,
-          "dllm_timing": {
+          "damendaemon_timing": {
             "source_tier": "host",
             "activation_seconds": 2.436310092016356,
             "cached_prompt_tokens": 0,
@@ -1910,7 +1910,7 @@
         },
         "switch_to_other_request": {
           "seconds": 3.9789614679757506,
-          "dllm_timing": {
+          "damendaemon_timing": {
             "source_tier": "disk",
             "activation_seconds": 3.64340973898652,
             "cached_prompt_tokens": 0,
@@ -1928,7 +1928,7 @@
         },
         "switch_back_request": {
           "seconds": 3.2901211910066195,
-          "dllm_timing": {
+          "damendaemon_timing": {
             "source_tier": "host",
             "activation_seconds": 2.4429113939986564,
             "cached_prompt_tokens": 0,
@@ -1946,7 +1946,7 @@
         },
         "disk_reload_request": {
           "seconds": 10.356101529992884,
-          "dllm_timing": {
+          "damendaemon_timing": {
             "source_tier": "disk",
             "activation_seconds": 9.506477398012066,
             "cached_prompt_tokens": 0,
@@ -1969,12 +1969,12 @@
       "phase": 1,
       "engine": "q4-marlin-production",
       "command": [
-        "/home/damen/dllm-dev/venv/bin/python",
+        "/home/damen/damendaemon-dev/venv/bin/python",
         "-m",
-        "dllm",
+        "damendaemon",
         "serve",
         "--model",
-        "a=/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+        "a=/home/damen/damendaemon-dev/baselines/mistral-spm-q4-comparator.gguf",
         "--port",
         "60917",
         "--context",
@@ -3281,7 +3281,7 @@
       "lifecycle_timings": {
         "host_restore_request": {
           "seconds": 2.928022856998723,
-          "dllm_timing": {
+          "damendaemon_timing": {
             "source_tier": "host",
             "activation_seconds": 2.3498307850095443,
             "cached_prompt_tokens": 0,
@@ -3299,7 +3299,7 @@
         },
         "switch_to_other_request": {
           "seconds": 3.3451233039959334,
-          "dllm_timing": {
+          "damendaemon_timing": {
             "source_tier": "disk",
             "activation_seconds": 2.842859563010279,
             "cached_prompt_tokens": 0,
@@ -3317,7 +3317,7 @@
         },
         "switch_back_request": {
           "seconds": 2.8609790749906097,
-          "dllm_timing": {
+          "damendaemon_timing": {
             "source_tier": "host",
             "activation_seconds": 2.2873493309889454,
             "cached_prompt_tokens": 0,
@@ -3335,7 +3335,7 @@
         },
         "disk_reload_request": {
           "seconds": 9.04120885100565,
-          "dllm_timing": {
+          "damendaemon_timing": {
             "source_tier": "disk",
             "activation_seconds": 8.46469926298596,
             "cached_prompt_tokens": 0,
@@ -3358,12 +3358,12 @@
       "phase": 2,
       "engine": "q4-marlin-production",
       "command": [
-        "/home/damen/dllm-dev/venv/bin/python",
+        "/home/damen/damendaemon-dev/venv/bin/python",
         "-m",
-        "dllm",
+        "damendaemon",
         "serve",
         "--model",
-        "a=/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+        "a=/home/damen/damendaemon-dev/baselines/mistral-spm-q4-comparator.gguf",
         "--port",
         "47421",
         "--context",
@@ -4670,7 +4670,7 @@
       "lifecycle_timings": {
         "host_restore_request": {
           "seconds": 2.8716946409840602,
-          "dllm_timing": {
+          "damendaemon_timing": {
             "source_tier": "host",
             "activation_seconds": 2.2906348389806226,
             "cached_prompt_tokens": 0,
@@ -4688,7 +4688,7 @@
         },
         "switch_to_other_request": {
           "seconds": 4.244300385995302,
-          "dllm_timing": {
+          "damendaemon_timing": {
             "source_tier": "disk",
             "activation_seconds": 3.6717028209823184,
             "cached_prompt_tokens": 0,
@@ -4706,7 +4706,7 @@
         },
         "switch_back_request": {
           "seconds": 3.0075407440017443,
-          "dllm_timing": {
+          "damendaemon_timing": {
             "source_tier": "host",
             "activation_seconds": 2.4303433899767697,
             "cached_prompt_tokens": 0,
@@ -4724,7 +4724,7 @@
         },
         "disk_reload_request": {
           "seconds": 10.132192918012151,
-          "dllm_timing": {
+          "damendaemon_timing": {
             "source_tier": "disk",
             "activation_seconds": 9.549135009001475,
             "cached_prompt_tokens": 0,
@@ -4745,14 +4745,14 @@
     },
     {
       "phase": 3,
-      "engine": "dllm",
+      "engine": "damendaemon",
       "command": [
-        "/home/damen/dllm-dev/venv/bin/python",
+        "/home/damen/damendaemon-dev/venv/bin/python",
         "-m",
-        "dllm",
+        "damendaemon",
         "serve",
         "--model",
-        "a=/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+        "a=/home/damen/damendaemon-dev/baselines/mistral-spm-q4-comparator.gguf",
         "--port",
         "50695",
         "--context",
@@ -4768,7 +4768,7 @@
         "--prefix-cache-tokens",
         "0"
       ],
-      "log": "results/mistral-q4-marlin-production-http-a2-3-dllm.log",
+      "log": "results/mistral-q4-marlin-production-http-a2-3-damendaemon.log",
       "cases": [
         {
           "prompt_tokens": 16,
@@ -6059,7 +6059,7 @@
       "lifecycle_timings": {
         "host_restore_request": {
           "seconds": 3.182500960014295,
-          "dllm_timing": {
+          "damendaemon_timing": {
             "source_tier": "host",
             "activation_seconds": 2.3250411890039686,
             "cached_prompt_tokens": 0,
@@ -6077,7 +6077,7 @@
         },
         "switch_to_other_request": {
           "seconds": 3.9761641629738733,
-          "dllm_timing": {
+          "damendaemon_timing": {
             "source_tier": "disk",
             "activation_seconds": 3.660629454010632,
             "cached_prompt_tokens": 0,
@@ -6095,7 +6095,7 @@
         },
         "switch_back_request": {
           "seconds": 3.37469246800174,
-          "dllm_timing": {
+          "damendaemon_timing": {
             "source_tier": "host",
             "activation_seconds": 2.52240016599535,
             "cached_prompt_tokens": 0,
@@ -6113,7 +6113,7 @@
         },
         "disk_reload_request": {
           "seconds": 10.514819460979197,
-          "dllm_timing": {
+          "damendaemon_timing": {
             "source_tier": "disk",
             "activation_seconds": 9.66624197398778,
             "cached_prompt_tokens": 0,
@@ -6134,7 +6134,7 @@
     }
   ],
   "swap_model": {
-    "path": "/home/damen/dllm-dev/baselines/qwen3-small-import-q4_k_m.gguf",
+    "path": "/home/damen/damendaemon-dev/baselines/qwen3-small-import-q4_k_m.gguf",
     "sha256": "9467d0bfdf4673a4182a6a02e8a66a89f1e2b5e214fcb120f1dc5068b83468df"
   },
   "experimental_batch_wait_ms": null,
@@ -6163,11 +6163,11 @@
   ],
   "production_q4_residual": false,
   "q4_residual_control_library": {
-    "path": "/home/damen/dllm-dev/results/libdllm-q4-paired-production.so",
+    "path": "/home/damen/damendaemon-dev/results/libdamendaemon-q4-paired-production.so",
     "sha256": "b17d2b3dbcdd5346612aa835f69839915319f5bfe0532a764358e566d5a6fc1e"
   },
   "q4_marlin_library": {
-    "path": "/home/damen/dllm-dev/results/libdllm-q4-marlin-production.so",
+    "path": "/home/damen/damendaemon-dev/results/libdamendaemon-q4-marlin-production.so",
     "sha256": "349214079a6c6c928bff4ac6a5d2c1baf08b13e96684275a836652a94b0960f4"
   },
   "production_admission_accounts_for_extra_weights": true,
@@ -6176,9 +6176,9 @@
   "q4_marlin_replaces_gpu_layout": true,
   "production_q4_marlin": true,
   "q4_marlin_production_sources": {
-    "dllm/native_q4_marlin.py": "4789fc60361b62d2b436b95d5866723fbaade42c2cdf545dd8896e262cd01164",
-    "dllm/q4_marlin_repack.py": "0fbbb4d9e90820e7daae20c4120ca222de61e878eac973ba5ee131997e523e68",
-    "dllm/q4_marlin_policy.py": "b5e986c708d7244f3f50ac0fd617c8e9772ab850c4e9ad0b9bf52e7bea06e3aa",
+    "damendaemon/native_q4_marlin.py": "4789fc60361b62d2b436b95d5866723fbaade42c2cdf545dd8896e262cd01164",
+    "damendaemon/q4_marlin_repack.py": "0fbbb4d9e90820e7daae20c4120ca222de61e878eac973ba5ee131997e523e68",
+    "damendaemon/q4_marlin_policy.py": "b5e986c708d7244f3f50ac0fd617c8e9772ab850c4e9ad0b9bf52e7bea06e3aa",
     "native/q4_marlin.cu": "7d874d2730d8d61b237fb7580b6525194218ed02e12d3288daf2494eff7e3062"
   },
   "production_residual_f32": false,

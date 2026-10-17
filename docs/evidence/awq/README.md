@@ -16,7 +16,7 @@ Checkpoint: `Qwen/Qwen2.5-0.5B-Instruct-AWQ`, pinned revision
 `db09cd27ead7fee40cdee309693cf83601b9c899`. Its published configuration selects
 four-bit AWQ GEMM, group size 128 and asymmetric zero points. The original
 checkpoint layout packs output channels, using the shift order
-`0,4,1,5,2,6,3,7`; this differs from dllm's existing Q4_0 layout. Zero points
+`0,4,1,5,2,6,3,7`; this differs from damendaemon's existing Q4_0 layout. Zero points
 have the same packing and do not use the historical GPTQ plus-one convention.
 
 Format reference inspected: [vLLM AWQ Triton implementation at the local pinned
@@ -44,7 +44,7 @@ Reproduce with `PYTHONPATH=. python scripts/verify_awq_format.py SNAPSHOT
 `verify_awq_kernels.py` is the next isolated gate. It loads a pinned upstream
 `awq_triton.py` solely as a validation oracle, replacing only its Triton import
 in a temporary copy and preserving its copyright header. It records original
-and adapted source hashes. dllm's independently implemented packed GPU
+and adapted source hashes. damendaemon's independently implemented packed GPU
 products are checked against FP32 accumulation over FP16 coefficients, with
 bias/no-bias and three activation magnitudes; coefficient bit patterns must
 also match both the host codec and the upstream decoder. Any timings compare
@@ -123,7 +123,7 @@ FP16 parameters, FP32 rotary buffer, prompts and numerical thresholds. All
 128 checks pass, with identical greedy tokens, worst relative RMS 0.8475% and
 maximum absolute error 0.18360. This qualifies the explicitly named fast-attention
 reference scope; it does not supersede the corrected eager-reference failures.
-HF and dllm prefill both use PyTorch SDPA, while dllm's decode attention and
+HF and damendaemon prefill both use PyTorch SDPA, while damendaemon's decode attention and
 model executor remain separate implementations.
 
 `qwen25-small-layout-a2.json` passes all 128 fixed/paged, eager/graph, batch
@@ -146,14 +146,14 @@ checkpoint; it is not a different-model hot-swap speed measurement.
 
 ## Initial matched engine measurement
 
-`compare-*-awq-qwen25-small-first-*` retains the first sequential dllm/vLLM
+`compare-*-awq-qwen25-small-first-*` retains the first sequential damendaemon/vLLM
 run: identical pinned AWQ weights, 129 explicit input tokens, 64 output tokens,
 context 2048, FP16 execution/KV, concurrency 1/2/4, one warmup and five measured
 rounds. Both engines return identical text and token counts across these runs.
 vLLM 0.30.0 selects Marlin AWQ and FlashAttention 2. Prefix caching is disabled.
 These are initial one-order measurements, not repeated interleaved trials.
 
-| Concurrency | dllm total median (s) | vLLM total median (s) | dllm first output (s) | vLLM first output (s) | dllm aggregate tokens/s | vLLM aggregate tokens/s |
+| Concurrency | damendaemon total median (s) | vLLM total median (s) | damendaemon first output (s) | vLLM first output (s) | damendaemon aggregate tokens/s | vLLM aggregate tokens/s |
 |---|---:|---:|---:|---:|---:|---:|
 | 1 | 0.4992 | 0.2777 | 0.0353 | 0.0352 | 128.1 | 230.2 |
 | 2 | 0.5484 | 0.3022 | 0.0437 | 0.0566 | 231.7 | 422.5 |
@@ -235,7 +235,7 @@ CMake target is off by default and normal inference does not use it.
 The initial one-to-sixteen-row matrix run passes all 144 independent checks,
 including bias/no-bias and three activation magnitudes. Worst relative RMS is
 0.0405%. At four rows, gate/up falls from about 107.5 to 33.8 microseconds and
-down from 55.2 to 16.5 microseconds compared with the newly promoted dllm path.
+down from 55.2 to 16.5 microseconds compared with the newly promoted damendaemon path.
 These are standalone projection results, excluding format preparation; they
 do not yet establish full-model accuracy, memory admission, hot-swap behavior
 or serving throughput. See `qwen25-small-marlin-matrices-a2.json`.
@@ -284,7 +284,7 @@ but these varying measurements do not establish general engine parity.
 
 ## Optional normal native backend
 
-`DLLM_AWQ_MARLIN_LIBRARY` now selects native execution for the measured Qwen2
+`DAMENDAEMON_AWQ_MARLIN_LIBRARY` now selects native execution for the measured Qwen2
 geometry on NVIDIA A2, context at most 2048 and batch capacity at most four.
 The normal path passes 128 independent reference and 128 layout checks, with
 backend `triton+awq-marlin`, unchanged 458314496-byte weight storage and a
@@ -356,7 +356,7 @@ while subsequent teacher-forced decode checks pass. This motivates a separate
 higher-precision oracle comparison, not a conclusion that the failure is safe
 to ignore. The focused report explicitly selects only case 7.
 
-The focused FP32 oracle comparison passes all 16 checks for case 7 using dllm's
+The focused FP32 oracle comparison passes all 16 checks for case 7 using damendaemon's
 existing Qwen3 mixed precision policy (not the FP16 rounding candidate). Worst
 RMS is 0.7305%, maximum absolute error 0.306705. An additional paired HF-FP16
 control on exactly the same FP32 target has 1.1169% RMS and 0.553015 absolute
@@ -428,7 +428,7 @@ are the next gate and are not inferred from these correctness results.
 The native/control/control/native sequence uses the same pinned checkpoint,
 129 explicit input tokens, 64 generated tokens, context 2048 and batch capacity
 four on A2. Each phase has one excluded warmup and five measured rounds per
-concurrency. Both dllm paths use FP16 matrices/KV and FP32 residuals. All measured
+concurrency. Both damendaemon paths use FP16 matrices/KV and FP32 residuals. All measured
 responses have identical text and token counts. Raw trials and launch commands
 are retained alongside `qwen3-4b-awq-marlin-http-summary-a2.json`.
 
@@ -443,15 +443,15 @@ individual requests and throughput uses complete concurrent rounds. Native
 first-output medians are 0.1031/0.1854/0.3840 seconds versus
 0.2254/0.3084/0.6469 seconds. Phase throughput medians remain in the summary:
 for example native concurrency-four varies from 148.85 to 146.67 tokens/s.
-This establishes improvement over dllm's Triton path on this workload; a
+This establishes improvement over damendaemon's Triton path on this workload; a
 separate matching vLLM measurement is still required for that comparison.
 
 The refreshed vLLM phase completes with identical output text and token counts:
 51.69/96.71/169.93 aggregate tokens/s at concurrency 1/2/4. Relative to the
-repeated native medians above, dllm remains 2.3/8.4/13.0% behind in throughput.
+repeated native medians above, damendaemon remains 2.3/8.4/13.0% behind in throughput.
 vLLM response medians are 1.2377/1.3146/1.5016 seconds, first-output medians
 0.1065/0.1517/0.3391 seconds. This is one five-round vLLM phase, not an
-interleaved engine comparison. Both use FP16 matrices/KV; dllm retains its
+interleaved engine comparison. Both use FP16 matrices/KV; damendaemon retains its
 qualified Qwen3 FP32 residual/elementwise policy while vLLM uses requested dtype
 half. Internal arithmetic is therefore not identical. Commands and raw trials
 are retained in the `compare-vllm-qwen3-4b-awq-vllm*` files.

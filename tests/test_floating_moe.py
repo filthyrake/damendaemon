@@ -3,9 +3,9 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.expert_ffn import expert_feed_forward
-from dllm.expert_selection import select_experts, select_token_experts, validate_token_expert_table
-from dllm.floating_moe import floating_moe
+from damendaemon.expert_ffn import expert_feed_forward
+from damendaemon.expert_selection import select_experts, select_token_experts, validate_token_expert_table
+from damendaemon.floating_moe import floating_moe
 
 
 class FloatingMoETests(unittest.TestCase):
@@ -66,14 +66,14 @@ class FloatingMoETests(unittest.TestCase):
             shapes.append(a.shape)
             return original(a, b)
         per_route = 3*6*4*4+64*6+32*4+128
-        with patch('dllm.floating_moe.torch.bmm', side_effect=record):
+        with patch('damendaemon.floating_moe.torch.bmm', side_effect=record):
             floating_moe(hidden, *banks, selected, coefficients, workspace_bytes=per_route*2)
         self.assertEqual(len(shapes), 15)
         self.assertTrue(all(shape[0] <= 2 for shape in shapes))
 
     def test_invalid_contracts_fail_before_computation(self):
         hidden, banks, shared, selected, coefficients, _ = self.fixture()
-        with patch('dllm.floating_moe.torch.bmm', side_effect=AssertionError('computation started')):
+        with patch('damendaemon.floating_moe.torch.bmm', side_effect=AssertionError('computation started')):
             for options in ({'workspace_bytes':1}, {'workspace_bytes':True}, {'activation_limit':float('nan')},
                             {'shared':shared[:2]}, {'shared':[shared[0].half(), *shared[1:]]}):
                 with self.assertRaises(ValueError):

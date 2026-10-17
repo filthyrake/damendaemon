@@ -45,7 +45,7 @@ def main():
                 '--quantization', precision, '--max-tokens', '8', '--ignore-eos', '--json']
     identities = set()
     try:
-        with tempfile.TemporaryDirectory(prefix='dllm-session-benchmark-') as directory:
+        with tempfile.TemporaryDirectory(prefix='damendaemon-session-benchmark-') as directory:
             paths = []
             for index, case in enumerate(selected):
                 path = Path(directory)/f'prompt-{index}.json'

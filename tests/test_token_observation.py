@@ -2,8 +2,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from dllm.token_observation import TokenObservation
-from dllm.scheduler import BatchedRuntime, Pending
+from damendaemon.token_observation import TokenObservation
+from damendaemon.scheduler import BatchedRuntime, Pending
 
 
 class TokenObservationTests(unittest.TestCase):
@@ -47,8 +47,8 @@ class TokenObservationTests(unittest.TestCase):
         request = Pending('a', [], 3, start=10)
         executor = SimpleNamespace(model=SimpleNamespace(eos={9}, quantization='none'),
                                    kernel_backend='fixture', residual_dtype='float32')
-        with patch.object(runtime, '_finish'), patch('dllm.scheduler.decode_output', return_value=''), \
-                patch('dllm.scheduler.time.perf_counter', side_effect=[11, 13, 20]):
+        with patch.object(runtime, '_finish'), patch('damendaemon.scheduler.decode_output', return_value=''), \
+                patch('damendaemon.scheduler.time.perf_counter', side_effect=[11, 13, 20]):
             self.assertFalse(runtime._emit(request, 1, executor, 5))
             self.assertTrue(runtime._emit(request, 9, executor, 5))
         result = request.final['timing']['token_observation']
@@ -63,8 +63,8 @@ class TokenObservationTests(unittest.TestCase):
         request = Pending('a', [], 2, start=10)
         executor = SimpleNamespace(model=SimpleNamespace(eos=set(), quantization='none'),
                                    kernel_backend='fixture', residual_dtype='float32')
-        with patch.object(runtime, '_finish'), patch('dllm.scheduler.decode_output', return_value=''), \
-                patch('dllm.scheduler.time.perf_counter', side_effect=[11, 13, 14]):
+        with patch.object(runtime, '_finish'), patch('damendaemon.scheduler.decode_output', return_value=''), \
+                patch('damendaemon.scheduler.time.perf_counter', side_effect=[11, 13, 14]):
             runtime._emit(request, 1, executor, 5)
             request.speculative_blocks = 1
             runtime._emit(request, 2, executor, 5)
@@ -74,7 +74,7 @@ class TokenObservationTests(unittest.TestCase):
     def test_ordinary_runtime_includes_consumer_pause_but_excludes_final_resume(self):
         from contextlib import nullcontext
         from unittest.mock import Mock
-        from dllm.runtime import Runtime
+        from damendaemon.runtime import Runtime
         runtime = object.__new__(Runtime)
         runtime.context = 4  # Admission preflight reads the configured context.
         model = SimpleNamespace(eos={9}, quantization='none', config={'model_type': 'qwen3'},
@@ -85,9 +85,9 @@ class TokenObservationTests(unittest.TestCase):
         sampler = Mock(constraint=None, has_adjustments=False)
         sampler.select.return_value.item.return_value = 1
         now = [10]
-        with patch('dllm.sampling.Sampler', return_value=sampler), \
-                patch('dllm.prompts.encode', return_value=[1]), patch('dllm.prompts.validate_lengths'), \
-                patch('dllm.runtime.time.perf_counter', side_effect=lambda: now[0]):
+        with patch('damendaemon.sampling.Sampler', return_value=sampler), \
+                patch('damendaemon.prompts.encode', return_value=[1]), patch('damendaemon.prompts.validate_lengths'), \
+                patch('damendaemon.runtime.time.perf_counter', side_effect=lambda: now[0]):
             stream = runtime.generate('a', None, 2, raw_prompt=[1])
             self.assertEqual(next(stream)['token'], 1)
             now[0] = 14  # Consumer resumes four seconds later.

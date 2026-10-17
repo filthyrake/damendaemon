@@ -7,7 +7,7 @@ import time
 
 import torch
 import triton as tr
-from dllm.precise_matmul import _split,_matmul,linear
+from damendaemon.precise_matmul import _split,_matmul,linear
 
 
 CONFIGS={

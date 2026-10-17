@@ -4,8 +4,8 @@ from types import SimpleNamespace
 import tempfile
 import unittest
 from unittest.mock import patch
-from dllm.download import INDEX,snapshot_files,gguf_file
-from dllm.cli import download
+from damendaemon.download import INDEX,snapshot_files,gguf_file
+from damendaemon.cli import download
 
 
 class DownloadTests(unittest.TestCase):
@@ -103,7 +103,7 @@ class GgufDownloadTests(unittest.TestCase):
             fetch.assert_not_called(); snapshot.assert_not_called()
 
     def test_complete_shard_family_pins_every_download_without_other_variants(self):
-        from dllm.download import gguf_files
+        from damendaemon.download import gguf_files
         names = [f'Q4/model-0000{i}-of-00003.gguf' for i in range(1, 4)]
         files = names + ['Q8/model-00001-of-00003.gguf', 'Q4/other.gguf']
         self.assertEqual(gguf_files(files, names[0]), tuple(names))

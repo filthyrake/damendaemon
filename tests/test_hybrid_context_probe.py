@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from dllm import hybrid_precision
+from damendaemon import hybrid_precision
 from scripts.experiments.hybrid_context_probe import context_probe
 
 
@@ -12,8 +12,8 @@ class HybridContextProbeTests(unittest.TestCase):
         model = SimpleNamespace(max_context=32768, quantization='q8_0',
                                 config={'model_type': 'qwen3_5_text'})
         original = hybrid_precision.select
-        env = {'DLLM_DEVICE': 'rocm', 'DLLM_HYBRID_PRECISION': 'compensated',
-               'DLLM_HYBRID_PREFILL': 'scan'}
+        env = {'DAMENDAEMON_DEVICE': 'rocm', 'DAMENDAEMON_HYBRID_PRECISION': 'compensated',
+               'DAMENDAEMON_HYBRID_PREFILL': 'scan'}
         with patch.dict('os.environ', env, clear=True):
             with self.assertRaises(ValueError):
                 original(model, False, 4, 'triton')
@@ -28,7 +28,7 @@ class HybridContextProbeTests(unittest.TestCase):
                     with patch.object(model, field, value, create=True):
                         with self.assertRaises(ValueError):
                             hybrid_precision.select(model, False, 4, 'triton')
-                for overrides in ({'DLLM_DEVICE': 'cuda'}, {'DLLM_HYBRID_PRECISION': 'float16'}):
+                for overrides in ({'DAMENDAEMON_DEVICE': 'cuda'}, {'DAMENDAEMON_HYBRID_PRECISION': 'float16'}):
                     with patch.dict('os.environ', overrides):
                         with self.assertRaises(ValueError):
                             hybrid_precision.select(model, False, 4, 'triton')

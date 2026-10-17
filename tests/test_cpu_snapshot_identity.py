@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from dllm.cpu_snapshot_identity import FORMAT,fingerprint
+from damendaemon.cpu_snapshot_identity import FORMAT,fingerprint
 
 
 class SnapshotIdentityTests(unittest.TestCase):
@@ -60,7 +60,7 @@ class SnapshotIdentityTests(unittest.TestCase):
     def test_bounds_deadline_and_missing_metadata(self):
         for kwargs in ({'max_bytes':1},{'max_bytes':True},{'timeout':float('nan')},{'timeout':float('inf')},{'timeout':0}):
             with self.subTest(kwargs=kwargs),self.assertRaises(ValueError):fingerprint(self.path,**kwargs)
-        with patch('dllm.cpu_snapshot_identity.time.monotonic',side_effect=[0,2]):
+        with patch('damendaemon.cpu_snapshot_identity.time.monotonic',side_effect=[0,2]):
             with self.assertRaisesRegex(ValueError,'deadline'):fingerprint(self.path,timeout=1)
         (self.path/'tokenizer.json').unlink()
         with self.assertRaisesRegex(ValueError,'tokenizer'):fingerprint(self.path)

@@ -2,8 +2,8 @@
 import json
 import torch
 from torch.nn import functional as F
-from dllm import kernels
-from dllm.runtime import require_gpu
+from damendaemon import kernels
+from damendaemon.runtime import require_gpu
 
 
 def main():

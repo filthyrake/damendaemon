@@ -18,15 +18,15 @@ def main():
     p.add_argument('a')
     p.add_argument('b')
     args=p.parse_args()
-    with tempfile.TemporaryDirectory(prefix='dllm-large-swap-') as directory:
+    with tempfile.TemporaryDirectory(prefix='damendaemon-large-swap-') as directory:
         logpath=Path(directory)/'server.log'
         with logpath.open('w') as log:
-            process=subprocess.Popen([sys.executable,'-m','dllm','serve','--port','0','--context','2048',
+            process=subprocess.Popen([sys.executable,'-m','damendaemon','serve','--port','0','--context','2048',
                 '--gpu-models','1','--host-models','2','--host-gib','20','--model','a='+args.a,'--model','b='+args.b],stdout=log,stderr=log)
             try:
                 deadline=time.monotonic()+120
                 while time.monotonic()<deadline and process.poll() is None:
-                    ready=[s for s in logpath.read_text().splitlines() if s.startswith('dllm listening on ')]
+                    ready=[s for s in logpath.read_text().splitlines() if s.startswith('damendaemon listening on ')]
                     if ready:base=ready[-1].split()[-1];break
                     time.sleep(.1)
                 else:raise RuntimeError(logpath.read_text())
@@ -40,7 +40,7 @@ def main():
                     memory=[line.strip().split(', ') for line in apps.splitlines() if line.strip().split(', ')[1]==str(process.pid)]
                     assert len(memory)==1 and memory[0][0]=='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283'
                     reports.append({'model':alias,'memory_mib':int(memory[0][2]),'response':result})
-                assert [r['response']['dllm_timing']['source_tier'] for r in reports]==['disk','disk','host']
+                assert [r['response']['damendaemon_timing']['source_tier'] for r in reports]==['disk','disk','host']
                 assert reports[0]['response']['choices']==reports[2]['response']['choices']
                 total=int(subprocess.check_output(['nvidia-smi','--id=GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283','--query-gpu=memory.total','--format=csv,noheader,nounits'],text=True).strip())
                 assert reports[0]['memory_mib']+reports[1]['memory_mib']>total

@@ -3,8 +3,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_layer_pipeline import GlmLayerPipeline
-from dllm.glm_reference_loader import load_reference_stage
+from damendaemon.glm_layer_pipeline import GlmLayerPipeline
+from damendaemon.glm_reference_loader import load_reference_stage
 from tests.test_glm_layer_stage import prepared
 from tests.test_glm_model import model_fixture
 from tests.test_glm_reference_loader import fixture, floating_control

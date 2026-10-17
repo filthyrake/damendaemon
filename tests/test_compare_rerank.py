@@ -18,7 +18,7 @@ for count in (1,4,16,64):
         report['rows'].append({'pairs_per_request':count,'concurrency':concurrency,
             'trials':[{'warmup':index==0,'requests':[deepcopy(request) for _ in range(concurrency)]}
                       for index in range(6)]})
-report['engine']='dllm'
+report['engine']='damendaemon'
 other=deepcopy(report);other['engine']='vllm'
 request=report['rows'][2]['trials'][-1]['requests'][0]
 results=other['rows'][2]['trials'][0]['requests'][0]['results']
@@ -49,7 +49,7 @@ for value in (report,other):
     if case=='boolean-concurrency':value['rows'][0]['concurrency']=True
     if case=='nonobject-row':value['rows'][0]=[]
     if case=='nonobject-trial':value['rows'][0]['trials'][0]=[]
-if case=='same-engine':other['engine']='dllm'
+if case=='same-engine':other['engine']='damendaemon'
 if case=='missing-engine':other.pop('engine')
 if case=='unknown-engine':other['engine']='llama.cpp'
 if case=='invalid-engine':other['engine']=[]
@@ -107,14 +107,14 @@ import io
 from unittest.mock import patch
 from contextlib import redirect_stderr
 from scripts import compare_rerank_a2 as comparator
-for engines in (['dllm','dllm'],['dllm','unknown'],['unknown']):
+for engines in (['damendaemon','damendaemon'],['damendaemon','unknown'],['unknown']):
     with patch('sys.argv',['compare','fixture','--engines',*engines]),redirect_stderr(io.StringIO()), \
             patch.dict(comparator.os.environ,CUDA_VISIBLE_DEVICES='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283'), \
             patch.object(comparator.Path,'cwd',side_effect=AssertionError('workspace accessed')):
         try:comparator.main()
         except SystemExit as error:assert error.code==2
         else:raise AssertionError('invalid engine selection accepted')
-for engines in (['dllm'],['vllm'],['dllm','vllm'],['vllm','dllm']):
+for engines in (['damendaemon'],['vllm'],['damendaemon','vllm'],['vllm','damendaemon']):
     with patch('sys.argv',['compare','fixture','--engines',*engines]), \
             patch.dict(comparator.os.environ,CUDA_VISIBLE_DEVICES='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283'), \
             patch.object(comparator.Path,'cwd',side_effect=RuntimeError('workspace boundary')):

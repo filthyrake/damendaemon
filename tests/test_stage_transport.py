@@ -1,8 +1,8 @@
 """Completion/failure ownership tests; real NCCL evidence is separate."""
 import unittest
 from unittest.mock import Mock, patch
-from dllm.stage_protocol import Command, StageState, PREFILL
-from dllm.stage_transport import StageChannel
+from damendaemon.stage_protocol import Command, StageState, PREFILL
+from damendaemon.stage_transport import StageChannel
 
 
 class StageTransportTests(unittest.TestCase):
@@ -14,8 +14,8 @@ class StageTransportTests(unittest.TestCase):
         channel.acknowledgement = Mock()
         channel.acknowledgement.item.return_value = 1
         command = Command(1, 1, PREFILL, 31, ((0, 1, 0),))
-        with patch('dllm.stage_transport.torch.tensor'), patch('dllm.stage_transport.dist.broadcast'), \
-                patch('dllm.stage_transport.dist.all_reduce') as admission:
+        with patch('damendaemon.stage_transport.torch.tensor'), patch('damendaemon.stage_transport.dist.broadcast'), \
+                patch('damendaemon.stage_transport.dist.all_reduce') as admission:
             self.assertEqual(channel.begin(command), command)
             admission.assert_called_once()
         channel.header.cpu.assert_not_called()
@@ -32,8 +32,8 @@ class StageTransportTests(unittest.TestCase):
             channel.header.cpu.return_value.tolist.return_value = command.encode()
             channel.acknowledgement = Mock()
             channel.acknowledgement.item.return_value = 0
-            with patch('dllm.stage_transport.torch.tensor'), patch('dllm.stage_transport.dist.broadcast'), \
-                    patch('dllm.stage_transport.dist.all_reduce'):
+            with patch('damendaemon.stage_transport.torch.tensor'), patch('damendaemon.stage_transport.dist.broadcast'), \
+                    patch('damendaemon.stage_transport.dist.all_reduce'):
                 with self.assertRaisesRegex(ValueError, 'rejected before activation'):
                     channel.begin(command if rank == 0 else None)
             self.assertTrue(channel.state.failed)
@@ -51,7 +51,7 @@ class StageTransportTests(unittest.TestCase):
         channel.header.cpu.return_value.tolist.return_value=Command(1,2,PREFILL,3,((0,2,0),)).encode()
         channel.acknowledgement=Mock()
         channel.acknowledgement.item.return_value=0
-        with patch('dllm.stage_transport.dist.broadcast'),patch('dllm.stage_transport.dist.all_reduce'):
+        with patch('damendaemon.stage_transport.dist.broadcast'),patch('damendaemon.stage_transport.dist.all_reduce'):
             with self.assertRaisesRegex(ValueError,'rejected before activation') as error:channel.begin()
         self.assertIn('occupied slot',str(error.exception.__cause__))
         channel.acknowledgement.fill_.assert_called_once_with(0)
@@ -75,7 +75,7 @@ class StageTransportTests(unittest.TestCase):
             self.assertIs(channel.state.pending, command)
             return 1
         channel.acknowledgement.item.side_effect = observe
-        with patch('dllm.stage_transport.torch.cuda.synchronize'), patch('dllm.stage_transport.dist.all_reduce'):
+        with patch('damendaemon.stage_transport.torch.cuda.synchronize'), patch('damendaemon.stage_transport.dist.all_reduce'):
             channel.finish(command)
         self.assertEqual(channel.state.lengths[0], 31)
         self.assertEqual(channel.state.sequence, 2)
@@ -83,7 +83,7 @@ class StageTransportTests(unittest.TestCase):
     def test_failed_completion_fence_poisoned_before_publication(self):
         channel, command = self.pending()
         channel.acknowledgement.item.side_effect = RuntimeError('peer failed')
-        with patch('dllm.stage_transport.torch.cuda.synchronize'), patch('dllm.stage_transport.dist.all_reduce'):
+        with patch('damendaemon.stage_transport.torch.cuda.synchronize'), patch('damendaemon.stage_transport.dist.all_reduce'):
             with self.assertRaisesRegex(RuntimeError, 'peer failed'):channel.finish(command)
         self.assertTrue(channel.state.failed)
         self.assertEqual(channel.state.lengths, [0] * 4)
@@ -103,7 +103,7 @@ class StageTransportTests(unittest.TestCase):
     def test_wrong_completion_rejected_before_collective(self):
         channel, command = self.pending()
         wrong = Command(1, 2, PREFILL, 31, ((0, 1, 0),))
-        with patch('dllm.stage_transport.dist.all_reduce') as collective:
+        with patch('damendaemon.stage_transport.dist.all_reduce') as collective:
             with self.assertRaisesRegex(RuntimeError, 'does not own'):
                 channel.finish(wrong)
             collective.assert_not_called()

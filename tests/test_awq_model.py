@@ -7,7 +7,7 @@ from unittest.mock import patch
 import torch
 from safetensors.torch import save_file
 from tokenizers import Tokenizer, models, pre_tokenizers
-from dllm.awq_model import AwqWeights, config, dense_groups, plan, projection_groups, weight_bytes
+from damendaemon.awq_model import AwqWeights, config, dense_groups, plan, projection_groups, weight_bytes
 
 
 def fixture(path):
@@ -47,7 +47,7 @@ class AwqModelTests(unittest.TestCase):
             values = {name: value.to(torch.bfloat16) if name.endswith('.weight') else value
                       for name, value in values.items()}
             save_file(values, str(path/'model.safetensors'))
-            from dllm.models import load
+            from damendaemon.models import load
             model = load(path, 64, 'none')
             self.assertNotIn('0.qkv.bias', model.weights)
             self.assertEqual(model.weights['embed'].dtype, torch.bfloat16)
@@ -65,7 +65,7 @@ class AwqModelTests(unittest.TestCase):
                 AwqWeights(path, 64, 'none')
 
     def test_shared_factory_preserves_packed_checkpoint_and_rejects_other_formats(self):
-        from dllm import models as factory
+        from damendaemon import models as factory
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
             c, _ = fixture(path)
@@ -126,7 +126,7 @@ class AwqModelTests(unittest.TestCase):
                 plan(path)
 
     def test_index_growth_after_discovery_keeps_second_read_bounded(self):
-        from dllm import awq_model
+        from damendaemon import awq_model
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory);_,values=fixture(path)
             index=path/'model.safetensors.index.json'
@@ -159,7 +159,7 @@ class AwqModelTests(unittest.TestCase):
             c, _ = fixture(path)
             with self.assertRaisesRegex(ValueError, 'requantized'):
                 weight_bytes(path, 'q4_0')
-            with patch.dict('os.environ', {'DLLM_DEVICE': 'mps'}), self.assertRaisesRegex(ValueError, 'CUDA'):
+            with patch.dict('os.environ', {'DAMENDAEMON_DEVICE': 'mps'}), self.assertRaisesRegex(ValueError, 'CUDA'):
                 weight_bytes(path, 'none')
             c['model_type'] = 'mistral'
             c['architectures'] = ['MistralForCausalLM']

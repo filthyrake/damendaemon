@@ -4,8 +4,8 @@ import unittest
 from unittest.mock import patch
 import torch
 from safetensors.torch import save_file
-from dllm.packed_checkpoint import read_packed_matrix
-from dllm.prepared_projection import PackedProjection
+from damendaemon.packed_checkpoint import read_packed_matrix
+from damendaemon.prepared_projection import PackedProjection
 from tests.test_packed_q4_q8 import fixture
 
 
@@ -33,17 +33,17 @@ class PackedIntegerCheckpointTests(unittest.TestCase):
             for format in ('q4_0_f16','q8_0_f16'):
                 weight,scales,_=fixture(format)
                 save_file({'w':weight,'s':scales},path)
-                with patch('dllm.packed_checkpoint._payload',side_effect=AssertionError('payload')):
+                with patch('damendaemon.packed_checkpoint._payload',side_effect=AssertionError('payload')):
                     with self.assertRaisesRegex(ValueError,'budget'):
                         read_packed_matrix(path,'w',path,'s',format=format,max_bytes=weight.numel()+2*scales.numel()-1)
-                    with patch('dllm.packed_checkpoint.sys.byteorder','big'):
+                    with patch('damendaemon.packed_checkpoint.sys.byteorder','big'):
                         with self.assertRaisesRegex(ValueError,'endian'):read_packed_matrix(path,'w',path,'s',format=format)
                     for w,s in ((weight,scales.float()),(weight.float(),scales),(weight,scales[:,:1].contiguous()),(weight[:,:-1].contiguous(),scales)):
                         save_file({'w':w,'s':s},path)
                         with self.assertRaises(ValueError):read_packed_matrix(path,'w',path,'s',format=format)
 
     def test_mutation_and_failed_read_close_both_descriptors(self):
-        from dllm import packed_checkpoint
+        from damendaemon import packed_checkpoint
         with tempfile.TemporaryDirectory() as directory:
             a,b=Path(directory)/'a.safetensors',Path(directory)/'b.safetensors'
             weight,scales,_=fixture('q8_0_f16');save_file({'w':weight},a);save_file({'s':scales},b)
@@ -55,6 +55,6 @@ class PackedIntegerCheckpointTests(unittest.TestCase):
                 return value
             for failure in (OSError('read failed'),mutate):
                 save_file({'s':scales},b)
-                with patch('dllm.packed_checkpoint._header',side_effect=record),patch('dllm.packed_checkpoint._payload',side_effect=failure):
+                with patch('damendaemon.packed_checkpoint._header',side_effect=record),patch('damendaemon.packed_checkpoint._payload',side_effect=failure):
                     with self.assertRaises((OSError,ValueError)):read_packed_matrix(a,'w',b,'s',format='q8_0_f16')
                 self.assertTrue(all(reader.closed for reader in opened))

@@ -4,13 +4,13 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_stage_slots import GlmStageSlots
-from dllm.glm_reference_loader import load_reference_stage
-from dllm.host_topology import HostTopology
-from dllm.host_pipeline_worker import HostPipelineCoordinator,HostPipelineWorker
-from dllm.host_tensor_channel import HostTensorChannel
-from dllm.planned_host_stage_channel import PlannedHostStageChannel
-from dllm.stage_protocol import StageState
+from damendaemon.glm_stage_slots import GlmStageSlots
+from damendaemon.glm_reference_loader import load_reference_stage
+from damendaemon.host_topology import HostTopology
+from damendaemon.host_pipeline_worker import HostPipelineCoordinator,HostPipelineWorker
+from damendaemon.host_tensor_channel import HostTensorChannel
+from damendaemon.planned_host_stage_channel import PlannedHostStageChannel
+from damendaemon.stage_protocol import StageState
 from tests import test_host_tls,test_host_pipeline_worker
 from tests.test_glm_checkpoint import config as geometry
 from tests.test_glm_reference_loader import fixture,floating_control
@@ -84,10 +84,10 @@ class GlmHostPipelineTests(unittest.TestCase):
             options=dict(ranges=ranges)|options
             with self.assertRaises(ValueError):HostTopology(config,source_identity=b'g'*32,context=16,**options)
         topology,owners,_=self.session()
-        from dllm.cpu_host_pipeline_build import build_cpu_host_pipeline_worker
+        from damendaemon.cpu_host_pipeline_build import build_cpu_host_pipeline_worker
         with self.assertRaisesRegex(ValueError,'controls'):
             build_cpu_host_pipeline_worker('/unused',topology,0,[],epoch=1)
-        from dllm.host_serving import HostServingTopology
+        from damendaemon.host_serving import HostServingTopology
         with self.assertRaises(ValueError):HostServingTopology._validate_topology(None,owners[0],4)
         with self.assertRaises(ValueError):owners[0].prefill([29])
         self.assertTrue(owners[0].ready)
@@ -102,7 +102,7 @@ class GlmHostPipelineTests(unittest.TestCase):
         self.assertTrue(all(owner.stage.states==[None,None] for owner in owners))
 
     def test_peer_loss_and_abandoned_completion_discard_epoch(self):
-        from dllm.host_completion import HostCompletion
+        from damendaemon.host_completion import HostCompletion
         _,owners,_=self.session();errors,threads=self.pump(owners)
         runner=HostCompletion(owners[0],eos_ids=[])
         stream=runner.generate([1,2],max_new_tokens=5,chunk_size=2);next(stream);stream.close()

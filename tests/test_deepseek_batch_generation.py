@@ -7,11 +7,11 @@ import unittest
 from unittest.mock import patch
 import torch
 
-from dllm.deepseek_batch_generation import BatchReferenceGenerator
-from dllm.deepseek_generation import ReferenceGenerator
-from dllm.deepseek_reference_loader import load_reference_model
-from dllm.deepseek_text import EOS, END_THINK
-from dllm.floating_model import FloatingModel
+from damendaemon.deepseek_batch_generation import BatchReferenceGenerator
+from damendaemon.deepseek_generation import ReferenceGenerator
+from damendaemon.deepseek_reference_loader import load_reference_model
+from damendaemon.deepseek_text import EOS, END_THINK
+from damendaemon.floating_model import FloatingModel
 from scripts import run_deepseek_reference as cli
 from tests.test_deepseek_generation import text_fixture
 from tests.test_deepseek_reference_loader import fixture

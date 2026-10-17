@@ -1,13 +1,13 @@
-// Validation-only Q4_0 integer dot products. Reuse dllm's own two-term
+// Validation-only Q4_0 integer dot products. Reuse damendaemon's own two-term
 // activation quantizer; source quantized bytes and scales remain unchanged.
 // Unlike native/q4_gemv.cu, multiplication applies the FP16 scale in FP32
 // without rounding each coefficient to FP16. This arithmetic is experimental.
-#ifdef DLLM_Q4_SINGLE_TERM
-#define dllm_residual_quantize dllm_residual_quantize_two_term_unused
+#ifdef DAMENDAEMON_Q4_SINGLE_TERM
+#define damendaemon_residual_quantize damendaemon_residual_quantize_two_term_unused
 #endif
 #include "../../native/kquant_residual.cu"
-#ifdef DLLM_Q4_SINGLE_TERM
-#undef dllm_residual_quantize
+#ifdef DAMENDAEMON_Q4_SINGLE_TERM
+#undef damendaemon_residual_quantize
 
 // Diagnostic only: measure the accuracy/cost of one absmax-scaled int8 term.
 // The normal Q4 library continues to use the qualified two-term quantizer.
@@ -29,7 +29,7 @@ __global__ void quantize_single(const half* x, int8_t* q1, int8_t* q2,
     if (lane==0) scales[group]=make_float4(scale,0.f,sum,0.f);
 }
 
-extern "C" int dllm_residual_quantize(const void* x,void* q1,void* q2,void* scales,
+extern "C" int damendaemon_residual_quantize(const void* x,void* q1,void* q2,void* scales,
                                       int rows,int k,void* stream) {
     if (!x || !q1 || !q2 || !scales || rows<1 || rows>4 || k<=0 || k%256)
         return cudaErrorInvalidValue;
@@ -41,8 +41,8 @@ extern "C" int dllm_residual_quantize(const void* x,void* q1,void* q2,void* scal
 }
 #endif
 
-extern "C" int dllm_q4_activation_terms() {
-#ifdef DLLM_Q4_SINGLE_TERM
+extern "C" int damendaemon_q4_activation_terms() {
+#ifdef DAMENDAEMON_Q4_SINGLE_TERM
     return 1;
 #else
     return 2;
@@ -60,7 +60,7 @@ __global__ void q4_residual(const int8_t* q1, const int8_t* q2, const float4* xs
     const half* weight_scales = ws + static_cast<size_t>(row)*(k/32);
     float accum[Rows] = {};
     for (int packed_column=lane*4; packed_column<k/2; packed_column+=128) {
-#ifdef DLLM_Q4_RESIDUAL_BYPASS_L1
+#ifdef DAMENDAEMON_Q4_RESIDUAL_BYPASS_L1
         // Weight bytes are consumed once; keep the small reused activation
         // arrays in L1 instead. This variant is measured independently.
         const uint32_t packed=__ldcg(reinterpret_cast<const uint32_t*>(weights+packed_column));
@@ -71,7 +71,7 @@ __global__ void q4_residual(const int8_t* q1, const int8_t* q2, const float4* xs
         lo=(lo & 0x07070707u) | ((~lo & 0x08080808u)*31u);
         hi=(hi & 0x07070707u) | ((~hi & 0x08080808u)*31u);
         const int column=(packed_column/16)*32+packed_column%16;
-#ifdef DLLM_Q4_RESIDUAL_BYPASS_L1
+#ifdef DAMENDAEMON_Q4_RESIDUAL_BYPASS_L1
         const float scale=__half2float(__ushort_as_half(__ldcg(
             reinterpret_cast<const unsigned short*>(weight_scales+packed_column/16))));
 #else
@@ -83,7 +83,7 @@ __global__ void q4_residual(const int8_t* q1, const int8_t* q2, const float4* xs
             const int a=__dp4a(static_cast<int>(lo),*reinterpret_cast<const int*>(q1+index),
                         __dp4a(static_cast<int>(hi),*reinterpret_cast<const int*>(q1+index+16),0));
             const float4 d=xs[index/32];
-#ifdef DLLM_Q4_SINGLE_TERM
+#ifdef DAMENDAEMON_Q4_SINGLE_TERM
             accum[r]+=scale*static_cast<float>(a)*d.x;
 #else
             const int b=__dp4a(static_cast<int>(lo),*reinterpret_cast<const int*>(q2+index),
@@ -100,7 +100,7 @@ __global__ void q4_residual(const int8_t* q1, const int8_t* q2, const float4* xs
     }
 }
 
-extern "C" int dllm_q4_residual_gemv(const void* q1,const void* q2,const void* xs,
+extern "C" int damendaemon_q4_residual_gemv(const void* q1,const void* q2,const void* xs,
     const void* w,const void* ws,const void* bias,void* output,int rows,int n,int k,void* stream) {
     if (!q1 || !q2 || !xs || !w || !ws || !output || rows<1 || rows>4 || n<=0 || k<=0 || k%256)
         return cudaErrorInvalidValue;

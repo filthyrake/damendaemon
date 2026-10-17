@@ -1,6 +1,6 @@
 import unittest
 import torch
-from dllm.expert_routes import grouped_routes
+from damendaemon.expert_routes import grouped_routes
 
 
 class ExpertRouteTests(unittest.TestCase):

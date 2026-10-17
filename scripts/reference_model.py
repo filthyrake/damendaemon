@@ -67,7 +67,7 @@ def load_reference(path, reference_quantization='none', packed_cpu=False, packed
                 continue
             if isinstance(module, torch.nn.Linear):
                 # Mamba-130M's rank-48 time-step projection does not form whole
-                # Q8/Q4 blocks. dllm retains that small matrix in FP32.
+                # Q8/Q4 blocks. damendaemon retains that small matrix in FP32.
                 if config['model_type']=='mamba' and module.weight.shape[1]%32:
                     continue
                 restored = roundtrip_reference_weight(module.weight, reference_quantization)

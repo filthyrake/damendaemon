@@ -2,7 +2,7 @@
 if not __debug__:
     raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
 
-from dllm.evidence_environment import report_environment
+from damendaemon.evidence_environment import report_environment
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json
@@ -12,11 +12,11 @@ from urllib.request import Request,urlopen
 import torch
 from transformers import AutoTokenizer
 from reference_model import load_reference
-from dllm.bench import events
-from dllm.logprobs import TokenText
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer,handler_for
-from dllm.runtime import require_gpu
+from damendaemon.bench import events
+from damendaemon.logprobs import TokenText
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer,handler_for
+from damendaemon.runtime import require_gpu
 
 
 def main():
@@ -25,7 +25,7 @@ def main():
     p.add_argument('--reference-quantization',choices=('none','q4_0','q8_0'),default='none')
     p.add_argument('--device',choices=('cuda','mps'),default='cuda')
     args=p.parse_args()
-    os.environ['DLLM_DEVICE']=args.device
+    os.environ['DAMENDAEMON_DEVICE']=args.device
     require_gpu();torch.set_num_threads(4)
     reference=load_reference(args.model,reference_quantization=args.reference_quantization,
         local_files_only=True,trust_remote_code=False,torch_dtype=torch.float32,attn_implementation='eager').eval()

@@ -1,6 +1,6 @@
 # Qwen3.8-27B Q4 prefill diagnosis
 
-Issue [#68](https://github.com/filthyrake/dllm/issues/68) owns current execution
+Issue [#68](https://github.com/filthyrake/damendaemon/issues/68) owns current execution
 status. These are bounded experiments on HOMER Radeon 8060S/gfx1151, PyTorch
 2.11.0+rocm7.13.0a20260425, pinned model
 `1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0`. No rejected attention candidate is

@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 import torch
 from torch.nn import functional as F
-from dllm.glm_flash_linear import FlashLinearAttention
+from damendaemon.glm_flash_linear import FlashLinearAttention
 from tests import test_glm_flash_kda
 
 
@@ -66,7 +66,7 @@ class FlashLinearTests(unittest.TestCase):
     def test_failure_preserves_cache_and_cursor(self):
         c=layer();x=torch.randn(1,2,4);state=c.new_state(1,8);c.forward(x,state,position=0)
         old=(state.convolution.clone(),state.recurrent.clone())
-        with patch('dllm.glm_flash_linear.recurrent_attention',side_effect=RuntimeError('injected')):
+        with patch('damendaemon.glm_flash_linear.recurrent_attention',side_effect=RuntimeError('injected')):
             with self.assertRaisesRegex(RuntimeError,'injected'):c.forward(x,state,position=2)
         self.assertEqual(state.position,2)
         torch.testing.assert_close(state.convolution,old[0]);torch.testing.assert_close(state.recurrent,old[1])
@@ -81,7 +81,7 @@ class FlashLinearTests(unittest.TestCase):
         self.assertEqual(state.position,0)
         for option in ('max_workspace_bytes','max_output_bytes'):
             small=layer(**{option:1});ss=small.new_state(1,2)
-            with patch('dllm.glm_flash_linear._finite',side_effect=AssertionError('scanned before admission')):
+            with patch('damendaemon.glm_flash_linear._finite',side_effect=AssertionError('scanned before admission')):
                 with self.assertRaisesRegex(ValueError,'budget'):small.forward(x,ss,position=0)
         c.forward(x,state,position=0)
         with self.assertRaises(ValueError):c.forward(x[:,:1],state,position=2)

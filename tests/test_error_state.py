@@ -1,7 +1,7 @@
 import gc
 import unittest
 import weakref
-from dllm.error_state import detached_error
+from damendaemon.error_state import detached_error
 
 
 class ErrorStateTests(unittest.TestCase):

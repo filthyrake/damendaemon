@@ -1,7 +1,7 @@
 """Own local verifier HTTP startup and cleanup, including partial startup."""
 from contextlib import contextmanager
 import threading
-from dllm.server import BoundedHTTPServer, handler_for
+from damendaemon.server import BoundedHTTPServer, handler_for
 
 
 @contextmanager

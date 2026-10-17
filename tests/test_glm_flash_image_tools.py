@@ -8,11 +8,11 @@ import unittest
 from unittest.mock import patch
 import torch
 
-from dllm.glm_flash_image_tool_text import FlashImageToolText,render_image_tool_chat
-from dllm.glm_flash_image_tool_generation import FlashImageToolReferenceGenerator
-from dllm.glm_flash_inline_images import decode_inline_images
-from dllm.glm_flash_tools import FlashTools
-from dllm.glm_text import EOS,END_THINK
+from damendaemon.glm_flash_image_tool_text import FlashImageToolText,render_image_tool_chat
+from damendaemon.glm_flash_image_tool_generation import FlashImageToolReferenceGenerator
+from damendaemon.glm_flash_inline_images import decode_inline_images
+from damendaemon.glm_flash_tools import FlashTools
+from damendaemon.glm_text import EOS,END_THINK
 from scripts import run_glm_flash_image_reference as cli
 from tests.test_glm_flash_tool_generation import TOOLS,CALLS
 from tests.test_glm_flash_image_generation import text_fixture,vision,ScriptedImageModel

@@ -3,8 +3,8 @@ import json
 import os
 import time
 import torch
-from dllm.logprobs import score_rows
-from dllm.runtime import require_gpu
+from damendaemon.logprobs import score_rows
+from damendaemon.runtime import require_gpu
 
 
 def main():
@@ -27,7 +27,7 @@ def main():
                 value['calls']+=1;value['gpu_us']+=event.self_device_time_total
             rows.append({'batch':batch,'top':top,'wall_ms_per_batch':seconds*1000,
                 'gpu_events_per_batch':len(events)/4,'kernels':names})
-    print(json.dumps({'device':torch.cuda.get_device_name(),'backend_policy':os.environ.get('DLLM_LOGPROBS_KERNELS','auto'),'vocabulary':151936,'dtype':'float16','measurements':rows},indent=2))
+    print(json.dumps({'device':torch.cuda.get_device_name(),'backend_policy':os.environ.get('DAMENDAEMON_LOGPROBS_KERNELS','auto'),'vocabulary':151936,'dtype':'float16','measurements':rows},indent=2))
 
 
 if __name__=='__main__':main()

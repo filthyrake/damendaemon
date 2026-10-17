@@ -3,7 +3,7 @@ import json
 import secrets
 import unittest
 from urllib.request import Request,urlopen
-from dllm.cpu_snapshot_identity import fingerprint
+from damendaemon.cpu_snapshot_identity import fingerprint
 from tests import test_glm_flash_image_host_command as image,test_glm_flash_host_http_command as text
 from tests.test_glm_flash_inline_images import messages
 from tests.test_glm_flash_tool_generation import TOOLS
@@ -28,7 +28,7 @@ class FlashImageHostHttpCommandTests(unittest.TestCase):
 
     def test_queued_image_tool_concurrency_drains_and_stops_all_processes(self):
         key=secrets.token_urlsafe(32);admin=secrets.token_urlsafe(32)
-        self.environment.update(DLLM_API_KEY=key,DLLM_ADMIN_API_KEY=admin)
+        self.environment.update(DAMENDAEMON_API_KEY=key,DAMENDAEMON_ADMIN_API_KEY=admin)
         identity=fingerprint(self.path).model_id;common=['--verify-model-id','--model-id',identity]
         workers=self.workers('fp8_reference',common)
         coordinator=self.launch(self.args('serve',extra=common+['--queue-size','4','--stop-after-drain']))
@@ -40,7 +40,7 @@ class FlashImageHostHttpCommandTests(unittest.TestCase):
             with self.post(tools=TOOLS,max_tokens=3) as response:return json.load(response)
         with ThreadPoolExecutor(3) as pool:results=list(pool.map(lambda _:request(),range(3)))
         self.assertTrue(all(result['usage']==results[0]['usage'] for result in results))
-        self.assertTrue(all(result['dllm_timing']['queue_seconds']>=0 for result in results))
+        self.assertTrue(all(result['damendaemon_timing']['queue_seconds']>=0 for result in results))
         with urlopen(Request(self.base+'/v1/models/status',headers=self.admin),timeout=3) as response:status=json.load(response)
         self.assertEqual(status['modality'],'still_image');self.assertTrue(status['vision_identity_verified'])
         with urlopen(Request(self.base+'/v1/scheduler/drain',b'{}',self.admin),timeout=3) as response:self.assertTrue(json.load(response)['drained'])

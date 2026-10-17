@@ -5,7 +5,7 @@ import time
 import threading
 import unittest
 from urllib.request import Request,urlopen
-from dllm.cpu_snapshot_identity import fingerprint
+from damendaemon.cpu_snapshot_identity import fingerprint
 from tests import test_glm_host_http_command as single
 
 
@@ -21,7 +21,7 @@ class QueuedGlmHostHttpCommandTests(unittest.TestCase):
 
     def test_actual_process_concurrent_json_sse_and_drain_acknowledges_stop(self):
         key=secrets.token_urlsafe(32);admin=secrets.token_urlsafe(32)
-        self.environment.update(DLLM_API_KEY=key,DLLM_ADMIN_API_KEY=admin)
+        self.environment.update(DAMENDAEMON_API_KEY=key,DAMENDAEMON_ADMIN_API_KEY=admin)
         identity=fingerprint(self.path).model_id;common=['--verify-model-id','--model-id',identity]
         workers=self.workers('fp8_reference',common)
         coordinator=self.launch(self.args('serve',extra=common+['--queue-size','3','--queue-timeout','3','--stop-after-drain']))
@@ -44,7 +44,7 @@ class QueuedGlmHostHttpCommandTests(unittest.TestCase):
             with urlopen(Request(self.base+'/v1/scheduler/drain',b'{}',admin_headers),timeout=3) as response:self.assertFalse(json.load(response)['drained'])
             results=[future.result(8) for future in futures]
         self.assertTrue(all(result['choices']==results[0]['choices'] and result['usage']==results[0]['usage'] for result in results))
-        self.assertTrue(all(result['dllm_timing']['queue_seconds']>=0 for result in results))
+        self.assertTrue(all(result['damendaemon_timing']['queue_seconds']>=0 for result in results))
         output,error=coordinator.communicate(timeout=8);self.assertEqual(coordinator.returncode,0,error)
         self.assertTrue(json.loads(output)['graceful_stop']);self.finish_workers(workers)
         self.assertNotIn(key,output+error);self.assertNotIn(admin,output+error)

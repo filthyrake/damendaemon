@@ -5,12 +5,12 @@ import subprocess
 import sys
 import unittest
 from unittest.mock import patch
-from dllm.cpu_snapshot_identity import fingerprint
-from dllm.glm_flash_image_tool_text import FlashImageToolText
-from dllm.glm_flash_image_tool_generation import FlashImageToolReferenceGenerator
-from dllm.glm_flash_reference_loader import load_reference_model
-from dllm.glm_flash_vision_loader import load_reference_vision
-from dllm.glm_flash_inline_images import decode_inline_images
+from damendaemon.cpu_snapshot_identity import fingerprint
+from damendaemon.glm_flash_image_tool_text import FlashImageToolText
+from damendaemon.glm_flash_image_tool_generation import FlashImageToolReferenceGenerator
+from damendaemon.glm_flash_reference_loader import load_reference_model
+from damendaemon.glm_flash_vision_loader import load_reference_vision
+from damendaemon.glm_flash_inline_images import decode_inline_images
 from scripts import run_glm_flash_host_topology as cli,run_cpu_host_topology as shared,flash_host_images
 from tests import test_glm_flash_native_host_command as prior
 from tests.test_glm_flash_inline_images import snapshot,messages
@@ -92,7 +92,7 @@ class FlashImageHostCommandTests(unittest.TestCase):
 
     def test_failed_stop_withholds_image_completion_success(self):
         self.snapshot(2);workers=self.workers('fp8_reference');output=io.StringIO()
-        from dllm.host_pipeline_worker import HostPipelineCoordinator
+        from damendaemon.host_pipeline_worker import HostPipelineCoordinator
         with patch.object(HostPipelineCoordinator,'stop',side_effect=RuntimeError('STOP failed')),redirect_stdout(output),redirect_stderr(io.StringIO()):
             with self.assertRaises(SystemExit) as error:cli.main(self.args('complete',extra=['--messages',str(self.history)]))
         self.assertEqual(error.exception.code,2);self.assertNotIn('finish_reason',output.getvalue());self.finish_workers(workers,2)

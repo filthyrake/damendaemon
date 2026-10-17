@@ -7,9 +7,9 @@ import json
 import statistics
 import time
 import torch
-from dllm import metal_kernels
-from dllm.models import load
-from dllm.runtime import make_executor
+from damendaemon import metal_kernels
+from damendaemon.models import load
+from damendaemon.runtime import make_executor
 
 
 @torch.inference_mode()

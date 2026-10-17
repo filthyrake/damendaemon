@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.host_tensor_channel import HostTensorChannel,FRAME,MAGIC,HELLO,VERSION,DTYPES
+from damendaemon.host_tensor_channel import HostTensorChannel,FRAME,MAGIC,HELLO,VERSION,DTYPES
 
 
 class HostTensorChannelTests(unittest.TestCase):
@@ -116,7 +116,7 @@ class HostTensorChannelTests(unittest.TestCase):
             def recv_into(self,view):return connection.recv_into(view[:1])
         right.connection=Fragmented()
         # Header fragments arrive, but they cannot reset the overall deadline.
-        with patch('dllm.host_tensor_channel.time.monotonic',side_effect=[0,.01,.02,.06]):
+        with patch('damendaemon.host_tensor_channel.time.monotonic',side_effect=[0,.01,.02,.06]):
             with self.assertRaises(TimeoutError):right.receive((1,),torch.float32)
         self.assertTrue(right.failed);self.assertEqual(right.received,0)
 
@@ -146,9 +146,9 @@ class HostTensorChannelTests(unittest.TestCase):
                     original=torch.frombuffer
                     def delayed(*args,**kwargs):
                         result=original(*args,**kwargs);clock[0]=2.0;return result
-                    instrument=patch('dllm.host_tensor_channel.torch.frombuffer',side_effect=delayed)
+                    instrument=patch('damendaemon.host_tensor_channel.torch.frombuffer',side_effect=delayed)
                     action=lambda:target.receive((1,),torch.float32)
-                with patch('dllm.host_tensor_channel.time.monotonic',side_effect=lambda:clock[0]),instrument:
+                with patch('damendaemon.host_tensor_channel.time.monotonic',side_effect=lambda:clock[0]),instrument:
                     with self.assertRaises(TimeoutError):action()
                 self.assertTrue(target.failed)
                 self.assertTrue(target.closed)

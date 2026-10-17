@@ -13,7 +13,7 @@ import tempfile
 import time
 from urllib.error import HTTPError
 from urllib.request import Request,urlopen
-from dllm.bench import events
+from damendaemon.bench import events
 
 
 def main():
@@ -23,15 +23,15 @@ def main():
     p.add_argument('--device',choices=('cuda','mps'),default='cuda')
     args=p.parse_args()
     a,b=str(args.a.resolve()),str(args.b.resolve())
-    with tempfile.TemporaryDirectory(prefix='dllm-management-') as directory:
+    with tempfile.TemporaryDirectory(prefix='damendaemon-management-') as directory:
         logpath=Path(directory)/'server.log'
         with logpath.open('w') as log:
-            process=subprocess.Popen([sys.executable,'-m','dllm','serve','--port','0','--device',args.device,
+            process=subprocess.Popen([sys.executable,'-m','damendaemon','serve','--port','0','--device',args.device,
                 '--context','512','--gpu-models','1','--host-models','2'],stdout=log,stderr=log)
             try:
                 deadline=time.monotonic()+120
                 while time.monotonic()<deadline and process.poll() is None:
-                    ready=[s for s in logpath.read_text().splitlines() if s.startswith('dllm listening on ')]
+                    ready=[s for s in logpath.read_text().splitlines() if s.startswith('damendaemon listening on ')]
                     if ready:base=ready[-1].split()[-1];break
                     time.sleep(.1)
                 else:raise RuntimeError(logpath.read_text())
@@ -72,8 +72,8 @@ def main():
                 text=''.join(c.get('delta',{}).get('content','') for item in chunks[:-1] for c in json.loads(item)['choices'])
                 assert text==first['choices'][0]['message']['content']
                 restored=generate()
-                assert restored['dllm_timing']['source_tier']=='host' and restored['choices']==first['choices']
-                added=json.loads(subprocess.check_output([sys.executable,'-m','dllm','add','b',b,'--server',base],text=True,timeout=180))
+                assert restored['damendaemon_timing']['source_tier']=='host' and restored['choices']==first['choices']
+                added=json.loads(subprocess.check_output([sys.executable,'-m','damendaemon','add','b',b,'--server',base],text=True,timeout=180))
                 assert tier(added,'b')=='disk'
                 for action,body in (('register',{'model':'bad','path':str(Path(directory)/'missing')}),
                                     ('register',{'model':'a','path':b}),('load',{'model':'unknown'})):
@@ -84,11 +84,11 @@ def main():
                                 raise ValueError('unexpected HTTP rejection status')
                 assert generate('b')['choices'][0]['message']['content']
                 assert generate()['choices']==first['choices']
-                listing=json.loads(subprocess.check_output([sys.executable,'-m','dllm','models','--server',base],text=True,timeout=180))
+                listing=json.loads(subprocess.check_output([sys.executable,'-m','damendaemon','models','--server',base],text=True,timeout=180))
                 assert {m['id'] for m in listing['models']}=={'a','b'}
-                cli_unload=json.loads(subprocess.check_output([sys.executable,'-m','dllm','unload','a','--release-host','--server',base],text=True,timeout=180))
+                cli_unload=json.loads(subprocess.check_output([sys.executable,'-m','damendaemon','unload','a','--release-host','--server',base],text=True,timeout=180))
                 assert tier(cli_unload)=='disk'
-                cli_load=json.loads(subprocess.check_output([sys.executable,'-m','dllm','load','a','--server',base],text=True,timeout=180))
+                cli_load=json.loads(subprocess.check_output([sys.executable,'-m','damendaemon','load','a','--server',base],text=True,timeout=180))
                 assert tier(cli_load)=='gpu'
                 print(json.dumps({'passed':True,'device':args.device,'models':{'a':a,'b':b},
                     'empty_registry':True,'idempotent_registration':True,'host_and_gpu_unload':True,

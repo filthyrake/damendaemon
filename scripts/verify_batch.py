@@ -9,11 +9,11 @@ import time
 import torch
 from transformers import AutoModelForCausalLM
 
-from dllm.batch import BatchExecutor
-from dllm.qwen2 import ModelWeights
-from dllm.runtime import require_gpu, make_executor
+from damendaemon.batch import BatchExecutor
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.runtime import require_gpu, make_executor
 from reference_model import load_reference
-from dllm.device import selected_device, synchronize, empty_cache, device_name
+from damendaemon.device import selected_device, synchronize, empty_cache, device_name
 
 
 def main():

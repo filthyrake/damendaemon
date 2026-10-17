@@ -3,8 +3,8 @@ import argparse
 import json
 import torch
 from transformers import AutoModelForCausalLM
-from dllm.qwen2 import ModelWeights
-from dllm.batch import BatchExecutor
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.batch import BatchExecutor
 
 
 def main():

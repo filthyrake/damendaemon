@@ -11,8 +11,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.reference_stage_plan import inspect_reference_storage,plan_reference_stages
-from dllm.safetensor_header import ITEM_BYTES
+from damendaemon.reference_stage_plan import inspect_reference_storage,plan_reference_stages
+from damendaemon.safetensor_header import ITEM_BYTES
 from tests import test_glm_reference_loader as glm,test_glm_flash_reference_loader as flash,test_deepseek_reference_loader as deepseek
 from scripts import plan_reference_host_topology as command
 
@@ -30,7 +30,7 @@ class ReferenceStoragePlanTests(unittest.TestCase):
     def no_payload(self):
         stack=ExitStack()
         for family in ('glm','glm_flash','deepseek'):
-            stack.enter_context(patch('dllm.'+family+'_reference_loader._payload',side_effect=AssertionError('payload')))
+            stack.enter_context(patch('damendaemon.'+family+'_reference_loader._payload',side_effect=AssertionError('payload')))
         stack.enter_context(patch('torch.cuda.is_available',side_effect=AssertionError('device probe')))
         return stack
 
@@ -42,16 +42,16 @@ class ReferenceStoragePlanTests(unittest.TestCase):
                 report=plan_reference_stages(layout,[2**30]*(2 if family=='glm' else 3),context=129,slots=2,chunk_size=128)
             self.assertTrue(report['storage_plan_found']);self.assertFalse(report['execution_admitted']);self.assertFalse(report['source_model_identity_verified'])
             if family=='glm':
-                from dllm.glm_reference_loader import load_reference_stage
-                from dllm.glm_checkpoint import tensor_specs
+                from damendaemon.glm_reference_loader import load_reference_stage
+                from damendaemon.glm_checkpoint import tensor_specs
                 prefix='model.layers.';embedding='model.embed_tokens.weight'
             elif family=='flash':
-                from dllm.glm_flash_reference_loader import load_reference_stage
-                from dllm.glm_flash_checkpoint import tensor_specs,ROOT
+                from damendaemon.glm_flash_reference_loader import load_reference_stage
+                from damendaemon.glm_flash_checkpoint import tensor_specs,ROOT
                 prefix=ROOT+'layers.';embedding=ROOT+'embed_tokens.weight'
             else:
-                from dllm.deepseek_reference_loader import load_reference_stage
-                from dllm.deepseek_checkpoint import tensor_specs
+                from damendaemon.deepseek_reference_loader import load_reference_stage
+                from damendaemon.deepseek_checkpoint import tensor_specs
                 prefix='layers.';embedding='embed.weight'
             specs=tensor_specs(config)
             for item in report['stages']:
@@ -109,7 +109,7 @@ class ReferenceStoragePlanTests(unittest.TestCase):
         with self.no_payload(),self.assertRaises(ValueError):plan_reference_stages(layout,[2**30]*2,projection_workspace_bytes=1)
 
     def test_header_drift_and_unowned_header_failure_are_not_capacity_results(self):
-        import dllm.reference_stage_plan as planner
+        import damendaemon.reference_stage_plan as planner
         for family in ('glm','flash','deepseek'):
             path,_,_=self.snapshot(family);layout=inspect_reference_storage(path,family)
             source=path/'config.json';replacement=path/'new';replacement.write_bytes(source.read_bytes());replacement.replace(source)
@@ -119,11 +119,11 @@ class ReferenceStoragePlanTests(unittest.TestCase):
                 result=original(*args,**kwargs);replacement.write_bytes(source.read_bytes());replacement.replace(source);return result
             with patch.object(planner,'read_header',drift),self.assertRaisesRegex(ValueError,'changed'):inspect_reference_storage(path,family)
             module={'glm':'glm','flash':'glm_flash','deepseek':'deepseek'}[family]
-            with patch('dllm.'+module+'_reference_loader.audit_headers',side_effect=ValueError('unowned head')):
+            with patch('damendaemon.'+module+'_reference_loader.audit_headers',side_effect=ValueError('unowned head')):
                 with self.no_payload(),self.assertRaisesRegex(ValueError,'unowned'):inspect_reference_storage(path,family)
 
     def test_header_pass_count_does_not_grow_with_candidates_and_config_is_detached(self):
-        import dllm.reference_stage_plan as planner
+        import damendaemon.reference_stage_plan as planner
         path,_,_=self.snapshot('deepseek')
         with self.no_payload(),patch.object(planner,'read_header',wraps=planner.read_header) as read:
             layout=inspect_reference_storage(path,'deepseek');count=read.call_count
@@ -148,7 +148,7 @@ class ReferenceStoragePlanTests(unittest.TestCase):
     def test_deepseek_integer_width_and_invalid_position_metadata_are_preserved(self):
         import struct
         from tests.test_packed_checkpoint import write_raw
-        from dllm.deepseek_reference_loader import load_reference_stage
+        from damendaemon.deepseek_reference_loader import load_reference_stage
         path,config,headers=self.snapshot('deepseek');before=inspect_reference_storage(path,'deepseek')
         shard=path/'model.safetensors';raw=shard.read_bytes();base=8+struct.unpack('<Q',raw[:8])[0];payload=bytearray();added=0
         for entry in headers.values():

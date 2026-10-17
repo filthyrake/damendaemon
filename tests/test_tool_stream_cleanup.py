@@ -4,12 +4,12 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-from dllm.deepseek_generation import TokenStream
-from dllm.deepseek_tools import START
-from dllm.glm_flash_tool_output import FlashToolTokenStream
-from dllm.glm_flash_tool_text import FlashToolText
-from dllm.glm_flash_tools import FlashTools
-from dllm.glm_text import END_THINK
+from damendaemon.deepseek_generation import TokenStream
+from damendaemon.deepseek_tools import START
+from damendaemon.glm_flash_tool_output import FlashToolTokenStream
+from damendaemon.glm_flash_tool_text import FlashToolText
+from damendaemon.glm_flash_tools import FlashTools
+from damendaemon.glm_text import END_THINK
 from tests.test_deepseek_generation import text_fixture as deepseek_fixture
 from tests.test_glm_flash_generation import text_fixture as flash_fixture
 from tests.test_glm_flash_tools import tools
@@ -51,7 +51,7 @@ class ToolStreamCleanupTests(unittest.TestCase):
                     stream.close()  # Idempotent even after failure.
 
     def test_ordinary_glm_close_discards_pending_marker_and_blocks_reuse(self):
-        from dllm.glm_output import GlmOutput
+        from damendaemon.glm_output import GlmOutput
         parser=GlmOutput()
         self.assertEqual(parser.feed('<|'),[])
         self.assertTrue(parser.pending)

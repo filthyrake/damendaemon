@@ -5,8 +5,8 @@ import time
 import unittest
 from unittest.mock import patch
 
-from dllm.distributed_serving import DistributedRuntime,Request
-from dllm.runtime import BusyError
+from damendaemon.distributed_serving import DistributedRuntime,Request
+from damendaemon.runtime import BusyError
 from tests.test_distributed_serving import Pair,RuntimeHelpers
 
 

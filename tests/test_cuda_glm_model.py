@@ -2,8 +2,8 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 import torch
-from dllm.cuda_glm_model import CudaGlmBlock,CudaGlmModel
-from dllm.glm_model import GlmModel
+from damendaemon.cuda_glm_model import CudaGlmBlock,CudaGlmModel
+from damendaemon.glm_model import GlmModel
 from tests.test_glm_packed_model import model_pair
 
 

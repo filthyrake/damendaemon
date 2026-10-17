@@ -11,9 +11,9 @@ from scripts.experiments.q4_prefill import repack_adjacent,single_dot_adjacent,e
 
 def install_validation_dispatch(gate_only=False,in_place=False):
     import os
-    os.environ['DLLM_Q4_STAGE_ADJACENT']='0'  # Experiments own their representation.
-    from dllm.quantization import Linear
-    from dllm.partition import PartitionExecutor
+    os.environ['DAMENDAEMON_Q4_STAGE_ADJACENT']='0'  # Experiments own their representation.
+    from damendaemon.quantization import Linear
+    from damendaemon.partition import PartitionExecutor
     original_init,original_call=Linear.__init__,Linear.__call__
     original_rebind=PartitionExecutor.rebind
     shapes={(9728,896)} if gate_only else {(1152,896),(896,896),(9728,896),(896,4864)}

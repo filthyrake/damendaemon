@@ -1,8 +1,8 @@
 """Impossible output requests cannot cause model activation or queue admission."""
 import unittest
 from unittest.mock import Mock
-from dllm.runtime import Runtime
-from dllm.scheduler import BatchedRuntime
+from damendaemon.runtime import Runtime
+from damendaemon.scheduler import BatchedRuntime
 
 
 class OutputPreflightTests(unittest.TestCase):
@@ -68,7 +68,7 @@ class OutputPreflightTests(unittest.TestCase):
             list(scheduled.generate('a',None,max_tokens=16,raw_prompt=[1]))
 
     def test_raw_prompt_limit_before_copy_or_ownership(self):
-        from dllm.prompts import validate_raw
+        from damendaemon.prompts import validate_raw
         direct=Runtime.__new__(Runtime);direct.context=16
         direct.session=Mock(side_effect=RuntimeError('session boundary'))
         scheduled=BatchedRuntime.__new__(BatchedRuntime);scheduled.context=16
@@ -92,8 +92,8 @@ class OutputPreflightTests(unittest.TestCase):
         self.assertEqual(validate_raw('long text',max_length=1),'long text')
 
     def test_embedding_rows_before_copy_and_ownership(self):
-        from dllm.embeddings import options
-        from dllm.encoder import EncoderWeights
+        from damendaemon.embeddings import options
+        from damendaemon.encoder import EncoderWeights
         direct=Runtime.__new__(Runtime);direct.context=16
         direct.session=Mock(side_effect=RuntimeError('session boundary'))
         scheduled=BatchedRuntime.__new__(BatchedRuntime);scheduled.context=16

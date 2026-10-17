@@ -8,12 +8,12 @@ from unittest.mock import patch
 import torch
 from safetensors.torch import save_file
 
-from dllm.qwen2 import weight_files
+from damendaemon.qwen2 import weight_files
 
 
 class CheckpointInventoryTests(unittest.TestCase):
     def test_e8m0_fallback_preserves_index_duplicate_and_offset_checks(self):
-        from dllm.checkpoint import inspect_snapshot
+        from damendaemon.checkpoint import inspect_snapshot
         from tests.test_packed_checkpoint import write_raw
         header={'s':{'dtype':'F8_E8M0','shape':[1],'data_offsets':[0,1]}}
         with TemporaryDirectory() as directory:
@@ -73,7 +73,7 @@ class CheckpointInventoryTests(unittest.TestCase):
                 weight_files(path)
 
     def test_native_headers_reject_ambiguous_json_before_native_open(self):
-        from dllm.checkpoint import inspect_snapshot
+        from damendaemon.checkpoint import inspect_snapshot
         tensor='{"dtype":"U8","shape":[1],"data_offsets":[0,1]}'
         headers=(f'{{"a":{tensor},"a":{tensor}}}',
                  '{"a":{"dtype":"I8","dtype":"U8","shape":[1],"data_offsets":[0,1]}}',
@@ -83,31 +83,31 @@ class CheckpointInventoryTests(unittest.TestCase):
             for header in headers:
                 raw=header.encode();raw+=b' '*((-len(raw))%8)
                 (path/'model.safetensors').write_bytes(struct.pack('<Q',len(raw))+raw+b'x')
-                with self.subTest(header=header), patch('dllm.checkpoint.safe_open') as native:
+                with self.subTest(header=header), patch('damendaemon.checkpoint.safe_open') as native:
                     with self.assertRaisesRegex(ValueError,'safetensors header'):
                         inspect_snapshot(path)
                     native.assert_not_called()
 
     def test_native_header_budget_rejects_before_native_open(self):
-        from dllm.checkpoint import inspect_snapshot
-        from dllm.safetensor_header import MAX_HEADER_BYTES
+        from damendaemon.checkpoint import inspect_snapshot
+        from damendaemon.safetensor_header import MAX_HEADER_BYTES
         with TemporaryDirectory() as directory:
             path=Path(directory)
             # Sparse fixture makes declared size plausible without allocating a large header.
             with (path/'model.safetensors').open('wb') as output:
                 output.write(struct.pack('<Q',MAX_HEADER_BYTES+8))
                 output.truncate(MAX_HEADER_BYTES+16)
-            with patch('dllm.checkpoint.safe_open') as native:
+            with patch('damendaemon.checkpoint.safe_open') as native:
                 with self.assertRaisesRegex(ValueError,'safetensors header'):
                     inspect_snapshot(path)
                 native.assert_not_called()
 
     def test_shared_inventory_never_reads_tensor_values(self):
-        from dllm.checkpoint import inspect_snapshot
+        from damendaemon.checkpoint import inspect_snapshot
         with TemporaryDirectory() as directory:
             path = Path(directory)
             save_file({'a':torch.ones(2, 3)}, str(path/'model.safetensors'))
-            import dllm.checkpoint as checkpoint
+            import damendaemon.checkpoint as checkpoint
             original = checkpoint.safe_open
             class HeadersOnly:
                 def __init__(self, *args, **kwargs):

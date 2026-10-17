@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from tokenizers import Tokenizer,models,AddedToken
-from dllm.glm_text import GlmText,render_chat,CONTROLS,EOS,USER,OBSERVATION,ASSISTANT,THINK
+from damendaemon.glm_text import GlmText,render_chat,CONTROLS,EOS,USER,OBSERVATION,ASSISTANT,THINK
 
 
 def tokenizer_fixture(path):

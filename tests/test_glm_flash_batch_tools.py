@@ -6,11 +6,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from dllm.glm_flash_tools import FlashTools
-from dllm.glm_flash_tool_text import FlashToolText
-from dllm.glm_flash_tool_generation import FlashToolReferenceGenerator
-from dllm.glm_flash_tool_output import FlashToolTokenStream
-from dllm.glm_text import EOS,END_THINK,OBSERVATION
+from damendaemon.glm_flash_tools import FlashTools
+from damendaemon.glm_flash_tool_text import FlashToolText
+from damendaemon.glm_flash_tool_generation import FlashToolReferenceGenerator
+from damendaemon.glm_flash_tool_output import FlashToolTokenStream
+from damendaemon.glm_text import EOS,END_THINK,OBSERVATION
 from scripts import run_glm_flash_reference as cli
 from tests.test_glm_flash_generation import text_fixture,snapshot
 from tests.test_glm_flash_batch_generation import ScriptedBatch,State
@@ -52,7 +52,7 @@ class FlashBatchToolTests(unittest.TestCase):
             stream=original(*args,**kwargs);streams.append(stream);return stream
         model=ScriptedBatch(self.text,['r'+END_THINK+self.wire+EOS,'x'*512])
         runner=FlashToolReferenceGenerator(model,self.text,max_context=4096)
-        with patch('dllm.glm_flash_tool_generation.FlashToolTokenStream',side_effect=retained):
+        with patch('damendaemon.glm_flash_tool_generation.FlashToolTokenStream',side_effect=retained):
             generation=runner.generate_batch_tools([self.messages]*2,TOOLS,max_new_tokens=512)
             for _ in range(20):next(generation)
             generation.close()

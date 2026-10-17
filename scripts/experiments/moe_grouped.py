@@ -117,7 +117,7 @@ def install_validation_dispatch(block_rows=16, block_columns=64):
     """Explicit bounded whole-model experiment; decode keeps its qualified path."""
     import hashlib
     from pathlib import Path
-    from dllm.moe import OlmoeExecutor
+    from damendaemon.moe import OlmoeExecutor
     if torch.cuda.get_device_name() != 'NVIDIA A2':
         raise ValueError('grouped MoE experiment is limited to A2')
     if block_rows not in (16, 32) or block_columns not in (64, 128):

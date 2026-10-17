@@ -37,12 +37,12 @@ def main():
         ranges=[[0,1],[1,3]]
     from tests.test_glm_flash_host_generation import zero_fixture_head
     from tests.tls_credentials import credentials
-    from dllm.cpu_snapshot_identity import fingerprint
+    from damendaemon.cpu_snapshot_identity import fingerprint
     report=dict(passed=False,family=args.family,zero_head_fixture=True,allocator_mib_per_process=128,
                 max_cuda_processes=2,images=args.images,physical_multi_gpu_qualified=False,performance_qualified=False)
     save(args.output,report);processes=[]
     try:
-        with tempfile.TemporaryDirectory(prefix='dllm-cuda-host-command-') as temp,tempfile.TemporaryFile(mode='w+') as errors:
+        with tempfile.TemporaryDirectory(prefix='damendaemon-cuda-host-command-') as temp,tempfile.TemporaryFile(mode='w+') as errors:
             root=Path(temp);path=root/'model';path.mkdir();text=text_fixture(path);fixture(path,vocab_size=text.vocab_size)
             if args.family=='deepseek':
                 import struct
@@ -90,9 +90,9 @@ def main():
                     events=[json.loads(line[6:]) for line in wire.splitlines() if line.startswith('data: {')]
                     reasoning.append(''.join(c.get('delta',{}).get(field,'') for e in events for c in e['choices']))
                     if 'data: [DONE]' not in wire:raise AssertionError('incomplete host SSE')
-                    timing=events[-1]['dllm_timing']
+                    timing=events[-1]['damendaemon_timing']
                 else:
-                    result=json.loads(wire);reasoning.append(result['choices'][0]['message'].get(field,''));timing=result['dllm_timing']
+                    result=json.loads(wire);reasoning.append(result['choices'][0]['message'].get(field,''));timing=result['damendaemon_timing']
                 if timing['source_tier']!='host_reference' or timing['local_device']!='cuda:0' or timing['peer_devices_verified']:
                     raise AssertionError('incorrect host timing placement')
             if not reasoning[0] or reasoning[0]!=reasoning[1]:raise AssertionError('host chat/SSE content differs')

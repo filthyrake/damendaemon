@@ -12,9 +12,9 @@ import os
 from pathlib import Path
 import torch
 import torch.distributed as dist
-from dllm.qwen2 import ModelWeights
-from dllm.layer_stage import LayerStage
-from dllm.prefill import groups
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.layer_stage import LayerStage
+from damendaemon.prefill import groups
 
 
 def main():
@@ -41,7 +41,7 @@ def main():
         model=trace['path'],context=trace['context'],torch=str(torch.__version__),
         reference_torch=trace['reference_torch'],reference_dtype=trace['reference_dtype'],quantization=model.quantization,stage_graphs=args.stage_graphs,packed_prefill=args.packed_prefill,packed_stage_calls=0,
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-                 ('dllm/layer_stage.py','dllm/q4_stage.py','dllm/q4_stage_kernels.py','dllm/kernels.py','dllm/qwen2.py','dllm/partition_policy.py',__file__)},
+                 ('damendaemon/layer_stage.py','damendaemon/q4_stage.py','damendaemon/q4_stage_kernels.py','damendaemon/kernels.py','damendaemon/qwen2.py','damendaemon/partition_policy.py',__file__)},
         runtime_row_bounds=bool(getattr(stage.q4_linear,'runtime_rows',False)),
         runtime_rope_tokens=stage.runtime_rope_tokens,
         checks=[],scope='fixed-trace distributed layer experiment; not a serving protocol')

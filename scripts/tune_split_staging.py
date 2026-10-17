@@ -2,10 +2,10 @@
 import json
 import torch
 import triton as tr
-from dllm.kernels import linear_fp32 as baseline
+from damendaemon.kernels import linear_fp32 as baseline
 
 
-from dllm.precise_matmul import _split as split, _matmul as matmul
+from damendaemon.precise_matmul import _split as split, _matmul as matmul
 
 
 for m,n,k in ((2,6144,1024),(4,4096,1024),(4,6144,1024),(4,1024,3072),(4,151936,1024),(26,6144,1024),(104,6144,1024)):

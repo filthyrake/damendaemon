@@ -9,11 +9,11 @@ import unittest
 import torch
 from types import SimpleNamespace
 
-from dllm.t5 import T5Executor
-from dllm.mamba import MambaExecutor
-from dllm.gemma import GemmaExecutor
-from dllm.hybrid import HybridExecutor
-from dllm.qwen2 import Executor as Qwen2Executor
+from damendaemon.t5 import T5Executor
+from damendaemon.mamba import MambaExecutor
+from damendaemon.gemma import GemmaExecutor
+from damendaemon.hybrid import HybridExecutor
+from damendaemon.qwen2 import Executor as Qwen2Executor
 
 
 def overflowing(rows=1, width=8):

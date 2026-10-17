@@ -1,5 +1,5 @@
 import unittest
-from dllm.token_workload import token_workload_digest
+from damendaemon.token_workload import token_workload_digest
 
 
 class TokenWorkloadTests(unittest.TestCase):
@@ -18,7 +18,7 @@ class TokenWorkloadTests(unittest.TestCase):
             with self.subTest(limit=limit),self.assertRaises(ValueError):token_workload_digest([[1]],limit)
 
     def test_teacher_lookup_preserves_diagnostic_inputs_without_aliasing(self):
-        from dllm.token_workload import teacher_token_lookup
+        from damendaemon.token_workload import teacher_token_lookup
         prompts=[[1]]
         teacher=dict(passed=False,workload_sha256=token_workload_digest(prompts,2),cases=[
             dict(graph=graph,case=0,prompt_tokens=1,reference_tokens=[2,3]) for graph in (False,True)])

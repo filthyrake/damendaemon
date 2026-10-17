@@ -13,7 +13,7 @@ from tempfile import TemporaryDirectory
 import torch
 from safetensors.torch import load_file, save_file
 
-from dllm.hybrid import _l2_normalize
+from damendaemon.hybrid import _l2_normalize
 
 
 def rewrite_checkpoint_a_log(directory, value):
@@ -35,7 +35,7 @@ class MambaDecayLoadTests(unittest.TestCase):
     def test_mamba_rejects_overflowing_a_log_before_weights(self):
         from transformers import MambaConfig, MambaForCausalLM
         from tokenizers import Tokenizer, models
-        from dllm.mamba import MambaWeights
+        from damendaemon.mamba import MambaWeights
         with TemporaryDirectory() as directory:
             reference = MambaForCausalLM(MambaConfig(hidden_size=8, state_size=4,
                 num_hidden_layers=1, expand=2, conv_kernel=4, time_step_rank=2,
@@ -50,7 +50,7 @@ class MambaDecayLoadTests(unittest.TestCase):
     def test_mamba2_rejects_overflowing_a_log_before_weights(self):
         from transformers import Mamba2Config, Mamba2ForCausalLM
         from tokenizers import Tokenizer, models
-        from dllm.mamba2 import Mamba2Weights
+        from damendaemon.mamba2 import Mamba2Weights
         with TemporaryDirectory() as directory:
             reference = Mamba2ForCausalLM(Mamba2Config(hidden_size=8, state_size=4,
                 num_hidden_layers=1, expand=2, conv_kernel=4, num_heads=4,

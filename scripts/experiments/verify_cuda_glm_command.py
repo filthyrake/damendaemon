@@ -38,7 +38,7 @@ def main():
                 official_model_qualified=False,performance_qualified=False)
     save(args.output,report);process=None
     try:
-        with tempfile.TemporaryDirectory(prefix='dllm-cuda-command-') as temp:
+        with tempfile.TemporaryDirectory(prefix='damendaemon-cuda-command-') as temp:
             path=Path(temp);text=text_fixture(path);fixture(path,vocab_size=text.vocab_size)
             if args.deepseek:
                 import struct
@@ -72,10 +72,10 @@ def main():
                         events=[json.loads(line[6:]) for line in wire.splitlines() if line.startswith('data: {')]
                         reasoning.append(''.join(c.get('delta',{}).get(field,'') for e in events for c in e['choices']))
                         if 'data: [DONE]' not in wire:raise AssertionError('missing SSE completion')
-                        timing=events[-1]['dllm_timing']
+                        timing=events[-1]['damendaemon_timing']
                     else:
                         result=json.loads(wire);reasoning.append(result['choices'][0]['message'].get(field,''))
-                        timing=result['dllm_timing']
+                        timing=result['damendaemon_timing']
                     if timing['source_tier']!='cuda_prepared_reference' or timing['kernel_backend']!=family+'-cuda-prepared-reference':
                         raise AssertionError('CPU timing label leaked into CUDA command')
                 if not reasoning[0] or reasoning[0]!=reasoning[1]:raise AssertionError('chat/SSE control differs')

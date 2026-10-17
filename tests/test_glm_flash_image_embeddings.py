@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_flash_image_embeddings import image_embeddings
-from dllm.glm_flash_images import prepare_images
-from dllm.glm_flash_vision import FlashVision,vision_specs
+from damendaemon.glm_flash_image_embeddings import image_embeddings
+from damendaemon.glm_flash_images import prepare_images
+from damendaemon.glm_flash_vision import FlashVision,vision_specs
 from tests import test_glm_flash_model,test_glm_flash_block,test_glm_flash_vision
 
 
@@ -49,7 +49,7 @@ class FlashImageEmbeddingTests(unittest.TestCase):
     def test_bad_features_reject_before_embedding_or_cache_mutation(self):
         tokens=torch.tensor([[10,10]])
         for value in (torch.zeros(1,4),torch.zeros(2,5),torch.zeros(2,4).half(),torch.full((2,4),float('nan'))):
-            with patch('dllm.glm_flash_image_embeddings.F.embedding',side_effect=AssertionError('allocated')):
+            with patch('damendaemon.glm_flash_image_embeddings.F.embedding',side_effect=AssertionError('allocated')):
                 with self.assertRaises(ValueError):image_embeddings(self.model,tokens,[value],image_token_id=10)
         for token_id in (True,-1,13):
             with self.assertRaises(ValueError):image_embeddings(self.model,tokens,[torch.zeros(2,4)],image_token_id=token_id)

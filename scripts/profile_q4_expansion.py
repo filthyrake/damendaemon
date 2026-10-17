@@ -7,10 +7,10 @@ from pathlib import Path
 
 import torch
 import triton.testing
-from dllm.gguf_model import GgufWeights
-from dllm.quantization import dequantize_q4
-from dllm.quantized_kernels_q4 import expand as original
-from dllm.runtime import require_gpu
+from damendaemon.gguf_model import GgufWeights
+from damendaemon.quantization import dequantize_q4
+from damendaemon.quantized_kernels_q4 import expand as original
+from damendaemon.runtime import require_gpu
 from experiments.q4_expand import expand
 
 

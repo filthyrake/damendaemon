@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.compressed_indexer import select_compressed
+from damendaemon.compressed_indexer import select_compressed
 
 
 def oracle(query, keys, weights, positions, ratio, top, offset):
@@ -117,11 +117,11 @@ class CompressedIndexerTests(unittest.TestCase):
         def record(a, b):
             shapes.append((a.shape, b.shape))
             return original(a, b)
-        with patch('dllm.compressed_indexer.torch.matmul', side_effect=record):
+        with patch('damendaemon.compressed_indexer.torch.matmul', side_effect=record):
             select_compressed(*args, ratio=4, top_k=5, query_chunk=2, key_chunk=3)
         self.assertEqual(len(shapes), 12)
         self.assertTrue(all(a[1] <= 2 and b[-1] <= 3 for a, b in shapes))
-        with patch('dllm.compressed_indexer.torch.matmul', side_effect=AssertionError('compute started')):
+        with patch('damendaemon.compressed_indexer.torch.matmul', side_effect=AssertionError('compute started')):
             for options in ({'ratio':0, 'top_k':5}, {'ratio':4, 'top_k':True},
                             {'ratio':4, 'top_k':5, 'offset':-1}, {'ratio':4, 'top_k':5, 'key_chunk':257}):
                 with self.assertRaises(ValueError):

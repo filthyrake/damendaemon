@@ -1,7 +1,7 @@
 import unittest
 import torch
-from dllm.glm_cached_attention import CachedGlmAttention
-from dllm.prepared_projection import PackedProjection
+from damendaemon.glm_cached_attention import CachedGlmAttention
+from damendaemon.prepared_projection import PackedProjection
 from tests.test_glm_cached_attention import fixture
 from tests.test_packed_fp32_scales import scalar
 

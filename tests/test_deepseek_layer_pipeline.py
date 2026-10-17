@@ -4,15 +4,15 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.deepseek_checkpoint_pipeline import load_reference_pipeline
-from dllm.deepseek_reference_loader import load_reference_model
-from dllm.deepseek_checkpoint import tensor_specs
-from dllm.deepseek_pipeline_generation import DeepSeekPipelineReferenceGenerator
-from dllm.deepseek_batch_generation import BatchReferenceGenerator
-from dllm.deepseek_generation import ReferenceGenerator
-from dllm.deepseek_text import DeepSeekText
-from dllm.safetensor_header import ITEM_BYTES
-from dllm.reference_cancellation import cancellation_scope,ReferenceCancelled
+from damendaemon.deepseek_checkpoint_pipeline import load_reference_pipeline
+from damendaemon.deepseek_reference_loader import load_reference_model
+from damendaemon.deepseek_checkpoint import tensor_specs
+from damendaemon.deepseek_pipeline_generation import DeepSeekPipelineReferenceGenerator
+from damendaemon.deepseek_batch_generation import BatchReferenceGenerator
+from damendaemon.deepseek_generation import ReferenceGenerator
+from damendaemon.deepseek_text import DeepSeekText
+from damendaemon.safetensor_header import ITEM_BYTES
+from damendaemon.reference_cancellation import cancellation_scope,ReferenceCancelled
 from tests.test_deepseek_reference_loader import fixture
 from tests import test_serve_cpu_reference as serving
 from tests.test_deepseek_batch_tools import completion
@@ -28,7 +28,7 @@ class DeepSeekLayerPipelineTests(unittest.TestCase):
         specs=tensor_specs(self.config)
         retained=sum(math.prod(s.shape)*(4 if s.storage in ('floating','integer') else 1) for s in specs.values())
         largest=max(math.prod(s.shape)*ITEM_BYTES[self.headers[n]['dtype']] for n,s in specs.items())
-        with patch('dllm.deepseek_reference_loader._payload',side_effect=AssertionError('payload')):
+        with patch('damendaemon.deepseek_reference_loader._payload',side_effect=AssertionError('payload')):
             for cuts,budget in (([1,2],retained+largest-1),([3],retained+largest),([1,1],retained+largest),([2,1],retained+largest),([True],retained+largest)):
                 with self.assertRaises(ValueError):load_reference_pipeline(self.path,cuts,max_weight_bytes=budget)
         pipeline=load_reference_pipeline(self.path,[1,2],max_weight_bytes=retained+largest);self.addCleanup(pipeline.cleanup)
@@ -56,7 +56,7 @@ class DeepSeekLayerPipelineTests(unittest.TestCase):
         with patch.object(pipeline.stages[1],'decode',side_effect=RuntimeError('middle')):
             with self.assertRaisesRegex(RuntimeError,'middle'):pipeline.decode(torch.tensor([[3]]),state,position=2)
         self.assertTrue(state.poisoned);self.assertTrue(all(s.poisoned for s in state.stages))
-        from dllm.deepseek_layer_stage import DeepSeekStageState
+        from damendaemon.deepseek_layer_stage import DeepSeekStageState
         with patch.object(pipeline.stages[1],'prefill',side_effect=RuntimeError('later')),patch.object(DeepSeekStageState,'close',side_effect=OSError('release')):
             with self.assertRaisesRegex(RuntimeError,'later'):pipeline.prefill(tokens,max_tokens=8)
             self.assertTrue(pipeline.cleanup_pending)
@@ -65,7 +65,7 @@ class DeepSeekLayerPipelineTests(unittest.TestCase):
         pipeline.cleanup();self.assertFalse(pipeline.cleanup_pending)
 
     def test_source_receipts_cover_configuration_shards_index_and_final_construction(self):
-        import dllm.deepseek_checkpoint_pipeline as builder
+        import damendaemon.deepseek_checkpoint_pipeline as builder
         for name,target in (('config.json','load_reference_stage'),('model.safetensors','load_reference_stage'),
                             ('model.safetensors.index.json','load_reference_stage'),('model.safetensors','DeepSeekLayerPipeline')):
             original=getattr(builder,target);calls=[]

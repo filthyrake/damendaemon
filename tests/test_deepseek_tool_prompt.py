@@ -3,9 +3,9 @@ import json
 import unittest
 from pathlib import Path
 
-from dllm.deepseek_text import render_chat,BOS,USER,ASSISTANT,THINK,END_THINK,EOS
-from dllm.deepseek_tool_prompt import tool_schema_prompt
-from dllm.deepseek_tools import render_tool_calls
+from damendaemon.deepseek_text import render_chat,BOS,USER,ASSISTANT,THINK,END_THINK,EOS
+from damendaemon.deepseek_tool_prompt import tool_schema_prompt
+from damendaemon.deepseek_tools import render_tool_calls
 
 TOOLS=[{'type':'function','function':{'name':'weather','description':'Get weather','parameters':{'type':'object'}}}]
 

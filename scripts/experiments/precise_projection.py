@@ -2,7 +2,7 @@
 import torch
 import triton as tr
 import triton.language as tl
-from dllm.precise_matmul import _split
+from damendaemon.precise_matmul import _split
 
 
 @tr.jit

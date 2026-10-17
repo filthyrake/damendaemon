@@ -1,7 +1,7 @@
 """Validation-only contiguous-activation, single-dot Q4 prefill tile."""
 import triton as tr
 import triton.language as tl
-from dllm.quantized_kernels_q4 import _values
+from damendaemon.quantized_kernels_q4 import _values
 
 
 @tr.jit

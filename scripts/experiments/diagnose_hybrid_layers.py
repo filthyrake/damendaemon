@@ -5,9 +5,9 @@ import json
 import textwrap
 import types
 import torch
-from dllm import hybrid
-from dllm.qwen2 import ModelWeights
-from dllm.runtime import require_gpu, make_executor
+from damendaemon import hybrid
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.runtime import require_gpu, make_executor
 
 
 @torch.inference_mode()

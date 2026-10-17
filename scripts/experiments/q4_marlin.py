@@ -31,18 +31,18 @@ class Library:
     def __init__(self, path):
         self.lib = ctypes.CDLL(path)
         ptr, integer = ctypes.c_void_p, ctypes.c_int
-        self.lib.dllm_q4_marlin_abi.argtypes = []
-        self.lib.dllm_q4_marlin_abi.restype = integer
-        if self.lib.dllm_q4_marlin_abi() != self.abi:
+        self.lib.damendaemon_q4_marlin_abi.argtypes = []
+        self.lib.damendaemon_q4_marlin_abi.restype = integer
+        if self.lib.damendaemon_q4_marlin_abi() != self.abi:
             raise ValueError('unsupported experimental Q4 Marlin ABI')
-        self.lib.dllm_q4_marlin_init.argtypes = [ctypes.POINTER(integer)]*2
-        self.lib.dllm_q4_marlin_init.restype = integer
-        self.lib.dllm_q4_marlin_repack.argtypes = [ptr]*2+[integer]*4+[ptr]
-        self.lib.dllm_q4_marlin_repack.restype = integer
-        self.lib.dllm_q4_marlin_gemm.argtypes = [ptr]*8+[integer]*5+[ptr]
-        self.lib.dllm_q4_marlin_gemm.restype = integer
+        self.lib.damendaemon_q4_marlin_init.argtypes = [ctypes.POINTER(integer)]*2
+        self.lib.damendaemon_q4_marlin_init.restype = integer
+        self.lib.damendaemon_q4_marlin_repack.argtypes = [ptr]*2+[integer]*4+[ptr]
+        self.lib.damendaemon_q4_marlin_repack.restype = integer
+        self.lib.damendaemon_q4_marlin_gemm.argtypes = [ptr]*8+[integer]*5+[ptr]
+        self.lib.damendaemon_q4_marlin_gemm.restype = integer
         sms, shared = integer(), integer()
-        self.check(self.lib.dllm_q4_marlin_init(ctypes.byref(sms), ctypes.byref(shared)))
+        self.check(self.lib.damendaemon_q4_marlin_init(ctypes.byref(sms), ctypes.byref(shared)))
         self.sms, self.shared = sms.value, shared.value
         # One stream and one sequential execution owner in this experiment.
         self.scratch = torch.empty(4*self.sms*64*256, dtype=torch.float32, device='cuda')
@@ -66,12 +66,12 @@ class Library:
         shifts = torch.tensor([0, 4, 1, 5, 2, 6, 3, 7], device=device)*4
         awq = (channels << shifts).sum(-1, dtype=torch.int32).contiguous()
         # Independently undo the intermediate layout before the native repack.
-        from dllm.awq import unpack_channels
+        from damendaemon.awq import unpack_channels
         if not torch.equal(unpack_channels(awq).T, coefficients):
             raise AssertionError('Q4 coefficient permutation changed values')
         del blocks, channels, coefficients
         packed = torch.empty((k//16, n*2), dtype=torch.int32, device=device)
-        self.check(self.lib.dllm_q4_marlin_repack(awq.data_ptr(), packed.data_ptr(),
+        self.check(self.lib.damendaemon_q4_marlin_repack(awq.data_ptr(), packed.data_ptr(),
             k, n, self.sms, self.shared, torch.cuda.current_stream(device).cuda_stream))
         permutation = torch.tensor([i+8*j for i in range(8) for j in range(8)], device=device)
         source_scales = scales.T.contiguous()
@@ -94,7 +94,7 @@ class Library:
             raise ValueError('invalid experimental Q4 Marlin activation')
         x = x.contiguous()
         result = torch.empty((x.shape[0], matrix.outputs), dtype=x.dtype, device=x.device)
-        self.check(self.lib.dllm_q4_marlin_gemm(x.data_ptr(), matrix.weight.data_ptr(),
+        self.check(self.lib.damendaemon_q4_marlin_gemm(x.data_ptr(), matrix.weight.data_ptr(),
             matrix.scales.data_ptr(), matrix.zeros.data_ptr() if matrix.zeros is not None else None,
             matrix.bias.data_ptr() if matrix.bias is not None else None,
             result.data_ptr(), self.scratch.data_ptr(), self.locks.data_ptr(),

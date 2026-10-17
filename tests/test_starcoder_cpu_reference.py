@@ -6,9 +6,9 @@ import unittest
 import torch
 from transformers import Starcoder2Config,Starcoder2ForCausalLM
 from tokenizers import Tokenizer,models
-from dllm.qwen2 import ModelWeights
-from dllm.starcoder import StarcoderExecutor,load_weights
-from dllm.config import decoder_config
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.starcoder import StarcoderExecutor,load_weights
+from damendaemon.config import decoder_config
 
 
 class StarcoderCPUReferenceTests(unittest.TestCase):
@@ -24,7 +24,7 @@ class StarcoderCPUReferenceTests(unittest.TestCase):
                 reference=Starcoder2ForCausalLM(c).eval();reference.save_pretrained(root)
                 Tokenizer(models.WordLevel({'unknown':0,'eos':1},unk_token='unknown')).save(str(root/'tokenizer.json'))
                 (root/'tokenizer_config.json').write_text('{}')
-                with patch('dllm.qwen2.selected_device',return_value='cpu'),patch('dllm.qwen2.empty_cache'),patch('dllm.qwen2.available_memory',return_value=2**30):
+                with patch('damendaemon.qwen2.selected_device',return_value='cpu'),patch('damendaemon.qwen2.empty_cache'),patch('damendaemon.qwen2.available_memory',return_value=2**30):
                     loaded=ModelWeights(root,16)
                     executor=StarcoderExecutor(loaded,use_graph=False,kernels='torch',max_batch=2)
                 prompt=[3,4,5,6,7,8]

@@ -11,12 +11,12 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
-    from dllm.cuda_glm_model import CudaGlmModel,CudaGlmBlock
-    from dllm.cuda_glm_cached_attention import CudaCachedGlmAttention
-    from dllm.cuda_glm_ffn import CudaPackedGlmFeedForward
-    from dllm.cuda_packed_placement import place_cuda_experts
-    from dllm.cuda_prepared_projection import CudaPackedProjection
-    from dllm.prepared_projection import PackedProjection
+    from damendaemon.cuda_glm_model import CudaGlmModel,CudaGlmBlock
+    from damendaemon.cuda_glm_cached_attention import CudaCachedGlmAttention
+    from damendaemon.cuda_glm_ffn import CudaPackedGlmFeedForward
+    from damendaemon.cuda_packed_placement import place_cuda_experts
+    from damendaemon.cuda_prepared_projection import CudaPackedProjection
+    from damendaemon.prepared_projection import PackedProjection
     from tests.test_glm_packed_model import model_pair
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')
     torch.set_num_threads(1);torch.backends.cuda.matmul.allow_tf32=False
@@ -29,7 +29,7 @@ def main():
             if isinstance(weight,PackedProjection):return CudaPackedProjection(weight.weight.cuda(),weight.scales.cuda(),format=weight.format,**weight.options)
             return weight.cuda()
         if args.placement:
-            from dllm.cuda_glm_placement import place_cuda_glm
+            from damendaemon.cuda_glm_placement import place_cuda_glm
             placed=place_cuda_glm(cpu,device='cuda:0',max_bytes=1024*1024)
             model=placed.model
             report['placement_raw_bytes']=placed.raw_bytes

@@ -2,7 +2,7 @@ import gc
 import unittest
 import weakref
 from unittest.mock import patch
-from dllm.scheduler import BatchedRuntime
+from damendaemon.scheduler import BatchedRuntime
 from tests.test_scheduler import FakeRuntime
 
 
@@ -22,7 +22,7 @@ class SchedulerErrorMemoryTests(unittest.TestCase):
                     group=ExceptionGroup('operation failed',[ExceptionGroup('cleanup',[error])])
                     group.add_note('outer diagnostic')
                     raise group
-        with patch('dllm.scheduler.Runtime',FailureRuntime):
+        with patch('damendaemon.scheduler.Runtime',FailureRuntime):
             runtime=BatchedRuntime({'a':'fixture'})
             try:
                 retained=None

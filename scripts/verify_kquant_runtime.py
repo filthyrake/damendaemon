@@ -16,13 +16,13 @@ import numpy as np
 import torch
 from gguf import GGMLQuantizationType, GGML_QUANT_SIZES
 from gguf.quants import dequantize
-from dllm.bench import events
+from damendaemon.bench import events
 from scripts.validation_stream import consume_nonterminal_prefix
-from dllm.device import device_name, empty_cache
-from dllm.gguf_model import GgufWeights
-from dllm.runtime import require_gpu, make_executor
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer
+from damendaemon.device import device_name, empty_cache
+from damendaemon.gguf_model import GgufWeights
+from damendaemon.runtime import require_gpu, make_executor
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer
 from scripts.validation_server import owned_http_server
 
 
@@ -64,8 +64,8 @@ def main():
     model=GgufWeights(args.model,512,'none');reference=expanded(model)
     report={'model':str(Path(args.model).resolve()),'device':device_name(),'torch':torch.__version__,
             'packed_host_bytes':model.bytes,'expanded_host_bytes':reference.bytes,'comparisons':[],
-            'experiment':experiment,'native_library':os.environ.get('DLLM_KQUANT_CUDA_LIBRARY')}
-    residual_path=os.environ.get('DLLM_KQUANT_RESIDUAL_LIBRARY')
+            'experiment':experiment,'native_library':os.environ.get('DAMENDAEMON_KQUANT_CUDA_LIBRARY')}
+    residual_path=os.environ.get('DAMENDAEMON_KQUANT_RESIDUAL_LIBRARY')
     if residual_path:
         report['production_residual_library']=dict(path=residual_path,
             sha256=hashlib.sha256(Path(residual_path).read_bytes()).hexdigest())
@@ -78,8 +78,8 @@ def main():
         require_gate(absolute<.5 and relative<.01 and equal, 'native logits differ from expanded reference')
     with torch.inference_mode():
         for paged in (False,True):
-            if paged:os.environ['DLLM_KV_CACHE_TOKENS']='1024'
-            else:os.environ.pop('DLLM_KV_CACHE_TOKENS',None)
+            if paged:os.environ['DAMENDAEMON_KV_CACHE_TOKENS']='1024'
+            else:os.environ.pop('DAMENDAEMON_KV_CACHE_TOKENS',None)
             for graph in (False,True):
                 print(f'Checking batching/chunking: paged={paged}, graph={graph}',file=sys.stderr,flush=True)
                 a=make_executor(reference,use_graph=graph,max_batch=4)
@@ -102,7 +102,7 @@ def main():
                 compare(expected,actual,paged=paged,graph=graph,kind='chunked')
                 del a,b,expected,actual
                 gc.collect();empty_cache()
-    os.environ.pop('DLLM_KV_CACHE_TOKENS',None)
+    os.environ.pop('DAMENDAEMON_KV_CACHE_TOKENS',None)
     if args.executor_only:
         report.update(passed=True,scope='executor only; no HTTP checks')
         print(json.dumps(report,indent=2))
@@ -141,7 +141,7 @@ def main():
         require_gate(request('/v1/chat/completions',chat())['choices'][0]['message']['content']==expected, 'chat changed after cancellation')
         request('/v1/models/unload',dict(model='packed'))
         restored=request('/v1/chat/completions',chat())
-        require_gate(restored['dllm_timing']['source_tier']=='host', 'reload did not restore from host')
+        require_gate(restored['damendaemon_timing']['source_tier']=='host', 'reload did not restore from host')
         require_gate(restored['choices'][0]['message']['content']==expected, 'host-restored output differs')
         trials=[]
         for length,concurrency in ((16,1),(129,1),(400,1),(129,2)):
@@ -166,7 +166,7 @@ def main():
                 trials.extend(pair)
         request('/v1/models/unload',dict(model='packed',release_host=True))
         reloaded=request('/v1/chat/completions',chat())
-        require_gate(reloaded['dllm_timing']['source_tier']=='disk', 'reload did not start from disk')
+        require_gate(reloaded['damendaemon_timing']['source_tier']=='disk', 'reload did not start from disk')
         require_gate(reloaded['choices'][0]['message']['content']==expected, 'disk-reloaded output differs')
         report['http']={'registration':True,'chat_matches_expanded':True,'stream':True,'concurrent_requests':4,
             'cancellation_recovery':True,'host_restore':True,'disk_reload':True,'sample':expected,'trials':trials,

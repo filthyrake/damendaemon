@@ -7,10 +7,10 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.deepseek_checkpoint import tensor_specs
-from dllm.deepseek_reference_loader import load_reference_model
-from dllm.prepared_projection import PackedProjection
-from dllm.safetensor_header import ITEM_BYTES
+from damendaemon.deepseek_checkpoint import tensor_specs
+from damendaemon.deepseek_reference_loader import load_reference_model
+from damendaemon.prepared_projection import PackedProjection
+from damendaemon.safetensor_header import ITEM_BYTES
 from tests.test_deepseek_checkpoint import config as geometry
 from tests.test_packed_checkpoint import write_raw
 
@@ -77,7 +77,7 @@ class ReferenceLoaderTests(unittest.TestCase):
     def test_weight_and_workspace_admission_and_config_fail_before_values(self):
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp);config,_=fixture(path)
-            with patch('dllm.deepseek_reference_loader._payload',side_effect=AssertionError('payload read')):
+            with patch('damendaemon.deepseek_reference_loader._payload',side_effect=AssertionError('payload read')):
                 for options in ({'max_weight_bytes':1},{'workspace_bytes':1},{'dtype':torch.int32}):
                     with self.assertRaises(ValueError):load_reference_model(path,**options)
                 for change in ({'scoring_func':'sigmoid'},{'norm_topk_prob':False},{'qk_rope_head_dim':65},
@@ -92,7 +92,7 @@ class ReferenceLoaderTests(unittest.TestCase):
             def fail(reader,*args):
                 readers.append(reader)
                 raise OSError('injected read failure')
-            with patch('dllm.deepseek_reference_loader._payload',side_effect=fail):
+            with patch('damendaemon.deepseek_reference_loader._payload',side_effect=fail):
                 with self.assertRaisesRegex(OSError,'injected'):
                     load_reference_model(path)
             self.assertTrue(readers)
@@ -107,14 +107,14 @@ class ReferenceLoaderTests(unittest.TestCase):
                 source=count*ITEM_BYTES[headers[name]['dtype']]
                 retained+=count*(4 if spec.storage in ('floating','integer') else 1)
                 largest=max(largest,source)
-            with patch('dllm.deepseek_reference_loader._payload',side_effect=AssertionError('payload read')):
+            with patch('damendaemon.deepseek_reference_loader._payload',side_effect=AssertionError('payload read')):
                 with self.assertRaisesRegex(ValueError,'aggregate weight budget'):
                     load_reference_model(path,max_weight_bytes=retained+largest-1)
             model=load_reference_model(path,max_weight_bytes=retained+largest)
             self.assertEqual(len(model.blocks),3)
 
     def test_mtp_values_skipped_and_mutated_checkpoint_rejected(self):
-        from dllm import deepseek_reference_loader as loader
+        from damendaemon import deepseek_reference_loader as loader
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp);_,headers=fixture(path)
             original=loader._payload
@@ -124,7 +124,7 @@ class ReferenceLoaderTests(unittest.TestCase):
                 self.assertNotEqual(entry['data_offsets'],headers['mtp.unqualified']['data_offsets'])
                 count+=1
                 return original(reader,base,entry)
-            with patch('dllm.deepseek_reference_loader._payload',side_effect=record):
+            with patch('damendaemon.deepseek_reference_loader._payload',side_effect=record):
                 load_reference_model(path)
             self.assertEqual(count,len(headers)-1)
             def mutate(reader,base,entry):
@@ -132,6 +132,6 @@ class ReferenceLoaderTests(unittest.TestCase):
                 if entry['data_offsets'][0] == 0:
                     with (path/'model.safetensors').open('ab') as target:target.write(b'x')
                 return result
-            with patch('dllm.deepseek_reference_loader._payload',side_effect=mutate):
+            with patch('damendaemon.deepseek_reference_loader._payload',side_effect=mutate):
                 with self.assertRaisesRegex(ValueError,'changed'):
                     load_reference_model(path)

@@ -1,13 +1,13 @@
 # AMD ROCm qualification
 
-[Documentation](README.md) · [AMD work and acceptance gates](https://github.com/filthyrake/dllm/issues/52)
+[Documentation](README.md) · [AMD work and acceptance gates](https://github.com/filthyrake/damendaemon/issues/52)
 
 AMD has bounded experimental configurations on HOMER (`gfx1151`), not general
 vendor-wide qualification. The opt-in Qwen3.8-27B Q8 text path passes independent
 numerical and HTTP lifecycle gates at **512 context**, with FP32 state,
 compensated projections, at most four slots and no graphs. Practical 32K and
-competitive concurrency remain open. See the [current roadmap](https://github.com/filthyrake/dllm/issues/3)
-and [context task](https://github.com/filthyrake/dllm/issues/68).
+competitive concurrency remain open. See the [current roadmap](https://github.com/filthyrake/damendaemon/issues/3)
+and [context task](https://github.com/filthyrake/damendaemon/issues/68).
 
 ## Mandatory HOMER cooling before experiments
 
@@ -49,15 +49,15 @@ GPU load or induced heat. Issue75 owns this bounded protection fix.
 
 The Q4 path passes [84 independent numerical checks at 4K](evidence/amd/qwen38-27b-q4-native-replay4096.json).
 The subsequent 32K C1 test encountered a **global host OOM**, despite an 88-GiB
-systemd scope and a 48-GiB admission setting. The kernel killed the dllm server
+systemd scope and a 48-GiB admission setting. The kernel killed the damendaemon server
 and user D-Bus service. D-Bus was restored; the existing chat, embedding and
 reranking health endpoints returned OK. Retained [kernel evidence](evidence/amd/qwen38-27b-q4-http-capacity32768-c1.kernel-oom.txt)
 distinguishes global OOM from a contained cgroup failure. The
 [interrupted report](evidence/amd/qwen38-27b-q4-http-capacity32768-c1-interrupted.json)
 does not establish output counts, first-token latency or peak memory. Large
-retries are gated by [memory containment work](https://github.com/filthyrake/dllm/issues/73).
+retries are gated by [memory containment work](https://github.com/filthyrake/damendaemon/issues/73).
 
-`DLLM_ROCM_MEMORY_GIB` now caps the PyTorch caching allocator as well as admission.
+`DAMENDAEMON_ROCM_MEMORY_GIB` now caps the PyTorch caching allocator as well as admission.
 An existing stricter allocator cap is preserved. Hybrid loading/execution checks
 live host headroom against a 16-GiB reserve; the context experiment also has an
 independent 20-GiB host watchdog that stops only its owned server. A
@@ -92,7 +92,7 @@ were superseded by later results. They are evidence, not the live work queue.
 The validation-only `--packed-gpu-reference --reference-device cuda
 --reference-dtype float32 --reference-quantization q8_0` path uses upstream
 GGUF packing, ordinary Torch GPU expansion one matrix at a time, and
-Transformers execution. It does not use dllm model or projection kernels.
+Transformers execution. It does not use damendaemon model or projection kernels.
 On HOMER, all [84 targets agree with the CPU FP32 reference](evidence/amd/qwen38-27b-independent-torch-gpu-cpu-full512-comparison.json)
 for the pinned 27B model at 512 context. Reference execution took about 555
 seconds plus loading. This is validation turnaround, not serving performance;
@@ -143,18 +143,18 @@ qualified before large-model claims. The first work is bounded isolated probes.
 ## Runtime boundary
 
 PyTorch's HIP build [intentionally uses `torch.cuda` APIs](https://docs.pytorch.org/docs/stable/notes/hip.html).
-Those names do not alone make an execution path NVIDIA-only. dllm nevertheless
+Those names do not alone make an execution path NVIDIA-only. damendaemon nevertheless
 currently requires NVIDIA-style UUID selection, has NVIDIA-specific native
 libraries, and has not qualified its Triton policies on this device. AMD needs
 explicit dispatch and capability checks; it must not load CUDA/Marlin binaries.
 
 The [AMD Ryzen Linux matrix](https://rocm.docs.amd.com/projects/radeon-ryzen/en/docs-7.1/docs/compatibility/compatibilityryz/native_linux/native_linux_compatibility.html)
 identifies gfx1151 support for specified stack combinations. It does not certify
-this installed Rocky environment or dllm. Reproducible environment pins and
+this installed Rocky environment or damendaemon. Reproducible environment pins and
 actual model/performance results will be recorded here as they are obtained.
 
-The task list lives in [issue #52](https://github.com/filthyrake/dllm/issues/52);
-the project-wide completion contract is [issue #3](https://github.com/filthyrake/dllm/issues/3).
+The task list lives in [issue #52](https://github.com/filthyrake/damendaemon/issues/52);
+the project-wide completion contract is [issue #3](https://github.com/filthyrake/damendaemon/issues/3).
 
 ## First bounded HIP primitive result
 
@@ -170,7 +170,7 @@ second cycle. An [explicit workspace-release diagnostic](evidence/amd/homer-hip-
 returned allocation to zero after both cycles with unchanged numerical gates.
 This identifies the retained allocation as the documented
 [HIP BLAS workspace](https://docs.pytorch.org/docs/2.14/notes/hip.html#hipblas-workspaces),
-not a retained probe tensor. The diagnostic does not change dllm's runtime
+not a retained probe tensor. The diagnostic does not change damendaemon's runtime
 cleanup policy; production admission must account for library workspaces.
 
 The runtime reported roughly 61.5 GiB total device memory but roughly 111 GiB
@@ -190,7 +190,7 @@ The experimental `codex/amd-rocm-bringup` branch adds explicit `--device rocm`,
 HIP build/device checks, rejection of NVIDIA-only libraries and shared-memory
 admission. Initial scope is one gfx1151 device. The default process allocation
 budget is 8 GiB; admission also limits itself to reported free/total device
-memory and preserves 16 GiB of live host headroom. `DLLM_ROCM_MEMORY_GIB` is
+memory and preserves 16 GiB of live host headroom. `DAMENDAEMON_ROCM_MEMORY_GIB` is
 an explicit override, not permission to exceed those other bounds. This has
 463 passing local regression tests; these tests do not prove GPU speed.
 
@@ -255,22 +255,22 @@ The generic Linux `runtime` extra pins a CUDA-oriented PyTorch version and is
 not yet a ROCm installation recipe. Do not install it into an existing HIP
 environment. ROCm packaging is still an acceptance gap.
 
-With dllm and its tokenizer/weight-loading dependencies available in that
+With damendaemon and its tokenizer/weight-loading dependencies available in that
 environment, select the one physical AMD GPU explicitly:
 
 ```sh
 unset CUDA_VISIBLE_DEVICES
 export ROCR_VISIBLE_DEVICES=0
 export HIP_VISIBLE_DEVICES=0
-export DLLM_KERNELS=triton
-export DLLM_ROCM_MEMORY_GIB=8
+export DAMENDAEMON_KERNELS=triton
+export DAMENDAEMON_ROCM_MEMORY_GIB=8
 
-dllm run Qwen/Qwen3.5-0.8B --device rocm --context 512 \
+damendaemon run Qwen/Qwen3.5-0.8B --device rocm --context 512 \
   --revision 2fc06364715b967f1860aea9cf38778875588b17 \
   --thinking off --prompt 'Explain matrix multiplication briefly.'
 ```
 
-For the numerically checked Q8 configuration, set `DLLM_QUANTIZATION=q8_0`.
+For the numerically checked Q8 configuration, set `DAMENDAEMON_QUANTIZATION=q8_0`.
 This on-load format is separate from GGUF import. Retain explicit context and
 device selection; neither gfx1151 qualification nor these memory limits imply
 support for other AMD devices, ROCm versions or multiple GPUs.
@@ -292,7 +292,7 @@ A clean llama.cpp source archive at
 `gfx1151` in the isolated task directory. Existing HOMER binaries/checkouts
 are not modified. The pinned 0.8B checkpoint converts to a Q8 GGUF with FP16
 input embeddings. Because upstream conversion omits the tied output tensor,
-a separate comparator artifact adds an explicit Q8 head to match dllm's
+a separate comparator artifact adds an explicit Q8 head to match damendaemon's
 projection policy. Its [byte-preservation report](evidence/amd/qwen35-q8-comparator-head.json)
 checks all 335 original tensors unchanged and the added head against independent
 GGUF quantization. This proves artifact preparation, not speed parity.
@@ -307,7 +307,7 @@ and memory telemetry, and cross-engine precision/numerical reconciliation
 remain prerequisites for a competitive verdict. Client-visible post-first-output
 rate is explicitly labeled a proxy. No AMD competitive speed result exists yet.
 
-One remaining precision distinction is convolution history: dllm retains FP16
+One remaining precision distinction is convolution history: damendaemon retains FP16
 history while upstream llama.cpp's hybrid recurrent allocation uses FP32. Do
 not call those complete arithmetic policies identical merely because their
 projection coefficients and KV settings match.
@@ -318,9 +318,9 @@ The [complete ABBA summary](evidence/amd/modern-qwen35-q8-abba02/comparison.json
 uses the pinned 0.8B checkpoint and comparator above, context capacity 4096,
 128 generated tokens, three group warmups and ten measured rounds per phase.
 Raw per-request results, manifests and logs are retained as compressed files in
-the same directory. Engine order is dllm, llama.cpp, llama.cpp, dllm.
+the same directory. Engine order is damendaemon, llama.cpp, llama.cpp, damendaemon.
 
-| Input tokens | Users | dllm aggregate tokens/s | llama.cpp aggregate tokens/s | dllm p95 first output (s) | llama.cpp p95 first output (s) | Exact text across engines |
+| Input tokens | Users | damendaemon aggregate tokens/s | llama.cpp aggregate tokens/s | damendaemon p95 first output (s) | llama.cpp p95 first output (s) | Exact text across engines |
 | --- | --- | --- | --- | --- | --- | --- |
 | 128 | 1 | 138.37 | 153.14 | 0.027 | 0.061 | yes |
 | 128 | 4 | 193.67 | 435.80 | 0.120 | 0.215 | yes |
@@ -330,7 +330,7 @@ the same directory. Engine order is dllm, llama.cpp, llama.cpp, dllm.
 | 2048 | 4 | 106.98 | 159.73 | 2.334 | 2.056 | yes |
 
 Throughput is the median complete-round output rate, including prompt work.
-Within dllm, text stays stable across all measured rounds. llama.cpp varies in
+Within damendaemon, text stays stable across all measured rounds. llama.cpp varies in
 the 512-input/four-user cell; that failure is retained, not relabeled exact
 parity. These are engineering comparisons with the arithmetic distinctions
 above, not a competitive pass. Existing host services were preserved; the host
@@ -347,7 +347,7 @@ development baseline and does not qualify long-context multi-user service.
 
 ## Isolated gfx1151 small-batch result
 
-The [within-dllm ABBA comparison](evidence/amd/modern-qwen35-q8-small-batch-abba01/comparison.json)
+The [within-damendaemon ABBA comparison](evidence/amd/modern-qwen35-q8-small-batch-abba01/comparison.json)
 changes only FP16 Q8 projection dispatch for two through four rows: use the
 existing multi-row matvec instead of the A2-tuned tiled matrix kernel. Ordinary,
 candidate, candidate, ordinary phases use identical checkpoint, arithmetic and
@@ -409,7 +409,7 @@ also passes all 84 checks. A separate real-device
 [boundary/isolation control](evidence/amd/qwen35-q8-hip-chunk-boundaries512.json)
 passes 52 comparisons, including 1/2/3-token chunks, active decode between
 chunks and reuse after abandoning a partial prefix. That control compares
-against dllm full-prompt execution; it complements the independent replays.
+against damendaemon full-prompt execution; it complements the independent replays.
 Invalid continuation offsets are rejected without changing caches or lengths.
 
 The [real CLI lifecycle check with 31-token chunks](evidence/amd/qwen35-q8-hip-chunk31-service4096.json)
@@ -486,7 +486,7 @@ context, prompts, output count and chunk size. They still miss the provisional
 100 ms p95 responsiveness target; practical-model quality and user saturation
 remain open.
 
-ROCm startup now enables the qualified gfx1151 attention path within the dllm
+ROCm startup now enables the qualified gfx1151 attention path within the damendaemon
 process before requesting GPU execution. The existing gfx1151 admission guard
 remains in force. An explicit `TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=0` retains
 the diagnostic fallback; other values are rejected. This changes no host shell
@@ -559,7 +559,7 @@ control without full-model FP32 weight residency. It accepts only all-BF16
 Qwen3.5-family source tensors, checked before loading; the BF16 load therefore
 preserves checkpoint values. Upstream gguf-py packs each text Linear and
 expands it for individual CPU FP32 operations. Transformers retains all model
-execution; no dllm model math or quantization kernels enter this reference.
+execution; no damendaemon model math or quantization kernels enter this reference.
 Vision/MTP remain outside the text packing path. This validation-only mode
 rejects non-CPU or non-FP32 use and is not a hybrid-serving implementation.
 
@@ -640,7 +640,7 @@ takes about 1.81 seconds per step, two-slot decode about 1.04 seconds, and
 single-slot decode about 0.147 seconds. First encounters include compilation
 and must be excluded from any performance conclusion. The existing FP32 Q8
 matvec handles those small batches; the next control extends compensated
-projections to two or more rows using `DLLM_EXPERIMENT_BF16X3_MIN_ROWS=2`.
+projections to two or more rows using `DAMENDAEMON_EXPERIMENT_BF16X3_MIN_ROWS=2`.
 The [small-batch candidate](evidence/amd/qwen38-27b-q8-hip-bf16x3-small-batch-replay.json)
 also passes **84/84**, with worst RMS 0.0007781 and max absolute 0.026219.
 Its diagnostic four-slot decode settles near 0.66 seconds per step and two-slot
@@ -673,7 +673,7 @@ preserve the pre-integration scripts against the `6932c85` runtime base.
 
 ### Opt-in integrated precision path
 
-`DLLM_HYBRID_PRECISION=compensated` now selects the candidate through the normal
+`DAMENDAEMON_HYBRID_PRECISION=compensated` now selects the candidate through the normal
 executor rather than a source-patching wrapper. The
 [integrated full replay](evidence/amd/qwen38-27b-q8-integrated-compensated-replay.json)
 passes 84/84 targets, with worst RMS 0.0007886. `float16` remains the default;

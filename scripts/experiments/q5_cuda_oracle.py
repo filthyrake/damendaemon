@@ -13,7 +13,7 @@ from scripts.experiments.split_gguf import save
 
 def require_guard():
     uuid = os.environ.get('CUDA_VISIBLE_DEVICES', '')
-    if (os.environ.get('DLLM_SHARED_CUDA_GUARD') != '1' or
+    if (os.environ.get('DAMENDAEMON_SHARED_CUDA_GUARD') != '1' or
             not uuid.startswith('GPU-') or ',' in uuid):
         raise ValueError('requires shared CUDA guard and one explicit GPU UUID')
 
@@ -33,8 +33,8 @@ def export(model_path, config_path, teacher_path, folder):
     import accelerate
     from transformers import AutoConfig, AutoModelForCausalLM
     from transformers.modeling_utils import no_init_weights
-    from dllm.gguf_model import GgufWeights
-    from dllm.rocm_policy import host_available
+    from damendaemon.gguf_model import GgufWeights
+    from damendaemon.rocm_policy import host_available
     from scripts.verify_gguf_reference import reference_weights
     if accelerate.__version__ != '1.10.0':
         raise ValueError('oracle requires isolated Accelerate 1.10.0')

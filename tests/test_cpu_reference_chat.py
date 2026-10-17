@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from dllm.cpu_reference_chat import CpuReferenceChat
+from damendaemon.cpu_reference_chat import CpuReferenceChat
 from tests.test_cpu_hybrid_checkpoint import snapshot
 from tests.test_cpu_pipeline_generation import tokenizer
 

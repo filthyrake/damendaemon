@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import statistics
 import torch
-from dllm.kernels import attention as original
+from damendaemon.kernels import attention as original
 from scripts.experiments.sink_attention import attention as fused,bounded_attention
 
 
@@ -13,7 +13,7 @@ def main():
     p=argparse.ArgumentParser();p.add_argument('--output',required=True);p.add_argument('--bounded',action='store_true');p.add_argument('--production',action='store_true');args=p.parse_args()
     implementation=bounded_attention if args.bounded else fused
     if args.production:
-        from dllm.sink_attention import prefill_attention
+        from damendaemon.sink_attention import prefill_attention
         implementation=prefill_attention
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':raise RuntimeError('restricted to A2')
     torch.set_num_threads(4);torch.manual_seed(43);rows=[]

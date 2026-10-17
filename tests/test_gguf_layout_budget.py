@@ -1,6 +1,6 @@
 import unittest
 
-from dllm.pages import PagePool
+from damendaemon.pages import PagePool
 from scripts.verify_gguf_layout_runtime import paged_capacity
 
 

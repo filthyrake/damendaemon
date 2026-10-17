@@ -1,7 +1,7 @@
 """Audit pinned-layout GLM-5.3-Flash main-text metadata without reading checkpoint tensor values."""
 import argparse
 import json
-from dllm.glm_flash_checkpoint import audit_snapshot
+from damendaemon.glm_flash_checkpoint import audit_snapshot
 
 
 def main():

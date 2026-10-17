@@ -27,7 +27,7 @@ from tests import test_deepseek_reference_loader as deepseek_loader
 class ReferenceCommandTests(unittest.TestCase):
     def setUp(self):
         temp=tempfile.TemporaryDirectory();self.addCleanup(temp.cleanup);self.path=Path(temp.name)
-        self.env={k:v for k,v in os.environ.items() if not k.startswith('DLLM_')}
+        self.env={k:v for k,v in os.environ.items() if not k.startswith('DAMENDAEMON_')}
         self.env['OMP_NUM_THREADS']='1';self.env['MKL_NUM_THREADS']='1'
 
     def snapshot(self,family):
@@ -70,7 +70,7 @@ class ReferenceCommandTests(unittest.TestCase):
                 extra=['--flash-images'] if family=='flash-image' else []
                 process=subprocess.Popen([sys.executable,'-m','scripts.serve_cpu_reference','flash' if extra else family,str(path),
                     '--context','256','--port','0',*extra],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,
-                    env=self.env|{'DLLM_API_KEY':key})
+                    env=self.env|{'DAMENDAEMON_API_KEY':key})
                 try:
                     ready=self.event(process);self.assertEqual(ready['event'],'http_ready')
                     self.assertFalse(ready['official_model_qualified']);self.assertEqual(ready['scope'],'cpu_reference')
@@ -91,7 +91,7 @@ class ReferenceCommandTests(unittest.TestCase):
                         if stream:self.assertIn('data: [DONE]',payload);self.assertIn('cpu_reference',payload)
                         else:
                             result=json.loads(payload);self.assertEqual(result['usage']['completion_tokens'],1)
-                            self.assertEqual(result['dllm_timing']['source_tier'],'cpu_reference')
+                            self.assertEqual(result['damendaemon_timing']['source_tier'],'cpu_reference')
                     process.send_signal(signal.SIGTERM)
                     output,error=process.communicate(timeout=10)
                     self.assertEqual(process.returncode,0,error);self.assertEqual(json.loads(output)['event'],'stopped')
@@ -121,11 +121,11 @@ class ReferenceCommandTests(unittest.TestCase):
 
     def test_preflight_rejects_policy_family_metadata_and_budgets_before_payload(self):
         path=self.snapshot('glm')
-        with patch.dict(os.environ,self.env,clear=True),patch('dllm.glm_reference_loader.load_reference_model',side_effect=AssertionError('payload')) as load:
+        with patch.dict(os.environ,self.env,clear=True),patch('damendaemon.glm_reference_loader.load_reference_model',side_effect=AssertionError('payload')) as load:
             for extra in (('--alias',''),('--context','1048577'),('--cache-mib','2049'),('--port','65536'),('--connections','0'),('--queue-size','65'),('--queue-size','1','--queue-timeout','nan'),('--queue-timeout','1')):
                 with self.subTest(extra=extra),contextlib.redirect_stderr(io.StringIO()),self.assertRaises(SystemExit):
                     command.main(['glm',str(path),*extra])
-            with patch.dict(os.environ,{'DLLM_API_KEY':'bad'}),self.assertRaises(ValueError):command.prepare(self.args('glm',path))
+            with patch.dict(os.environ,{'DAMENDAEMON_API_KEY':'bad'}),self.assertRaises(ValueError):command.prepare(self.args('glm',path))
             with self.assertRaises(ValueError):command.prepare(self.args('deepseek',path))
             with self.assertRaises(ValueError):command.prepare(self.args('deepseek',path,'--output-mib','4'))
             config=json.loads((path/'config.json').read_text());config['max_position_embeddings']=2
@@ -155,7 +155,7 @@ class ReferenceCommandTests(unittest.TestCase):
         self.assertEqual(observed,[True]);self.assertTrue(runtime.closed);self.assertFalse(worker.is_alive())
 
     def test_failed_deepseek_prefill_cleanup_blocks_health_and_shutdown_until_retry(self):
-        from dllm.floating_model import ModelState
+        from damendaemon.floating_model import ModelState
         path=self.snapshot('deepseek')
         with patch.dict(os.environ,self.env,clear=True):runtime,_=command.prepare(self.args('deepseek',path))
         model=runtime.runner.model
@@ -172,7 +172,7 @@ class ReferenceCommandTests(unittest.TestCase):
     def test_image_command_metadata_and_opt_in_fail_before_payload(self):
         from tests.test_glm_flash_inline_images import snapshot
         path=self.path/'images';path.mkdir();snapshot(path)
-        with patch.dict(os.environ,self.env,clear=True),patch('dllm.glm_flash_reference_loader.load_reference_model',side_effect=AssertionError('payload')) as load:
+        with patch.dict(os.environ,self.env,clear=True),patch('damendaemon.glm_flash_reference_loader.load_reference_model',side_effect=AssertionError('payload')) as load:
             for family,options in (('glm',['--flash-images']),('flash',['--max-patches','16'])):
                 with self.assertRaises(ValueError):command.prepare(self.args(family,path,*options))
             config=json.loads((path/'config.json').read_text());config['image_token_id']=-1

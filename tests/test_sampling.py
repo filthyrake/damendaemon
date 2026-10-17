@@ -2,7 +2,7 @@ import math
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.sampling import Sampling, Sampler, sample_rows
+from damendaemon.sampling import Sampling, Sampler, sample_rows
 
 
 class SamplingTests(unittest.TestCase):
@@ -75,7 +75,7 @@ class SamplingTests(unittest.TestCase):
             with self.subTest(selected=selected), self.assertRaises(RuntimeError):
                 sample_rows(logits, samplers, selected)
         for sampler in samplers: sampler.logprobs_top = 0
-        with patch('dllm.logprobs.score_rows', return_value=[{'token_id': 1}]):
+        with patch('damendaemon.logprobs.score_rows', return_value=[{'token_id': 1}]):
             with self.assertRaises(RuntimeError): sample_rows(logits, samplers)
 
     def test_selected_ids_must_fit_vocabulary(self):
@@ -101,7 +101,7 @@ class SamplingTests(unittest.TestCase):
                 for sampler in samplers:
                     sampler.last_logprobs = sentinel
                 with self.subTest(all_scored=all_scored, packets=packets):
-                    with patch('dllm.logprobs.score_rows', return_value=packets):
+                    with patch('damendaemon.logprobs.score_rows', return_value=packets):
                         with self.assertRaises(RuntimeError):
                             sample_rows(logits, samplers)
                     for sampler in samplers:
@@ -110,7 +110,7 @@ class SamplingTests(unittest.TestCase):
     def test_mixed_scored_ids_must_match_existing_selected_readback(self):
         samplers = [Sampler(Sampling()), Sampler(Sampling())]
         samplers[0].logprobs_top = 0
-        with patch('dllm.logprobs.score_rows', return_value=[{'token_id':1}]):
+        with patch('damendaemon.logprobs.score_rows', return_value=[{'token_id':1}]):
             with self.assertRaisesRegex(RuntimeError, 'disagree'):
                 sample_rows(torch.zeros(2, 4), samplers)
         self.assertIsNone(samplers[0].last_logprobs)
@@ -285,7 +285,7 @@ class SamplingTests(unittest.TestCase):
                     sampler.select(torch.tensor(row))
 
     def test_checked_greedy_selection_has_no_host_readback(self):
-        from dllm.sampling import greedy_tokens
+        from damendaemon.sampling import greedy_tokens
         logits=torch.tensor([[1.,2.],[float('nan'),0.]])
         with patch.object(torch.Tensor,'item',side_effect=AssertionError('host item read')), \
                 patch.object(torch.Tensor,'tolist',side_effect=AssertionError('host list read')), \

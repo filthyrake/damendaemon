@@ -30,7 +30,7 @@ class BenchmarkIntegrity(unittest.TestCase):
         if done:
             stream += 'data: [DONE]\n\n'
         with patch.object(benchmark, 'urlopen', return_value=Response(stream.encode())) as post:
-            result = benchmark.request('http://127.0.0.1:1', 'a', [1, 2], 'dllm', [3], threading.Barrier(1),
+            result = benchmark.request('http://127.0.0.1:1', 'a', [1, 2], 'damendaemon', [3], threading.Barrier(1),
                                        output_tokens=requested, first_output_event=first)
             body = json.loads(post.call_args.args[0].data)
             self.assertEqual(body['prompt'], [1, 2])
@@ -61,7 +61,7 @@ class BenchmarkIntegrity(unittest.TestCase):
             manifest = root/'manifest.json'
             manifest.write_text(json.dumps(dict(model_revision='fixture', engine_revision='fixture',
                                                precision='fixture', hardware='fixture', eos_ids=[3])))
-            args = ['benchmark', '--base-url', 'http://127.0.0.1:1', '--engine', 'dllm',
+            args = ['benchmark', '--base-url', 'http://127.0.0.1:1', '--engine', 'damendaemon',
                     '--tokenizer', str(root/'tokenizer.json'), '--manifest', str(manifest),
                     '--phase', 'A1', '--output', str(root/'result.json')]
             with patch('sys.argv', args), patch.object(benchmark.Tokenizer, 'from_file') as tokenizer, \
@@ -90,7 +90,7 @@ class BenchmarkIntegrity(unittest.TestCase):
         prefix = ''.join('data: ' + json.dumps(chunk) + '\n\n' for chunk in chunks)
         for ending in ('data: [DONE]', 'data: [DONE]\n'):
             with patch.object(benchmark, 'urlopen', return_value=Response((prefix + ending).encode())):
-                result = benchmark.request('http://127.0.0.1:1', 'a', [1, 2], 'dllm', [3],
+                result = benchmark.request('http://127.0.0.1:1', 'a', [1, 2], 'damendaemon', [3],
                                            threading.Barrier(1))
             self.assertFalse(result['passed'])
             self.assertEqual(result['text'], 'hello')
@@ -121,7 +121,7 @@ class BenchmarkIntegrity(unittest.TestCase):
                 stream = ''.join('data: ' + json.dumps(c) + '\n\n' for c in chunks) + 'data: [DONE]\n\n'
                 first = threading.Event()
                 with patch.object(benchmark, 'urlopen', return_value=Response(stream.encode())):
-                    result = benchmark.request('http://127.0.0.1:1', 'a', [1, 2], 'dllm', [3],
+                    result = benchmark.request('http://127.0.0.1:1', 'a', [1, 2], 'damendaemon', [3],
                                                threading.Barrier(1), first_output_event=first)
                 self.assertFalse(result['passed'])
                 self.assertEqual(result['usage'], valid)
@@ -134,7 +134,7 @@ class BenchmarkIntegrity(unittest.TestCase):
         chunks = [dict(usage=None), dict(choices=[dict(text='hello')]), dict(usage=valid), dict(usage=valid)]
         stream = ''.join('data: ' + json.dumps(c) + '\n\n' for c in chunks) + 'data: [DONE]\n\n'
         with patch.object(benchmark, 'urlopen', return_value=Response(stream.encode())):
-            result = benchmark.request('http://127.0.0.1:1', 'a', [1, 2], 'dllm', [3], threading.Barrier(1))
+            result = benchmark.request('http://127.0.0.1:1', 'a', [1, 2], 'damendaemon', [3], threading.Barrier(1))
         self.assertTrue(result['passed'])
         self.assertTrue(result['start_barrier_passed'])
 
@@ -148,7 +148,7 @@ class BenchmarkIntegrity(unittest.TestCase):
             manifest = root/'manifest.json'
             manifest.write_text(json.dumps(dict(model_revision='fixture', engine_revision='fixture',
                                                precision='fixture', hardware='fixture', eos_ids=[3])))
-            args = ['benchmark', '--base-url', 'http://127.0.0.1:1', '--engine', 'dllm',
+            args = ['benchmark', '--base-url', 'http://127.0.0.1:1', '--engine', 'damendaemon',
                     '--tokenizer', str(tokenizer_path), '--manifest', str(manifest),
                     '--phase', 'A1', '--output', str(output)]
             def interrupted(report, stream, **kwargs):
@@ -159,7 +159,7 @@ class BenchmarkIntegrity(unittest.TestCase):
                 with patch('sys.argv', args), patch.object(benchmark.Tokenizer, 'from_file') as tokenizer, \
                         patch.object(benchmark, 'urlopen', return_value=Response(b'{"context":4096}')), \
                         patch.object(benchmark, 'request', side_effect=RuntimeError('request failed')), \
-                        patch('dllm.report_io.json.dump', side_effect=interrupted if fail_write else dump):
+                        patch('damendaemon.report_io.json.dump', side_effect=interrupted if fail_write else dump):
                     tokenizer.return_value.encode.return_value.ids = list(range(3000))
                     with self.assertRaises(OSError if fail_write else RuntimeError):
                         benchmark.main()
@@ -187,7 +187,7 @@ class BenchmarkIntegrity(unittest.TestCase):
                 with patch.object(benchmark, 'MAX_CAPTURE_BYTES', byte_limit), \
                         patch.object(benchmark, 'MAX_CAPTURE_FRAGMENTS', count_limit), \
                         patch.object(benchmark, 'urlopen', return_value=response):
-                    result = benchmark.request('http://127.0.0.1:1', 'a', [1, 2], 'dllm', [3],
+                    result = benchmark.request('http://127.0.0.1:1', 'a', [1, 2], 'damendaemon', [3],
                                                threading.Barrier(1), first_output_event=first)
                 self.assertEqual(result['passed'], passed)
                 self.assertEqual(result['text'], expected)
@@ -205,7 +205,7 @@ class BenchmarkIntegrity(unittest.TestCase):
         barrier.abort()
         first = threading.Event()
         with patch.object(benchmark, 'urlopen') as post:
-            result = benchmark.request('http://127.0.0.1:1', 'a', [1, 2], 'dllm', [3], barrier,
+            result = benchmark.request('http://127.0.0.1:1', 'a', [1, 2], 'damendaemon', [3], barrier,
                                        first_output_event=first)
         post.assert_not_called()
         self.assertFalse(result['passed'])
@@ -222,7 +222,7 @@ class SummaryIntegrity(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.directory = Path(self.temporary.name)
         for phase in ('A1', 'B1', 'B2', 'A2'):
-            engine = 'dllm' if phase.startswith('A') else 'llama.cpp'
+            engine = 'damendaemon' if phase.startswith('A') else 'llama.cpp'
             report = dict(passed=True, phase=phase, engine=engine, prompts={}, context=4096,
                           output_tokens=128, tokenizer_sha256='fixture', eos_policy='fixture',
                           manifest=dict(model_revision='fixture', hardware='fixture', eos_ids=[1],
@@ -250,7 +250,7 @@ class SummaryIntegrity(unittest.TestCase):
     def candidate_reports(self):
         for phase in ('A1', 'B1', 'B2', 'A2'):
             def convert(report):
-                report['engine'] = 'dllm'
+                report['engine'] = 'damendaemon'
                 report['manifest'].update(engine_revision='same-revision',
                     precision={'projections': 'Q8_0'}, candidate_source_sha256='same-source',
                     variant='ordinary' if phase.startswith('A') else 'hip-q8-small-batch')
@@ -306,7 +306,7 @@ class SummaryIntegrity(unittest.TestCase):
             stream.write('{"partial":')
             raise OSError('injected write failure')
         with patch('sys.argv', ['summary', str(self.directory), '--output', str(output)]), \
-                patch('dllm.report_io.json.dump', side_effect=interrupted):
+                patch('damendaemon.report_io.json.dump', side_effect=interrupted):
             with self.assertRaises(OSError):
                 summary.main()
         self.assertEqual(json.loads(output.read_text()), {'previous': True})
@@ -318,7 +318,7 @@ class SummaryIntegrity(unittest.TestCase):
     def test_candidate_comparison(self):
         self.candidate_reports()
         result = summary.summarize(self.directory)
-        self.assertEqual(result['comparator'], 'dllm-candidate')
+        self.assertEqual(result['comparator'], 'damendaemon-candidate')
         self.assertTrue(all(row['exact_cross_engine_text'] for row in result['rows']))
 
     def test_candidate_changed_precision_rejected(self):

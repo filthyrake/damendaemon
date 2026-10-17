@@ -11,9 +11,9 @@ import tempfile
 import torch
 import triton.testing
 from safetensors import safe_open
-from dllm.awq import Matrix, fuse, group_size
-from dllm.awq_kernels import expand, linear
-from dllm.runtime import require_gpu
+from damendaemon.awq import Matrix, fuse, group_size
+from damendaemon.awq_kernels import expand, linear
+from damendaemon.runtime import require_gpu
 
 
 def main():
@@ -38,7 +38,7 @@ def main():
                   device=torch.cuda.get_device_name(), gpu_uuid=os.environ.get('CUDA_VISIBLE_DEVICES'),
                   torch=torch.__version__, triton=triton.__version__,
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-                  kernel_sha256=hashlib.sha256((Path(__file__).resolve().parents[1]/'dllm/awq_kernels.py').read_bytes()).hexdigest(),
+                  kernel_sha256=hashlib.sha256((Path(__file__).resolve().parents[1]/'damendaemon/awq_kernels.py').read_bytes()).hexdigest(),
                   upstream_source_sha256=hashlib.sha256(reference_source.encode()).hexdigest(),
                   adapted_source_sha256=hashlib.sha256(adapted.encode()).hexdigest(),
                   upstream_adaptation='replace only the Triton import; preserve the implementation and copyright header',
@@ -46,10 +46,10 @@ def main():
     with (path/'model.safetensors').open('rb') as stream:
         report['model_sha256'] = hashlib.file_digest(stream, 'sha256').hexdigest()
     try:
-        with tempfile.TemporaryDirectory(prefix='dllm-awq-reference-') as temporary:
+        with tempfile.TemporaryDirectory(prefix='damendaemon-awq-reference-') as temporary:
             reference_path = Path(temporary)/'awq_reference.py'
             reference_path.write_text(adapted)
-            spec = importlib.util.spec_from_file_location('dllm_awq_validation_reference', reference_path)
+            spec = importlib.util.spec_from_file_location('damendaemon_awq_validation_reference', reference_path)
             oracle_module = importlib.util.module_from_spec(spec)
             sys.modules[spec.name] = oracle_module
             spec.loader.exec_module(oracle_module)
@@ -66,13 +66,13 @@ def main():
                 for name, host in matrices.items():
                     matrix = Matrix(host.weight.cuda(), host.zeros.cuda(), host.scales.cuda(), host.inputs, host.outputs, host.group)
                     expected_weight = host.dequantize().cuda()
-                    dllm_weight = expand(matrix)
+                    damendaemon_weight = expand(matrix)
                     upstream_weight = oracle_module.awq_dequantize_triton(matrix.weight, matrix.scales, matrix.zeros).T
                     checks = dict(name=name,
-                                  dllm_exact=torch.equal(dllm_weight.contiguous().view(torch.int16), expected_weight.view(torch.int16)),
+                                  damendaemon_exact=torch.equal(damendaemon_weight.contiguous().view(torch.int16), expected_weight.view(torch.int16)),
                                   upstream_exact=torch.equal(upstream_weight.contiguous().view(torch.int16), expected_weight.view(torch.int16)))
                     report['coefficient_checks'].append(checks)
-                    if not checks['dllm_exact'] or not checks['upstream_exact']:
+                    if not checks['damendaemon_exact'] or not checks['upstream_exact']:
                         raise AssertionError(f'coefficient bit-pattern mismatch: {checks}')
                     for rows in (1, 2, 4, 33, 64, 129, 256):
                         case = dict(name=name, inputs=host.inputs, outputs=host.outputs, rows=rows, checks=[], rounds=[])
@@ -99,7 +99,7 @@ def main():
                         for kind in ('packed', 'expanded', 'expanded', 'packed'):
                             case['rounds'].append(dict(kind=kind, ms=triton.testing.do_bench_cudagraph(functions[kind], rep=100)))
                         print(json.dumps(case), flush=True)
-                    del matrix, expected_weight, dllm_weight, upstream_weight, expected, actual, error, functions
+                    del matrix, expected_weight, damendaemon_weight, upstream_weight, expected, actual, error, functions
             report['passed'] = True
     except Exception as error:
         report['error'] = repr(error)

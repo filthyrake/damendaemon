@@ -5,7 +5,7 @@ import time
 import unittest
 import weakref
 
-from dllm.distributed_serving import DistributedRuntime, Request
+from damendaemon.distributed_serving import DistributedRuntime, Request
 from tests.test_distributed_serving import Pair
 
 

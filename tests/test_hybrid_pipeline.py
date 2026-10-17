@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.hybrid_pipeline import HybridPipeline, PipelineCancelled
+from damendaemon.hybrid_pipeline import HybridPipeline, PipelineCancelled
 from tests import test_hybrid_stage
 
 

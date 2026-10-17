@@ -2,7 +2,7 @@
 
 Issue #37. Pinned `unsloth/Llama-3.2-1B-Instruct` revision
 `5a8abab4a5d6f164389b1079fb721cfab8d7126c`, NVIDIA A2. No change to the
-existing default `DLLM_LLAMA_PRECISION=mixed` policy is implied.
+existing default `DAMENDAEMON_LLAMA_PRECISION=mixed` policy is implied.
 
 ## Why mixed precision is excluded
 
@@ -15,7 +15,7 @@ At the near-tied prediction, sequential logits for these two tokens differ by
 only 0.015625. This is numerical divergence, not permission to silently waive the
 exact-token gate. Reports preserve both token sequences and per-layer errors.
 
-The explicit `DLLM_LLAMA_PRECISION=float32` experiment retains FP16 stored
+The explicit `DAMENDAEMON_LLAMA_PRECISION=float32` experiment retains FP16 stored
 matrices, uses FP32 residuals/KV/elementwise arithmetic and the existing dense
 FP32 arithmetic path (including compensated Tensor Core products for small
 multirow projections). It passes all 18 verifier cases; this is observed

@@ -1,6 +1,6 @@
 """Bounded single-shape CUDA graph experiment; not enabled in serving."""
 import torch
-from dllm.cuda_warmup import warmup_stream
+from damendaemon.cuda_warmup import warmup_stream
 
 
 class GraphVisionEncoder:

@@ -8,8 +8,8 @@ from pathlib import Path
 from types import SimpleNamespace
 import torch
 from tokenizers import Tokenizer
-from dllm.config import decoder_config,eos_ids
-from dllm.structured import Constraint,response_schema
+from damendaemon.config import decoder_config,eos_ids
+from damendaemon.structured import Constraint,response_schema
 
 
 def main():

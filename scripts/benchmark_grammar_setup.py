@@ -10,7 +10,7 @@ import statistics
 import time
 from types import SimpleNamespace
 
-from dllm.structured import Constraint, prepare_options, response_schema
+from damendaemon.structured import Constraint, prepare_options, response_schema
 
 
 def schema(value):

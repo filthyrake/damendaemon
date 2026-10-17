@@ -8,8 +8,8 @@ from unittest.mock import patch
 import torch
 from tokenizers import Tokenizer, models
 from transformers import MambaConfig, MambaForCausalLM, Mamba2Config, Mamba2ForCausalLM
-from dllm.mamba import MambaWeights, MambaExecutor
-from dllm.mamba2 import Mamba2Weights, Mamba2Executor
+from damendaemon.mamba import MambaWeights, MambaExecutor
+from damendaemon.mamba2 import Mamba2Weights, Mamba2Executor
 
 
 class MambaCPUReferenceTests(unittest.TestCase):
@@ -31,12 +31,12 @@ class MambaCPUReferenceTests(unittest.TestCase):
             model = weights_type(folder, 32)
             # Replace only device admission; loading and recurrence are real.
             with ExitStack() as stack:
-                for module in ('dllm.mamba', 'dllm.mamba2'):
+                for module in ('damendaemon.mamba', 'damendaemon.mamba2'):
                     stack.enter_context(patch(module+'.selected_device', return_value='cpu'))
-                stack.enter_context(patch('dllm.mamba.empty_cache'))
-                stack.enter_context(patch('dllm.mamba.available_memory', return_value=2**30))
+                stack.enter_context(patch('damendaemon.mamba.empty_cache'))
+                stack.enter_context(patch('damendaemon.mamba.available_memory', return_value=2**30))
                 stack.enter_context(patch.dict('os.environ', {
-                    'DLLM_MAMBA_FUSED_DT':'0', 'DLLM_MAMBA2_COMPENSATED':'0', 'DLLM_MAMBA2_SSD':'0'}))
+                    'DAMENDAEMON_MAMBA_FUSED_DT':'0', 'DAMENDAEMON_MAMBA2_COMPENSATED':'0', 'DAMENDAEMON_MAMBA2_SSD':'0'}))
                 native = executor_type(model, use_graph=False, kernels='torch')
             self.assertEqual(native.device, 'cpu')
             self.assertEqual(native.kernel_backend, 'torch')

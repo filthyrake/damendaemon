@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from dllm.deepseek_reference_loader import load_reference_model
+from damendaemon.deepseek_reference_loader import load_reference_model
 from scripts.run_deepseek_reference import main
 from tests.test_deepseek_reference_loader import fixture
 from tests.test_deepseek_generation import text_fixture
@@ -66,8 +66,8 @@ class ReferenceCLITests(unittest.TestCase):
         self.assertEqual(closed,[True])
 
     def test_tool_command_returns_calls_and_invalid_schemas_preflight(self):
-        from dllm.deepseek_text import EOS
-        from dllm.deepseek_tools import render_tool_calls
+        from damendaemon.deepseek_text import EOS
+        from damendaemon.deepseek_tools import render_tool_calls
         from tests.test_deepseek_generation import ScriptedModel
         tools=self.path/'tools.json'
         tools.write_text(json.dumps([{'type':'function','function':{'name':'f'}}]))

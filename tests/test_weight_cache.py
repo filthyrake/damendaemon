@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import torch
 from safetensors.torch import save_file
-from dllm.weight_cache import PreparedCache, tensor_schema
+from damendaemon.weight_cache import PreparedCache, tensor_schema
 
 
 class WeightCacheTests(unittest.TestCase):
@@ -53,7 +53,7 @@ class WeightCacheTests(unittest.TestCase):
         key = self.cache().key
         self.config['intermediate_size'] = 96
         self.assertNotEqual(key, self.cache().key)
-        with patch('dllm.weight_cache.VERSION', 999):
+        with patch('damendaemon.weight_cache.VERSION', 999):
             self.assertNotEqual(self.cache().key, key)
 
     def test_corruption_and_wrong_tensor_layout_are_misses(self):
@@ -75,7 +75,7 @@ class WeightCacheTests(unittest.TestCase):
         values = self.values(cache)
         cache.save(*values)
         before = cache.path.read_bytes()
-        with patch('dllm.weight_cache.os.replace', side_effect=OSError('disk failure')):
+        with patch('damendaemon.weight_cache.os.replace', side_effect=OSError('disk failure')):
             with self.assertWarns(RuntimeWarning):
                 self.assertFalse(cache.save(*values))
         self.assertEqual(before, cache.path.read_bytes())

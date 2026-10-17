@@ -3,15 +3,15 @@ import argparse
 from contextlib import closing
 import json
 from pathlib import Path
-from dllm.checkpoint import _unique_fields
-from dllm.glm_text import _read
-from dllm.glm_flash_text import FlashText
-from dllm.glm_flash_tool_text import FlashToolText
-from dllm.glm_flash_tool_generation import FlashToolReferenceGenerator
-from dllm.glm_flash_reference_loader import load_reference_model
-from dllm.glm_generation import validate_text_config
-from dllm.glm_flash_generation import FlashReferenceGenerator,flash_text_config
-from dllm.glm_flash_batch_generation import FlashBatchReferenceGenerator,prepare_batch
+from damendaemon.checkpoint import _unique_fields
+from damendaemon.glm_text import _read
+from damendaemon.glm_flash_text import FlashText
+from damendaemon.glm_flash_tool_text import FlashToolText
+from damendaemon.glm_flash_tool_generation import FlashToolReferenceGenerator
+from damendaemon.glm_flash_reference_loader import load_reference_model
+from damendaemon.glm_generation import validate_text_config
+from damendaemon.glm_flash_generation import FlashReferenceGenerator,flash_text_config
+from damendaemon.glm_flash_batch_generation import FlashBatchReferenceGenerator,prepare_batch
 
 
 def _positive(value):
@@ -70,8 +70,8 @@ def main(argv=None):
                           projection_workspace_bytes=args.projection_workspace_mib*1024**2,
                           max_workspace_bytes=args.workspace_mib*1024**2,max_output_bytes=args.output_mib*1024**2)
         if args.layer_splits is not None:
-            from dllm.glm_flash_checkpoint_pipeline import load_reference_pipeline
-            from dllm.glm_flash_pipeline_generation import FlashPipelineReferenceGenerator,FlashPipelineToolReferenceGenerator
+            from damendaemon.glm_flash_checkpoint_pipeline import load_reference_pipeline
+            from damendaemon.glm_flash_pipeline_generation import FlashPipelineReferenceGenerator,FlashPipelineToolReferenceGenerator
             model=load_reference_pipeline(args.snapshot,args.layer_splits,**load_options)
             runner_type=FlashPipelineToolReferenceGenerator if args.tools else FlashPipelineReferenceGenerator
         else:

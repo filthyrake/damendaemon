@@ -3,8 +3,8 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.cache_indices import prefill_indices, ring_decode_indices
-from dllm.selected_attention import selected_attention
+from damendaemon.cache_indices import prefill_indices, ring_decode_indices
+from damendaemon.selected_attention import selected_attention
 
 
 class CacheIndexTests(unittest.TestCase):
@@ -54,7 +54,7 @@ class CacheIndexTests(unittest.TestCase):
             torch.testing.assert_close(actual, reference[:, position:position+1])
 
     def test_invalid_geometry_and_budget_rejected_before_allocation(self):
-        with patch('dllm.cache_indices.torch.arange', side_effect=AssertionError('allocation started')):
+        with patch('damendaemon.cache_indices.torch.arange', side_effect=AssertionError('allocation started')):
             for options in ({'window':0}, {'window':True}, {'window':4, 'ratio':-1},
                             {'window':4, 'query_start':5, 'query_stop':4}, {'window':4, 'batch':0}):
                 with self.assertRaises(ValueError):

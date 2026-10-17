@@ -4,15 +4,15 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_layer_pipeline import GlmLayerPipeline
-from dllm.glm_pipeline_generation import PipelineReferenceGenerator, PipelineToolReferenceGenerator
-from dllm.glm_reference_loader import load_reference_stage
-from dllm.glm_batch_generation import BatchReferenceGenerator
-from dllm.glm_generation import ReferenceGenerator
-from dllm.glm_tool_text import GlmToolText
-from dllm.glm_text import END_THINK, EOS
-from dllm.glm_flash_tools import FlashTools
-from dllm.reference_cancellation import cancellation_scope, ReferenceCancelled
+from damendaemon.glm_layer_pipeline import GlmLayerPipeline
+from damendaemon.glm_pipeline_generation import PipelineReferenceGenerator, PipelineToolReferenceGenerator
+from damendaemon.glm_reference_loader import load_reference_stage
+from damendaemon.glm_batch_generation import BatchReferenceGenerator
+from damendaemon.glm_generation import ReferenceGenerator
+from damendaemon.glm_tool_text import GlmToolText
+from damendaemon.glm_text import END_THINK, EOS
+from damendaemon.glm_flash_tools import FlashTools
+from damendaemon.reference_cancellation import cancellation_scope, ReferenceCancelled
 from tests.test_glm_generation import text_fixture
 from tests.test_glm_reference_loader import fixture, floating_control
 from tests.test_glm_tools import TOOLS, CALLS

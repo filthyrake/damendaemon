@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 import os
 import torch
-from dllm.kernels import attention
+from damendaemon.kernels import attention
 
 
 def main():

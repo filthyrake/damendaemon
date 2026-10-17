@@ -2,8 +2,8 @@ import math
 import unittest
 import torch
 
-from dllm.gpt_oss import validate_config,load_weights
-from dllm.rotary import inverse_frequencies,attention_factor
+from damendaemon.gpt_oss import validate_config,load_weights
+from damendaemon.rotary import inverse_frequencies,attention_factor
 
 
 def configuration():
@@ -86,7 +86,7 @@ class GptOssTests(unittest.TestCase):
 
 
     def test_expert_scale_fast_paths_require_the_entire_tensor_in_range(self):
-        from dllm.mxfp4 import scale_capabilities
+        from damendaemon.mxfp4 import scale_capabilities
         for low,high,half,normal in ((104,140,True,True),(2,252,False,True),
             (1,140,False,False),(104,253,False,False),(0,0,False,False),
             (127,127,True,True),(103,141,False,True),(254,254,False,False)):
@@ -97,7 +97,7 @@ class GptOssTests(unittest.TestCase):
 
     def test_long_attention_rejects_tf32_if_global_policy_changes_after_load(self):
         from types import SimpleNamespace
-        from dllm.gpt_oss import GptOssExecutor
+        from damendaemon.gpt_oss import GptOssExecutor
         previous=torch.backends.cuda.matmul.allow_tf32
         try:
             torch.backends.cuda.matmul.allow_tf32=True

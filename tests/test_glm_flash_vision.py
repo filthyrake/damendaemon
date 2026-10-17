@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 import torch
 from torch.nn import functional as F
-from dllm.glm_flash_vision import FlashVision,vision_specs,audit_vision,ROOT
+from damendaemon.glm_flash_vision import FlashVision,vision_specs,audit_vision,ROOT
 
 
 def fixture():
@@ -85,7 +85,7 @@ class FlashVisionTests(unittest.TestCase):
             for key,name in (('patch','patch_embed.proj.weight'),('downsample','downsample.weight')):
                 if weight.data_ptr()==w[name].data_ptr():seen[key]=result.clone()
             return result
-        with patch('dllm.glm_flash_vision.F.linear',side_effect=record):actual=encoder.forward(patches,[(1,2,4)])
+        with patch('damendaemon.glm_flash_vision.F.linear',side_effect=record):actual=encoder.forward(patches,[(1,2,4)])
         torch.testing.assert_close(actual,expected,rtol=3e-5,atol=2e-6)
         for key in captured:torch.testing.assert_close(seen[key],captured[key],rtol=3e-5,atol=2e-6)
         self.assertIs(encoder.w['patch_embed.proj.weight'],w['patch_embed.proj.weight'])
@@ -105,7 +105,7 @@ class FlashVisionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'parameter budget'):FlashVision(c,w,max_weight_bytes=1)
         for options in (dict(max_tokens=3),dict(max_workspace_bytes=1),dict(max_output_bytes=1)):
             encoder=FlashVision(c,w,**options)
-            with patch('dllm.glm_flash_vision.F.linear',side_effect=AssertionError('projection before admission')):
+            with patch('damendaemon.glm_flash_vision.F.linear',side_effect=AssertionError('projection before admission')):
                 with self.assertRaises(ValueError):encoder.forward(patches,[(1,2,2)])
         encoder=FlashVision(c,w)
         for grids in ([],[(True,2,2)],[(1,3,2)],[(1,2,4)]):

@@ -8,14 +8,14 @@ import os
 import time
 import torch
 from transformers import AutoModelForSeq2SeqLM
-from dllm.models import load
-from dllm.runtime import make_executor,require_gpu
+from damendaemon.models import load
+from damendaemon.runtime import make_executor,require_gpu
 
 
 @torch.inference_mode()
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');args=p.parse_args()
-    os.environ['DLLM_T5_PREFILL_GRAPHS']='2';require_gpu();torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_T5_PREFILL_GRAPHS']='2';require_gpu();torch.set_num_threads(4)
     model=load(args.model,512);executor=make_executor(model,max_batch=4)
     reference=AutoModelForSeq2SeqLM.from_pretrained(args.model,local_files_only=True,torch_dtype=torch.float32).eval()
     corpus=model.raw_tokens('summarize: The blue bird visits a green field while a dog sleeps. '*100)

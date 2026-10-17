@@ -143,7 +143,7 @@ int main() {
         matmul(blas.handle, 32, true);
         std::printf("]}\n");
     } catch (const std::exception &error) {
-        std::fprintf(stderr, "dllm CUDA probe: %s\n", error.what());
+        std::fprintf(stderr, "damendaemon CUDA probe: %s\n", error.what());
         return 1;
     }
 }

@@ -14,13 +14,13 @@ import socket
 import time
 import torch
 import torch.distributed as dist
-from dllm.qwen2 import ModelWeights
-from dllm.layer_stage import LayerStage
-from dllm.partition_policy import validate
-from dllm.stage_protocol import Command, StageState, PREFILL, DECODE
-from dllm.stage_transport import StageChannel
-from dllm.stage_identity import fingerprint
-from dllm.stage_setup import StageSetup
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.layer_stage import LayerStage
+from damendaemon.partition_policy import validate
+from damendaemon.stage_protocol import Command, StageState, PREFILL, DECODE
+from damendaemon.stage_transport import StageChannel
+from damendaemon.stage_identity import fingerprint
+from damendaemon.stage_setup import StageSetup
 
 
 class ReadbackChannel(StageChannel):

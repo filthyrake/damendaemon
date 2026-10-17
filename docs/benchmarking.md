@@ -24,7 +24,7 @@ or qualifies GPU inference or performance.
 
 Compare identical revisions, precision, context, output lengths, and hardware. CPU tests establish behavior, not GPU performance.
 
-The [fixed performance scorecard](https://github.com/filthyrake/dllm/issues/54)
+The [fixed performance scorecard](https://github.com/filthyrake/damendaemon/issues/54)
 defines the next required workloads and competitive thresholds. These are
 targets, not results. Functional, numerical, lifecycle and performance gates
 are recorded separately; a missing or failed comparison never counts as parity.
@@ -34,7 +34,7 @@ reach, not just one request at each concurrency. Arrival timing can make the
 first round process prompts singly and expose a packed shape only during timed
 rounds. Record actual group sizes and warmup cost; report first-use shape latency
 separately. The [Q4 network comparison](evidence/quantization/cuda/q4-arithmetic/README.md#all-reachable-prompt-shapes-warm)
-shows why this distinction matters. Generic `dllm bench` does not do that warmup
+shows why this distinction matters. Generic `damendaemon bench` does not do that warmup
 for you.
 
 ## Historical baseline results
@@ -59,13 +59,13 @@ HTTP comparisons, correctness gates, model switching, and limitations. The
 Python 3.11 or newer; no third-party dependencies required:
 
 ```sh
-python3 -m dllm bench --base-url http://localhost:8000/v1 \
+python3 -m damendaemon bench --base-url http://localhost:8000/v1 \
   --models model-a --requests 16 --concurrency 4 --max-tokens 128 \
   --label baseline > baseline.json
 
 # Sequential A -> B -> A requests measure user-visible model transitions.
 # The target server must already support routing/loading these models.
-python3 -m dllm bench --base-url http://localhost:8080/v1 \
+python3 -m damendaemon bench --base-url http://localhost:8080/v1 \
   --models model-a model-b model-a --requests 3 --concurrency 1 \
   --label switching > switching.json
 
@@ -75,7 +75,7 @@ python3 -m unittest discover -s tests -v
 Comparator context preflight bounds the `/props` response to 1 MiB before JSON
 parsing and requires an exact integer match for the expected context.
 
-Set `DLLM_API_KEY` if the endpoint needs authentication. The key is not saved in
+Set `DAMENDAEMON_API_KEY` if the endpoint needs authentication. The key is not saved in
 results. Use `--prompt-file` for a repeatable workload and `--label` to identify
 hardware, model revision, quantization, and server configuration. Prompts are
 represented by a hash in the report, not saved as text.
@@ -84,7 +84,7 @@ Reports include each request, failures, wall-clock throughput, first visible
 output latency, and output-token counts when the server reports them. Streaming
 chunks are **not** counted as tokens. Missing usage means token throughput is
 unknown. First visible output can lag actual first-token computation, especially
-with reasoning models or server buffering. Full details: `python3 -m dllm --help`.
+with reasoning models or server buffering. Full details: `python3 -m damendaemon --help`.
 
 By default this is a closed-loop load test: at most `--concurrency` requests are
 in flight. `--arrival-rate` instead offers fixed scheduled arrivals, reporting
@@ -108,14 +108,14 @@ and approximately 256 MiB pinned host memory, excluding CUDA/library overhead.
 ```sh
 cmake -S . -B build -DCMAKE_CUDA_ARCHITECTURES=86
 cmake --build build -j2
-CUDA_VISIBLE_DEVICES=GPU-your-device-uuid ./build/dllm-cuda-probe
+CUDA_VISIBLE_DEVICES=GPU-your-device-uuid ./build/damendaemon-cuda-probe
 ```
 
 Alternatively, with an installed CUDA toolkit:
 
 ```sh
-nvcc -O3 -std=c++17 -arch=sm_86 native/cuda_probe.cu -lcublas -o /tmp/dllm-cuda-probe
-CUDA_VISIBLE_DEVICES=GPU-your-device-uuid /tmp/dllm-cuda-probe
+nvcc -O3 -std=c++17 -arch=sm_86 native/cuda_probe.cu -lcublas -o /tmp/damendaemon-cuda-probe
+CUDA_VISIBLE_DEVICES=GPU-your-device-uuid /tmp/damendaemon-cuda-probe
 ```
 
 The first A2 measurements and their limitations are in
@@ -125,7 +125,7 @@ The first A2 measurements and their limitations are in
 
 Active performance work targets Qwen3 or newer, prioritizing Qwen3.5.
 `scripts/run_modern_abba.py` owns four sequential fresh-server phases on the
-authorized single-APU host: dllm, llama.cpp, llama.cpp, dllm. The workload is
+authorized single-APU host: damendaemon, llama.cpp, llama.cpp, damendaemon. The workload is
 fixed at context 4096, input lengths 128/512/2048, 128 output tokens, concurrency
 one/four, three warmups and ten measured rounds per phase and cell. Groups of
 two/three receive additional warmups. Explicit raw token IDs prevent different
@@ -152,7 +152,7 @@ stability, and cross-engine exact-text differences. It deliberately leaves
 `competitive_pass` unknown: current engine arithmetic differs, client-visible
 post-first-output throughput is a proxy, and internal decode/peak-memory
 telemetry remains a separate scorecard gate. Server-ready time also has different
-semantics: dllm loads on its first request while llama.cpp preloads. It must not
+semantics: damendaemon loads on its first request while llama.cpp preloads. It must not
 be presented as a matched cold-model-start result.
 
 ## Fixed-workload request integrity
@@ -269,6 +269,6 @@ Comparison token prompt files are read as bounded UTF-8 JSON arrays (16 MiB and 
 
 Reranker HTTP responses are capped at 1 MiB and decoded as strict UTF-8 JSON objects with duplicate fields and excessive nesting rejected. Non-null error envelopes fail even when valid-looking results accompany them. Result validation occurs inside the owned response context before measurements are recorded. Client timings include decoding and validation; these safeguards are not hardware performance evidence.
 
-Reranker engine selections must be unique and supported before setup. Single-engine collection is supported, but cross-engine agreement requires one `dllm` and one `vllm` report; same-engine or missing/unknown identities cannot qualify.
+Reranker engine selections must be unique and supported before setup. Single-engine collection is supported, but cross-engine agreement requires one `damendaemon` and one `vllm` report; same-engine or missing/unknown identities cannot qualify.
 
 The warm HTTP comparator caps each SSE response at 64 MiB of cumulative wire bytes, including comments, ignored fields and event delimiters. It rejects overflow before publishing a comparison and closes the response. This bounds accepted stream data and retained output, not elapsed time; the socket timeout remains an inactivity timeout. HTTP rejections are closed without reading diagnostic bodies and report only the status code.

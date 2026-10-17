@@ -1,7 +1,7 @@
 """Audit pinned-layout GLM metadata without reading checkpoint tensor values."""
 import argparse
 import json
-from dllm.glm_checkpoint import audit_snapshot
+from damendaemon.glm_checkpoint import audit_snapshot
 
 
 def main():

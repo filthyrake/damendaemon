@@ -8,9 +8,9 @@ from unittest.mock import patch
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError
 
-from dllm.distributed_serving import DistributedRuntime
-from dllm.runtime import BusyError
-from dllm.http_auth import AuthPolicy
+from damendaemon.distributed_serving import DistributedRuntime
+from damendaemon.runtime import BusyError
+from damendaemon.http_auth import AuthPolicy
 from tests.test_distributed_serving import Pair,RuntimeHelpers
 from tests import test_host_serving as fixtures
 
@@ -27,7 +27,7 @@ class DistributedDrainTests(RuntimeHelpers,unittest.TestCase):
             pair=Pair();runtime=DistributedRuntime(pair);entered=threading.Event();resume=threading.Event()
             def encode(*args,**kwargs):
                 entered.set();self.assertTrue(resume.wait(3));return [1]
-            with patch('dllm.distributed_serving.encode',side_effect=encode),ThreadPoolExecutor(1) as pool:
+            with patch('damendaemon.distributed_serving.encode',side_effect=encode),ThreadPoolExecutor(1) as pool:
                 future=pool.submit(lambda:list(runtime.generate('model',None,1,raw_prompt=[1])))
                 self.assertTrue(entered.wait(3))
                 getattr(runtime,action)();resume.set()

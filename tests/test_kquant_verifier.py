@@ -38,7 +38,7 @@ def response(request,**kwargs):
         if case=='work-count' and 'prompt' in body:usage['completion_tokens']=1
         if case=='trial-text' and 'prompt' in body and body['model']=='expanded':text='changed'
         payload={'choices':[{'text':text,'message':{'content':text}}],'usage':usage,
-                 'dllm_timing':{'source_tier':'wrong' if case=='reload-tier' and tier[0]=='host' else tier[0]}}
+                 'damendaemon_timing':{'source_tier':'wrong' if case=='reload-tier' and tier[0]=='host' else tier[0]}}
     if body.get('stream'):
         text='changed' if case=='stream-text' else 'answer'
         wire='data: '+json.dumps({'choices':[{'delta':{'content':text}}]})+'\n\n'

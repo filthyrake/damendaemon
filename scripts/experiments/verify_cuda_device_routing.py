@@ -16,8 +16,8 @@ def main():
     args = parser.parse_args(); require_guard()
     if args.output.exists(): raise ValueError('new output path required')
     import torch
-    from dllm.cuda_expert_routing import select_experts_device
-    from dllm.expert_selection import select_experts
+    from damendaemon.cuda_expert_routing import select_experts_device
+    from damendaemon.expert_selection import select_experts
     from tests.test_packed_moe import expert, dense_expert
     if torch.version.hip or torch.cuda.device_count() != 1: raise ValueError('one NVIDIA GPU required')
     torch.set_num_threads(1); torch.backends.cuda.matmul.allow_tf32 = False
@@ -67,8 +67,8 @@ def main():
             raise AssertionError('device tie contract violated')
         report['tied_row_ids'] = [0, 1]
         # Prepared packed experts consume the device routes directly.
-        from dllm.cuda_packed_expert import CudaPackedExpert, CudaPackedMatrix
-        from dllm.cuda_packed_moe import cuda_packed_moe
+        from damendaemon.cuda_packed_expert import CudaPackedExpert, CudaPackedMatrix
+        from damendaemon.cuda_packed_moe import cuda_packed_moe
         controls = [expert('e2m1'), expert('e4m3fn'), expert('e2m1'), expert('e4m3fn'),
                     expert('e2m1'), expert('e4m3fn'), expert('e2m1'), expert('e4m3fn')]
         bank = []
@@ -108,8 +108,8 @@ def main():
         batched_cases += 1
         report['batched_cases'] = batched_cases
         # Prepared FFN dispatch switch-over: device_routing vs host routing.
-        from dllm.cuda_glm_ffn import CudaPackedGlmFeedForward
-        from dllm.cuda_deepseek_ffn import CudaPackedDeepSeekFeedForward
+        from damendaemon.cuda_glm_ffn import CudaPackedGlmFeedForward
+        from damendaemon.cuda_deepseek_ffn import CudaPackedDeepSeekFeedForward
         ffn_cases = 0
         glm_bank = []
         for index in range(4):

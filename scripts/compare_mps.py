@@ -1,5 +1,5 @@
 """Sequential Apple GPU HTTP comparison with a separately built llama.cpp server."""
-from dllm.evidence_environment import report_environment
+from damendaemon.evidence_environment import report_environment
 import argparse
 import json
 import os
@@ -10,7 +10,7 @@ import subprocess
 import sys
 import time
 from urllib.request import urlopen
-from dllm.bench import llama_context
+from damendaemon.bench import llama_context
 
 
 def main():
@@ -22,7 +22,7 @@ def main():
     p.add_argument('--context', type=int, default=512)
     p.add_argument('--weight-dtype', choices=('float32', 'float16'), default='float32',
                    help='device weight storage; the supplied GGUF must use the matching type')
-    p.add_argument('--engines', nargs='+', choices=('dllm', 'llama.cpp'), default=['dllm', 'llama.cpp'])
+    p.add_argument('--engines', nargs='+', choices=('damendaemon', 'llama.cpp'), default=['damendaemon', 'llama.cpp'])
     p.add_argument('--concurrencies', nargs='+', type=int, choices=range(1,9), default=[1,2,4])
     p.add_argument('--raw', action='store_true')
     p.add_argument('--llama-override-kv', action='append', default=[], help='explicit GGUF metadata override KEY=TYPE:VALUE')
@@ -31,13 +31,13 @@ def main():
     args = p.parse_args()
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
-    env = dict(os.environ, DLLM_DEVICE='mps', OMP_NUM_THREADS='4', DLLM_METAL_WEIGHT_DTYPE=args.weight_dtype)
+    env = dict(os.environ, DAMENDAEMON_DEVICE='mps', OMP_NUM_THREADS='4', DAMENDAEMON_METAL_WEIGHT_DTYPE=args.weight_dtype)
     for engine in args.engines:
         with socket.socket() as s:
             s.bind(('127.0.0.1', 0))
             port = s.getsockname()[1]
-        if engine == 'dllm':
-            command = [sys.executable, '-m', 'dllm', 'serve', '--device', 'mps', '--context', str(args.context),
+        if engine == 'damendaemon':
+            command = [sys.executable, '-m', 'damendaemon', 'serve', '--device', 'mps', '--context', str(args.context),
                        '--port', str(port), '--batch-size', '4', '--model', 'a='+args.model]
         else:
             command = [args.llama_server, '-m', args.gguf, '--alias', 'a', '--host', '127.0.0.1',
@@ -47,10 +47,10 @@ def main():
                        *[part for value in args.llama_override_kv for part in ('--override-kv',value)]]
         (output / f'compare-mps-{engine}-command.json').write_text(json.dumps({
             'command': command, 'device': 'Apple M4 GPU',
-            'weights':env.get('DLLM_QUANTIZATION','none') if env.get('DLLM_QUANTIZATION','none')!='none' else args.weight_dtype,
+            'weights':env.get('DAMENDAEMON_QUANTIZATION','none') if env.get('DAMENDAEMON_QUANTIZATION','none')!='none' else args.weight_dtype,
             'unquantized_weight_dtype':args.weight_dtype,'kv': 'float32',
             'runtime_environment':report_environment(env),
-            'context_per_slot': args.context, 'cpu_threads': 4, 'dllm_backend': env.get('DLLM_KERNELS', 'auto')}, indent=2))
+            'context_per_slot': args.context, 'cpu_threads': 4, 'damendaemon_backend': env.get('DAMENDAEMON_KERNELS', 'auto')}, indent=2))
         with (output / f'compare-mps-{engine}.log').open('w') as log:
             process = subprocess.Popen(command, env=env, stdout=log, stderr=log, start_new_session=True)
             try:

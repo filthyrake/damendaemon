@@ -2,7 +2,7 @@
 import hashlib
 from pathlib import Path
 import torch
-from dllm import quantization
+from damendaemon import quantization
 from .awq_marlin import Library
 
 

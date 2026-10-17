@@ -18,13 +18,13 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
 import torch
-from dllm.bench import events
+from damendaemon.bench import events
 from scripts.validation_stream import consume_nonterminal_prefix
-from dllm.device import empty_cache, device_name
-from dllm.gguf_model import GgufWeights
-from dllm.qwen2 import ModelWeights
-from dllm.runtime import make_executor
-from dllm.prompts import decode_output
+from damendaemon.device import empty_cache, device_name
+from damendaemon.gguf_model import GgufWeights
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.runtime import make_executor
+from damendaemon.prompts import decode_output
 
 
 def require_gate(condition, message):
@@ -111,12 +111,12 @@ def main():
     with tempfile.TemporaryDirectory() as folder:
         path = Path(folder)/'server.log'
         with path.open('w') as log:
-            process = subprocess.Popen([sys.executable, '-m', 'dllm', 'serve', '--port', '0',
+            process = subprocess.Popen([sys.executable, '-m', 'damendaemon', 'serve', '--port', '0',
                 '--context', str(args.context), '--gpu-models', '1', '--host-models', '2', '--batch-size', '2'], stdout=log, stderr=log)
             try:
                 deadline = time.monotonic() + 120
                 while time.monotonic() < deadline and process.poll() is None:
-                    ready = [line for line in path.read_text().splitlines() if line.startswith('dllm listening on ')]
+                    ready = [line for line in path.read_text().splitlines() if line.startswith('damendaemon listening on ')]
                     if ready: base = ready[-1].split()[-1]; break
                     time.sleep(.1)
                 else: raise RuntimeError(path.read_text())
@@ -151,7 +151,7 @@ def main():
                 require_gate(matched['usage'] == baseline['usage'], 'matched-input usage differs')
                 restored = request('/v1/chat/completions', chat())
                 require_gate(restored['choices'][0]['message']['content'] == expected, 'host restore changed output')
-                require_gate(restored['dllm_timing']['source_tier'] == 'host', 'restore did not use host cache')
+                require_gate(restored['damendaemon_timing']['source_tier'] == 'host', 'restore did not use host cache')
                 with post('/v1/chat/completions', chat(stream=True)) as response:
                     chunks = list(events(response, require_terminated=True))
                 require_gate(bool(chunks) and chunks[-1] == '[DONE]', 'stream omitted DONE')
@@ -202,7 +202,7 @@ def main():
                 require_gate(all(m['residency'] == 'disk' for m in status['models']), 'unload retained resident models')
                 reloaded = request('/v1/chat/completions', chat())
                 require_gate(reloaded['choices'][0]['message']['content'] == expected, 'disk reload changed output')
-                require_gate(reloaded['dllm_timing']['source_tier'] == 'disk', 'reload did not use disk')
+                require_gate(reloaded['damendaemon_timing']['source_tier'] == 'disk', 'reload did not use disk')
                 report['http'] = dict(registration=True, exact_chat=hf_chat == expected and chat_inputs['gguf'] == chat_inputs['hf'],
                     hf_chat_sample=hf_chat, exact_decoded_traces=True, stream=True, concurrency=True,
                     cancellation_recovery=True, host_restore=True, unload=True, disk_reload=True,

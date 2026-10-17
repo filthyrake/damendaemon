@@ -27,7 +27,7 @@ The explicit FP32 candidate subsequently completed under the replacement suite
 PID2973750 in36.257 seconds, peak reserved1115684864 bytes. Its maximum RMS is
 0.5791% versus CPU FP16 and0.1746% versus CPU FP32; both comparisons pass. The
 backend's generic label remains `triton+mixed`; the report's precision field
-records the explicitly selected `DLLM_LLAMA_PRECISION=float32` policy. No native
+records the explicitly selected `DAMENDAEMON_LLAMA_PRECISION=float32` policy. No native
 residual library is injected by this isolated diagnostic. Full candidate reports
 and successful guards are retained. Final free GPU memory returned to4255MiB
 and the incumbent remained healthy.

@@ -5,7 +5,7 @@ import unittest
 import torch
 from safetensors.torch import load_file,save_file
 from tokenizers import Tokenizer,models
-from dllm.floating_parameter import require_floating
+from damendaemon.floating_parameter import require_floating
 
 
 class FloatingParameterTests(unittest.TestCase):
@@ -20,10 +20,10 @@ class FloatingParameterTests(unittest.TestCase):
     def test_real_encoder_and_recurrent_snapshots_reject_integer_parameters(self):
         from transformers import (T5Config,T5ForConditionalGeneration,MambaConfig,MambaForCausalLM,
             Mamba2Config,Mamba2ForCausalLM,BertConfig,BertForSequenceClassification)
-        from dllm.t5 import T5Weights
-        from dllm.mamba import MambaWeights
-        from dllm.mamba2 import Mamba2Weights
-        from dllm.encoder import EncoderWeights
+        from damendaemon.t5 import T5Weights
+        from damendaemon.mamba import MambaWeights
+        from damendaemon.mamba2 import Mamba2Weights
+        from damendaemon.encoder import EncoderWeights
         cases=(
             (T5ForConditionalGeneration,T5Config(d_model=8,d_ff=16,d_kv=4,num_heads=2,num_layers=1,
                 vocab_size=16,decoder_start_token_id=0,pad_token_id=0,eos_token_id=1),T5Weights),
@@ -46,10 +46,10 @@ class FloatingParameterTests(unittest.TestCase):
     def test_legacy_decoder_importers_reject_integer_parameters(self):
         from transformers import (GPT2Config,GPT2LMHeadModel,BloomConfig,BloomForCausalLM,
             GPTNeoXConfig,GPTNeoXForCausalLM)
-        from dllm.config import decoder_config
-        from dllm.gpt2 import load_weights as gpt2_weights
-        from dllm.bloom import load_weights as bloom_weights
-        from dllm.neox import load_weights as neox_weights
+        from damendaemon.config import decoder_config
+        from damendaemon.gpt2 import load_weights as gpt2_weights
+        from damendaemon.bloom import load_weights as bloom_weights
+        from damendaemon.neox import load_weights as neox_weights
         cases=((GPT2LMHeadModel,GPT2Config(n_embd=8,n_head=2,n_layer=1,n_positions=32,vocab_size=16),gpt2_weights),
                (BloomForCausalLM,BloomConfig(hidden_size=8,n_head=2,n_layer=1,vocab_size=16),bloom_weights),
                (GPTNeoXForCausalLM,GPTNeoXConfig(hidden_size=8,intermediate_size=16,num_hidden_layers=1,

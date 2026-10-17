@@ -1,26 +1,26 @@
 // Isolated Q4_0 implicit-zero-point experiment using attributed Marlin kernels.
-// Derived from dllm native/awq_marlin.cu; see third_party/marlin attribution.
+// Derived from damendaemon native/awq_marlin.cu; see third_party/marlin attribution.
 // Group size 32, zero point 8, unchanged signed FP16 source scales.
 // Separate symbols/ABI prevent accidental loading by the production AWQ path.
 #include <algorithm>
 #include <type_traits>
 #include <limits>
 #include <cuda_runtime.h>
-#define MARLIN_NAMESPACE_NAME dllm_q4_marlin_device
+#define MARLIN_NAMESPACE_NAME damendaemon_q4_marlin_device
 #include "marlin_template.h"
 #include "awq_repack.cuh"
 
 namespace {
 template<int Blocks, bool Small = false>
-constexpr auto kernel = dllm_q4_marlin_device::Marlin<
+constexpr auto kernel = damendaemon_q4_marlin_device::Marlin<
     vllm::kFloat16.id(), vllm::kU4B8.id(), vllm::kFloat16.id(), vllm::kFloat16.id(),
     128, Blocks, 8, 4, Small, 4, 2, false>;
 
 }
 
-extern "C" int dllm_q4_marlin_abi() { return 2; }
+extern "C" int damendaemon_q4_marlin_abi() { return 2; }
 
-extern "C" int dllm_q4_marlin_init(int* sms, int* shared) {
+extern "C" int damendaemon_q4_marlin_init(int* sms, int* shared) {
     if (!sms || !shared) return cudaErrorInvalidValue;
     int device, major;
     cudaError_t status = cudaGetDevice(&device);
@@ -42,20 +42,20 @@ extern "C" int dllm_q4_marlin_init(int* sms, int* shared) {
     if (status != cudaSuccess) return status;
     status = cudaFuncSetAttribute(kernel<4>, cudaFuncAttributeMaxDynamicSharedMemorySize, *shared);
     if (status != cudaSuccess) return status;
-    return cudaFuncSetAttribute(dllm_q4_marlin_device::awq_marlin_repack_kernel<256, 4, false>,
+    return cudaFuncSetAttribute(damendaemon_q4_marlin_device::awq_marlin_repack_kernel<256, 4, false>,
                                cudaFuncAttributeMaxDynamicSharedMemorySize, *shared);
 }
 
-extern "C" int dllm_q4_marlin_repack(const void* weights, void* packed, int k, int n,
+extern "C" int damendaemon_q4_marlin_repack(const void* weights, void* packed, int k, int n,
                                       int sms, int shared, void* stream) {
     if (!weights || !packed || k <= 0 || n <= 0 || k%128 || n%128 || sms <= 0 || shared <= 0)
         return cudaErrorInvalidValue;
-    dllm_q4_marlin_device::awq_marlin_repack_kernel<256, 4, false><<<sms, 256, shared, static_cast<cudaStream_t>(stream)>>>(
+    damendaemon_q4_marlin_device::awq_marlin_repack_kernel<256, 4, false><<<sms, 256, shared, static_cast<cudaStream_t>(stream)>>>(
         static_cast<const uint32_t*>(weights), static_cast<uint32_t*>(packed), k, n);
     return cudaGetLastError();
 }
 
-extern "C" int dllm_q4_marlin_gemm(const void* input, const void* weights,
+extern "C" int damendaemon_q4_marlin_gemm(const void* input, const void* weights,
                                     const void* scales, const void* zeros, const void* bias,
                                     void* output, void* scratch, void* locks,
                                     int m, int n, int k, int sms, int shared, void* stream) {

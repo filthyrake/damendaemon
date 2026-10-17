@@ -4,7 +4,7 @@ from pathlib import Path
 
 import torch
 import triton
-from dllm import quantized_kernels_q4 as q4
+from damendaemon import quantized_kernels_q4 as q4
 
 
 def install_validation_dispatch():

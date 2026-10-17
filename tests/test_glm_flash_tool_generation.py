@@ -6,11 +6,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from dllm.glm_flash_tools import FlashTools
-from dllm.glm_flash_tool_output import FlashToolOutput,FlashToolTokenStream
-from dllm.glm_flash_tool_text import FlashToolText
-from dllm.glm_flash_tool_generation import FlashToolReferenceGenerator
-from dllm.glm_text import EOS,OBSERVATION,USER,END_THINK,MAX_TEXT_BYTES
+from damendaemon.glm_flash_tools import FlashTools
+from damendaemon.glm_flash_tool_output import FlashToolOutput,FlashToolTokenStream
+from damendaemon.glm_flash_tool_text import FlashToolText
+from damendaemon.glm_flash_tool_generation import FlashToolReferenceGenerator
+from damendaemon.glm_text import EOS,OBSERVATION,USER,END_THINK,MAX_TEXT_BYTES
 from scripts import run_glm_flash_reference as cli
 from tests.test_glm_flash_generation import text_fixture,ScriptedFlash,snapshot
 

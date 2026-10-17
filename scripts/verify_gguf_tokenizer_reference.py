@@ -5,8 +5,8 @@ import json
 from pathlib import Path
 
 from tokenizers import Tokenizer
-from dllm.gguf_sentencepiece import restore_tokenizer
-from dllm.gguf_model import tokenizer
+from damendaemon.gguf_sentencepiece import restore_tokenizer
+from damendaemon.gguf_model import tokenizer
 from gguf import GGUFReader
 
 
@@ -38,7 +38,7 @@ def main():
                   hf_tokenizer_sha256=digest(args.hf_tokenizer) if hf else None, cases=[], passed=False)
     if hasattr(runtime, 'native_model'):
         import sentencepiece
-        from dllm import gguf_sentencepiece
+        from damendaemon import gguf_sentencepiece
         report['native_sentencepiece'] = dict(version=sentencepiece.__version__,
             model_sha256=hashlib.sha256(runtime.native_model).hexdigest(),
             adapter_sha256=digest(gguf_sentencepiece.__file__))

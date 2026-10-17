@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_cached_attention import CachedGlmAttention
+from damendaemon.glm_cached_attention import CachedGlmAttention
 from tests import test_glm_attention,test_glm_indexer
 
 
@@ -69,13 +69,13 @@ class CachedGlmAttentionTests(unittest.TestCase):
 
     def test_owner_budget_and_partial_mutation_failure(self):
         model,hidden=fixture();other,_=fixture()
-        with patch('dllm.glm_cached_attention.torch.empty',side_effect=AssertionError('cache allocated')):
+        with patch('damendaemon.glm_cached_attention.torch.empty',side_effect=AssertionError('cache allocated')):
             with self.assertRaises(ValueError):model.new_state(2,7,max_cache_bytes=1)
         state=model.new_state(2,7);self.addCleanup(state.close)
         with self.assertRaises(ValueError):other.forward(hidden[:,:1],state,position=0)
         with self.assertRaises(ValueError):model.forward(hidden[:,:1],state,position=1)
         self.assertFalse(state.poisoned)
-        with patch('dllm.glm_cached_attention.sparse_latent_attention',side_effect=RuntimeError('after cache write')):
+        with patch('damendaemon.glm_cached_attention.sparse_latent_attention',side_effect=RuntimeError('after cache write')):
             with self.assertRaises(RuntimeError):model.forward(hidden[:,:1],state,position=0)
         self.assertTrue(state.poisoned);self.assertEqual(state.position,0)
         with self.assertRaises(RuntimeError):model.forward(hidden[:,:1],state,position=0)
@@ -87,7 +87,7 @@ class CachedGlmAttentionTests(unittest.TestCase):
         allocate=model.new_state
         def capture(*args,**kwargs):
             state=allocate(*args,**kwargs);created.append(state);return state
-        with patch.object(model,'new_state',side_effect=capture),patch('dllm.glm_cached_attention.sparse_latent_attention',side_effect=RuntimeError('failure')):
+        with patch.object(model,'new_state',side_effect=capture),patch('damendaemon.glm_cached_attention.sparse_latent_attention',side_effect=RuntimeError('failure')):
             with self.assertRaises(RuntimeError):model.prefill(hidden[:,:1],capacity=7)
         self.assertTrue(created[0].closed);self.assertIsNone(created[0].latents)
         state=model.new_state(1,7);self.addCleanup(state.close)

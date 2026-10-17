@@ -1,13 +1,13 @@
 # Bounded CPU Qwen3.5 checkpoint loading
 
-`dllm.cpu_hybrid_checkpoint.load_cpu_checkpoint` connects local floating
+`damendaemon.cpu_hybrid_checkpoint.load_cpu_checkpoint` connects local floating
 safetensors snapshots to `build_cpu_pipeline`. It neither selects an accelerator
 nor registers a serving model. This is a CPU reference path; fixture parity does
 not qualify trained-model quality, practical context, latency or throughput.
 
 ```python
-from dllm.cpu_hybrid_checkpoint import load_cpu_checkpoint
-from dllm.cpu_pipeline_build import build_cpu_pipeline
+from damendaemon.cpu_hybrid_checkpoint import load_cpu_checkpoint
+from damendaemon.cpu_pipeline_build import build_cpu_pipeline
 
 model = load_cpu_checkpoint(snapshot, quantization='q4_0', max_context=512,
                            max_weight_bytes=256 * 1024**2,

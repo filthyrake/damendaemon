@@ -3,9 +3,9 @@ import argparse
 import json
 import time
 import torch
-from dllm.models import load
-from dllm.runtime import require_gpu,make_executor
-from dllm.device import synchronize
+from damendaemon.models import load
+from damendaemon.runtime import require_gpu,make_executor
+from damendaemon.device import synchronize
 
 
 @torch.inference_mode()
@@ -24,7 +24,7 @@ def main():
             if step<7:logits,_=executor.decode(token)
         elapsed=time.perf_counter()-start
         trials.append({'warmup':trial==0,'first_token_seconds':first,'total_seconds':elapsed,'tokens':output})
-    print(json.dumps({'engine':'dllm executor','context':512,'trials':trials},indent=2))
+    print(json.dumps({'engine':'damendaemon executor','context':512,'trials':trials},indent=2))
 
 
 if __name__=='__main__':main()

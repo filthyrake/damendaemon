@@ -4,15 +4,15 @@ import json
 import os
 import torch
 from torch.nn import functional as F
-from dllm.runtime import require_gpu
+from damendaemon.runtime import require_gpu
 
 
 @torch.inference_mode()
 def main():
     p=argparse.ArgumentParser();p.add_argument('--device',choices=('cuda','mps'),default='cuda');args=p.parse_args()
-    device=args.device;os.environ['DLLM_DEVICE']=device;require_gpu();torch.manual_seed(307)
-    if device=='cuda':from dllm import mamba_kernels as native
-    else:from dllm import mamba_metal as native
+    device=args.device;os.environ['DAMENDAEMON_DEVICE']=device;require_gpu();torch.manual_seed(307)
+    if device=='cuda':from damendaemon import mamba_kernels as native
+    else:from damendaemon import mamba_metal as native
     checks=[]
     for inner,state_size,width,length in ((31,1,1,1),(128,16,4,3),(65,32,4,17),(32,16,8,31)):
         slots=torch.tensor([3,0,2]);batch=3;rank=5

@@ -3,7 +3,7 @@ import threading
 import unittest
 from unittest.mock import Mock, patch
 
-from dllm import cuda_warmup
+from damendaemon import cuda_warmup
 
 
 class WarmupStreamTests(unittest.TestCase):

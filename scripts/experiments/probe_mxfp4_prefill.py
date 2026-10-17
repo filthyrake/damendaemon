@@ -8,9 +8,9 @@ import os
 from pathlib import Path
 import statistics
 import torch
-from dllm.qwen2 import ModelWeights
-from dllm.mxfp4 import unpack,scale_capabilities
-from dllm.precise_matmul import linear as dense
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.mxfp4 import unpack,scale_capabilities
+from damendaemon.precise_matmul import linear as dense
 from scripts.experiments.mxfp4_prefill import linear as packed
 
 

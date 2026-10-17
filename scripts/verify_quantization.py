@@ -6,7 +6,7 @@ import argparse
 import json
 import sys
 import torch
-from dllm.quantization import quantize, dequantize, quantize_q4, dequantize_q4
+from damendaemon.quantization import quantize, dequantize, quantize_q4, dequantize_q4
 
 
 def main():
@@ -35,11 +35,11 @@ def main():
             assert np.array_equal(packed,expected)
             checks.append({'kind':'format', 'shape':list(weight.shape), 'bit_exact':True})
     if args.cuda:
-        from dllm.runtime import require_gpu
+        from damendaemon.runtime import require_gpu
         if args.format=='q8_0':
-            from dllm.quantized_kernels import linear
+            from damendaemon.quantized_kernels import linear
         else:
-            from dllm.quantized_kernels_q4 import linear
+            from damendaemon.quantized_kernels_q4 import linear
         require_gpu()
         for rows,width,outputs in ((1,896,151936),(2,3072,32064),(4,8192,3072),(3,96,113),(7,96,113),
                                    (17,96,113),(23,4096,3072),(33,896,1024),(64,4096,3072),

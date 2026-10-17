@@ -1,15 +1,15 @@
 from types import SimpleNamespace
 import unittest
-from dllm.prompts import validate_raw, encode
-from dllm.qwen2 import ModelWeights
+from damendaemon.prompts import validate_raw, encode
+from damendaemon.qwen2 import ModelWeights
 
 
 class PromptTests(unittest.TestCase):
     def test_invalid_unicode_rejected_before_raw_runtime_activation(self):
         from unittest.mock import Mock
-        from dllm.runtime import Runtime
-        from dllm.stopping import stop_sequences
-        from dllm.tool_calls import validate_messages
+        from damendaemon.runtime import Runtime
+        from damendaemon.stopping import stop_sequences
+        from damendaemon.tool_calls import validate_messages
         runtime = Runtime.__new__(Runtime)
         runtime.context = 1024
         runtime.session = Mock(side_effect=AssertionError('must not activate model'))
@@ -59,7 +59,7 @@ class PromptTests(unittest.TestCase):
     def test_chat_tokens_are_nonempty_and_inside_model_vocabulary(self):
         from tokenizers import Tokenizer
         from tokenizers.models import WordLevel
-        from dllm.chat_template import compile_template
+        from damendaemon.chat_template import compile_template
         tokenizer = Tokenizer(WordLevel({'[UNK]': 0, 'ok': 1, 'extra': 2}, unk_token='[UNK]'))
         model = SimpleNamespace(config={'model_type': 'qwen2', 'vocab_size': 2},
             tokenizer=tokenizer, template=compile_template('{{ messages[0].content }}'),

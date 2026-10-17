@@ -12,14 +12,14 @@ from concurrent.futures import ThreadPoolExecutor
 from urllib.error import HTTPError
 from urllib.request import Request,urlopen
 import torch
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer,handler_for
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer,handler_for
 
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--encoder',required=True);p.add_argument('--decoder',required=True)
     p.add_argument('--device',choices=('cuda','mps'),required=True);args=p.parse_args()
-    os.environ['DLLM_DEVICE']=args.device;torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_DEVICE']=args.device;torch.set_num_threads(4)
     runtime=BatchedRuntime({'rank':args.model,'embed':args.encoder,'chat':args.decoder},context=512,
         batch_size=4,gpu_models=1,host_models=3,host_gib=8)
     server=BoundedHTTPServer(('127.0.0.1',0),handler_for(runtime));thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
@@ -43,7 +43,7 @@ def main():
         assert len(embedded['data'][0]['embedding'])==384
         generated=post('/v1/completions',{'model':'chat','prompt':[40,298,1111,13]*4,'max_tokens':4,'temperature':0})
         restored=rank(return_documents=True);assert restored['results']==first['results']
-        assert restored['dllm_timing']['source_tier']=='host'
+        assert restored['damendaemon_timing']['source_tier']=='host'
         for path,body in [('/v1/rerank',{'model':'embed','query':query,'documents':docs}),
                 ('/v1/embeddings',{'model':'rank','input':'text'}),
                 ('/v1/completions',{'model':'rank','prompt':'text','max_tokens':4}),

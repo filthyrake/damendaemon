@@ -8,9 +8,9 @@ import torch
 import triton.testing
 from gguf.quants import quantize, dequantize
 from gguf.constants import GGMLQuantizationType
-from dllm.runtime import require_gpu
+from damendaemon.runtime import require_gpu
 from experiments.moe_q4_grouped import linear
-from dllm.grouped_moe import prepare_routes
+from damendaemon.grouped_moe import prepare_routes
 
 
 @torch.inference_mode()

@@ -1,14 +1,14 @@
 import unittest
 from unittest.mock import patch
-from dllm.cuda_floating_attention import attention_prefill,attention_decode
-from dllm.floating_attention import attention_prefill as cpu_prefill
+from damendaemon.cuda_floating_attention import attention_prefill,attention_decode
+from damendaemon.floating_attention import attention_prefill as cpu_prefill
 from tests.test_floating_attention import fixture
 
 
 class CudaAttentionAdmissionTests(unittest.TestCase):
     def test_cpu_input_rejected_before_core(self):
         args=fixture()
-        with patch('dllm.cuda_floating_attention.core._attention_prefill',side_effect=AssertionError('entered core')):
+        with patch('damendaemon.cuda_floating_attention.core._attention_prefill',side_effect=AssertionError('entered core')):
             with self.assertRaisesRegex(ValueError,'CUDA'):attention_prefill(*args,groups=2,window=4)
 
     def test_cpu_state_cannot_enter_cuda_decode(self):

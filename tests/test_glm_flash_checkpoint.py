@@ -6,7 +6,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-from dllm.glm_flash_checkpoint import ROOT,tensor_specs,audit_names,audit_headers,audit_snapshot
+from damendaemon.glm_flash_checkpoint import ROOT,tensor_specs,audit_names,audit_headers,audit_snapshot
 
 
 def fixture():
@@ -89,7 +89,7 @@ class FlashCheckpointTests(unittest.TestCase):
 
     def test_snapshot_names_and_headers_never_read_values(self):
         from tests.test_packed_checkpoint import write_raw
-        from dllm.safetensor_header import ITEM_BYTES
+        from damendaemon.safetensor_header import ITEM_BYTES
         c=config();inventory=headers(c)
         inventory[ROOT+'layers.3.unqualified']=dict(shape=[1],dtype='BF16')
         inventory['model.visual.unqualified']=dict(shape=[1],dtype='BF16')
@@ -101,11 +101,11 @@ class FlashCheckpointTests(unittest.TestCase):
             path=Path(directory);(path/'config.json').write_text(json.dumps(c))
             index={'weight_map':{n:'model.safetensors' for n in inventory}}
             (path/'model.safetensors.index.json').write_text(json.dumps(index))
-            with patch('dllm.checkpoint.inspect_snapshot',side_effect=AssertionError('opened shards')):
+            with patch('damendaemon.checkpoint.inspect_snapshot',side_effect=AssertionError('opened shards')):
                 result=audit_snapshot(path,names_only=True)
             self.assertEqual(result['excluded_vision_count'],1);self.assertFalse(result['vision_validated'])
             write_raw(path/'model.safetensors',inventory,bytes(offset))
-            with patch('dllm.packed_checkpoint._payload',side_effect=AssertionError('read values')):
+            with patch('damendaemon.packed_checkpoint._payload',side_effect=AssertionError('read values')):
                 result=audit_snapshot(path)
             self.assertEqual(result['excluded_mtp_count'],1);self.assertFalse(result['mtp_validated'])
             self.assertFalse(result['weight_values_read']);self.assertFalse(result['model_execution_qualified'])

@@ -48,7 +48,7 @@ class ContextDeadlineTests(unittest.TestCase):
             process = Mock(pid=123, returncode=None)
             process.poll.side_effect = lambda: process.returncode
             def spawn(command, **kwargs):
-                kwargs['stdout'].write('dllm listening on http://127.0.0.1:1\n')
+                kwargs['stdout'].write('damendaemon listening on http://127.0.0.1:1\n')
                 kwargs['stdout'].flush()
                 return process
             def stop(child, signum):

@@ -1,5 +1,5 @@
 // Validation-only adapter to the pinned llama.cpp public vocabulary API.
-// Link against an unchanged reference build; this is never used by dllm runtime.
+// Link against an unchanged reference build; this is never used by damendaemon runtime.
 #include "llama.h"
 #include "nlohmann/json.hpp"
 #include <iostream>

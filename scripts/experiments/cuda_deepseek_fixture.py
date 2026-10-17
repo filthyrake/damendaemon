@@ -1,9 +1,9 @@
 """Tiny deterministic prepared CUDA/decoded CPU blocks for guarded checks."""
 import torch
-from dllm.floating_block import FloatingBlock
-from dllm.cuda_deepseek_block import CudaDeepSeekBlock
-from dllm.cuda_prepared_projection import CudaPackedProjection
-from dllm.cuda_packed_expert import CudaPackedExpert,CudaPackedMatrix
+from damendaemon.floating_block import FloatingBlock
+from damendaemon.cuda_deepseek_block import CudaDeepSeekBlock
+from damendaemon.cuda_prepared_projection import CudaPackedProjection
+from damendaemon.cuda_packed_expert import CudaPackedExpert,CudaPackedMatrix
 from tests.test_floating_block import fixture
 from tests.test_packed_attention import NAMES
 

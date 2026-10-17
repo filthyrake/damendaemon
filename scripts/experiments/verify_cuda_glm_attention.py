@@ -10,10 +10,10 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
-    from dllm.cuda_glm_attention import project_mla,sparse_latent_attention
-    from dllm.glm_attention import project_mla as cpu_project
-    from dllm.cuda_prepared_projection import CudaPackedProjection
-    from dllm.prepared_projection import PackedProjection
+    from damendaemon.cuda_glm_attention import project_mla,sparse_latent_attention
+    from damendaemon.glm_attention import project_mla as cpu_project
+    from damendaemon.cuda_prepared_projection import CudaPackedProjection
+    from damendaemon.prepared_projection import PackedProjection
     from tests.test_glm_packed_attention import models
     from tests.test_packed_projection import fixture
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')

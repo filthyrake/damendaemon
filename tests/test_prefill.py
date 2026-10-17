@@ -1,8 +1,8 @@
 import unittest
 from types import SimpleNamespace
 import torch
-from dllm.prefill import groups
-from dllm.qwen2 import Executor
+from damendaemon.prefill import groups
+from damendaemon.qwen2 import Executor
 
 
 class PrefillTests(unittest.TestCase):

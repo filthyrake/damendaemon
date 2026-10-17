@@ -8,16 +8,16 @@ import json
 import os
 import time
 import torch
-from dllm.compensated_q8 import linear_q4
-from dllm.quantized_kernels_q4 import linear as expanded
-from dllm.quantization import dequantize_q4
-from dllm.rocm_policy import memory_limit
-from dllm.runtime import require_gpu
+from damendaemon.compensated_q8 import linear_q4
+from damendaemon.quantized_kernels_q4 import linear as expanded
+from damendaemon.quantization import dequantize_q4
+from damendaemon.rocm_policy import memory_limit
+from damendaemon.runtime import require_gpu
 
 
 @torch.inference_mode()
 def main():
-    if os.environ.get('DLLM_DEVICE')!='rocm' or memory_limit()!=2*1024**3:
+    if os.environ.get('DAMENDAEMON_DEVICE')!='rocm' or memory_limit()!=2*1024**3:
         raise ValueError('requires ROCm and a 2GiB allocator cap')
     require_gpu();torch.set_num_threads(4);torch.manual_seed(68)
     for name,outputs,width in (('gate_up',34816,5120),('down',5120,17408),('qkv',14336,5120)):

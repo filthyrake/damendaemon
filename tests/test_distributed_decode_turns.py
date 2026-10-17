@@ -5,8 +5,8 @@ import time
 import unittest
 from unittest.mock import Mock,patch
 
-from dllm.distributed_serving import DistributedRuntime,Request
-from dllm.request_scope import CacheScope
+from damendaemon.distributed_serving import DistributedRuntime,Request
+from damendaemon.request_scope import CacheScope
 from tests.test_distributed_serving import BatchedPair
 
 
@@ -37,12 +37,12 @@ class DistributedDecodeTurnsTests(unittest.TestCase):
         with self.assertRaises(ValueError):DistributedRuntime(BatchedPair(),client_decode_turns=1)
 
     def test_gpu_command_forwards_opt_in_without_constructing_hardware(self):
-        from dllm.distributed_server_cli import main
+        from damendaemon.distributed_server_cli import main
         for enabled in (False,True):
             pair=Mock(rank=0)
-            with patch.dict('os.environ',{},clear=False),patch('dllm.distributed.StagePair',return_value=pair), \
-                    patch('dllm.distributed_serving.DistributedRuntime') as runtime, \
-                    patch('dllm.server.BoundedHTTPServer'),patch('dllm.distributed_server_cli.threading.Thread'), \
-                    patch('dllm.distributed_server_cli.signal.signal'),contextlib.redirect_stdout(io.StringIO()):
+            with patch.dict('os.environ',{},clear=False),patch('damendaemon.distributed.StagePair',return_value=pair), \
+                    patch('damendaemon.distributed_serving.DistributedRuntime') as runtime, \
+                    patch('damendaemon.server.BoundedHTTPServer'),patch('damendaemon.distributed_server_cli.threading.Thread'), \
+                    patch('damendaemon.distributed_server_cli.signal.signal'),contextlib.redirect_stdout(io.StringIO()):
                 main(['/local',*(['--client-decode-turns'] if enabled else [])])
                 self.assertEqual(runtime.call_args.kwargs,dict(client_decode_turns=enabled))

@@ -4,12 +4,12 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 from jinja2 import TemplateError
-from dllm.chat_template import compile_template
+from damendaemon.chat_template import compile_template
 
 
 class TemplateLoopTests(unittest.TestCase):
     def limit(self, count):
-        return patch('dllm.chat_template.MAX_TEMPLATE_ITERATIONS', count, create=True)
+        return patch('damendaemon.chat_template.MAX_TEMPLATE_ITERATIONS', count, create=True)
 
     def test_silent_nested_and_filtered_loops_are_bounded(self):
         sources = (
@@ -74,8 +74,8 @@ class TemplateLoopTests(unittest.TestCase):
             self.assertEqual(template.render(),'x'*30)
 
     def test_exhaustion_is_request_error_before_tokenization(self):
-        from dllm.qwen2 import ModelWeights
-        from dllm.cpu_reference_chat import CpuReferenceChat
+        from damendaemon.qwen2 import ModelWeights
+        from damendaemon.cpu_reference_chat import CpuReferenceChat
         for implementation in (ModelWeights.chat_tokens,CpuReferenceChat.chat_tokens):
             with self.subTest(implementation=implementation.__qualname__),self.limit(20):
                 model=SimpleNamespace(config={'model_type':'qwen2','vocab_size':2},special_tokens={},

@@ -4,8 +4,8 @@ if not __debug__:
 
 import json
 import torch
-from dllm.precise_matmul import linear
-from dllm.runtime import require_gpu
+from damendaemon.precise_matmul import linear
+from damendaemon.runtime import require_gpu
 
 require_gpu()
 torch.manual_seed(13)

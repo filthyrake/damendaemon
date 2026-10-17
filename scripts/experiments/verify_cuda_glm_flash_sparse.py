@@ -14,10 +14,10 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
-    from dllm.cuda_glm_flash_sparse import CudaFlashSparseAttention
-    from dllm.cuda_glm_flash_indexer import CudaFlashIndexer
-    from dllm.prepared_projection import PackedProjection
-    from dllm.cuda_prepared_projection import CudaPackedProjection
+    from damendaemon.cuda_glm_flash_sparse import CudaFlashSparseAttention
+    from damendaemon.cuda_glm_flash_indexer import CudaFlashIndexer
+    from damendaemon.prepared_projection import PackedProjection
+    from damendaemon.cuda_prepared_projection import CudaPackedProjection
     from tests.test_glm_flash_sparse import fixture,control
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')
     torch.set_num_threads(1);torch.backends.cuda.matmul.allow_tf32=False
@@ -48,7 +48,7 @@ def main():
                 errors.append(float((actual-expected).abs().max()));state.close()
             state=gpu.new_state(2,8);gpu.forward(x[:,:3],state,position=0)
             old=[v.clone() for v in (state.latents,state.keys,state.gates)]
-            with patch('dllm.glm_flash_sparse.linear',side_effect=RuntimeError('injected late projection')):
+            with patch('damendaemon.glm_flash_sparse.linear',side_effect=RuntimeError('injected late projection')):
                 try:gpu.forward(x[:,3:],state,position=3)
                 except RuntimeError as error:assert 'injected late projection' in str(error)
                 else:raise AssertionError('injected failure was ignored')

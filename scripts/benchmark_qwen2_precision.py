@@ -18,15 +18,15 @@ import time
 from urllib.request import Request, urlopen
 
 import torch
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer, handler_for
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer, handler_for
 
 
 def main():
     p = argparse.ArgumentParser(); p.add_argument('model'); p.add_argument('--output', required=True); args = p.parse_args()
     if os.environ.get('CUDA_VISIBLE_DEVICES') != 'GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('select the authorized A2 explicitly')
-    from dllm.qwen2 import Executor
+    from damendaemon.qwen2 import Executor
     if 'qwen2_precision' not in Executor.__init__.__code__.co_names:
         raise RuntimeError('apply the retained experimental precision patch in an isolated checkout first')
     torch.set_num_threads(4)
@@ -37,7 +37,7 @@ def main():
     try:
         policies = {}
         for policy in ('standard', 'mixed'):
-            os.environ['DLLM_QWEN2_PRECISION'] = policy
+            os.environ['DAMENDAEMON_QWEN2_PRECISION'] = policy
             runtime.manage('load', policy)
             with runtime.runtime.session(policy) as (executor, _, _):
                 assert executor.qwen2_precision == policy
@@ -50,7 +50,7 @@ def main():
             start = time.perf_counter()
             with urlopen(Request(f'http://127.0.0.1:{server.server_port}/v1/completions', data=json.dumps(body).encode(),
                 headers={'Content-Type':'application/json'}), timeout=180) as response: result = json.load(response)
-            assert result['dllm_timing']['source_tier'] == 'gpu'
+            assert result['damendaemon_timing']['source_tier'] == 'gpu'
             return result, time.perf_counter()-start
         for length, concurrency in ((16, 1), (129, 1), (400, 1), (129, 2)):
             expected = {}; rows = []
@@ -72,7 +72,7 @@ def main():
                 for policy in (('standard', 'mixed') if trial % 2 == 0 else ('mixed', 'standard')):
                     responses, elapsed = run(policy)
                     rows.append(dict(policy=policy, wall_seconds=elapsed,
-                        responses=[dict(timing=r['dllm_timing'], usage=r['usage'], http_seconds=t) for r, t in responses]))
+                        responses=[dict(timing=r['damendaemon_timing'], usage=r['usage'], http_seconds=t) for r, t in responses]))
             if concurrency == 2:
                 assert max(r['timing']['max_batch_size'] for row in rows for r in row['responses']) == 2
             result = dict(prompt_tokens=length, concurrency=concurrency, exact_cross_policy_responses=expected['standard'] == expected['mixed'],

@@ -11,9 +11,9 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
-    from dllm.cuda_packed_placement import place_cuda_experts
-    from dllm.cuda_glm_ffn import CudaPackedGlmFeedForward,_select
-    from dllm.glm_ffn import select_glm_experts
+    from damendaemon.cuda_packed_placement import place_cuda_experts
+    from damendaemon.cuda_glm_ffn import CudaPackedGlmFeedForward,_select
+    from damendaemon.glm_ffn import select_glm_experts
     from tests.test_glm_packed_model import ffns
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')
     torch.set_num_threads(1);torch.backends.cuda.matmul.allow_tf32=False

@@ -5,14 +5,14 @@ import threading
 import unittest
 from unittest.mock import Mock, patch
 
-from dllm.scheduler import BatchedRuntime
+from damendaemon.scheduler import BatchedRuntime
 from tests.test_scheduler import FakeRuntime, FakePagedExecutor, PagedChunkExecutor
 
 
 class PagedCompletionTests(unittest.TestCase):
     def exercise(self, mode, fail):
         chunked = mode in ('chunk', 'prefix')
-        with patch('dllm.scheduler.Runtime', FakeRuntime):
+        with patch('damendaemon.scheduler.Runtime', FakeRuntime):
             runtime = BatchedRuntime({'a': 'a'}, batch_size=2, queue_size=4,
                                      prefill_chunk_size=2 if chunked else 0)
         executor = PagedChunkExecutor() if chunked else FakePagedExecutor()

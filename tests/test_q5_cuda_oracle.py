@@ -8,12 +8,12 @@ from scripts.experiments.q5_precision_replay import oracle_kinds
 
 class CudaOracleTests(unittest.TestCase):
     def test_refuses_unowned_or_ambiguous_device(self):
-        for env in ({}, {'CUDA_VISIBLE_DEVICES':'0','DLLM_SHARED_CUDA_GUARD':'1'},
-                    {'CUDA_VISIBLE_DEVICES':'GPU-a,GPU-b','DLLM_SHARED_CUDA_GUARD':'1'},
+        for env in ({}, {'CUDA_VISIBLE_DEVICES':'0','DAMENDAEMON_SHARED_CUDA_GUARD':'1'},
+                    {'CUDA_VISIBLE_DEVICES':'GPU-a,GPU-b','DAMENDAEMON_SHARED_CUDA_GUARD':'1'},
                     {'CUDA_VISIBLE_DEVICES':'GPU-a'}):
             with patch.dict(os.environ,env,clear=True), self.assertRaises(ValueError):
                 require_guard()
-        with patch.dict(os.environ,{'CUDA_VISIBLE_DEVICES':'GPU-a','DLLM_SHARED_CUDA_GUARD':'1'},clear=True):
+        with patch.dict(os.environ,{'CUDA_VISIBLE_DEVICES':'GPU-a','DAMENDAEMON_SHARED_CUDA_GUARD':'1'},clear=True):
             require_guard()
 
     def test_refuses_cpu_or_non_tensor_arithmetic(self):

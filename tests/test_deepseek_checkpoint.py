@@ -6,7 +6,7 @@ import unittest
 import tempfile
 from unittest.mock import patch
 
-from dllm.deepseek_checkpoint import tensor_specs, audit_names, audit_headers, audit_snapshot
+from damendaemon.deepseek_checkpoint import tensor_specs, audit_names, audit_headers, audit_snapshot
 
 
 def config():
@@ -77,7 +77,7 @@ class DeepSeekCheckpointTests(unittest.TestCase):
             names = list(tensor_specs(config()))+['mtp.0.unqualified.weight']
             index = {'weight_map':{name:'nested/weights.safetensors' for name in names}}
             (path/'model.safetensors.index.json').write_text(json.dumps(index))
-            with patch('dllm.checkpoint.inspect_snapshot', side_effect=AssertionError('shard opened')):
+            with patch('damendaemon.checkpoint.inspect_snapshot', side_effect=AssertionError('shard opened')):
                 report = audit_snapshot(path, names_only=True)
                 self.assertEqual(report['scope'], 'tensor_names_only')
                 self.assertEqual(report['excluded_mtp_count'], 1)
@@ -98,7 +98,7 @@ class DeepSeekCheckpointTests(unittest.TestCase):
 
     def test_complete_tiny_snapshot_e8m0_header_audit_without_payload_reads(self):
         import math
-        from dllm.safetensor_header import ITEM_BYTES
+        from damendaemon.safetensor_header import ITEM_BYTES
         from tests.test_packed_checkpoint import write_raw
         storage={'floating':'BF16','fp8':'F8_E4M3','fp4':'I8','scale':'F8_E8M0','integer':'I32'}
         header={}
@@ -113,7 +113,7 @@ class DeepSeekCheckpointTests(unittest.TestCase):
             (path/'config.json').write_text(json.dumps(config()))
             (path/'model.safetensors.index.json').write_text(json.dumps({'weight_map':{name:'model.safetensors' for name in header}}))
             write_raw(path/'model.safetensors',header,bytes(offset))
-            with patch('dllm.packed_checkpoint._payload',side_effect=AssertionError('values read')), \
+            with patch('damendaemon.packed_checkpoint._payload',side_effect=AssertionError('values read')), \
                     patch('torch.cuda._lazy_init',side_effect=AssertionError('GPU initialized')):
                 report=audit_snapshot(path)
             self.assertEqual(report['main_tensors'],len(header))

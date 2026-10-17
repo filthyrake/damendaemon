@@ -3,7 +3,7 @@
 Issue #36. Independent implementation for
 [BAAI/bge-reranker-v2-m3](https://huggingface.co/BAAI/bge-reranker-v2-m3/tree/953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e),
 pinned revision `953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e`, Apache-2.0.
-FP32 host/device weights total2,271,023,108 bytes. Production uses dllm's shared
+FP32 host/device weights total2,271,023,108 bytes. Production uses damendaemon's shared
 encoder operations; Transformers is only the independent CPU test reference.
 
 The loader accepts the XLMRobertaForSequenceClassification architecture with one
@@ -42,7 +42,7 @@ original BERT reranker is rechecked independently after the shared changes.
 Same four authored Berlin/Paris/puppy passages repeated to fill a request,
 FP32,512 service context, one warmup and ten measured rounds, one client, resident
 model. Complete loopback HTTP latency includes tokenization, scheduling, GPU
-execution and serialization. These are dllm measurements, not a cross-engine
+execution and serialization. These are damendaemon measurements, not a cross-engine
 comparison or a general multilingual benchmark.
 
 | Pairs/request | A2 median ms | A2 pairs/s | M4 median ms | M4 pairs/s |

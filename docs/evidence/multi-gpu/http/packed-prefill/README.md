@@ -8,7 +8,7 @@ Issue #51 tracks this work. The distributed service reuses the independently
 qualified layer-stage packed math, retaining one owner thread for GPU/NCCL work.
 FP16/Q8 enable packing at capacity greater than one. Q4 remains sequential by
 default because of the [expanded numerical gap](../../packed-prefill/README.md).
-`DLLM_PARTITION_PACKED_PREFILL=0` disables packing; `1` explicitly enables it.
+`DAMENDAEMON_PARTITION_PACKED_PREFILL=0` disables packing; `1` explicitly enables it.
 Both workers must agree on this setting.
 
 Protocol version 4 carries each prompt's length, slot and generation in the

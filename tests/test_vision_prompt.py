@@ -4,8 +4,8 @@ import unittest
 from unittest.mock import patch
 import torch
 
-from dllm.vision_model import ImagePrompt, VisionModelWeights
-from dllm.vision_messages import ImageMessages
+from damendaemon.vision_model import ImagePrompt, VisionModelWeights
+from damendaemon.vision_messages import ImageMessages
 
 
 class Text:
@@ -32,15 +32,15 @@ class VisionPromptTests(unittest.TestCase):
     def test_overflow_rejected_before_resize_or_patch_construction(self):
         for text_tokens, count in ((1000,1), (900,2)):
             with self.subTest(text_tokens=text_tokens, count=count), \
-                    patch('dllm.vision_model.decode_image_messages', return_value=self.decoded(count)), \
-                    patch('dllm.vision_model.prepare_images', side_effect=AssertionError('patch preparation reached')):
+                    patch('damendaemon.vision_model.decode_image_messages', return_value=self.decoded(count)), \
+                    patch('damendaemon.vision_model.prepare_images', side_effect=AssertionError('patch preparation reached')):
                 with self.assertRaisesRegex(ValueError, 'expanded image prompt.*context'):
                     self.model(text_tokens,count).chat_tokens([])
 
     def test_valid_prompt_preserves_grid_pixel_identity_and_order(self):
         decoded = self.decoded(2)
         before = tuple(image.clone() for image in decoded.images)
-        with patch('dllm.vision_model.decode_image_messages', return_value=decoded):
+        with patch('damendaemon.vision_model.decode_image_messages', return_value=decoded):
             result = self.model(1,2).chat_tokens([])
         self.assertIsInstance(result, ImagePrompt)
         self.assertEqual(len(result), 1 + 2 * (64 + 2))
@@ -54,7 +54,7 @@ class VisionPromptTests(unittest.TestCase):
 
     def test_text_only_bypasses_image_planning(self):
         model = self.model()
-        with patch('dllm.vision_model.decode_image_messages', return_value=ImageMessages([],(),())), \
-                patch('dllm.vision_model.prepare_images') as prepare:
+        with patch('damendaemon.vision_model.decode_image_messages', return_value=ImageMessages([],(),())), \
+                patch('damendaemon.vision_model.prepare_images') as prepare:
             self.assertEqual(model.chat_tokens([]), model.text.tokens)
             prepare.assert_not_called()

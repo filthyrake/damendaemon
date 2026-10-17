@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_flash_model import FlashModel
+from damendaemon.glm_flash_model import FlashModel
 from tests import test_glm_flash_block
 
 
@@ -36,8 +36,8 @@ class FlashModelTests(unittest.TestCase):
     def test_mixed_model_packed_attention_and_routed_shared_ffns(self):
         from tests import test_glm_flash_ffn,test_glm_flash_sparse
         from tests.test_glm_block import ffn_weights
-        from dllm.glm_flash_ffn import FlashFeedForward
-        from dllm.glm_flash_sparse import FlashSparseAttention
+        from damendaemon.glm_flash_ffn import FlashFeedForward
+        from damendaemon.glm_flash_sparse import FlashSparseAttention
         packed=fixture();floating=fixture()
         attention,decoded,_=test_glm_flash_sparse.fixture(True)
         packed.blocks[1].attention=attention

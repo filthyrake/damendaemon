@@ -3,16 +3,16 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-from dllm.glm_flash_layer_pipeline import FlashLayerPipeline
-from dllm.glm_flash_pipeline_generation import FlashPipelineReferenceGenerator,FlashPipelineToolReferenceGenerator
-from dllm.glm_flash_reference_loader import load_reference_stage
-from dllm.glm_flash_batch_generation import FlashBatchReferenceGenerator
-from dllm.glm_flash_generation import FlashReferenceGenerator
-from dllm.glm_flash_tool_text import FlashToolText
-from dllm.glm_text import END_THINK,EOS
-from dllm.glm_flash_tools import FlashTools
-from dllm.reference_serving import ReferenceRuntime
-from dllm.reference_cancellation import cancellation_scope,ReferenceCancelled
+from damendaemon.glm_flash_layer_pipeline import FlashLayerPipeline
+from damendaemon.glm_flash_pipeline_generation import FlashPipelineReferenceGenerator,FlashPipelineToolReferenceGenerator
+from damendaemon.glm_flash_reference_loader import load_reference_stage
+from damendaemon.glm_flash_batch_generation import FlashBatchReferenceGenerator
+from damendaemon.glm_flash_generation import FlashReferenceGenerator
+from damendaemon.glm_flash_tool_text import FlashToolText
+from damendaemon.glm_text import END_THINK,EOS
+from damendaemon.glm_flash_tools import FlashTools
+from damendaemon.reference_serving import ReferenceRuntime
+from damendaemon.reference_cancellation import cancellation_scope,ReferenceCancelled
 from tests.test_glm_flash_generation import text_fixture
 from tests.test_glm_flash_reference_loader import fixture,floating_control
 from tests.test_glm_tools import TOOLS,CALLS

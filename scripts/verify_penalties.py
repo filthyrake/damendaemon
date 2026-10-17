@@ -16,10 +16,10 @@ import time
 from urllib.error import HTTPError
 from urllib.request import Request,urlopen
 import torch
-from dllm.sampling import Sampling,Sampler
-from dllm.device import empty_cache
-from dllm.runtime import require_gpu
-from dllm.bench import events
+from damendaemon.sampling import Sampling,Sampler
+from damendaemon.device import empty_cache
+from damendaemon.runtime import require_gpu
+from damendaemon.bench import events
 from tokenizers import Tokenizer
 
 
@@ -40,7 +40,7 @@ def main():
     p.add_argument('model')
     p.add_argument('--device',choices=('cuda','mps'),default='cuda')
     args=p.parse_args()
-    os.environ['DLLM_DEVICE']=args.device
+    os.environ['DAMENDAEMON_DEVICE']=args.device
     require_gpu()
     torch.set_num_threads(4)
     generator=torch.Generator().manual_seed(18)
@@ -70,8 +70,8 @@ def main():
     forced={'logit_bias':{str(target[0]):100},'presence_penalty':1,'frequency_penalty':.5,'repetition_penalty':1.1}
     history_options={'presence_penalty':.8,'frequency_penalty':.6,'repetition_penalty':1.3}
     def history_reference():
-        from dllm.runtime import Runtime
-        from dllm.prompts import encode
+        from damendaemon.runtime import Runtime
+        from damendaemon.prompts import encode
         runtime=Runtime({'a':args.model},context=512)
         with runtime.session('a') as (executor,_,__):
             prompt=encode(executor.model,None,'The animal is',None)
@@ -87,15 +87,15 @@ def main():
         return tokenizer.decode(output,skip_special_tokens=True),output
     history_text,history_tokens=history_reference()
     gc.collect();empty_cache()
-    with tempfile.TemporaryDirectory(prefix='dllm-penalties-') as directory:
+    with tempfile.TemporaryDirectory(prefix='damendaemon-penalties-') as directory:
         logpath=Path(directory)/'server.log'
         with logpath.open('w') as log:
-            process=subprocess.Popen([sys.executable,'-m','dllm','serve','--device',args.device,
+            process=subprocess.Popen([sys.executable,'-m','damendaemon','serve','--device',args.device,
                 '--port','0','--context','512','--batch-size','4','--model','a='+args.model],stdout=log,stderr=log)
             try:
                 deadline=time.monotonic()+120
                 while time.monotonic()<deadline and process.poll() is None:
-                    lines=[v for v in logpath.read_text().splitlines() if v.startswith('dllm listening on ')]
+                    lines=[v for v in logpath.read_text().splitlines() if v.startswith('damendaemon listening on ')]
                     if lines:base=lines[-1].split()[-1];break
                     time.sleep(.1)
                 else:raise RuntimeError(logpath.read_text())

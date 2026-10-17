@@ -4,10 +4,10 @@ import unittest
 from unittest.mock import patch
 import torch
 from tokenizers import Tokenizer,AddedToken
-from dllm.glm_flash_image_generation import FlashImageReferenceGenerator
-from dllm.glm_flash_image_text import FlashImageText,BEGIN_IMAGE,IMAGE,END_IMAGE
-from dllm.glm_flash_vision import FlashVision,vision_specs
-from dllm.glm_text import EOS,END_THINK
+from damendaemon.glm_flash_image_generation import FlashImageReferenceGenerator
+from damendaemon.glm_flash_image_text import FlashImageText,BEGIN_IMAGE,IMAGE,END_IMAGE
+from damendaemon.glm_flash_vision import FlashVision,vision_specs
+from damendaemon.glm_text import EOS,END_THINK
 from tests import test_glm_generation,test_glm_flash_generation,test_glm_flash_vision,test_glm_flash_model
 
 

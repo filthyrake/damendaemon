@@ -1,8 +1,8 @@
 {
   "command": [
-    "/Users/damenknight/dllm/.venv-metal/bin/python",
+    "/Users/damenknight/damendaemon/.venv-metal/bin/python",
     "-m",
-    "dllm",
+    "damendaemon",
     "serve",
     "--device",
     "mps",
@@ -20,11 +20,11 @@
   "unquantized_weight_dtype": "float16",
   "kv": "float32",
   "runtime_environment": {
-    "DLLM_QUANTIZATION": "none",
-    "DLLM_DEVICE": "mps",
-    "DLLM_METAL_WEIGHT_DTYPE": "float16"
+    "DAMENDAEMON_QUANTIZATION": "none",
+    "DAMENDAEMON_DEVICE": "mps",
+    "DAMENDAEMON_METAL_WEIGHT_DTYPE": "float16"
   },
   "context_per_slot": 512,
   "cpu_threads": 4,
-  "dllm_backend": "auto"
+  "damendaemon_backend": "auto"
 }

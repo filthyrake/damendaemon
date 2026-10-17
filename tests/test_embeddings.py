@@ -7,9 +7,9 @@ from types import SimpleNamespace
 import base64
 import struct
 import torch
-from dllm.embeddings import options
-from dllm.encoder import config
-from dllm.runtime import Runtime
+from damendaemon.embeddings import options
+from damendaemon.encoder import config
+from damendaemon.runtime import Runtime
 
 
 class EmbeddingOutputTests(unittest.TestCase):
@@ -78,7 +78,7 @@ class EmbeddingInputTests(unittest.TestCase):
 
     def test_invalid_encoder_unicode_never_acquires_a_model_session(self):
         from unittest.mock import Mock
-        from dllm.reranking import options as rerank_options
+        from damendaemon.reranking import options as rerank_options
         runtime = Runtime.__new__(Runtime)
         runtime.context=256
         runtime.session = Mock(side_effect=AssertionError('must not activate model'))
@@ -144,7 +144,7 @@ class EncoderConfigTests(unittest.TestCase):
             with self.subTest(change=change),self.assertRaises(ValueError):config(self.root)
 
     def test_declared_lowercase_policy_preprocesses_text_only(self):
-        from dllm.encoder import EncoderWeights
+        from damendaemon.encoder import EncoderWeights
         from tokenizers import Tokenizer, models, pre_tokenizers
         vocab = {'[UNK]':0, 'HELLO':1, 'hello':2, 'É':3, 'é':4, 'İ':5, 'i̇':6}
         tokenizer = Tokenizer(models.WordLevel(vocab, unk_token='[UNK]'))
@@ -177,7 +177,7 @@ class EncoderConfigTests(unittest.TestCase):
                     config(self.root)
 
     def test_saved_default_prompt_and_truncation_policy(self):
-        from dllm.encoder import EncoderWeights
+        from damendaemon.encoder import EncoderWeights
         from tokenizers import Tokenizer, models
         path = self.root/'config_sentence_transformers.json'
         vocabulary = {'[UNK]':0, 'query: hello':1, 'hello':2, 'query:  hello':3}

@@ -8,4 +8,4 @@ import runpy
 
 
 if __name__ == '__main__':
-    runpy.run_module('dllm', run_name='__main__', alter_sys=True)
+    runpy.run_module('damendaemon', run_name='__main__', alter_sys=True)

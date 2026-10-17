@@ -3,8 +3,8 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.deepseek_position import frequencies, rotate_pairs
-from dllm.floating_attention import _query_norm, attention_decode, attention_prefill
+from damendaemon.deepseek_position import frequencies, rotate_pairs
+from damendaemon.floating_attention import _query_norm, attention_decode, attention_prefill
 
 
 def fixture(ratio=0, length=13, dtype=torch.float32, dim=8):
@@ -51,7 +51,7 @@ class FloatingAttentionTests(unittest.TestCase):
 
     def test_dense_attention_control_and_group_projection_orientation(self):
         args = fixture(4, 13)
-        from dllm import floating_attention
+        from damendaemon import floating_attention
         captured = []
         def dense(query, kv, indices, sink, **kwargs):
             output = torch.zeros_like(query)
@@ -66,7 +66,7 @@ class FloatingAttentionTests(unittest.TestCase):
             captured.append(output.clone())
             return output
         actual, _ = attention_prefill(*args, groups=2, window=4, ratio=4, index_top_k=2)
-        with patch('dllm.floating_attention.selected_attention', side_effect=dense):
+        with patch('damendaemon.floating_attention.selected_attention', side_effect=dense):
             expected, _ = attention_prefill(*args, groups=2, window=4, ratio=4, index_top_k=2)
         torch.testing.assert_close(actual, expected, rtol=3e-5, atol=2e-6)
         # Independently project each head/group instead of reusing the implementation's einsum.
@@ -90,7 +90,7 @@ class FloatingAttentionTests(unittest.TestCase):
 
     def test_contract_rejection_precedes_projection(self):
         hidden, weights, freq = fixture()
-        with patch('dllm.floating_attention.linear', side_effect=AssertionError('projection started')):
+        with patch('damendaemon.floating_attention.linear', side_effect=AssertionError('projection started')):
             for options in ({'groups':3,'window':4}, {'groups':2,'window':0}, {'groups':2,'window':4,'ratio':8}):
                 with self.assertRaises(ValueError):
                     attention_prefill(hidden, weights, freq, **options)
@@ -112,7 +112,7 @@ class FloatingAttentionTests(unittest.TestCase):
         # Finite inputs can still overflow the score matmul into inf; the model
         # path must validate selected rows/scores instead of silently softmaxing
         # NaN (CUDA validates internally and takes no flag).
-        from dllm.selected_attention import selected_attention
+        from damendaemon.selected_attention import selected_attention
         query = torch.zeros(1, 1, 2, 128); query[0, 0, 0, 0] = 1e10
         kv = torch.zeros(1, 4, 128); kv[0, 1, 0] = 1e30
         sink = torch.zeros(2)
@@ -132,7 +132,7 @@ class FloatingAttentionTests(unittest.TestCase):
         hidden, weights, freq = args
         _, state = attention_prefill(*args, groups=2, window=4, max_tokens=8)
         decode_args = hidden[:, :1].contiguous()
-        with patch('dllm.floating_attention.selected_attention', side_effect=spy):
+        with patch('damendaemon.floating_attention.selected_attention', side_effect=spy):
             attention_prefill(*args, groups=2, window=4, max_tokens=8)
             attention_decode(decode_args, state, position=5)
         self.assertTrue(seen and all(item is True for item in seen), seen)

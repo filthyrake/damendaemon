@@ -5,12 +5,12 @@ import json
 
 import torch
 
-from dllm.checkpoint import _unique_fields
-from dllm.deepseek_text import DeepSeekText, _read
-from dllm.deepseek_reference_loader import load_reference_model
-from dllm.deepseek_generation import ReferenceGenerator, validate_text_config
-from dllm.deepseek_batch_generation import BatchReferenceGenerator
-from dllm.reference_batch import prepare_batch
+from damendaemon.checkpoint import _unique_fields
+from damendaemon.deepseek_text import DeepSeekText, _read
+from damendaemon.deepseek_reference_loader import load_reference_model
+from damendaemon.deepseek_generation import ReferenceGenerator, validate_text_config
+from damendaemon.deepseek_batch_generation import BatchReferenceGenerator
+from damendaemon.reference_batch import prepare_batch
 
 
 def _positive(value):
@@ -67,8 +67,8 @@ def main(argv=None):
             if len(tokens)+args.max_new_tokens > args.context:
                 raise ValueError('prompt and requested output exceed context before weight loading')
         if args.layer_splits is not None:
-            from dllm.deepseek_checkpoint_pipeline import load_reference_pipeline
-            from dllm.deepseek_pipeline_generation import DeepSeekPipelineReferenceGenerator
+            from damendaemon.deepseek_checkpoint_pipeline import load_reference_pipeline
+            from damendaemon.deepseek_pipeline_generation import DeepSeekPipelineReferenceGenerator
             model=load_reference_pipeline(args.snapshot,args.layer_splits,max_weight_bytes=args.weight_mib*1024**2,
                 workspace_bytes=args.workspace_mib*1024**2,max_output_bytes=(args.output_mib or 64)*1024**2)
             runner_type=DeepSeekPipelineReferenceGenerator

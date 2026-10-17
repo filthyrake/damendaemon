@@ -9,7 +9,7 @@ import subprocess
 import sys
 import unittest
 from unittest.mock import Mock,patch
-from dllm.server import serve
+from damendaemon.server import serve
 from tests import test_quota_commands as quota,test_glm_host_http_command as native,test_cpu_host_topology_command as topology
 from tests.test_distributed_drain import wait_for
 
@@ -20,7 +20,7 @@ class ServingShutdownTests(unittest.TestCase):
 
     def quota_env(self):
         q=self.quota
-        return q.env|{'DLLM_REMOTE_QUOTA_CONFIG':str(q.config),'DLLM_CLIENT_KEYS':json.dumps(
+        return q.env|{'DAMENDAEMON_REMOTE_QUOTA_CONFIG':str(q.config),'DAMENDAEMON_CLIENT_KEYS':json.dumps(
             {'alice':dict(key=q.key,max_inflight=1,max_reserved_output_tokens=8)})}
 
     def hold(self,url,route='/v1/chat/completions'):
@@ -40,12 +40,12 @@ class ServingShutdownTests(unittest.TestCase):
         if success:self.assertEqual(process.returncode,0,err)
         else:self.assertNotEqual(process.returncode,0)
         self.assertNotIn(self.quota.key,out+err)
-        self.assertNotIn(self.quota.env['DLLM_REMOTE_QUOTA_OWNER_KEY'],out+err)
+        self.assertNotIn(self.quota.env['DAMENDAEMON_REMOTE_QUOTA_OWNER_KEY'],out+err)
         return out,err
 
     def test_ordinary_serving_owner_sigterm_waits_for_remote_request_release(self):
         authority=self.quota.bootstrap()
-        source="""from dllm.server import serve
+        source="""from damendaemon.server import serve
 from tests.test_server import FakeRuntime
 class Runtime(FakeRuntime):
     def close(self): print('runtime_closed',flush=True)
@@ -56,7 +56,7 @@ print('stopped',flush=True)
         self.quota.processes.append(process)
         with selectors.DefaultSelector() as ready:
             ready.register(process.stdout,selectors.EVENT_READ);self.assertTrue(ready.select(12))
-        line=process.stdout.readline();self.assertTrue(line.startswith('dllm listening on '),line)
+        line=process.stdout.readline();self.assertTrue(line.startswith('damendaemon listening on '),line)
         connection=self.hold(line.strip().split()[-1],'/v1/completions')
         process.send_signal(signal.SIGTERM);out,_=self.end_request(connection,process)
         self.assertEqual(out.splitlines(),['runtime_closed','stopped'])
@@ -102,26 +102,26 @@ print('stopped',flush=True)
 
     def test_ordinary_bind_failure_and_cleanup_errors_preserve_all_owner_attempts(self):
         runtime=Mock()
-        with patch('dllm.server.handler_for',side_effect=ValueError('invalid configuration')):
+        with patch('damendaemon.server.handler_for',side_effect=ValueError('invalid configuration')):
             with self.assertRaisesRegex(ValueError,'invalid configuration'):serve(runtime,0)
         runtime.close.assert_called_once()
         server=Mock(server_port=1234);server.handle_request.side_effect=KeyboardInterrupt
         runtime=Mock();runtime.close.side_effect=RuntimeError('retained runtime')
-        with patch('dllm.server.handler_for'),patch('dllm.server.BoundedHTTPServer',return_value=server),redirect_stdout(io.StringIO()):
+        with patch('damendaemon.server.handler_for'),patch('damendaemon.server.BoundedHTTPServer',return_value=server),redirect_stdout(io.StringIO()):
             with self.assertRaisesRegex(RuntimeError,'retained runtime'):serve(runtime,0)
         server.server_close.assert_called_once();self.assertFalse(server.daemon_threads);self.assertTrue(server.block_on_close)
 
     def test_distributed_command_control_cleanup_attempts_every_owner_after_failure(self):
         # Lifecycle control only: no StagePair construction or device operation.
-        from dllm import distributed_server_cli as command
+        from damendaemon import distributed_server_cli as command
         pair=Mock(rank=0);runtime=Mock();runtime.run.side_effect=RuntimeError('run failed')
         runtime.close.side_effect=RuntimeError('runtime retained')
         server=Mock(server_port=1234);server.server_close.side_effect=RuntimeError('quota retained')
         pair.stop.side_effect=RuntimeError('stop failed')
-        with (patch.dict(os.environ,{},clear=True),patch('dllm.distributed.StagePair',return_value=pair),
-              patch('dllm.distributed_serving.DistributedRuntime',return_value=runtime),
-              patch('dllm.server.handler_for',return_value=type('Handler',(),{})),
-              patch('dllm.server.BoundedHTTPServer',return_value=server),redirect_stdout(io.StringIO())):
+        with (patch.dict(os.environ,{},clear=True),patch('damendaemon.distributed.StagePair',return_value=pair),
+              patch('damendaemon.distributed_serving.DistributedRuntime',return_value=runtime),
+              patch('damendaemon.server.handler_for',return_value=type('Handler',(),{})),
+              patch('damendaemon.server.BoundedHTTPServer',return_value=server),redirect_stdout(io.StringIO())):
             with self.assertRaisesRegex(RuntimeError,'run failed') as error:command.main(['unused'])
         self.assertTrue(error.exception.__notes__)
         runtime.close.assert_called_once();server.server_close.assert_called_once()

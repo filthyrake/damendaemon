@@ -1,6 +1,6 @@
 # Product direction
 
-[Documentation](README.md) · [Roadmap and ordered work](https://github.com/filthyrake/dllm/issues/3)
+[Documentation](README.md) · [Roadmap and ordered work](https://github.com/filthyrake/damendaemon/issues/3)
 
 The goal is independent inference for large modern models, with as many users
 as possible receiving useful token speed and responsive service. Fast model
@@ -12,10 +12,10 @@ and acceptance gates.
 
 | Target | Work and qualification |
 | --- | --- |
-| Qwen3.8 and newer | [#55](https://github.com/filthyrake/dllm/issues/55); first concrete target Qwen3.8-27B |
-| GLM-5.3 | [#56](https://github.com/filthyrake/dllm/issues/56) |
-| GLM-5.3-Flash | [#57](https://github.com/filthyrake/dllm/issues/57), including its separate multimodal/hybrid architecture |
-| DeepSeek V4 Flash | [#58](https://github.com/filthyrake/dllm/issues/58) |
+| Qwen3.8 and newer | [#55](https://github.com/filthyrake/damendaemon/issues/55); first concrete target Qwen3.8-27B |
+| GLM-5.3 | [#56](https://github.com/filthyrake/damendaemon/issues/56) |
+| GLM-5.3-Flash | [#57](https://github.com/filthyrake/damendaemon/issues/57), including its separate multimodal/hybrid architecture |
+| DeepSeek V4 Flash | [#58](https://github.com/filthyrake/damendaemon/issues/58) |
 
 The [official configuration inspection pins](evidence/planning/model-targets-2026-10-06.json)
 record the source URLs and revisions without downloading model weights.
@@ -50,8 +50,8 @@ latency <=2 seconds and p95 inter-token gap <=100 ms are starting measurement
 budgets, not user-promised SLAs. Longer-context prefill budgets must be declared
 for each hardware/model tier before measurement. Sweep concurrency
 1/4/8/16/32/64/128 until a measured resource or latency limit, keeping failing
-points visible. [Concurrency #59](https://github.com/filthyrake/dllm/issues/59)
-and [context #60](https://github.com/filthyrake/dllm/issues/60) own the details.
+points visible. [Concurrency #59](https://github.com/filthyrake/damendaemon/issues/59)
+and [context #60](https://github.com/filthyrake/damendaemon/issues/60) own the details.
 
 This requires admission accounting for weights, KV, recurrent/compressed state,
 prefix caches, graph buffers, prefill workspace and communication buffers.
@@ -69,9 +69,9 @@ First-class vendor targets are NVIDIA, AMD, Intel and Apple Silicon, spanning
 consumer and datacenter systems. Existing development hardware is A2, A30,
 RTX 3090, Intel Arc B580, HOMER's Radeon 8060S/gfx1151 and Apple M4. Additional explicit targets:
 
-- [GB200 and DGX Spark #61](https://github.com/filthyrake/dllm/issues/61).
-- [AMD MI300 family #62](https://github.com/filthyrake/dllm/issues/62), separate from HOMER qualification.
-- [Intel Arc B580 #63](https://github.com/filthyrake/dllm/issues/63).
+- [GB200 and DGX Spark #61](https://github.com/filthyrake/damendaemon/issues/61).
+- [AMD MI300 family #62](https://github.com/filthyrake/damendaemon/issues/62), separate from HOMER qualification.
+- [Intel Arc B580 #63](https://github.com/filthyrake/damendaemon/issues/63).
 
 **Hardware priority:** qualify the available HOMER, A30, RTX 3090, A2, M4 and B580
 first. DGX Spark, GB200 and MI300 follow satisfactory relevant workflows and
@@ -92,7 +92,7 @@ capabilities need separate real-hardware qualification. Access to new systems
 is not assumed. A successful kernel on one vendor/device does not establish
 support on another.
 
-[Distributed execution #51](https://github.com/filthyrake/dllm/issues/51) covers
+[Distributed execution #51](https://github.com/filthyrake/damendaemon/issues/51) covers
 large models sharded across local and network GPUs. Tensor, pipeline and expert
 parallelism address different communication patterns; replicas address user
 throughput. Capacity gains and speed gains must be reported separately. RDMA
@@ -102,7 +102,7 @@ cancellation and model switching must release all participating resources.
 
 ### CPU, host RAM and GPU together
 
-[Hybrid CPU/RAM and GPU execution #64](https://github.com/filthyrake/dllm/issues/64)
+[Hybrid CPU/RAM and GPU execution #64](https://github.com/filthyrake/damendaemon/issues/64)
 starts with the A2/A30 VM. The user reports approximately 1 TB of DDR4 on its
 physical host, with additional RAM and cores available for future allocation.
 That is not the VM's current allocation: inventory guest resources and existing
@@ -131,5 +131,5 @@ next failed acceptance gate. Build shared capabilities that advance these
 named targets. Do not run a full hardware/model Cartesian sweep or turn a
 negative benchmark into an endless chain of unrelated kernel experiments.
 Keep one GPU experiment active, preserve existing workloads, and commit/push
-verified increments. The [roadmap](https://github.com/filthyrake/dllm/issues/3)
+verified increments. The [roadmap](https://github.com/filthyrake/damendaemon/issues/3)
 contains the ordered milestones; this document is not a second task tracker.

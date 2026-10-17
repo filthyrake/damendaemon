@@ -13,7 +13,7 @@ class ServeCudaTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp);text=text_fixture(path);config,_,_=fixture(path,vocab_size=text.vocab_size)
             parser=parser_for_command()
-            with patch('dllm.glm_reference_loader.load_reference_model',side_effect=AssertionError('payload loaded')) as load:
+            with patch('damendaemon.glm_reference_loader.load_reference_model',side_effect=AssertionError('payload loaded')) as load:
                 for options in (['--device','cuda'],['--device','cpu'],['--device','cuda:0','--device-weight-mib','512']):
                     with self.assertRaises(ValueError):prepare(parser.parse_args([str(path),*options]))
                 (path/'config.json').write_text(json.dumps(config|dict(max_position_embeddings=1)))
@@ -27,7 +27,7 @@ class ServeCudaTests(unittest.TestCase):
             config=json.loads((path/'config.json').read_text())
             config['text_config']['max_position_embeddings']=1
             (path/'config.json').write_text(json.dumps(config))
-            with patch('dllm.glm_flash_reference_loader.load_reference_model',side_effect=AssertionError('payload loaded')) as load:
+            with patch('damendaemon.glm_flash_reference_loader.load_reference_model',side_effect=AssertionError('payload loaded')) as load:
                 with self.assertRaises(ValueError):prepare(parser_for_command().parse_args([str(path),'--device','cuda:0']))
                 load.assert_not_called()
 
@@ -47,7 +47,7 @@ class DeepSeekCudaCommandTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp);text=deepseek_text(path);config,_=deepseek_fixture(path,vocab_size=text.vocab_size)
             (path/'config.json').write_text(json.dumps(config|dict(max_position_embeddings=1)))
-            with patch('dllm.deepseek_reference_loader.load_reference_model',side_effect=AssertionError('payload loaded')):
+            with patch('damendaemon.deepseek_reference_loader.load_reference_model',side_effect=AssertionError('payload loaded')):
                 with self.assertRaises(ValueError):prepare(parser_for_command().parse_args([str(path),'--device','cuda:0']))
 
 class FlashImageCudaCommandTests(unittest.TestCase):
@@ -56,7 +56,7 @@ class FlashImageCudaCommandTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp);snapshot(path)
             parser=parser_for_command()
-            with patch('dllm.glm_flash_reference_loader.load_reference_model',side_effect=AssertionError('payload loaded')):
+            with patch('damendaemon.glm_flash_reference_loader.load_reference_model',side_effect=AssertionError('payload loaded')):
                 with self.assertRaises(ValueError):prepare(parser.parse_args([str(path),'--device','cuda:0','--max-patches','64']))
                 (path/'processor_config.json').write_text('{}')
                 with self.assertRaises(ValueError):prepare(parser.parse_args([str(path),'--device','cuda:0','--flash-images']))

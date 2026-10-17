@@ -4,9 +4,9 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.activation_simulation import simulate_fp4, simulate_fp8, normalized_hadamard
-from dllm.floating_compressor import compress_hidden
-from dllm.deepseek_position import frequencies
+from damendaemon.activation_simulation import simulate_fp4, simulate_fp8, normalized_hadamard
+from damendaemon.floating_compressor import compress_hidden
+from damendaemon.deepseek_position import frequencies
 
 
 class ActivationSimulationTests(unittest.TestCase):

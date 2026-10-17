@@ -5,14 +5,14 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_reference_loader import load_reference_model
-from dllm.glm_checkpoint import tensor_specs
-from dllm.glm_cached_attention import CachedGlmAttention
-from dllm.glm_ffn import GlmFeedForward
-from dllm.glm_block import GlmBlock
-from dllm.glm_model import GlmModel
-from dllm.prepared_projection import PackedProjection
-from dllm.safetensor_header import ITEM_BYTES
+from damendaemon.glm_reference_loader import load_reference_model
+from damendaemon.glm_checkpoint import tensor_specs
+from damendaemon.glm_cached_attention import CachedGlmAttention
+from damendaemon.glm_ffn import GlmFeedForward
+from damendaemon.glm_block import GlmBlock
+from damendaemon.glm_model import GlmModel
+from damendaemon.prepared_projection import PackedProjection
+from damendaemon.safetensor_header import ITEM_BYTES
 from tests.test_glm_checkpoint import config as geometry
 from tests.test_packed_checkpoint import write_raw
 
@@ -86,7 +86,7 @@ class GlmReferenceLoaderTests(unittest.TestCase):
             for name,spec in tensor_specs(config).items():
                 count=math.prod(spec.shape);retained+=count*(1 if spec.storage=='fp8' else 4)
                 largest=max(largest,count*ITEM_BYTES[headers[name]['dtype']])
-            with patch('dllm.glm_reference_loader._payload',side_effect=AssertionError('values read')):
+            with patch('damendaemon.glm_reference_loader._payload',side_effect=AssertionError('values read')):
                 for options in ({'max_weight_bytes':retained+largest-1},{'projection_workspace_bytes':1},{'max_workspace_bytes':1}):
                     with self.assertRaises(ValueError):load_reference_model(path,**options)
                 for change in ({'rms_norm_eps':float('nan')},{'routed_scaling_factor':0},{'index_topk':4097}):
@@ -94,11 +94,11 @@ class GlmReferenceLoaderTests(unittest.TestCase):
                     with self.assertRaises(ValueError):load_reference_model(path)
             (path/'config.json').write_text(json.dumps(config))
             self.assertEqual(len(load_reference_model(path,max_weight_bytes=retained+largest).blocks),3)
-            with patch('dllm.glm_reference_loader.sys.byteorder','big'):
+            with patch('damendaemon.glm_reference_loader.sys.byteorder','big'):
                 with self.assertRaisesRegex(ValueError,'endian'):load_reference_model(path)
 
     def test_mtp_omitted_payload_failure_closes_descriptors_and_mutation_rejected(self):
-        import dllm.glm_reference_loader as loader
+        import damendaemon.glm_reference_loader as loader
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp);config,_,_=fixture(path);opened=[];read=[]
             original_header=loader.read_header;original_payload=loader._payload
@@ -117,7 +117,7 @@ class GlmReferenceLoaderTests(unittest.TestCase):
     def test_header_storage_index_and_duplicate_config_rejected_before_values(self):
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp);config,_,_=fixture(path)
-            with patch('dllm.glm_reference_loader._payload',side_effect=AssertionError('values read')):
+            with patch('damendaemon.glm_reference_loader._payload',side_effect=AssertionError('values read')):
                 index_path=path/'model.safetensors.index.json';index=json.loads(index_path.read_text())
                 index['weight_map']['model.embed_tokens.weight']='part-1.safetensors';index_path.write_text(json.dumps(index))
                 with self.assertRaisesRegex(ValueError,'index'):load_reference_model(path)
@@ -130,7 +130,7 @@ class GlmReferenceLoaderTests(unittest.TestCase):
 
     def test_index_read_is_bounded_even_if_file_grows_after_stat(self):
         import io
-        from dllm.checkpoint import snapshot_shards
+        from damendaemon.checkpoint import snapshot_shards
         class GrowingIndex(io.BytesIO):
             def read(self,size=-1):
                 if size!=16*1024**2+1:raise AssertionError('unbounded metadata read')

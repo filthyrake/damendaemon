@@ -3,11 +3,11 @@ import math
 import os
 
 
-from dllm.admission import wait_for_batch
+from damendaemon.admission import wait_for_batch
 
 def install_validation_dispatch():
-    from dllm.scheduler import BatchedRuntime
-    milliseconds=float(os.environ['DLLM_EXPERIMENTAL_BATCH_WAIT_MS'])
+    from damendaemon.scheduler import BatchedRuntime
+    milliseconds=float(os.environ['DAMENDAEMON_EXPERIMENTAL_BATCH_WAIT_MS'])
     if not math.isfinite(milliseconds) or not 0<milliseconds<=10:
         raise ValueError('experimental batch wait must be >0 and <=10 milliseconds')
     original=BatchedRuntime._group

@@ -6,13 +6,13 @@ from unittest.mock import patch
 
 import torch
 
-from dllm import host_memory
-from dllm.config import decoder_config
-from dllm.hybrid import load_weights
+from damendaemon import host_memory
+from damendaemon.config import decoder_config
+from damendaemon.hybrid import load_weights
 from tests.test_capacity_cli import fixture
 
-ENV = {'DLLM_DEVICE': 'cuda', 'DLLM_KERNELS': 'torch',
-       'DLLM_EXPERIMENTAL_HYBRID_OFFLOAD': '1'}
+ENV = {'DAMENDAEMON_DEVICE': 'cuda', 'DAMENDAEMON_KERNELS': 'torch',
+       'DAMENDAEMON_EXPERIMENTAL_HYBRID_OFFLOAD': '1'}
 
 
 class HostMemoryTests(unittest.TestCase):
@@ -39,7 +39,7 @@ class HostMemoryTests(unittest.TestCase):
                     host_memory.require_headroom(invalid)
 
     def test_checkpoint_header_budget_and_early_load_rejection(self):
-        from dllm.qwen2 import ModelWeights
+        from damendaemon.qwen2 import ModelWeights
         with TemporaryDirectory() as directory:
             path = Path(directory)
             _, tensors = fixture(path)
@@ -50,7 +50,7 @@ class HostMemoryTests(unittest.TestCase):
             # No tokenizer or GPU load is reached when the entire load cannot fit.
             with patch.dict('os.environ', ENV, clear=True), \
                     patch.object(host_memory, 'available_memory', return_value=host_memory.HOST_RESERVE), \
-                    patch('dllm.qwen2.Tokenizer') as tokenizer, \
+                    patch('damendaemon.qwen2.Tokenizer') as tokenizer, \
                     patch('torch.cuda._lazy_init', side_effect=AssertionError('GPU initialized')), \
                     self.assertRaises(MemoryError):
                 ModelWeights(path, 32, 'none')
@@ -60,7 +60,7 @@ class HostMemoryTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             config, tensors = fixture(Path(directory))
         config = decoder_config(config)
-        with patch.dict('os.environ', {'DLLM_DEVICE': 'cuda'}, clear=True):
+        with patch.dict('os.environ', {'DAMENDAEMON_DEVICE': 'cuda'}, clear=True):
             expected = load_weights(dict(tensors), config)
         with patch.dict('os.environ', ENV, clear=True), \
                 patch.object(host_memory, 'require_headroom') as check:
@@ -77,22 +77,22 @@ class HostMemoryTests(unittest.TestCase):
         cat.assert_not_called()
 
     def test_pressure_after_admission_rejects_source_read(self):
-        from dllm.qwen2 import ModelWeights
+        from damendaemon.qwen2 import ModelWeights
         with TemporaryDirectory() as directory:
             path = Path(directory)
             fixture(path)
             (path/'tokenizer_config.json').write_text('{}')
             (path/'generation_config.json').write_text('{"eos_token_id": 1}')
             with patch.dict('os.environ', ENV, clear=True), \
-                    patch('dllm.qwen2.Tokenizer'), \
+                    patch('damendaemon.qwen2.Tokenizer'), \
                     patch.object(host_memory, 'available_memory', side_effect=[2**40, 0]), \
-                    patch('dllm.hybrid.load_weights') as mapping, \
+                    patch('damendaemon.hybrid.load_weights') as mapping, \
                     self.assertRaises(MemoryError):
                 ModelWeights(path, 32, 'none')
             mapping.assert_not_called()
 
     def test_offline_meta_planning_never_queries_host(self):
-        from dllm.capacity import plan_local
+        from damendaemon.capacity import plan_local
         with TemporaryDirectory() as directory:
             path = Path(directory)
             fixture(path)

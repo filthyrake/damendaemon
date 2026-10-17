@@ -8,8 +8,8 @@ import time
 import torch
 import triton as tr
 from safetensors import safe_open
-from dllm.mxfp4_kernels import _routed
-from dllm.mxfp4 import routed_linear
+from damendaemon.mxfp4_kernels import _routed
+from damendaemon.mxfp4 import routed_linear
 
 
 def main():
@@ -17,7 +17,7 @@ def main():
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
     from pathlib import Path
-    root=Path(args.model);catalog=json.loads((root/'dllm-source.json').read_text())['tensors']
+    root=Path(args.model);catalog=json.loads((root/'damendaemon-source.json').read_text())['tensors']
     def get(key):
         with safe_open(str(root/catalog[key]['file']),framework='pt',device='cpu') as reader:
             return reader.get_tensor(key).cuda()

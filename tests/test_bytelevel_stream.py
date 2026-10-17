@@ -3,7 +3,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from tokenizers import Tokenizer,models,decoders,AddedToken
-from dllm.bytelevel_stream import BYTE_VALUES,ByteLevelStream
+from damendaemon.bytelevel_stream import BYTE_VALUES,ByteLevelStream
 
 
 class ByteLevelStreamTests(unittest.TestCase):
@@ -32,8 +32,8 @@ class ByteLevelStreamTests(unittest.TestCase):
 
     def test_reference_stream_accepts_ordinary_added_text(self):
         from tests.test_deepseek_generation import text_fixture
-        from dllm.deepseek_text import DeepSeekText,EOS
-        from dllm.deepseek_generation import TokenStream
+        from damendaemon.deepseek_text import DeepSeekText,EOS
+        from damendaemon.deepseek_generation import TokenStream
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp);original=text_fixture(path)
             original.tokenizer.add_tokens([AddedToken('custom aé🙂',special=False)])

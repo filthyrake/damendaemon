@@ -6,11 +6,11 @@ import unittest
 from unittest.mock import patch
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError
-from dllm.client_decode_turns import ClientDecodeTurns,SERVICE_UNITS
-from dllm.http_auth import AuthPolicy,ClientKey
-from dllm.request_scope import CacheScope,cache_scope
-from dllm.cpu_hybrid_checkpoint import load_cpu_checkpoint
-from dllm.cpu_pipeline_generation import CpuPipelineReferenceGenerator
+from damendaemon.client_decode_turns import ClientDecodeTurns,SERVICE_UNITS
+from damendaemon.http_auth import AuthPolicy,ClientKey
+from damendaemon.request_scope import CacheScope,cache_scope
+from damendaemon.cpu_hybrid_checkpoint import load_cpu_checkpoint
+from damendaemon.cpu_pipeline_generation import CpuPipelineReferenceGenerator
 from tests.test_client_decode_turns import rows
 from tests.test_cpu_pipeline_generation import OPTIONS
 from tests.test_distributed_drain import wait_for
@@ -59,19 +59,19 @@ class WeightedDecodeTests(unittest.TestCase):
         key=secrets.token_urlsafe(32)
         for value in (None,True,0,17,1.5,'3'):
             config=json.dumps({'a':dict(key=key,max_inflight=2,decode_weight=value)})
-            with patch.dict('os.environ',{'DLLM_CLIENT_KEYS':config},clear=True):
+            with patch.dict('os.environ',{'DAMENDAEMON_CLIENT_KEYS':config},clear=True):
                 with self.assertRaises(ValueError) as caught:AuthPolicy.from_env()
                 self.assertNotIn(key,str(caught.exception))
             with self.assertRaises(ValueError):CacheScope(decode_weight=value)
         for value in (1,3,16):
             config=json.dumps({'a':dict(key=key,max_inflight=2,decode_weight=value)})
-            with patch.dict('os.environ',{'DLLM_CLIENT_KEYS':config},clear=True):client=AuthPolicy.from_env().clients[0]
+            with patch.dict('os.environ',{'DAMENDAEMON_CLIENT_KEYS':config},clear=True):client=AuthPolicy.from_env().clients[0]
             self.assertEqual(client.decode_weight,value);self.assertNotIn(key,repr(client))
         self.assertEqual(ClientKey('a',key,2).decode_weight,1)
         scope=CacheScope(decode_weight=3)
         with self.assertRaises(FrozenInstanceError):scope.decode_weight=1
-        from dllm.scheduler import Pending
-        from dllm.distributed_serving import Request as DistributedRequest
+        from damendaemon.scheduler import Pending
+        from damendaemon.distributed_serving import Request as DistributedRequest
         import queue,time
         token=cache_scope.set(scope)
         try:pending=Pending('a',[],1);request=DistributedRequest([1],1,time.monotonic(),queue.Queue())

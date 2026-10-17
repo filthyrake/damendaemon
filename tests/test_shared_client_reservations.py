@@ -8,13 +8,13 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
-from dllm.http_auth import ClientKey
-from dllm.shared_client_reservations import SharedClientReservations,SharedReservationRejected,SharedReservationUnavailable,Reservation
+from damendaemon.http_auth import ClientKey
+from damendaemon.shared_client_reservations import SharedClientReservations,SharedReservationRejected,SharedReservationUnavailable,Reservation
 
 CHILD='''
 import json,sys,secrets
-from dllm.http_auth import ClientKey
-from dllm.shared_client_reservations import SharedClientReservations,SharedReservationRejected
+from damendaemon.http_auth import ClientKey
+from damendaemon.shared_client_reservations import SharedClientReservations,SharedReservationRejected
 c=ClientKey('alice',secrets.token_urlsafe(32),2,max_reserved_output_tokens=10)
 s=SharedClientReservations(sys.argv[1],[c])
 try:
@@ -157,10 +157,10 @@ class SharedReservationTests(unittest.TestCase):
 
     def test_owner_and_claim_bounds_and_fork_rejection(self):
         a=self.store()
-        with patch('dllm.shared_client_reservations.MAX_CLAIMS',0):
+        with patch('damendaemon.shared_client_reservations.MAX_CLAIMS',0):
             with self.assertRaises(SharedReservationUnavailable):a.reserve(self.client)
         for claim in list(a.claims.values()):a.release(claim)
-        with patch('dllm.shared_client_reservations.os.getpid',return_value=a.pid+1):
+        with patch('damendaemon.shared_client_reservations.os.getpid',return_value=a.pid+1):
             with self.assertRaises(SharedReservationUnavailable):a.close()
             with self.assertRaises(SharedReservationUnavailable):a.reserve(self.client)
         for claim in list(a.claims.values()):a.release(claim)

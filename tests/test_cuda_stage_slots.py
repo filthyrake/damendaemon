@@ -1,8 +1,8 @@
 import tempfile
 from pathlib import Path
 import unittest
-from dllm.cuda_stage_slots import CudaGlmStageSlots,CudaFlashStageSlots,CudaDeepSeekStageSlots
-from dllm import glm_reference_loader,glm_flash_reference_loader,deepseek_reference_loader
+from damendaemon.cuda_stage_slots import CudaGlmStageSlots,CudaFlashStageSlots,CudaDeepSeekStageSlots
+from damendaemon import glm_reference_loader,glm_flash_reference_loader,deepseek_reference_loader
 from tests import test_glm_reference_loader as glm_fixture,test_glm_flash_reference_loader as flash_fixture,test_deepseek_reference_loader as ds_fixture
 
 

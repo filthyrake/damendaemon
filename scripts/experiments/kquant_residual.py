@@ -1,12 +1,12 @@
 """Explicit validation access, including formats excluded by production selection."""
 import os
 import torch
-from dllm.native_kquant_residual import library, linear as _linear
+from damendaemon.native_kquant_residual import library, linear as _linear
 
 
 def linear(x, weight, layout, bias=None):
     return _linear(x, weight, layout, bias,
-                   library_path=os.environ['DLLM_EXPERIMENTAL_RESIDUAL_LIBRARY'])
+                   library_path=os.environ['DAMENDAEMON_EXPERIMENTAL_RESIDUAL_LIBRARY'])
 
 
 def install_validation_dispatch():
@@ -17,12 +17,12 @@ def install_validation_dispatch():
     """
     import hashlib
     from pathlib import Path
-    from dllm import native_kquant
+    from damendaemon import native_kquant
 
-    path = Path(os.environ['DLLM_EXPERIMENTAL_RESIDUAL_LIBRARY']).resolve()
+    path = Path(os.environ['DAMENDAEMON_EXPERIMENTAL_RESIDUAL_LIBRARY']).resolve()
     library(str(path))  # Fail before running any model checks.
     original = native_kquant.linear_if_enabled
-    batch2 = os.environ.get('DLLM_EXPERIMENTAL_RESIDUAL_BATCH2') == '1'
+    batch2 = os.environ.get('DAMENDAEMON_EXPERIMENTAL_RESIDUAL_BATCH2') == '1'
 
     def experimental(x, weight, layout, bias=None):
         width, spec = layout

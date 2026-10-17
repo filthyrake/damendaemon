@@ -3,7 +3,7 @@ import ctypes
 from dataclasses import dataclass
 from pathlib import Path
 import torch
-from dllm.awq import unpack_channels
+from damendaemon.awq import unpack_channels
 
 
 @dataclass
@@ -23,18 +23,18 @@ class Library:
         self.path = Path(path).resolve()
         self.lib = ctypes.CDLL(str(self.path))
         ptr, integer = ctypes.c_void_p, ctypes.c_int
-        self.lib.dllm_awq_marlin_abi.argtypes = []
-        self.lib.dllm_awq_marlin_abi.restype = integer
-        if self.lib.dllm_awq_marlin_abi() != 2:
+        self.lib.damendaemon_awq_marlin_abi.argtypes = []
+        self.lib.damendaemon_awq_marlin_abi.restype = integer
+        if self.lib.damendaemon_awq_marlin_abi() != 2:
             raise ValueError('unsupported Marlin experiment ABI')
-        self.lib.dllm_awq_marlin_init.argtypes = [ctypes.POINTER(integer)]*2
-        self.lib.dllm_awq_marlin_init.restype = integer
-        self.lib.dllm_awq_marlin_repack.argtypes = [ptr]*2+[integer]*4+[ptr]
-        self.lib.dllm_awq_marlin_repack.restype = integer
-        self.lib.dllm_awq_marlin_gemm.argtypes = [ptr]*8+[integer]*5+[ptr]
-        self.lib.dllm_awq_marlin_gemm.restype = integer
+        self.lib.damendaemon_awq_marlin_init.argtypes = [ctypes.POINTER(integer)]*2
+        self.lib.damendaemon_awq_marlin_init.restype = integer
+        self.lib.damendaemon_awq_marlin_repack.argtypes = [ptr]*2+[integer]*4+[ptr]
+        self.lib.damendaemon_awq_marlin_repack.restype = integer
+        self.lib.damendaemon_awq_marlin_gemm.argtypes = [ptr]*8+[integer]*5+[ptr]
+        self.lib.damendaemon_awq_marlin_gemm.restype = integer
         sms, shared = integer(), integer()
-        self.check(self.lib.dllm_awq_marlin_init(ctypes.byref(sms), ctypes.byref(shared)))
+        self.check(self.lib.damendaemon_awq_marlin_init(ctypes.byref(sms), ctypes.byref(shared)))
         self.sms, self.shared = sms.value, shared.value
 
     @staticmethod
@@ -50,7 +50,7 @@ class Library:
         if bias is not None and (bias.dtype != torch.float16 or bias.device != device or tuple(bias.shape) != (n,)):
             raise ValueError('invalid experiment bias')
         packed = torch.empty((k//16, n*2), dtype=torch.int32, device=device)
-        self.check(self.lib.dllm_awq_marlin_repack(matrix.weight.data_ptr(), packed.data_ptr(),
+        self.check(self.lib.damendaemon_awq_marlin_repack(matrix.weight.data_ptr(), packed.data_ptr(),
             k, n, self.sms, self.shared, torch.cuda.current_stream(device).cuda_stream))
         # Layout permutations follow the pinned upstream Marlin format. Keep
         # the canonical AWQ zero-point decoder independent of the repacker.
@@ -78,7 +78,7 @@ class Library:
             raise ValueError('Marlin experiment requires nonempty contiguous FP16 rows')
         x = x.contiguous()
         result = torch.empty((x.shape[0], matrix.outputs), device=x.device, dtype=x.dtype)
-        self.check(self.lib.dllm_awq_marlin_gemm(x.data_ptr(), matrix.weight.data_ptr(),
+        self.check(self.lib.damendaemon_awq_marlin_gemm(x.data_ptr(), matrix.weight.data_ptr(),
             matrix.scales.data_ptr(), matrix.zeros.data_ptr(), None if matrix.bias is None else matrix.bias.data_ptr(),
             result.data_ptr(), matrix.scratch.data_ptr(), matrix.locks.data_ptr(),
             x.shape[0], matrix.outputs, matrix.inputs, self.sms, self.shared,

@@ -3,11 +3,11 @@ import tempfile
 import unittest
 import torch
 from unittest.mock import patch
-from dllm.cuda_glm_flash_generation import CudaFlashGenerator,CudaFlashToolGenerator
-from dllm.cuda_reference_serving import CudaFlashReferenceRuntime
-from dllm.reference_serving import ReferenceRuntime
-from dllm.glm_generation import ReferenceGenerator
-from dllm.glm_flash_tool_text import FlashToolText
+from damendaemon.cuda_glm_flash_generation import CudaFlashGenerator,CudaFlashToolGenerator
+from damendaemon.cuda_reference_serving import CudaFlashReferenceRuntime
+from damendaemon.reference_serving import ReferenceRuntime
+from damendaemon.glm_generation import ReferenceGenerator
+from damendaemon.glm_flash_tool_text import FlashToolText
 from tests.test_glm_flash_generation import text_fixture,ScriptedFlash
 
 
@@ -21,7 +21,7 @@ class CudaFlashGenerationTests(unittest.TestCase):
     def test_cuda_binding_rejects_cpu_and_does_not_offer_cpu_batch(self):
         with self.assertRaises(ValueError):CudaFlashGenerator(self.model,self.text)
         self.assertFalse(hasattr(CudaFlashToolGenerator,'generate_batch_tools'))
-        from dllm.glm_flash_generation import FlashReferenceGenerator
+        from damendaemon.glm_flash_generation import FlashReferenceGenerator
         ordinary=FlashReferenceGenerator(self.model,self.text)
         with self.assertRaises(ValueError):CudaFlashReferenceRuntime(ordinary)
 

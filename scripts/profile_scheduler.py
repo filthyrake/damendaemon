@@ -6,7 +6,7 @@ import json
 import pstats
 import time
 
-from dllm.scheduler import BatchedRuntime
+from damendaemon.scheduler import BatchedRuntime
 
 
 def main():

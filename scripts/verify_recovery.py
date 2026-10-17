@@ -5,7 +5,7 @@ if not __debug__:
 import argparse
 import json
 
-from dllm.runtime import Runtime
+from damendaemon.runtime import Runtime
 
 
 def main():

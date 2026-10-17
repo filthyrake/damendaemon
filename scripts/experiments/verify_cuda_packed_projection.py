@@ -9,12 +9,12 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True)
     args=parser.parse_args()
     uuid=os.environ.get('CUDA_VISIBLE_DEVICES','')
-    if not uuid.startswith('GPU-') or ',' in uuid or os.environ.get('DLLM_SHARED_CUDA_GUARD')!='1':
+    if not uuid.startswith('GPU-') or ',' in uuid or os.environ.get('DAMENDAEMON_SHARED_CUDA_GUARD')!='1':
         parser.error('requires shared guard and explicit GPU UUID')
     if args.output.exists():parser.error('new output required')
     import torch
-    from dllm.cuda_packed_projection import cuda_packed_linear
-    from dllm.packed_projection import packed_linear
+    from damendaemon.cuda_packed_projection import cuda_packed_linear
+    from damendaemon.packed_projection import packed_linear
     from tests.test_packed_projection import fixture
     from scripts.experiments.split_gguf import save
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')

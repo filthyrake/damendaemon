@@ -1,20 +1,20 @@
 """Explicit validation-only global dispatch for the FP32 residual candidate."""
 import os
 import torch
-from dllm.native_kquant_residual_f32 import library, linear as _linear
+from damendaemon.native_kquant_residual_f32 import library, linear as _linear
 
 
 def linear(x, weight, layout, bias=None):
     return _linear(x, weight, layout, bias,
-                   library_path=os.environ['DLLM_EXPERIMENTAL_RESIDUAL_F32_LIBRARY'])
+                   library_path=os.environ['DAMENDAEMON_EXPERIMENTAL_RESIDUAL_F32_LIBRARY'])
 
 
 def install_validation_dispatch():
     import hashlib
     from pathlib import Path
-    from dllm import native_kquant
+    from damendaemon import native_kquant
 
-    path = Path(os.environ['DLLM_EXPERIMENTAL_RESIDUAL_F32_LIBRARY']).resolve()
+    path = Path(os.environ['DAMENDAEMON_EXPERIMENTAL_RESIDUAL_F32_LIBRARY']).resolve()
     library(str(path))
     original = native_kquant.linear_if_enabled
 

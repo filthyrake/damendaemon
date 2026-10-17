@@ -9,10 +9,10 @@ from urllib.request import Request, urlopen
 
 import torch
 
-from dllm.http_auth import AuthPolicy, ClientKey
-from dllm.request_scope import cache_scope
-from dllm.scheduler import BatchedRuntime, Pending
-from dllm.server import handler_for
+from damendaemon.http_auth import AuthPolicy, ClientKey
+from damendaemon.request_scope import cache_scope
+from damendaemon.scheduler import BatchedRuntime, Pending
+from damendaemon.server import handler_for
 from tests.test_scheduler import FakeRuntime, ChunkExecutor, PagedChunkExecutor
 
 
@@ -30,8 +30,8 @@ class CacheScopeTests(unittest.TestCase):
     def exercise_http(self,executor_type,capacity=None):
         alice='alice-cache-isolation-key'
         bob='bob-cache-isolation-key-1'
-        with patch('dllm.scheduler.Runtime',FakeRuntime), \
-                patch('dllm.prefix.available_memory',return_value=1024**3):
+        with patch('damendaemon.scheduler.Runtime',FakeRuntime), \
+                patch('damendaemon.prefix.available_memory',return_value=1024**3):
             runtime=BatchedRuntime({'a':'unused'},batch_size=2,queue_size=4,prefill_chunk_size=2,prefix_cache_tokens=32)
             executor=executor_type()
             executor.kv=[torch.zeros(2,2,1,256,2)]
@@ -66,7 +66,7 @@ class CacheScopeTests(unittest.TestCase):
             def cached(key,prompt='abcd'):
                 status,body=request(key,prompt)
                 self.assertEqual(status,200,body)
-                return json.loads(body)['dllm_timing']['cached_prompt_tokens']
+                return json.loads(body)['damendaemon_timing']['cached_prompt_tokens']
             try:
                 if capacity is not None:
                     expected=min(4,capacity)
@@ -114,15 +114,15 @@ class CacheScopeTests(unittest.TestCase):
                     self.exercise_http(executor,capacity)
 
     def test_prefix_capacity_configuration(self):
-        from dllm.request_scope import CacheScope
+        from damendaemon.request_scope import CacheScope
         key='alice-cache-isolation-key'
         for value in (None,True,-1,1.5,'8',2**31):
             config={'alice':{'key':key,'max_inflight':1,'max_prefix_cache_tokens':value}}
-            with patch.dict('os.environ',{'DLLM_CLIENT_KEYS':json.dumps(config)},clear=True):
+            with patch.dict('os.environ',{'DAMENDAEMON_CLIENT_KEYS':json.dumps(config)},clear=True):
                 with self.assertRaises(ValueError):AuthPolicy.from_env()
         for value in (0,8,2**31-1):
             config={'alice':{'key':key,'max_inflight':1,'max_prefix_cache_tokens':value}}
-            with patch.dict('os.environ',{'DLLM_CLIENT_KEYS':json.dumps(config)},clear=True):
+            with patch.dict('os.environ',{'DAMENDAEMON_CLIENT_KEYS':json.dumps(config)},clear=True):
                 self.assertEqual(AuthPolicy.from_env().clients[0].max_prefix_cache_tokens,value)
         for value in (True,-1,1.5,'8',2**31):
             with self.assertRaises(ValueError):CacheScope(value)

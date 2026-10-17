@@ -7,8 +7,8 @@ from pathlib import Path
 
 import torch
 
-from dllm.gguf_model import GgufWeights
-from dllm.kquant_kernels import expand, linear as ordinary
+from damendaemon.gguf_model import GgufWeights
+from damendaemon.kquant_kernels import expand, linear as ordinary
 from experiments.kquant_prefill_f32 import linear as candidate, compensated_linear
 from profile_kquant import timing
 

@@ -1,10 +1,10 @@
 {
   "native_format": "q4",
-  "model": "/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+  "model": "/home/damen/damendaemon-dev/baselines/mistral-spm-q4-comparator.gguf",
   "model_sha256": "cbea665de7de1050c1741ae205422a47bd62815c84c655fba55962fdc805ed66",
-  "native_library": "/home/damen/dllm-dev/build-kquant/libdllm-q4.so",
+  "native_library": "/home/damen/damendaemon-dev/build-kquant/libdamendaemon-q4.so",
   "native_library_sha256": "29dffba1428aab9846a5b71464855a4d48e6fbd6b9ec8a89a47f64b1ef0dd063",
-  "llama_server": "/home/damen/dllm-dev/baselines/llama-cuda-build/bin/llama-server",
+  "llama_server": "/home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/llama-server",
   "llama_server_sha256": "344fe55b9043e7cd362b199a24fcbb9eba7e1d9513e17083a18df4190002401d",
   "residual_library": null,
   "residual_library_sha256": null,
@@ -13,7 +13,7 @@
   "context_per_slot": 512,
   "slots": 4,
   "kv_dtype": "float16",
-  "dllm_precision": "mixed: FP16 matrices, FP32 residual/nonlinear",
+  "damendaemon_precision": "mixed: FP16 matrices, FP32 residual/nonlinear",
   "output_tokens": 16,
   "prompts": {
     "16": [
@@ -573,14 +573,14 @@
   "runs": [
     {
       "phase": 0,
-      "engine": "dllm",
+      "engine": "damendaemon",
       "command": [
-        "/home/damen/dllm-dev/venv/bin/python",
+        "/home/damen/damendaemon-dev/venv/bin/python",
         "-m",
-        "dllm",
+        "damendaemon",
         "serve",
         "--model",
-        "a=/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+        "a=/home/damen/damendaemon-dev/baselines/mistral-spm-q4-comparator.gguf",
         "--port",
         "57567",
         "--context",
@@ -596,7 +596,7 @@
         "--prefix-cache-tokens",
         "0"
       ],
-      "log": "results/mistral-spm-q4-http-a2-0-dllm.log",
+      "log": "results/mistral-spm-q4-http-a2-0-damendaemon.log",
       "cases": [
         {
           "prompt_tokens": 16,
@@ -1393,9 +1393,9 @@
       "phase": 1,
       "engine": "llama.cpp",
       "command": [
-        "/home/damen/dllm-dev/baselines/llama-cuda-build/bin/llama-server",
+        "/home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/llama-server",
         "--model",
-        "/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+        "/home/damen/damendaemon-dev/baselines/mistral-spm-q4-comparator.gguf",
         "--alias",
         "a",
         "--host",
@@ -2350,9 +2350,9 @@
       "phase": 2,
       "engine": "llama.cpp",
       "command": [
-        "/home/damen/dllm-dev/baselines/llama-cuda-build/bin/llama-server",
+        "/home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/llama-server",
         "--model",
-        "/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+        "/home/damen/damendaemon-dev/baselines/mistral-spm-q4-comparator.gguf",
         "--alias",
         "a",
         "--host",
@@ -3305,14 +3305,14 @@
     },
     {
       "phase": 3,
-      "engine": "dllm",
+      "engine": "damendaemon",
       "command": [
-        "/home/damen/dllm-dev/venv/bin/python",
+        "/home/damen/damendaemon-dev/venv/bin/python",
         "-m",
-        "dllm",
+        "damendaemon",
         "serve",
         "--model",
-        "a=/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+        "a=/home/damen/damendaemon-dev/baselines/mistral-spm-q4-comparator.gguf",
         "--port",
         "52991",
         "--context",
@@ -3328,7 +3328,7 @@
         "--prefix-cache-tokens",
         "0"
       ],
-      "log": "results/mistral-spm-q4-http-a2-3-dllm.log",
+      "log": "results/mistral-spm-q4-http-a2-3-damendaemon.log",
       "cases": [
         {
           "prompt_tokens": 16,
@@ -4123,7 +4123,7 @@
     }
   ],
   "swap_model": {
-    "path": "/home/damen/dllm-dev/baselines/qwen3-small-import-q4_k_m.gguf",
+    "path": "/home/damen/damendaemon-dev/baselines/qwen3-small-import-q4_k_m.gguf",
     "sha256": "9467d0bfdf4673a4182a6a02e8a66a89f1e2b5e214fcb120f1dc5068b83468df"
   },
   "production_residual_f32": false,

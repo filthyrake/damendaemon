@@ -1,6 +1,6 @@
 import unittest
-from dllm.config import rotary_scaling, eos_ids
-from dllm.config import decoder_config
+from damendaemon.config import rotary_scaling, eos_ids
+from damendaemon.config import decoder_config
 
 
 class ConfigTests(unittest.TestCase):
@@ -215,7 +215,7 @@ class Gpt2ConfigTests(unittest.TestCase):
 
 class YarnConfigTests(unittest.TestCase):
     def test_yarn_validation_and_attention_scaling(self):
-        from dllm.rotary import attention_factor
+        from damendaemon.rotary import attention_factor
         config = ConfigTests().config(rope_scaling={'type':'yarn', 'factor':4})
         parsed = decoder_config(config)
         self.assertGreater(attention_factor(parsed), 1)

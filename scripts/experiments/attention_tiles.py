@@ -9,8 +9,8 @@ import triton
 import triton.testing
 from torch.nn import functional as F
 from torch.nn.attention import sdpa_kernel, SDPBackend
-from dllm.kernels import _attention, _merge
-from dllm.runtime import require_gpu
+from damendaemon.kernels import _attention, _merge
+from damendaemon.runtime import require_gpu
 
 
 def attention(q, k, v, positions, slots, block, warps=4):

@@ -8,13 +8,13 @@ import statistics
 import sys
 import torch
 from safetensors import safe_open
-from dllm import mxfp4_kernels as base
+from damendaemon import mxfp4_kernels as base
 import mxfp4_tensorcore as candidate
 
 if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':raise RuntimeError('restricted to A2')
 
 torch.set_num_threads(4);torch.manual_seed(17)
-root=Path(sys.argv[1]);catalog=json.loads((root/'dllm-source.json').read_text())['tensors']
+root=Path(sys.argv[1]);catalog=json.loads((root/'damendaemon-source.json').read_text())['tensors']
 def get(key):
     with safe_open(str(root/catalog[key]['file']),framework='pt',device='cpu') as file:return file.get_tensor(key).cuda()
 rows=[]

@@ -3,10 +3,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.cpu_hybrid_checkpoint import load_cpu_checkpoint,load_cpu_stage_checkpoint
-from dllm.cpu_hybrid_stage import CpuHybridStage
-from dllm.cpu_pipeline_build import build_cpu_pipeline
-from dllm.safetensor_header import read_header
+from damendaemon.cpu_hybrid_checkpoint import load_cpu_checkpoint,load_cpu_stage_checkpoint
+from damendaemon.cpu_hybrid_stage import CpuHybridStage
+from damendaemon.cpu_pipeline_build import build_cpu_pipeline
+from damendaemon.safetensor_header import read_header
 from tests.test_cpu_hybrid_checkpoint import snapshot,write_shards
 from tests.test_cpu_stage_plan import OPTIONS
 
@@ -17,7 +17,7 @@ class CpuStageCheckpointTests(unittest.TestCase):
         temp=tempfile.TemporaryDirectory();self.addCleanup(temp.cleanup);self.path=Path(temp.name)
 
     def test_selected_payload_names_storage_and_split_execution(self):
-        from dllm import cpu_hybrid_checkpoint as loader
+        from damendaemon import cpu_hybrid_checkpoint as loader
         payload=loader._payload
         for mode in ('none','q4_0','q8_0'):
             for tied in (False,True):
@@ -69,7 +69,7 @@ class CpuStageCheckpointTests(unittest.TestCase):
             part=load_cpu_stage_checkpoint(self.path,1,2,quantization=mode,max_context=16)
             options=dict(quantization=mode,max_context=16,max_weight_bytes=part.bytes,max_workspace_bytes=part.loader_workspace_bytes)
             load_cpu_stage_checkpoint(self.path,1,2,**options)
-            with patch('dllm.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')):
+            with patch('damendaemon.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')):
                 with self.assertRaises(ValueError):load_cpu_checkpoint(self.path,**options)
                 for key in ('max_weight_bytes','max_workspace_bytes'):
                     with self.assertRaises(ValueError):load_cpu_stage_checkpoint(self.path,1,2,**(options|{key:options[key]-1}))
@@ -83,7 +83,7 @@ class CpuStageCheckpointTests(unittest.TestCase):
             elif defect=='shape':changed[name]=raw[name][:1]
             else:changed[name]=raw[name].double()
             write_shards(self.path,changed)
-            with patch('dllm.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')):
+            with patch('damendaemon.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')):
                 with self.assertRaises(ValueError):load_cpu_stage_checkpoint(self.path,0,1,max_context=16)
         raw[name][0,0]=float('nan');write_shards(self.path,raw)
         load_cpu_stage_checkpoint(self.path,0,1,max_context=16)
@@ -93,7 +93,7 @@ class CpuStageCheckpointTests(unittest.TestCase):
     def test_invalid_ranges_and_whole_range_tied_alias(self):
         snapshot(self.path,tied=True)
         for start,end in ((True,2),(-1,2),(2,2),(2,1),(0,5)):
-            with patch('dllm.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')):
+            with patch('damendaemon.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')):
                 with self.assertRaises(ValueError):load_cpu_stage_checkpoint(self.path,start,end,max_context=16)
         part=load_cpu_stage_checkpoint(self.path,0,4,max_context=16)
         self.assertIs(part.weights['head'],part.weights['embed'])

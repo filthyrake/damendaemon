@@ -2,8 +2,8 @@
 import argparse
 import json
 from pathlib import Path
-from dllm.checkpoint import _unique_fields
-from dllm.qualification_scorecard import evaluate_scorecard,verify_evidence
+from damendaemon.checkpoint import _unique_fields
+from damendaemon.qualification_scorecard import evaluate_scorecard,verify_evidence
 
 
 def main(argv=None):

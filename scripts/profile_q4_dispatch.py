@@ -12,10 +12,10 @@ from pathlib import Path
 import torch
 import triton.testing
 
-from dllm.gguf_model import GgufWeights
-from dllm.quantization import dequantize_q4
-from dllm.quantized_kernels_q4 import expand, linear, _gemm
-from dllm.runtime import require_gpu
+from damendaemon.gguf_model import GgufWeights
+from damendaemon.quantization import dequantize_q4
+from damendaemon.quantized_kernels_q4 import expand, linear, _gemm
+from damendaemon.runtime import require_gpu
 
 
 def main():
@@ -43,7 +43,7 @@ def main():
                   gpu_uuid=os.environ.get('CUDA_VISIBLE_DEVICES'), torch=torch.__version__,
                   triton=triton.__version__,
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-                  kernel_sha256=hashlib.sha256((Path(__file__).resolve().parents[1]/'dllm/quantized_kernels_q4.py').read_bytes()).hexdigest(),
+                  kernel_sha256=hashlib.sha256((Path(__file__).resolve().parents[1]/'damendaemon/quantized_kernels_q4.py').read_bytes()).hexdigest(),
                   scope=('real Q4 projections; pipeline/output-tile experiment; no production changes' if args.launch_tuning else
                          'real Q4 projections; smaller fused tiles' if args.tiles else
                          'real Q4 projections; expansion included; no persistent dense cache'),

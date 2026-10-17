@@ -50,7 +50,7 @@ Generated text and usage match exactly across every mode and concurrency.
 
 At concurrency four, batching improves aggregate throughput by **2.09x** and
 reduces median first text by **77.7%**, with essentially unchanged single-request
-latency. This is an optimization comparison within dllm, not a comparison with
+latency. This is an optimization comparison within damendaemon, not a comparison with
 another engine, another GPU, or RDMA. It does not imply each request decodes
 faster in isolation. Reproduce with
 `scripts/experiments/bench_distributed_service.py`; use explicit GPU UUIDs and

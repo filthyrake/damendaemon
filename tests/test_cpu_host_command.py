@@ -93,7 +93,7 @@ class CpuHostCommandTests(unittest.TestCase):
             with self.assertRaises(SystemExit):cli.main(self.args('complete',1234))
 
     def test_verified_snapshot_peers_and_mixed_mode_rejection(self):
-        from dllm.cpu_snapshot_identity import fingerprint
+        from damendaemon.cpu_snapshot_identity import fingerprint
         identity=fingerprint(self.path).model_id
         extra=['--verify-model-id','--model-id',identity]
         for verified in (True,False):
@@ -120,7 +120,7 @@ class CpuHostCommandTests(unittest.TestCase):
             self.assertEqual(caught.exception.code,2)
 
     def test_mutation_during_load_fails_before_handshake(self):
-        from dllm.cpu_snapshot_identity import fingerprint
+        from damendaemon.cpu_snapshot_identity import fingerprint
         from unittest.mock import Mock
         identity=fingerprint(self.path).model_id
         worker=Mock()

@@ -1,13 +1,13 @@
 import unittest
 from unittest.mock import patch
-from dllm.cuda_glm_flash_model import CudaFlashModel,CudaFlashBlock,CudaPackedFlashFeedForward
+from damendaemon.cuda_glm_flash_model import CudaFlashModel,CudaFlashBlock,CudaPackedFlashFeedForward
 from tests.test_glm_flash_model import fixture
 
 
 class CudaFlashModelAdmissionTests(unittest.TestCase):
     def test_cpu_model_rejected_before_core(self):
         cpu=fixture()
-        with patch('dllm.cuda_glm_flash_model._FlashModel.__init__',side_effect=AssertionError('core entered')):
+        with patch('damendaemon.cuda_glm_flash_model._FlashModel.__init__',side_effect=AssertionError('core entered')):
             with self.assertRaisesRegex(ValueError,'CUDA tensors'):CudaFlashModel(cpu.embedding,cpu.blocks,cpu.norm,cpu.head)
 
     def test_cpu_block_rejected(self):

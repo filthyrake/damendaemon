@@ -24,7 +24,7 @@ def main():
         if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':raise RuntimeError('CUDA reference restricted to A2')
         torch.set_float32_matmul_precision('highest')
     torch.set_num_threads(4);torch.set_grad_enabled(False)
-    source=json.loads((root/'dllm-source.json').read_text());catalog=source['tensors']
+    source=json.loads((root/'damendaemon-source.json').read_text());catalog=source['tensors']
     def get(key):
         with safe_open(str(root/catalog[key]['file']),framework='pt',device='cpu') as reader:
             return reader.get_tensor(key)

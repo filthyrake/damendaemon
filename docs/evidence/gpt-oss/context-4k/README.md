@@ -7,7 +7,7 @@ Hardware: NVIDIA A2, native MXFP4 weights, FP32 residual/KV policy.
 The subsequent [fused-prefill implementation](../fused-prefill/README.md) repairs
 the five targeted output prefixes. The original failures below are preserved
 as historical controls. This evidence does **not** qualify longer-context numerical parity. Track the
-open failure in [issue #41](https://github.com/filthyrake/dllm/issues/41).
+open failure in [issue #41](https://github.com/filthyrake/damendaemon/issues/41).
 
 ## Memory change
 
@@ -70,7 +70,7 @@ under `scripts/experiments/`, with no production policy change.
 Use the authorized A2 UUID in `CUDA_VISIBLE_DEVICES`, `PYTHONPATH=.`, and the
 pinned checkpoint prepared by `scripts/prepare_gpt_oss.py`. Reference generation
 requires the independent Transformers environment documented in the GPT-OSS
-architecture evidence. Native scripts use the dllm CUDA environment.
+architecture evidence. Native scripts use the damendaemon CUDA environment.
 
 - `scripts/verify_attention_budget.py --output attention.json`
 - `scripts/reference_gpt_oss.py MODEL --prefix-lengths 1025 4088 --output cpu.pt`

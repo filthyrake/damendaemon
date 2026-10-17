@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.runtime import Runtime
+from damendaemon.runtime import Runtime
 
 
 class NativeCompletionTests(unittest.TestCase):
@@ -33,10 +33,10 @@ class NativeCompletionTests(unittest.TestCase):
                         if failure=='session':raise RuntimeError('session release failed')
                 runtime.session=session
                 with ExitStack() as stack:
-                    stack.enter_context(patch('dllm.harmony.output_stream',return_value=None))
-                    stack.enter_context(patch('dllm.prompts.encode',return_value=[1]))
-                    stack.enter_context(patch('dllm.prompts.validate_lengths'))
-                    stack.enter_context(patch('dllm.runtime.decode_output',return_value='ok'))
+                    stack.enter_context(patch('damendaemon.harmony.output_stream',return_value=None))
+                    stack.enter_context(patch('damendaemon.prompts.encode',return_value=[1]))
+                    stack.enter_context(patch('damendaemon.prompts.validate_lengths'))
+                    stack.enter_context(patch('damendaemon.runtime.decode_output',return_value='ok'))
                     stream=runtime.generate('a',[],1)
                     try:
                         self.assertEqual(next(stream)['text'],'ok')
@@ -68,9 +68,9 @@ class NativeCompletionTests(unittest.TestCase):
                 try:yield executor,'host',0
                 finally:state['session']=False
             runtime.session=session
-            with patch('dllm.harmony.output_stream',return_value=None), \
-                    patch('dllm.prompts.encode',return_value=[1]), \
-                    patch('dllm.prompts.validate_lengths'):
+            with patch('damendaemon.harmony.output_stream',return_value=None), \
+                    patch('damendaemon.prompts.encode',return_value=[1]), \
+                    patch('damendaemon.prompts.validate_lengths'):
                 with self.subTest(value=value),self.assertRaisesRegex(RuntimeError,'non-finite greedy'):
                     next(runtime.generate('a',[],1))
             self.assertFalse(state['kv']);self.assertFalse(state['session'])

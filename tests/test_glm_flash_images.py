@@ -3,8 +3,8 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_flash_images import prepare_images,image_layout,validate_processor,MEAN,STD
-from dllm.glm_flash_vision import FlashVision,vision_specs
+from damendaemon.glm_flash_images import prepare_images,image_layout,validate_processor,MEAN,STD
+from damendaemon.glm_flash_vision import FlashVision,vision_specs
 from tests.test_glm_flash_vision import fixture
 
 
@@ -58,7 +58,7 @@ class FlashImageTests(unittest.TestCase):
         reference=resize(image.permute(2,0,1).unsqueeze(0),size=(ch,cw),mode='bicubic',align_corners=False,antialias=True)[0]
         seen=[]
         def checked(value,**options):seen.append(value.dtype);return resize(value,**options)
-        with patch('dllm.glm_flash_images.F.interpolate',side_effect=checked):patches,grids=prepare_images([image])
+        with patch('damendaemon.glm_flash_images.F.interpolate',side_effect=checked):patches,grids=prepare_images([image])
         self.assertEqual(seen,[torch.uint8]);rows,columns=grids[0][1:]
         for py,px in ((0,0),(min(ch-1,14),min(cw-1,21)),(h-1,w-1)):
             patch_y,patch_x=py//14,px//14
@@ -70,7 +70,7 @@ class FlashImageTests(unittest.TestCase):
 
     def test_complete_batch_admission_precedes_allocation_and_resize(self):
         image=torch.zeros(112,112,3,dtype=torch.uint8)
-        with patch('dllm.glm_flash_images.torch.empty',side_effect=AssertionError('allocated')),patch('dllm.glm_flash_images.F.interpolate',side_effect=AssertionError('resized')):
+        with patch('damendaemon.glm_flash_images.torch.empty',side_effect=AssertionError('allocated')),patch('damendaemon.glm_flash_images.F.interpolate',side_effect=AssertionError('resized')):
             for options in (dict(max_patches=100),dict(max_output_bytes=1),dict(max_workspace_bytes=1)):
                 with self.assertRaisesRegex(ValueError,'budget'):prepare_images([image,image],**options)
             for images in ([],[image,image.float()],[image,torch.zeros(0,3,3,dtype=torch.uint8)]):

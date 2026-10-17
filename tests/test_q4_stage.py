@@ -2,9 +2,9 @@
 import unittest
 from unittest.mock import Mock,patch
 import torch
-from dllm.q4_stage import StageQ4Linear,repack_adjacent
-from dllm.quantization import dequantize_q4
-from dllm.partition_policy import q4_stage_adjacent_enabled
+from damendaemon.q4_stage import StageQ4Linear,repack_adjacent
+from damendaemon.quantization import dequantize_q4
+from damendaemon.partition_policy import q4_stage_adjacent_enabled
 
 
 class Q4StageTests(unittest.TestCase):
@@ -27,7 +27,7 @@ class Q4StageTests(unittest.TestCase):
         pointer=target.data_ptr()
         for canonical in (target.clone(),torch.full_like(target,0x42)):
             target.copy_(canonical)
-            with patch('dllm.q4_stage.repack_adjacent',wraps=repack_adjacent) as repack:
+            with patch('damendaemon.q4_stage.repack_adjacent',wraps=repack_adjacent) as repack:
                 linear.refresh()
                 repack.assert_called_once()
             self.assertEqual(pointer,target.data_ptr())
@@ -42,36 +42,36 @@ class Q4StageTests(unittest.TestCase):
     def test_policy_defaults_to_qualified_q4_and_allows_legacy_control(self):
         with patch.dict('os.environ',{},clear=True):
             self.assertTrue(q4_stage_adjacent_enabled('q4_0'))
-        with patch.dict('os.environ',{'DLLM_Q4_STAGE_ADJACENT':'1'}):
+        with patch.dict('os.environ',{'DAMENDAEMON_Q4_STAGE_ADJACENT':'1'}):
             self.assertTrue(q4_stage_adjacent_enabled('q4_0'))
             self.assertFalse(q4_stage_adjacent_enabled('q8_0'))
-        with patch.dict('os.environ',{'DLLM_Q4_STAGE_ADJACENT':'0'}):
+        with patch.dict('os.environ',{'DAMENDAEMON_Q4_STAGE_ADJACENT':'0'}):
             self.assertFalse(q4_stage_adjacent_enabled('q4_0'))
         for value in ('true','','2'):
-            with patch.dict('os.environ',{'DLLM_Q4_STAGE_ADJACENT':value}),self.assertRaises(ValueError):
+            with patch.dict('os.environ',{'DAMENDAEMON_Q4_STAGE_ADJACENT':value}),self.assertRaises(ValueError):
                 q4_stage_adjacent_enabled('q4_0')
 
     def test_runtime_bounds_keep_slow_down_tiles_static(self):
-        from dllm.q4_stage import use_runtime_rows,runtime_rows_enabled
+        from damendaemon.q4_stage import use_runtime_rows,runtime_rows_enabled
         for rows in (1,16,17,32,33,64,65,128):self.assertTrue(use_runtime_rows(rows,896))
         for rows in (1,16,33,64):self.assertTrue(use_runtime_rows(rows,4864))
         for rows in (0,17,32,65,128,129):self.assertFalse(use_runtime_rows(rows,4864))
         for rows,width in ((0,896),(129,896),(4,1024)):self.assertFalse(use_runtime_rows(rows,width))
         with patch.dict('os.environ',{},clear=True):self.assertTrue(runtime_rows_enabled())
-        with patch.dict('os.environ',{'DLLM_Q4_STAGE_RUNTIME_ROWS':'0'}):self.assertFalse(runtime_rows_enabled())
-        with patch.dict('os.environ',{'DLLM_Q4_STAGE_RUNTIME_ROWS':'1'}):self.assertTrue(runtime_rows_enabled())
-        with patch.dict('os.environ',{'DLLM_Q4_STAGE_RUNTIME_ROWS':'invalid'}),self.assertRaises(ValueError):runtime_rows_enabled()
+        with patch.dict('os.environ',{'DAMENDAEMON_Q4_STAGE_RUNTIME_ROWS':'0'}):self.assertFalse(runtime_rows_enabled())
+        with patch.dict('os.environ',{'DAMENDAEMON_Q4_STAGE_RUNTIME_ROWS':'1'}):self.assertTrue(runtime_rows_enabled())
+        with patch.dict('os.environ',{'DAMENDAEMON_Q4_STAGE_RUNTIME_ROWS':'invalid'}),self.assertRaises(ValueError):runtime_rows_enabled()
 
     def test_runtime_rotary_defaults_to_q4_and_allows_static_control(self):
-        from dllm.partition_policy import q4_stage_runtime_rope_enabled
+        from damendaemon.partition_policy import q4_stage_runtime_rope_enabled
         with patch.dict('os.environ',{},clear=True):
             self.assertTrue(q4_stage_runtime_rope_enabled('q4_0'))
-        with patch.dict('os.environ',{'DLLM_Q4_STAGE_RUNTIME_ROPE':'0'}):
+        with patch.dict('os.environ',{'DAMENDAEMON_Q4_STAGE_RUNTIME_ROPE':'0'}):
             self.assertFalse(q4_stage_runtime_rope_enabled('q4_0'))
-        with patch.dict('os.environ',{'DLLM_Q4_STAGE_RUNTIME_ROPE':'1'}):
+        with patch.dict('os.environ',{'DAMENDAEMON_Q4_STAGE_RUNTIME_ROPE':'1'}):
             self.assertTrue(q4_stage_runtime_rope_enabled('q4_0'))
             for quantization in ('none','q8_0'):
                 self.assertFalse(q4_stage_runtime_rope_enabled(quantization))
         for value in ('true','','2'):
-            with patch.dict('os.environ',{'DLLM_Q4_STAGE_RUNTIME_ROPE':value}),self.assertRaises(ValueError):
+            with patch.dict('os.environ',{'DAMENDAEMON_Q4_STAGE_RUNTIME_ROPE':value}),self.assertRaises(ValueError):
                 q4_stage_runtime_rope_enabled('q4_0')

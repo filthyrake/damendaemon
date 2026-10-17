@@ -14,7 +14,7 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
-    from dllm.cuda_compressed_indexer import select_compressed
+    from damendaemon.cuda_compressed_indexer import select_compressed
     from tests.test_compressed_indexer import CompressedIndexerTests,oracle
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')
     torch.set_num_threads(1);torch.backends.cuda.matmul.allow_tf32=False
@@ -48,7 +48,7 @@ def main():
         rejected(lambda:select_compressed(q,poisoned,w,p,ratio=4,top_k=5))
         rejected(lambda:select_compressed(q*0+1e30,k*0+1e30,w*0+1,p,ratio=4,top_k=5))
         for option in ('max_workspace_bytes','max_output_bytes'):
-            with patch('dllm.cuda_compressed_indexer.torch.isfinite',side_effect=AssertionError('scan before admission')):
+            with patch('damendaemon.cuda_compressed_indexer.torch.isfinite',side_effect=AssertionError('scan before admission')):
                 rejected(lambda:select_compressed(*device,ratio=4,top_k=5,**{option:1}))
         rejected(lambda:select_compressed(q,k,w,p.cpu(),ratio=4,top_k=5))
         rejected(lambda:select_compressed(q,k,w,p-100,ratio=4,top_k=5))

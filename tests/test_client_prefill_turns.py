@@ -4,12 +4,12 @@ import queue
 import time
 import unittest
 from unittest.mock import patch
-from dllm.client_prefill_turns import ClientPrefillTurns,SERVICE_UNITS
-from dllm.request_scope import CacheScope,cache_scope
-from dllm.scheduler import BatchedRuntime
-from dllm.distributed_serving import DistributedRuntime,Request
-from dllm.cpu_hybrid_checkpoint import load_cpu_checkpoint
-from dllm.cpu_pipeline_generation import CpuPipelineReferenceGenerator
+from damendaemon.client_prefill_turns import ClientPrefillTurns,SERVICE_UNITS
+from damendaemon.request_scope import CacheScope,cache_scope
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.distributed_serving import DistributedRuntime,Request
+from damendaemon.cpu_hybrid_checkpoint import load_cpu_checkpoint
+from damendaemon.cpu_pipeline_generation import CpuPipelineReferenceGenerator
 from tests import test_scheduler as scheduler_fixtures,test_host_serving as host_fixtures
 from tests import test_host_interleaved_prefill as interleaved_fixtures
 from tests.test_distributed_serving import Pair
@@ -45,11 +45,11 @@ class ClientPrefillTurnTests(unittest.TestCase):
 
     def test_ordinary_and_paged_chunk_owners_preserve_outputs_and_token_turns(self):
         for executor_type in (scheduler_fixtures.ChunkExecutor,scheduler_fixtures.PagedChunkExecutor):
-            with patch('dllm.scheduler.Runtime',scheduler_fixtures.FakeRuntime):
+            with patch('damendaemon.scheduler.Runtime',scheduler_fixtures.FakeRuntime):
                 runtime=BatchedRuntime({'a':'a'},batch_size=4,queue_size=8,prefill_chunk_size=2,client_prefill_turns=True)
             executor=executor_type();runtime.runtime.executor=executor
             if hasattr(executor,'pool'):
-                from dllm.pages import PagePool
+                from damendaemon.pages import PagePool
                 executor.pool=PagePool(128,4,executor.context)
             a,b=CacheScope(),CacheScope();counts={id(a):0,id(b):0};observed=[];choose=runtime.prefill_turns.choose
             def select(ready):
@@ -116,11 +116,11 @@ class ClientPrefillTurnTests(unittest.TestCase):
     def test_bad_or_unsupported_options_reject_before_runtime_or_prefill(self):
         for options in (dict(client_prefill_turns=1,prefill_chunk_size=2),dict(client_prefill_turns=True),
                         dict(client_prefill_turns=True,prefill_chunk_size=2**20+1)):
-            with patch('dllm.scheduler.Runtime',side_effect=AssertionError('runtime constructed')):
+            with patch('damendaemon.scheduler.Runtime',side_effect=AssertionError('runtime constructed')):
                 with self.assertRaises(ValueError):BatchedRuntime({},**options)
         for options in (dict(client_prefill_turns=True),dict(client_prefill_turns=1,interleaved_prefill=True)):
             with self.assertRaises(ValueError):DistributedRuntime(Pair(),**options)
-        with patch('dllm.scheduler.Runtime',scheduler_fixtures.FakeRuntime):
+        with patch('damendaemon.scheduler.Runtime',scheduler_fixtures.FakeRuntime):
             runtime=BatchedRuntime({'a':'a'},prefill_chunk_size=2,client_prefill_turns=True)
         try:
             with self.assertRaisesRegex(ValueError,'chunk-capable'):list(runtime.generate('a',[{'content':'hi'}],1))
@@ -128,9 +128,9 @@ class ClientPrefillTurnTests(unittest.TestCase):
         finally:runtime.close()
 
     def test_ordinary_command_forwards_explicit_prefill_policy(self):
-        from dllm.cli import main
-        with patch('sys.argv',['dllm','serve','--model','a=/local/snapshot','--prefill-chunk-size','2','--client-prefill-turns']), \
-                patch('dllm.scheduler.BatchedRuntime') as runtime,patch('dllm.server.serve'):
+        from damendaemon.cli import main
+        with patch('sys.argv',['damendaemon','serve','--model','a=/local/snapshot','--prefill-chunk-size','2','--client-prefill-turns']), \
+                patch('damendaemon.scheduler.BatchedRuntime') as runtime,patch('damendaemon.server.serve'):
             main()
         self.assertTrue(runtime.call_args.kwargs['client_prefill_turns'])
         self.assertEqual(runtime.call_args.kwargs['prefill_chunk_size'],2)

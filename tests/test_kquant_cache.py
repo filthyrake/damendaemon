@@ -4,8 +4,8 @@ from unittest.mock import Mock, patch
 
 import torch
 
-from dllm.kquant_cache import plan
-from dllm.quantization import Linear
+from damendaemon.kquant_cache import plan
+from damendaemon.quantization import Linear
 
 
 class KquantCacheTests(unittest.TestCase):
@@ -27,7 +27,7 @@ class KquantCacheTests(unittest.TestCase):
     def test_default_off_and_budget_includes_unique_nonembedding_copies(self):
         with patch.dict(os.environ, {}, clear=True):
             self.assertEqual(plan(**self.args).bytes, 0)
-        with patch.dict(os.environ, {'DLLM_KQUANT_DENSE_CACHE_MIB': '1'}):
+        with patch.dict(os.environ, {'DAMENDAEMON_KQUANT_DENSE_CACHE_MIB': '1'}):
             chosen = plan(**self.args)
             self.assertEqual(chosen.names, ('head', 'out'))
             self.assertEqual(chosen.bytes, 2 * 2 * 2048 * 16)
@@ -39,7 +39,7 @@ class KquantCacheTests(unittest.TestCase):
 
     def test_rejects_malformed_budget_and_unqualified_scopes(self):
         for value in ('-1', '1.5', 'nan', 'unlimited'):
-            with self.subTest(value=value), patch.dict(os.environ, {'DLLM_KQUANT_DENSE_CACHE_MIB': value}):
+            with self.subTest(value=value), patch.dict(os.environ, {'DAMENDAEMON_KQUANT_DENSE_CACHE_MIB': value}):
                 with self.assertRaises(ValueError):
                     plan(**self.args)
         changes = ({'device': 'mps'}, {'dtype': torch.float32}, {'precision': 'float32'},
@@ -48,7 +48,7 @@ class KquantCacheTests(unittest.TestCase):
                    {'config': {**self.config, 'rope_scaling': {'type': 'linear', 'factor': 2}}},
                    {'config': {**self.config, 'sliding_window': 512}},
                    {'layouts': {'head': (2048, ((0, 16, 13, 0),))}})
-        with patch.dict(os.environ, {'DLLM_KQUANT_DENSE_CACHE_MIB': '1'}):
+        with patch.dict(os.environ, {'DAMENDAEMON_KQUANT_DENSE_CACHE_MIB': '1'}):
             for change in changes:
                 with self.subTest(change=change):
                     self.assertEqual(plan(**{**self.args, **change}).bytes, 0)
@@ -74,7 +74,7 @@ class KquantCacheTests(unittest.TestCase):
                       head_dim=128, vocab_size=151936, max_position_embeddings=40960,
                       rope_theta=1000000)
         args = {**self.args, 'config': config, 'precision': 'standard', 'context': 2048}
-        with patch.dict(os.environ, {'DLLM_KQUANT_DENSE_CACHE_MIB': '1'}):
+        with patch.dict(os.environ, {'DAMENDAEMON_KQUANT_DENSE_CACHE_MIB': '1'}):
             self.assertGreater(plan(**args).bytes, 0)
             for change in ({'context': 2049}, {'precision': 'mixed'}, {'dtype': torch.float32},
                            {'config': {**config, 'head_dim': 64}},

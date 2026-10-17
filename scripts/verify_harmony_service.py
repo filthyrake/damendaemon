@@ -14,15 +14,15 @@ from urllib.request import Request,urlopen
 import weakref
 
 import torch
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer,handler_for
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer,handler_for
 
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('model');parser.add_argument('swap_model')
     parser.add_argument('--output',required=True);args=parser.parse_args()
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':raise RuntimeError('restricted to A2')
-    os.environ['DLLM_DEVICE']='cuda';torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_DEVICE']='cuda';torch.set_num_threads(4)
     runtime=BatchedRuntime({'oss':args.model,'swap':args.swap_model},context=512,batch_size=2,host_gib=18,host_models=2,gpu_models=1)
     server=BoundedHTTPServer(('127.0.0.1',0),handler_for(runtime));thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
     url=f'http://127.0.0.1:{server.server_port}/v1/chat/completions'
@@ -85,7 +85,7 @@ def main():
         stream(base,disconnect=True);equal(post(base),reference)
         with ThreadPoolExecutor(2) as pool:concurrent=list(pool.map(lambda _:post(base),range(2)))
         for result in concurrent:equal(result,reference)
-        assert max(result['dllm_timing']['max_batch_size'] for result in concurrent)==2
+        assert max(result['damendaemon_timing']['max_batch_size'] for result in concurrent)==2
         for invalid in ({**base,'logprobs':True},{**base,'response_format':{'type':'json_object'}},
             {**base,'tool_choice':'required','tools':[{'type':'function','function':{'name':'test','parameters':{'type':'object'}}}]},
             {**base,'reasoning_effort':'maximum'},{**base,'chat_template_kwargs':{'enable_thinking':True}}):
@@ -100,7 +100,7 @@ def main():
         del executor
         post({'model':'swap','messages':[{'role':'user','content':'Say hello.'}],'max_tokens':2,'temperature':0})
         gc.collect();torch.cuda.synchronize();assert old() is None and graph() is None
-        restored=post(base);equal(restored,reference);assert restored['dllm_timing']['source_tier']=='host'
+        restored=post(base);equal(restored,reference);assert restored['damendaemon_timing']['source_tier']=='host'
         result={'passed':True,'gpu':torch.cuda.get_device_name(),'context':512,'batch_size':2,'rows':rows,
             'disconnect_during_analysis_recovery':True,'concurrent_channel_isolation':True,
             'unsupported_forced_tools_schema_scores_rejected':True,'swap_graph_reclaimed':True,'host_restore_equivalent':True}

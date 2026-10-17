@@ -3,8 +3,8 @@ import argparse
 import json
 import torch
 from transformers import AutoModelForCausalLM
-from dllm.qwen2 import ModelWeights, Executor
-from dllm.runtime import require_gpu
+from damendaemon.qwen2 import ModelWeights, Executor
+from damendaemon.runtime import require_gpu
 
 
 def main():
@@ -30,8 +30,8 @@ def main():
         actual = executor.prefill(ids)
         for step in range(8):
             targets = [r.logits[:,-1] for r in results]
-            rows.append({'step':step, 'dllm_vs_fp16':error(actual,targets[0]),
-                         'dllm_vs_fp32':error(actual,targets[1]), 'reference_fp16_vs_fp32':error(targets[0],targets[1])})
+            rows.append({'step':step, 'damendaemon_vs_fp16':error(actual,targets[0]),
+                         'damendaemon_vs_fp32':error(actual,targets[1]), 'reference_fp16_vs_fp32':error(targets[0],targets[1])})
             token = targets[1].argmax().item()
             results = [ref(torch.tensor([[token]],device='cuda'),past_key_values=r.past_key_values,
                            use_cache=True,logits_to_keep=1) for ref,r in zip(refs,results)]

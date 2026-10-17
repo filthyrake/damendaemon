@@ -7,7 +7,7 @@
 #include <variant>
 
 // For STD_TORCH_CHECK
-#include "dllm_checks.hpp"  // dllm: standalone host check adapter; no libtorch dependency.
+#include "damendaemon_checks.hpp"  // damendaemon: standalone host check adapter; no libtorch dependency.
 
 namespace vllm {
 

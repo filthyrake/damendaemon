@@ -13,7 +13,7 @@
       "mode": "paired",
       "results": [
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 1,
           "thinking": "auto",
           "raw": true,
@@ -151,7 +151,7 @@
           ]
         },
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 2,
           "thinking": "auto",
           "raw": true,
@@ -367,7 +367,7 @@
           ]
         },
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 4,
           "thinking": "auto",
           "raw": true,
@@ -744,7 +744,7 @@
       "mode": "contiguous",
       "results": [
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 1,
           "thinking": "auto",
           "raw": true,
@@ -882,7 +882,7 @@
           ]
         },
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 2,
           "thinking": "auto",
           "raw": true,
@@ -1098,7 +1098,7 @@
           ]
         },
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 4,
           "thinking": "auto",
           "raw": true,
@@ -1475,7 +1475,7 @@
       "mode": "contiguous",
       "results": [
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 1,
           "thinking": "auto",
           "raw": true,
@@ -1613,7 +1613,7 @@
           ]
         },
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 2,
           "thinking": "auto",
           "raw": true,
@@ -1829,7 +1829,7 @@
           ]
         },
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 4,
           "thinking": "auto",
           "raw": true,
@@ -2206,7 +2206,7 @@
       "mode": "paired",
       "results": [
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 1,
           "thinking": "auto",
           "raw": true,
@@ -2344,7 +2344,7 @@
           ]
         },
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 2,
           "thinking": "auto",
           "raw": true,
@@ -2560,7 +2560,7 @@
           ]
         },
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 4,
           "thinking": "auto",
           "raw": true,
@@ -2936,17 +2936,17 @@
   ],
   "devices": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283,GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
   "sources": {
-    "dllm/batch.py": "b074a0bc205c4a958efb71b5b0e433897d80b0d2b881e5edfea6a49865d42d42",
-    "dllm/layer_stage.py": "c78e66da7e60f49628fff00da69ab5166b10cf7654c1616264e8b77a41e4043b",
-    "dllm/partition.py": "dcc3cbe19a8b6bcd61b7eca3c8d6b5f58b077f1cd723217d99c201a8dfbe6c73",
-    "dllm/partition_policy.py": "7baea9598766ff46fd35b8adee6ff2c211525a425c0283a95eb5b4e2edb3fe3a",
-    "dllm/quantized_kernels_q4.py": "8823b2a64db0fab5192f8cf7e5b856b10b43e8646b067bf008f09b6b58e3733d",
+    "damendaemon/batch.py": "b074a0bc205c4a958efb71b5b0e433897d80b0d2b881e5edfea6a49865d42d42",
+    "damendaemon/layer_stage.py": "c78e66da7e60f49628fff00da69ab5166b10cf7654c1616264e8b77a41e4043b",
+    "damendaemon/partition.py": "dcc3cbe19a8b6bcd61b7eca3c8d6b5f58b077f1cd723217d99c201a8dfbe6c73",
+    "damendaemon/partition_policy.py": "7baea9598766ff46fd35b8adee6ff2c211525a425c0283a95eb5b4e2edb3fe3a",
+    "damendaemon/quantized_kernels_q4.py": "8823b2a64db0fab5192f8cf7e5b856b10b43e8646b067bf008f09b6b58e3733d",
     "scripts/experiments/q4_prefill.py": "5ac8a70841c18768ed49035a972317ddd7403437feb2990ae77d6bdd9cc30042",
     "scripts/experiments/q4_body_single_dot.py": "c44ce1aaf35bd19ad0b4102227c5ff55fc627d5d033709be6dde6820e0f62fde",
     "scripts/experiments/q4_adjacent_body.py": "b453d596954761c9b8bb52b57dc74d71d78062d45fe51e62b27862ab884b54d0",
     "scripts/experiments/run_q4_body.py": "c575f8265800f6745c29b0df12cba3c21dff4b7bb47a53f62e2ff3cb1228454b",
-    "dllm/q4_stage.py": "085db7baadf8cb2212b342b1ef030094deaa273034e5ee5d1ca4d463789a7aae",
-    "dllm/q4_stage_kernels.py": "b0d7f66b1fe4bad9e21ffc17b72b1f44c56a8e68ea56eb1103e0a1ec239355c9"
+    "damendaemon/q4_stage.py": "085db7baadf8cb2212b342b1ef030094deaa273034e5ee5d1ca4d463789a7aae",
+    "damendaemon/q4_stage_kernels.py": "b0d7f66b1fe4bad9e21ffc17b72b1f44c56a8e68ea56eb1103e0a1ec239355c9"
   },
   "scope": "Same model, precision, GPU pair and HTTP workload; candidate changes both Q4 body arithmetic and prompt packing.",
   "body_kernel": "stage",

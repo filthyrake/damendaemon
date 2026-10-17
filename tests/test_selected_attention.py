@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.selected_attention import selected_attention
+from damendaemon.selected_attention import selected_attention
 
 
 def scalar_attention(query, kv, indices, sink, scale):
@@ -81,7 +81,7 @@ class SelectedAttentionTests(unittest.TestCase):
         def record(a, b):
             shapes.append((a.shape, b.shape))
             return original(a, b)
-        with patch('dllm.selected_attention.torch.matmul', side_effect=record):
+        with patch('damendaemon.selected_attention.torch.matmul', side_effect=record):
             selected_attention(query, kv, indices, sink, query_chunk=2, key_chunk=3)
         self.assertEqual(len(shapes), 18)
         for index, (a, b) in enumerate(shapes):
@@ -90,7 +90,7 @@ class SelectedAttentionTests(unittest.TestCase):
 
     def test_invalid_static_contracts_before_compute(self):
         query, kv, indices, sink = self.fixture()
-        with patch('dllm.selected_attention.torch.matmul', side_effect=AssertionError('compute started')):
+        with patch('damendaemon.selected_attention.torch.matmul', side_effect=AssertionError('compute started')):
             for options in ({'query_chunk':0}, {'key_chunk':257}, {'key_chunk':True}, {'scale':float('inf')}, {'scale':0}):
                 with self.assertRaises(ValueError):
                     selected_attention(query, kv, indices, sink, **options)

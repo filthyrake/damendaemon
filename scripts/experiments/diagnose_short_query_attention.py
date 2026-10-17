@@ -7,9 +7,9 @@ import time
 import torch
 from torch.nn import functional as F
 from torch.nn.attention.bias import causal_lower_right
-from dllm.device import attention
-from dllm.rocm_policy import memory_limit
-from dllm.runtime import require_gpu
+from damendaemon.device import attention
+from damendaemon.rocm_policy import memory_limit
+from damendaemon.runtime import require_gpu
 
 
 @torch.inference_mode()
@@ -23,7 +23,7 @@ def main():
            'grouped':('current','grouped_views','grouped_views','current','expanded_kv','grouped_views','grouped_views','expanded_kv'),
            'streaming':('current','streaming','streaming','current'),
            'matmul':('current','grouped_matmul','grouped_matmul','current')}[comparison]
-    if os.environ.get('DLLM_DEVICE') != 'rocm' or memory_limit() != 2*1024**3:
+    if os.environ.get('DAMENDAEMON_DEVICE') != 'rocm' or memory_limit() != 2*1024**3:
         raise ValueError('requires ROCm and 2-GiB allocator cap')
     require_gpu()
     torch.manual_seed(68)

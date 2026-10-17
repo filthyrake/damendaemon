@@ -1,6 +1,6 @@
 # Native GLM generation on a prepared CPU host session
 
-`dllm.glm_host_generation.HostGlmGenerator` explicitly binds the existing native
+`damendaemon.glm_host_generation.HostGlmGenerator` explicitly binds the existing native
 GLM reasoning/text and schema-bound tool format to a ready GLM host coordinator.
 It does not admit the model to generic HTTP serving or change the raw-token
 command. The peer owners must continuously step their workers.

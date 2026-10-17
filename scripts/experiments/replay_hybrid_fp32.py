@@ -2,7 +2,7 @@
 import os
 import runpy
 
-os.environ['DLLM_HYBRID_PRECISION'] = 'float32'
+os.environ['DAMENDAEMON_HYBRID_PRECISION'] = 'float32'
 
 if __name__ == '__main__':
     runpy.run_path('scripts/replay_reference.py', run_name='__main__')

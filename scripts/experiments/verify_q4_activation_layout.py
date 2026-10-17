@@ -9,7 +9,7 @@ from pathlib import Path
 
 import torch
 
-from dllm.native_q4_residual import library
+from damendaemon.native_q4_residual import library
 
 
 @torch.inference_mode()

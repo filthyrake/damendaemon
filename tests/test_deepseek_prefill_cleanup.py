@@ -3,10 +3,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.floating_attention import AttentionState
-from dllm.deepseek_reference_loader import load_reference_model,load_reference_stage
-from dllm.deepseek_generation import ReferenceGenerator
-from dllm.reference_serving import ReferenceRuntime
+from damendaemon.floating_attention import AttentionState
+from damendaemon.deepseek_reference_loader import load_reference_model,load_reference_stage
+from damendaemon.deepseek_generation import ReferenceGenerator
+from damendaemon.reference_serving import ReferenceRuntime
 from tests.test_floating_block import fixture as block_fixture
 from tests.test_deepseek_reference_loader import fixture
 from tests.test_deepseek_generation import text_fixture
@@ -22,7 +22,7 @@ class DeepSeekPrefillCleanupTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'original FFN') as error:block.prefill(hidden[:,:3],tokens[:,:3],max_tokens=8)
             self.assertTrue(error.exception.__notes__);self.assertEqual(len(block.failed_prefills),1)
             state=block.failed_prefills[0];self.assertIsNotNone(state.cache)
-            with patch('dllm.floating_block.attention_prefill',side_effect=AssertionError('allocate')):
+            with patch('damendaemon.floating_block.attention_prefill',side_effect=AssertionError('allocate')):
                 with self.assertRaisesRegex(OSError,'release'):block.prefill(hidden[:,:3],tokens[:,:3],max_tokens=8)
         block.cleanup_failed_prefills();self.assertFalse(block.failed_prefills);self.assertTrue(state.closed)
         _,state=block.prefill(hidden[:,:3],tokens[:,:3],max_tokens=8);state.close()

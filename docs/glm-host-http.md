@@ -1,6 +1,6 @@
 # Prepared native GLM host HTTP
 
-`HostGlmReferenceRuntime` in `dllm.glm_host_serving` explicitly owns one prepared
+`HostGlmReferenceRuntime` in `damendaemon.glm_host_serving` explicitly owns one prepared
 `HostGlmGenerator`. Use `handler_for_reference` and the existing bounded HTTP
 server/authentication policy. Peer workers must continue stepping externally.
 Generic `ReferenceRuntime` still rejects a host runner, and the prepared host

@@ -8,7 +8,7 @@ import statistics
 import time
 import torch
 from unittest.mock import patch
-from dllm import quantized_metal,quantized_metal_q4
+from damendaemon import quantized_metal,quantized_metal_q4
 
 
 @torch.inference_mode()

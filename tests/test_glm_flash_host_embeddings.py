@@ -2,8 +2,8 @@ from concurrent.futures import ThreadPoolExecutor
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.host_tensor_channel import HostTensorChannel
-from dllm.glm_flash_image_embeddings import image_embeddings
+from damendaemon.host_tensor_channel import HostTensorChannel
+from damendaemon.glm_flash_image_embeddings import image_embeddings
 from tests import test_glm_flash_host_pipeline as host, test_host_tls
 
 
@@ -51,7 +51,7 @@ class FlashHostEmbeddingTests(unittest.TestCase):
             self.command(owners,first.stop);self.assertTrue(all(owner.closed for owner in owners))
 
     def test_real_vision_projection_enters_language_stages_once(self):
-        from dllm.glm_flash_vision import FlashVision,vision_specs
+        from damendaemon.glm_flash_vision import FlashVision,vision_specs
         from tests.test_glm_flash_vision import fixture
         c,_=fixture();c['out_hidden_size']=16
         torch.manual_seed(97);weights={name:torch.randn(shape)*.05 for name,shape in vision_specs(c).items()}
@@ -90,7 +90,7 @@ class FlashHostEmbeddingTests(unittest.TestCase):
         self.assertNotEqual(plans[0].identity,plans[1].identity)
         for value in ('images',None,True):
             with self.assertRaises(ValueError):self.plan(input_kind=value)
-        from dllm.host_topology import HostTopology
+        from damendaemon.host_topology import HostTopology
         from tests.test_glm_checkpoint import config
         with self.assertRaises(ValueError):HostTopology(config(),[(0,2),(2,3)],b'g'*32,quantization='fp8_reference',input_kind='flash_embeddings')
         tls=test_host_tls.HostTlsTests();self.addCleanup(tls.doCleanups);links=[]
@@ -124,7 +124,7 @@ class FlashHostEmbeddingTests(unittest.TestCase):
 
     def test_native_text_owner_rejects_prepared_feature_mode(self):
         from tests.test_glm_flash_host_generation import FlashHostGenerationTests
-        from dllm.glm_flash_host_generation import HostFlashGenerator
+        from damendaemon.glm_flash_host_generation import HostFlashGenerator
         fixture=FlashHostGenerationTests();self.addCleanup(fixture.doCleanups)
         text,workers,_=fixture.session(input_kind='flash_embeddings')
         with self.assertRaisesRegex(ValueError,'native host generation'):

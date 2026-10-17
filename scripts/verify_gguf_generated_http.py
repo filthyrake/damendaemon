@@ -15,11 +15,11 @@ import time
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
-from dllm.gguf_sentencepiece import restore_tokenizer
-from dllm.bench import events
-from dllm.gguf_model import plan
-from dllm.report_io import load_report
-from dllm.token_workload import token_workload_digest, teacher_token_lookup
+from damendaemon.gguf_sentencepiece import restore_tokenizer
+from damendaemon.bench import events
+from damendaemon.gguf_model import plan
+from damendaemon.report_io import load_report
+from damendaemon.token_workload import token_workload_digest, teacher_token_lookup
 
 
 def main():
@@ -70,7 +70,7 @@ def main():
         reference=args.reference,benchmark=args.benchmark,scope='normal HTTP continuation decoding against independently qualified token traces')
     with socket.socket() as listener:listener.bind(('127.0.0.1',0));port=listener.getsockname()[1]
     base=f'http://127.0.0.1:{port}'
-    command=[sys.executable,'-m','dllm','serve','--model',f'a={Path(args.model).resolve()}',
+    command=[sys.executable,'-m','damendaemon','serve','--model',f'a={Path(args.model).resolve()}',
              '--port',str(port),'--context','512','--batch-size','4','--kv-cache-tokens','0',
              '--prefill-chunk-size','0','--prefix-cache-tokens','0']
     report['command']=command
@@ -106,7 +106,7 @@ def main():
                             usage=records[0]
                             text=''.join(c.get('text','') for item in payloads for c in item['choices'])
                         else:
-                            value=json.load(response);text=value['choices'][0]['text'];case['timing']=value['dllm_timing']
+                            value=json.load(response);text=value['choices'][0]['text'];case['timing']=value['damendaemon_timing']
                             usage=value.get('usage')
                     if (not isinstance(usage,dict) or any(type(usage.get(key)) is not int or usage[key]!=count
                             for key,count in expected_usage.items())):

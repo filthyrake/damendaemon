@@ -7,9 +7,9 @@ import json
 import os
 import torch
 from reference_model import load_reference
-from dllm.models import load
-from dllm.runtime import require_gpu,make_executor
-from dllm.prefix import PrefixCache
+from damendaemon.models import load
+from damendaemon.runtime import require_gpu,make_executor
+from damendaemon.prefix import PrefixCache
 
 
 @torch.inference_mode()
@@ -18,7 +18,7 @@ def main():
     p.add_argument('--device',choices=('cuda','mps'),default='cuda')
     p.add_argument('--quantization',choices=('none','q8_0'),default='none')
     p.add_argument('--chunk-size',type=int,default=127)
-    args=p.parse_args();os.environ['DLLM_DEVICE']=args.device
+    args=p.parse_args();os.environ['DAMENDAEMON_DEVICE']=args.device
     if not 1<=args.chunk_size<=2048:p.error('chunk size must be 1..2048')
     require_gpu();torch.set_num_threads(4)
     model=load(args.model,2048,quantization=args.quantization)

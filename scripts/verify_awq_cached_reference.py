@@ -7,9 +7,9 @@ from pathlib import Path
 
 import torch
 from safetensors import safe_open
-from dllm.awq_model import AwqWeights, config
-from dllm.runtime import make_executor, require_gpu
-from dllm.models import load
+from damendaemon.awq_model import AwqWeights, config
+from damendaemon.runtime import make_executor, require_gpu
+from damendaemon.models import load
 from scripts.awq_reference_cache import fingerprint
 
 

@@ -3,9 +3,9 @@ from contextlib import contextmanager
 from unittest.mock import Mock
 from types import SimpleNamespace
 import torch
-from dllm.scoring import options
-from dllm.qwen2 import Executor
-from dllm.runtime import Runtime
+from damendaemon.scoring import options
+from damendaemon.qwen2 import Executor
+from damendaemon.runtime import Runtime
 
 
 class ScoringTests(unittest.TestCase):

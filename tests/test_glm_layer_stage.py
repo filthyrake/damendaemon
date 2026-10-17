@@ -4,10 +4,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_layer_stage import GlmLayerStage
-from dllm.glm_reference_loader import load_reference_stage
-from dllm.glm_checkpoint import tensor_specs
-from dllm.safetensor_header import ITEM_BYTES
+from damendaemon.glm_layer_stage import GlmLayerStage
+from damendaemon.glm_reference_loader import load_reference_stage
+from damendaemon.glm_checkpoint import tensor_specs
+from damendaemon.safetensor_header import ITEM_BYTES
 from tests.test_glm_model import model_fixture
 from tests.test_glm_reference_loader import fixture, floating_control
 
@@ -51,7 +51,7 @@ class GlmLayerStageTests(unittest.TestCase):
             self.assertTrue(all(state.position==5 for state in states))
 
     def test_packed_stage_payload_selection_budget_and_floating_control(self):
-        import dllm.glm_reference_loader as loader
+        import damendaemon.glm_reference_loader as loader
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp);config,headers,values=fixture(path)
             specs=tensor_specs(config);stages=[]
@@ -91,11 +91,11 @@ class GlmLayerStageTests(unittest.TestCase):
     def test_invalid_cuts_fail_before_payload_and_bad_inputs_leave_cache_usable(self):
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp);fixture(path)
-            with patch('dllm.glm_reference_loader._payload',side_effect=AssertionError('payload read')):
+            with patch('damendaemon.glm_reference_loader._payload',side_effect=AssertionError('payload read')):
                 for start,end in ((0,1),(1,3),(-1,2),(2,2),(False,2),(0,4)):
                     with self.subTest(start=start,end=end),self.assertRaises(ValueError):load_reference_stage(path,start,end)
         stages=prepared(model_fixture(),[(0,2),(2,3)])
-        from dllm.glm_model import GlmModel
+        from damendaemon.glm_model import GlmModel
         self.assertTrue(all(not isinstance(stage,GlmModel) for stage in stages))
         state=stages[-1].new_state(1,4);self.addCleanup(state.close)
         for hidden in (torch.zeros(1,1,5),torch.zeros(1,1,6).half(),torch.full((1,1,6),float('nan'))):

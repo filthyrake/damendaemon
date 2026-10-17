@@ -14,8 +14,8 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
-    from dllm.cuda_stage_placement import place_cuda_stage
-    from dllm import glm_reference_loader,glm_flash_reference_loader,deepseek_reference_loader
+    from damendaemon.cuda_stage_placement import place_cuda_stage
+    from damendaemon import glm_reference_loader,glm_flash_reference_loader,deepseek_reference_loader
     from tests import test_glm_reference_loader as glm_fixture,test_glm_flash_reference_loader as flash_fixture,test_deepseek_reference_loader as ds_fixture
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')
     torch.set_num_threads(1);torch.backends.cuda.matmul.allow_tf32=False;torch.backends.cudnn.allow_tf32=False

@@ -14,8 +14,8 @@ from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 from tokenizers import Tokenizer
-from dllm.bench import distribution, events, llama_context
-from dllm.report_io import save_report
+from damendaemon.bench import distribution, events, llama_context
+from damendaemon.report_io import save_report
 
 
 MAX_CAPTURE_BYTES = 16 * 1024 * 1024
@@ -112,7 +112,7 @@ def prepare_fixed_prompts(tokenizer):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--base-url', required=True)
-    p.add_argument('--engine', choices=('dllm', 'llama.cpp'), required=True)
+    p.add_argument('--engine', choices=('damendaemon', 'llama.cpp'), required=True)
     p.add_argument('--model', default='a')
     p.add_argument('--tokenizer', required=True)
     p.add_argument('--manifest', required=True)
@@ -150,7 +150,7 @@ def main():
             with urlopen(base + '/v1/models/status', timeout=30) as response:
                 report['context_proof'] = json.load(response)
             if report['context_proof']['context'] != 4096:
-                raise ValueError('dllm context capacity must be 4096')
+                raise ValueError('damendaemon context capacity must be 4096')
         with ThreadPoolExecutor(max_workers=4) as pool:
             for n, group in prompts.items():
                 # Warm actual concurrent groups, including intermediate decode

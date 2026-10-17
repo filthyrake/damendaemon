@@ -8,9 +8,9 @@ import time
 import torch
 
 from scripts.experiments import replay_hybrid_bf16x3 as policy
-from dllm.device import synchronize, device_name
-from dllm.qwen2 import ModelWeights
-from dllm.runtime import make_executor, require_gpu
+from damendaemon.device import synchronize, device_name
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.runtime import make_executor, require_gpu
 
 
 @torch.inference_mode()

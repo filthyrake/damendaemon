@@ -12,9 +12,9 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
-    from dllm.cuda_floating_indexer import index_hidden
-    from dllm.cuda_prepared_projection import CudaPackedProjection
-    from dllm.activation_simulation import normalized_hadamard,simulate_fp4
+    from damendaemon.cuda_floating_indexer import index_hidden
+    from damendaemon.cuda_prepared_projection import CudaPackedProjection
+    from damendaemon.activation_simulation import normalized_hadamard,simulate_fp4
     from tests.test_floating_indexer import FloatingIndexerTests
     from tests.test_compressed_indexer import oracle
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')
@@ -54,7 +54,7 @@ def main():
                 mask=torch.isfinite(expected[1]);error=float((scores.cpu()[mask]-expected[1][mask]).abs().max())
                 report['cases'].append(dict(packed=packed,query_chunk=chunk,ids_exact=True,max_absolute=error))
             for option in ('max_workspace_bytes','max_output_bytes'):
-                with patch('dllm.cuda_floating_indexer._linear',side_effect=AssertionError('projection before admission')):
+                with patch('damendaemon.cuda_floating_indexer._linear',side_effect=AssertionError('projection before admission')):
                     rejected(lambda:index_hidden(*device,top_k=3,**{option:1}))
             bad=list(device);bad[1]=lr.cpu();rejected(lambda:index_hidden(*bad,top_k=3))
             bad=list(device);bad[6]=device[6]+float('nan');rejected(lambda:index_hidden(*bad,top_k=3))

@@ -8,11 +8,11 @@ import unittest
 from unittest.mock import Mock, patch
 from urllib.request import Request, urlopen
 
-from dllm.hybrid_pipeline_build import PipelineBuildError
-from dllm.hybrid_pipeline_policy import budgets
-from dllm.runtime import Runtime, require_gpu
-from dllm.scheduler import BatchedRuntime
-from dllm.server import handler_for
+from damendaemon.hybrid_pipeline_build import PipelineBuildError
+from damendaemon.hybrid_pipeline_policy import budgets
+from damendaemon.runtime import Runtime, require_gpu
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import handler_for
 from tests import test_hybrid_pipeline_build
 
 
@@ -26,14 +26,14 @@ class PipelineServingTests(unittest.TestCase):
         self.model.eos = set()
         self.model.raw_tokens = lambda tokens: list(tokens)
         self.model.tokenizer = SimpleNamespace(decode=lambda tokens, **kwargs: ' '.join(map(str, tokens)))
-        env = patch.dict('os.environ', DLLM_HYBRID_PIPELINE_BUDGETS_MIB='1024,1024',
+        env = patch.dict('os.environ', DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB='1024,1024',
                          CUDA_VISIBLE_DEVICES='GPU-first,GPU-second')
         env.start()
         self.addCleanup(env.stop)
         for name, kwargs in {
-            'dllm.models.config': {'return_value': self.model.config},
-            'dllm.models.load': {'return_value': self.model},
-            'dllm.models.weight_bytes': {'return_value': self.model.bytes},
+            'damendaemon.models.config': {'return_value': self.model.config},
+            'damendaemon.models.load': {'return_value': self.model},
+            'damendaemon.models.weight_bytes': {'return_value': self.model.bytes},
             'torch.cuda.set_device': {},
         }.items():
             replacement = patch(name, **kwargs)
@@ -43,19 +43,19 @@ class PipelineServingTests(unittest.TestCase):
     def test_visible_devices_and_invalid_policy_reject_before_loading(self):
         require_gpu()
         for env in ({'CUDA_VISIBLE_DEVICES':'GPU-first'},
-                    {'DLLM_HYBRID_PIPELINE_BUDGETS_MIB':'0,1024'},
-                    {'DLLM_HYBRID_PIPELINE_BUDGETS_MIB':'1.5,1024'},
-                    {'DLLM_EXPERIMENTAL_HYBRID_PIPELINE':'bad'}):
+                    {'DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB':'0,1024'},
+                    {'DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB':'1.5,1024'},
+                    {'DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE':'bad'}):
             with patch.dict('os.environ', env), self.assertRaises(ValueError):
                 Runtime({'a':'a'}, context=32, use_graph=False)
-        with patch('dllm.runtime.require_gpu') as gpu, self.assertRaises(ValueError):
+        with patch('damendaemon.runtime.require_gpu') as gpu, self.assertRaises(ValueError):
             Runtime({'a':'a'}, context=32, use_graph=True)
         gpu.assert_not_called()
-        with patch.dict('os.environ', DLLM_DEVICE='mps'), \
-                patch('dllm.runtime.require_gpu') as gpu, self.assertRaises(ValueError):
+        with patch.dict('os.environ', DAMENDAEMON_DEVICE='mps'), \
+                patch('damendaemon.runtime.require_gpu') as gpu, self.assertRaises(ValueError):
             Runtime({}, context=32, use_graph=False)
         gpu.assert_not_called()
-        with patch.dict('os.environ', DLLM_EXPERIMENTAL_HYBRID_PIPELINE='0'), self.assertRaises(ValueError):
+        with patch.dict('os.environ', DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE='0'), self.assertRaises(ValueError):
             budgets()
 
     def test_scheduler_handles_full_and_chunked_prompts_and_concurrent_decode(self):
@@ -80,12 +80,12 @@ class PipelineServingTests(unittest.TestCase):
         runtime = Runtime({'a':'a'}, context=32, use_graph=False, batch_size=2)
         failure = PipelineBuildError('injected', [], [])
         failure.close = Mock(side_effect=RuntimeError('still busy'))
-        with patch('dllm.runtime.make_executor', side_effect=failure), self.assertRaises(PipelineBuildError):
+        with patch('damendaemon.runtime.make_executor', side_effect=failure), self.assertRaises(PipelineBuildError):
             with runtime.session('a'):
                 pass
         self.assertEqual(runtime.failed_builds, [failure])
         self.assertFalse(runtime.gpu)
-        with patch('dllm.runtime.make_executor') as construct, self.assertRaisesRegex(RuntimeError, 'still busy'):
+        with patch('damendaemon.runtime.make_executor') as construct, self.assertRaisesRegex(RuntimeError, 'still busy'):
             with runtime.session('a'):
                 pass
         construct.assert_not_called()

@@ -9,7 +9,7 @@ from http.server import ThreadingHTTPServer
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
-from dllm.model_manifest import load, save
+from damendaemon.model_manifest import load, save
 
 
 class ManifestTests(unittest.TestCase):
@@ -29,10 +29,10 @@ class ManifestTests(unittest.TestCase):
             resolve.assert_not_called()
 
     def test_http_registration_export_cli_save_and_reload(self):
-        from dllm.cli import main
-        from dllm.runtime import Runtime
-        from dllm.server import handler_for
-        with tempfile.TemporaryDirectory() as directory, patch('dllm.runtime.require_gpu'):
+        from damendaemon.cli import main
+        from damendaemon.runtime import Runtime
+        from damendaemon.server import handler_for
+        with tempfile.TemporaryDirectory() as directory, patch('damendaemon.runtime.require_gpu'):
             path = Path(directory)
             (path/'tokenizer_config.json').write_text('{}')
             runtime = Runtime({})
@@ -41,8 +41,8 @@ class ManifestTests(unittest.TestCase):
             thread.start()
             base = f'http://127.0.0.1:{server.server_port}'
             try:
-                with patch('dllm.models.config', return_value={'max_position_embeddings': 4096}), \
-                        patch('dllm.models.weight_bytes', return_value=100), \
+                with patch('damendaemon.models.config', return_value={'max_position_embeddings': 4096}), \
+                        patch('damendaemon.models.weight_bytes', return_value=100), \
                         patch('tokenizers.Tokenizer.from_file'), patch.object(runtime, '_status', return_value={}):
                     for alias, policy, template in (('chat', 'q4_0', '{{ messages }}'), ('plain', 'q8_0', None)):
                         body = dict(model=alias, path=directory, quantization=policy)
@@ -53,7 +53,7 @@ class ManifestTests(unittest.TestCase):
                         with urlopen(req) as response:
                             self.assertEqual(response.status, 200)
                 output = path/'saved.json'
-                with patch('sys.argv', ['dllm', 'models', '--server', base, '--save-config', str(output)]), patch('sys.stdout'):
+                with patch('sys.argv', ['damendaemon', 'models', '--server', base, '--save-config', str(output)]), patch('sys.stdout'):
                     main()
                 resolve = Mock()
                 models, policies, templates = load(output, resolve)
@@ -66,7 +66,7 @@ class ManifestTests(unittest.TestCase):
                 old = output.read_bytes()
                 with runtime.registry_lock:
                     runtime.models.clear()
-                with patch('sys.argv', ['dllm', 'models', '--server', base, '--save-config', str(output)]), self.assertRaises(HTTPError):
+                with patch('sys.argv', ['damendaemon', 'models', '--server', base, '--save-config', str(output)]), self.assertRaises(HTTPError):
                     main()
                 self.assertEqual(output.read_bytes(), old)
             finally:
@@ -78,7 +78,7 @@ class ManifestTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)/'models.json'
             path.write_text('previous content')
-            with patch('dllm.model_manifest.os.fsync', side_effect=OSError('disk failure')), self.assertRaises(OSError):
+            with patch('damendaemon.model_manifest.os.fsync', side_effect=OSError('disk failure')), self.assertRaises(OSError):
                 save(path, {'version': 1, 'models': {}})
             self.assertEqual(path.read_text(), 'previous content')
             self.assertEqual(list(path.parent.iterdir()), [path])
@@ -87,7 +87,7 @@ class ManifestTests(unittest.TestCase):
             self.assertEqual(path.read_text(), 'previous content')
 
     def test_batched_manifest_export_does_not_use_gpu_queue(self):
-        from dllm.scheduler import BatchedRuntime
+        from damendaemon.scheduler import BatchedRuntime
         runtime = BatchedRuntime.__new__(BatchedRuntime)
         runtime.runtime = Mock()
         runtime._submit = Mock(side_effect=AssertionError('must not queue'))
@@ -95,7 +95,7 @@ class ManifestTests(unittest.TestCase):
         runtime._submit.assert_not_called()
 
     def test_restart_keeps_relative_paths_policies_and_template_text(self):
-        from dllm.cli import main
+        from damendaemon.cli import main
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)/'models.json'
             path.write_text(json.dumps({'version': 1, 'models': {
@@ -104,10 +104,10 @@ class ManifestTests(unittest.TestCase):
                 'other': {'path': '/models/other', 'quantization': 'q8_0'}}}))
             calls = []
             for default in ('none', 'q8_0'):
-                with patch.dict(os.environ, DLLM_QUANTIZATION=default), \
-                        patch('sys.argv', ['dllm', 'serve', '--model-config', str(path)]), \
-                        patch('dllm.scheduler.BatchedRuntime') as runtime, \
-                        patch('dllm.server.serve'), patch('dllm.cli.download') as download:
+                with patch.dict(os.environ, DAMENDAEMON_QUANTIZATION=default), \
+                        patch('sys.argv', ['damendaemon', 'serve', '--model-config', str(path)]), \
+                        patch('damendaemon.scheduler.BatchedRuntime') as runtime, \
+                        patch('damendaemon.server.serve'), patch('damendaemon.cli.download') as download:
                     main()
                     calls.append(runtime.call_args)
                     download.assert_not_called()
@@ -146,10 +146,10 @@ class ManifestTests(unittest.TestCase):
                 load(path, Mock())
 
     def test_manifest_and_cli_model_options_cannot_silently_override(self):
-        from dllm.cli import main
+        from damendaemon.cli import main
         for extra in (['--model', 'chat=/model'], ['--chat-template', 'chat=/template']):
-            with patch('sys.argv', ['dllm', 'serve', '--model-config', '/missing']+extra), \
-                    patch('dllm.model_manifest.load') as read, patch('sys.stderr'), self.assertRaises(SystemExit):
+            with patch('sys.argv', ['damendaemon', 'serve', '--model-config', '/missing']+extra), \
+                    patch('damendaemon.model_manifest.load') as read, patch('sys.stderr'), self.assertRaises(SystemExit):
                 main()
             read.assert_not_called()
 
@@ -181,8 +181,8 @@ class ManifestTests(unittest.TestCase):
             resolve.assert_called_once_with('Qwen/model', 'a'*40, filename)
 
     def test_runtime_uses_explicit_policies_and_rejects_invalid_before_gpu(self):
-        from dllm.runtime import Runtime
-        with patch('dllm.runtime.require_gpu') as gpu, patch.dict(os.environ, DLLM_QUANTIZATION='none'):
+        from damendaemon.runtime import Runtime
+        with patch('damendaemon.runtime.require_gpu') as gpu, patch.dict(os.environ, DAMENDAEMON_QUANTIZATION='none'):
             runtime = Runtime({'a': Path('/model'), 'b': Path('/other')}, quantizations={'a': 'q4_0'})
             self.assertEqual(runtime.quantizations, {'a': 'q4_0', 'b': 'none'})
             gpu.reset_mock()

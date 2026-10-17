@@ -2,7 +2,7 @@
 0.00.080.030 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
 0.00.081.211 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
 0.00.086.142 I srv    load_model: loading model 'baselines/flan-t5-small-f32.gguf'
-/home/damen/dllm-dev/baselines/llama-cuda-source/ggml/src/ggml.c:2072: GGML_ASSERT(ggml_can_repeat(b, a)) failed
+/home/damen/damendaemon-dev/baselines/llama-cuda-source/ggml/src/ggml.c:2072: GGML_ASSERT(ggml_can_repeat(b, a)) failed
 [New LWP 1062207]
 [New LWP 1062206]
 [New LWP 1062205]
@@ -28,28 +28,28 @@
 Using host libthread_db library "/lib64/libthread_db.so.1".
 0x00007f8fb62d9fff in wait4 () from /lib64/libc.so.6
 #0  0x00007f8fb62d9fff in wait4 () from /lib64/libc.so.6
-#1  0x00007f8fc4d5282b in ggml_print_backtrace () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libggml-base.so.0
-#2  0x00007f8fc4d5297d in ggml_abort () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libggml-base.so.0
-#3  0x00007f8fc4d529d5 in ggml_add_impl.part () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libggml-base.so.0
-#4  0x00007f8fc4d55e54 in ggml_add () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libggml-base.so.0
-#5  0x00007f8fc442bc68 in llm_graph_context::build_attn_mha(ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, long, float, int) const () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libllama.so.0
-#6  0x00007f8fc442c609 in llm_graph_context::build_attn(llm_graph_input_attn_kv*, ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, float, int) const () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libllama.so.0
-#7  0x00007f8fc42e48fe in llama_model_t5::graph<false>::graph(llama_model const&, llm_graph_params const&) () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libllama.so.0
-#8  0x00007f8fc42e53ab in llama_model_t5::build_arch_graph(llm_graph_params const&) const () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libllama.so.0
-#9  0x00007f8fc44b2aaf in llama_model::build_graph(llm_graph_params const&) const () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libllama.so.0
-#10 0x00007f8fc43ef32f in llama_context::graph_reserve(unsigned int, unsigned int, unsigned int, llama_memory_context_i const*, bool, unsigned long*) () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libllama.so.0
-#11 0x00007f8fc43f0750 in llama_context::resolve_fused_ops(llama_memory_context_i const*, unsigned int) () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libllama.so.0
-#12 0x00007f8fc43f14ce in llama_context::sched_reserve() () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libllama.so.0
-#13 0x00007f8fc43f2a82 in llama_context::llama_context(llama_model const&, llama_context_params) () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libllama.so.0
-#14 0x00007f8fc43f3dd8 in llama_init_from_model () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libllama.so.0
-#15 0x00007f8fc4a5c6ec in common_get_device_memory_data_impl(char const*, llama_model_params const*, llama_context_params const*, std::vector<ggml_backend_device*, std::allocator<ggml_backend_device*> >&, unsigned int&, unsigned int&, unsigned int&, ggml_log_level) () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libllama-common.so.0
-#16 0x00007f8fc4a5db93 in common_params_fit_impl(char const*, llama_model_params*, llama_context_params*, float*, llama_model_tensor_buft_override*, unsigned long*, unsigned int, common_fit_extra_model const*, ggml_log_level) () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libllama-common.so.0
-#17 0x00007f8fc4a61845 in common_fit_params(char const*, llama_model_params*, llama_context_params*, float*, llama_model_tensor_buft_override*, unsigned long*, unsigned int, common_fit_extra_model const*, ggml_log_level) () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libllama-common.so.0
-#18 0x00007f8fc4a32f2d in common_init_result::common_init_result(common_params&, bool) () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libllama-common.so.0
-#19 0x00007f8fc4a34783 in common_init_from_params(common_params&, bool) () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libllama-common.so.0
-#20 0x00007f8fc4f8b8a9 in server_context_impl::load_model(common_params&) () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libllama-server-impl.so
-#21 0x00007f8fc4ed5689 in llama_server(common_params&, int, char**) () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libllama-server-impl.so
-#22 0x00007f8fc4ed699f in llama_server(int, char**) () from /home/damen/dllm-dev/baselines/llama-cuda-build/bin/libllama-server-impl.so
+#1  0x00007f8fc4d5282b in ggml_print_backtrace () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libggml-base.so.0
+#2  0x00007f8fc4d5297d in ggml_abort () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libggml-base.so.0
+#3  0x00007f8fc4d529d5 in ggml_add_impl.part () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libggml-base.so.0
+#4  0x00007f8fc4d55e54 in ggml_add () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libggml-base.so.0
+#5  0x00007f8fc442bc68 in llm_graph_context::build_attn_mha(ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, long, float, int) const () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libllama.so.0
+#6  0x00007f8fc442c609 in llm_graph_context::build_attn(llm_graph_input_attn_kv*, ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, ggml_tensor*, float, int) const () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libllama.so.0
+#7  0x00007f8fc42e48fe in llama_model_t5::graph<false>::graph(llama_model const&, llm_graph_params const&) () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libllama.so.0
+#8  0x00007f8fc42e53ab in llama_model_t5::build_arch_graph(llm_graph_params const&) const () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libllama.so.0
+#9  0x00007f8fc44b2aaf in llama_model::build_graph(llm_graph_params const&) const () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libllama.so.0
+#10 0x00007f8fc43ef32f in llama_context::graph_reserve(unsigned int, unsigned int, unsigned int, llama_memory_context_i const*, bool, unsigned long*) () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libllama.so.0
+#11 0x00007f8fc43f0750 in llama_context::resolve_fused_ops(llama_memory_context_i const*, unsigned int) () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libllama.so.0
+#12 0x00007f8fc43f14ce in llama_context::sched_reserve() () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libllama.so.0
+#13 0x00007f8fc43f2a82 in llama_context::llama_context(llama_model const&, llama_context_params) () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libllama.so.0
+#14 0x00007f8fc43f3dd8 in llama_init_from_model () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libllama.so.0
+#15 0x00007f8fc4a5c6ec in common_get_device_memory_data_impl(char const*, llama_model_params const*, llama_context_params const*, std::vector<ggml_backend_device*, std::allocator<ggml_backend_device*> >&, unsigned int&, unsigned int&, unsigned int&, ggml_log_level) () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libllama-common.so.0
+#16 0x00007f8fc4a5db93 in common_params_fit_impl(char const*, llama_model_params*, llama_context_params*, float*, llama_model_tensor_buft_override*, unsigned long*, unsigned int, common_fit_extra_model const*, ggml_log_level) () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libllama-common.so.0
+#17 0x00007f8fc4a61845 in common_fit_params(char const*, llama_model_params*, llama_context_params*, float*, llama_model_tensor_buft_override*, unsigned long*, unsigned int, common_fit_extra_model const*, ggml_log_level) () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libllama-common.so.0
+#18 0x00007f8fc4a32f2d in common_init_result::common_init_result(common_params&, bool) () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libllama-common.so.0
+#19 0x00007f8fc4a34783 in common_init_from_params(common_params&, bool) () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libllama-common.so.0
+#20 0x00007f8fc4f8b8a9 in server_context_impl::load_model(common_params&) () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libllama-server-impl.so
+#21 0x00007f8fc4ed5689 in llama_server(common_params&, int, char**) () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libllama-server-impl.so
+#22 0x00007f8fc4ed699f in llama_server(int, char**) () from /home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/libllama-server-impl.so
 #23 0x00007f8fb622a610 in __libc_start_call_main () from /lib64/libc.so.6
 #24 0x00007f8fb622a6c0 in __libc_start_main_impl () from /lib64/libc.so.6
 #25 0x0000000000401075 in _start ()

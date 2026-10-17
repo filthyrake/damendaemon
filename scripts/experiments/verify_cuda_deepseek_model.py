@@ -15,8 +15,8 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
-    from dllm.cuda_deepseek_model import CudaDeepSeekModel
-    from dllm.floating_model import FloatingModel
+    from damendaemon.cuda_deepseek_model import CudaDeepSeekModel
+    from damendaemon.floating_model import FloatingModel
     from scripts.experiments.cuda_deepseek_fixture import prepare_block
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')
     torch.set_num_threads(1);torch.backends.cuda.matmul.allow_tf32=False
@@ -28,7 +28,7 @@ def main():
         if args.placement:
             from tests.test_packed_model import fixture
             from tests.test_packed_attention import prepare
-            from dllm.cuda_deepseek_placement import place_cuda_deepseek
+            from damendaemon.cuda_deepseek_placement import place_cuda_deepseek
             source,cpu,_=fixture()
             for original,control in zip(source.blocks,cpu.blocks):
                 original.attention_weights,control.attention_weights=prepare(original.attention_weights)

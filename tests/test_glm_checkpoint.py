@@ -6,7 +6,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-from dllm.glm_checkpoint import tensor_specs,audit_names,audit_headers,audit_snapshot
+from damendaemon.glm_checkpoint import tensor_specs,audit_names,audit_headers,audit_snapshot
 
 
 def config():
@@ -83,7 +83,7 @@ class GlmCheckpointTests(unittest.TestCase):
 
     def test_names_only_and_full_header_audits_without_tensor_reads(self):
         from tests.test_packed_checkpoint import write_raw
-        from dllm.safetensor_header import ITEM_BYTES
+        from damendaemon.safetensor_header import ITEM_BYTES
         c=config();inventory=headers(c)
         offset=0
         for entry in inventory.values():
@@ -94,10 +94,10 @@ class GlmCheckpointTests(unittest.TestCase):
             (path/'config.json').write_text(json.dumps(c))
             index={'weight_map':{name:'model.safetensors' for name in inventory}}
             (path/'model.safetensors.index.json').write_text(json.dumps(index))
-            with patch('dllm.checkpoint.inspect_snapshot',side_effect=AssertionError('shards opened')):
+            with patch('damendaemon.checkpoint.inspect_snapshot',side_effect=AssertionError('shards opened')):
                 self.assertEqual(audit_snapshot(path,names_only=True)['main_tensors'],len(inventory))
             write_raw(path/'model.safetensors',inventory,bytes(offset))
-            with patch('dllm.packed_checkpoint._payload',side_effect=AssertionError('values read')):
+            with patch('damendaemon.packed_checkpoint._payload',side_effect=AssertionError('values read')):
                 result=audit_snapshot(path)
             self.assertEqual(result['main_tensors'],len(inventory))
             self.assertFalse(result['weight_values_read']);self.assertFalse(result['model_execution_qualified'])

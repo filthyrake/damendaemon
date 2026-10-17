@@ -43,7 +43,7 @@ with tempfile.TemporaryDirectory() as tmp:
     args=['verify',str(model),'unused-config','--output',str(output),'--benchmark-report',str(benchmark),'--require-q4-marlin']
     if case=='context':args+=['--context','2048','--experimental-q4-marlin-context','2048']
     try:
-        with patch('sys.argv',args),patch.dict(os.environ,{'DLLM_Q4_MARLIN_LIBRARY':str(model)},clear=True), \
+        with patch('sys.argv',args),patch.dict(os.environ,{'DAMENDAEMON_Q4_MARLIN_LIBRARY':str(model)},clear=True), \
                 patch.dict(sys.modules,{'experiments.q4_marlin_context':NS(install_validation_context=Mock(return_value={}))}), \
                 patch.object(verify,'GgufWeights',return_value=source),patch.object(verify.AutoConfig,'from_pretrained',return_value=NS(model_type='fixture')), \
                 patch.object(verify.AutoModelForCausalLM,'from_config',return_value=Reference()),patch.object(verify,'no_init_weights',return_value=nullcontext()), \
@@ -71,7 +71,7 @@ class GgufReferenceGateTests(unittest.TestCase):
                     if case=='numerical':self.assertIn('report_passed=False',result.stderr)
 
     def test_valid_report_has_exact_workload_identity(self):
-        from dllm.token_workload import token_workload_digest
+        from damendaemon.token_workload import token_workload_digest
         expected=token_workload_digest([[1]],2)
         for optimized in (False,True):
             result=self.run_case('valid',optimized)

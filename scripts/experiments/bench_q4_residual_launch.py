@@ -12,8 +12,8 @@ import statistics
 import torch
 import triton.testing
 
-from dllm.native_q4_residual import linear
-from dllm.quantization import dequantize_q4, quantize_q4
+from damendaemon.native_q4_residual import linear
+from damendaemon.quantization import dequantize_q4, quantize_q4
 
 
 @torch.inference_mode()
@@ -37,7 +37,7 @@ def main():
                              for name, path in libraries.items()},
                   sources={name: hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
                            ('native/q4_residual.cu', 'scripts/experiments/q4_residual_launch.cu',
-                            'dllm/native_q4_residual.py', __file__)}, checks=[], timings=[])
+                            'damendaemon/native_q4_residual.py', __file__)}, checks=[], timings=[])
     def terminate(number, frame):
         raise SystemExit(128 + number)
     signal.signal(signal.SIGTERM, terminate)

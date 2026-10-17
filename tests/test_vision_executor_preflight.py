@@ -4,8 +4,8 @@ import unittest
 from unittest.mock import Mock
 import torch
 
-from dllm.vision_hybrid import VisionHybridExecutor
-from dllm.vision_model import ImagePrompt
+from damendaemon.vision_hybrid import VisionHybridExecutor
+from damendaemon.vision_model import ImagePrompt
 
 
 class ImageExecutorPreflightTests(unittest.TestCase):

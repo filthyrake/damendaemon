@@ -2,7 +2,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 import torch
-from dllm.awq_decode_policy import _is_a2, use_small_rows
+from damendaemon.awq_decode_policy import _is_a2, use_small_rows
 
 
 class AwqDecodePolicyTests(unittest.TestCase):

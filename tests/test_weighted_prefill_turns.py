@@ -7,12 +7,12 @@ import unittest
 from unittest.mock import patch
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError
-from dllm.client_prefill_turns import ClientPrefillTurns,SERVICE_UNITS
-from dllm.http_auth import AuthPolicy,ClientKey
-from dllm.request_scope import CacheScope,cache_scope
-from dllm.scheduler import BatchedRuntime
-from dllm.cpu_hybrid_checkpoint import load_cpu_checkpoint
-from dllm.cpu_pipeline_generation import CpuPipelineReferenceGenerator
+from damendaemon.client_prefill_turns import ClientPrefillTurns,SERVICE_UNITS
+from damendaemon.http_auth import AuthPolicy,ClientKey
+from damendaemon.request_scope import CacheScope,cache_scope
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.cpu_hybrid_checkpoint import load_cpu_checkpoint
+from damendaemon.cpu_pipeline_generation import CpuPipelineReferenceGenerator
 from tests.test_client_prefill_turns import pending
 from tests.test_cpu_pipeline_generation import OPTIONS
 from tests.test_distributed_drain import wait_for
@@ -58,20 +58,20 @@ class WeightedPrefillTests(unittest.TestCase):
     def test_auth_defaults_validation_immutability_and_scope_capture(self):
         key=secrets.token_urlsafe(32)
         for value in (None,True,0,17,1.5,'2'):
-            with patch.dict('os.environ',{'DLLM_CLIENT_KEYS':json.dumps({'a':dict(key=key,max_inflight=2,prefill_weight=value)})},clear=True):
+            with patch.dict('os.environ',{'DAMENDAEMON_CLIENT_KEYS':json.dumps({'a':dict(key=key,max_inflight=2,prefill_weight=value)})},clear=True):
                 with self.assertRaises(ValueError) as caught:AuthPolicy.from_env()
             self.assertNotIn(key,str(caught.exception))
             with self.assertRaises(ValueError):CacheScope(prefill_weight=value)
             with self.assertRaises(ValueError):ClientKey('a',key,2,prefill_weight=value)
         for value in (1,3,16):
-            with patch.dict('os.environ',{'DLLM_CLIENT_KEYS':json.dumps({'a':dict(key=key,max_inflight=2,prefill_weight=value,decode_weight=2)})},clear=True):
+            with patch.dict('os.environ',{'DAMENDAEMON_CLIENT_KEYS':json.dumps({'a':dict(key=key,max_inflight=2,prefill_weight=value,decode_weight=2)})},clear=True):
                 client=AuthPolicy.from_env().clients[0]
             self.assertEqual((client.prefill_weight,client.decode_weight),(value,2));self.assertNotIn(key,repr(client))
         self.assertEqual(ClientKey('a',key,2).prefill_weight,1)
         scope=CacheScope(prefill_weight=3)
         with self.assertRaises(FrozenInstanceError):scope.prefill_weight=1
-        from dllm.scheduler import Pending
-        from dllm.distributed_serving import Request as DistributedRequest
+        from damendaemon.scheduler import Pending
+        from damendaemon.distributed_serving import Request as DistributedRequest
         import queue,time
         token=cache_scope.set(scope)
         try:first=Pending('a',[],1);second=DistributedRequest([1],1,time.monotonic(),queue.Queue())
@@ -80,11 +80,11 @@ class WeightedPrefillTests(unittest.TestCase):
 
     def test_ordinary_and_paged_weighted_prefill_preserve_output_and_release(self):
         for executor_type in (scheduler_fixtures.ChunkExecutor,scheduler_fixtures.PagedChunkExecutor):
-            with patch('dllm.scheduler.Runtime',scheduler_fixtures.FakeRuntime):
+            with patch('damendaemon.scheduler.Runtime',scheduler_fixtures.FakeRuntime):
                 runtime=BatchedRuntime({'a':'a'},batch_size=4,queue_size=8,prefill_chunk_size=2,client_prefill_turns=True)
             executor=executor_type();runtime.runtime.executor=executor
             if hasattr(executor,'pool'):
-                from dllm.pages import PagePool
+                from damendaemon.pages import PagePool
                 executor.pool=PagePool(128,4,executor.context)
             a,b=CacheScope(prefill_weight=3),CacheScope();counts={id(a):0,id(b):0};observed=[];choose=runtime.prefill_turns.choose
             def select(ready):
@@ -151,7 +151,7 @@ class WeightedPrefillTests(unittest.TestCase):
         wait_for(lambda:not fixture.runtime.active);self.assertFalse(any(fixture.pair.state.lengths));self.assertFalse(fixture.errors)
 
     def test_disabled_scheduler_does_not_use_weight_policy(self):
-        with patch('dllm.scheduler.Runtime',scheduler_fixtures.FakeRuntime):
+        with patch('damendaemon.scheduler.Runtime',scheduler_fixtures.FakeRuntime):
             runtime=BatchedRuntime({'a':'a'},prefill_chunk_size=2)
         executor=scheduler_fixtures.ChunkExecutor();executor.release.set();runtime.runtime.executor=executor
         token=cache_scope.set(CacheScope(prefill_weight=16))

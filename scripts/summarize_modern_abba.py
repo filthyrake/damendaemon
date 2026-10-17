@@ -5,8 +5,8 @@ import json
 import math
 from pathlib import Path
 
-from dllm.bench import distribution
-from dllm.report_io import save_report
+from damendaemon.bench import distribution
+from damendaemon.report_io import save_report
 
 
 def _positive_seconds(value):
@@ -46,7 +46,7 @@ def summarize(directory):
     if type(output_tokens) is not int or output_tokens <= 0:
         raise ValueError('output_tokens must be a positive integer')
     candidate = reports['B1']['manifest'].get('variant') == 'hip-q8-small-batch'
-    comparator = 'dllm-candidate' if candidate else 'llama.cpp'
+    comparator = 'damendaemon-candidate' if candidate else 'llama.cpp'
     for phase, report in reports.items():
         if type(report.get('output_tokens')) is not int:
             raise ValueError('output_tokens must be a positive integer')
@@ -56,7 +56,7 @@ def summarize(directory):
         for key in ('model_revision', 'hardware', 'eos_ids'):
             if report['manifest'][key] != first['manifest'][key]:
                 raise ValueError(f'{phase}: mismatched {key}')
-        expected = 'dllm' if candidate or phase.startswith('A') else 'llama.cpp'
+        expected = 'damendaemon' if candidate or phase.startswith('A') else 'llama.cpp'
         if report['engine'] != expected or report['phase'] != phase:
             raise ValueError('incorrect ABBA engine order')
         if candidate and report['manifest'].get('variant') != ('ordinary' if phase.startswith('A') else 'hip-q8-small-batch'):
@@ -73,7 +73,7 @@ def summarize(directory):
         for concurrency in (1, 4):
             cell = dict(prompt_tokens=length, concurrency=concurrency, engines={})
             text_sets = {}
-            for engine, phases in (('dllm', ('A1', 'A2')), (comparator, ('B1', 'B2'))):
+            for engine, phases in (('damendaemon', ('A1', 'A2')), (comparator, ('B1', 'B2'))):
                 rounds = []
                 for phase in phases:
                     selected = [r for r in reports[phase]['rounds'] if not r['warmup'] and
@@ -93,17 +93,17 @@ def summarize(directory):
                     request_seconds=distribution([q['seconds'] for q in requests]),
                     aggregate_output_tokens_per_second=distribution([output_tokens*concurrency/r['seconds'] for r in rounds]),
                     stable_text_per_prompt=all(len(values) == 1 for values in text_sets[engine]))
-            a, b = (cell['engines'][name] for name in ('dllm', comparator))
-            cell['dllm_over_comparator_throughput_p50'] = a['aggregate_output_tokens_per_second']['p50']/b['aggregate_output_tokens_per_second']['p50']
-            cell['dllm_over_comparator_first_output_p95'] = a['first_output_seconds']['p95']/b['first_output_seconds']['p95']
+            a, b = (cell['engines'][name] for name in ('damendaemon', comparator))
+            cell['damendaemon_over_comparator_throughput_p50'] = a['aggregate_output_tokens_per_second']['p50']/b['aggregate_output_tokens_per_second']['p50']
+            cell['damendaemon_over_comparator_first_output_p95'] = a['first_output_seconds']['p95']/b['first_output_seconds']['p95']
             cell['exact_cross_engine_text'] = all(len(a_text | b_text) == 1
-                for a_text, b_text in zip(text_sets['dllm'], text_sets[comparator]))
+                for a_text, b_text in zip(text_sets['damendaemon'], text_sets[comparator]))
             rows.append(cell)
     return dict(workload_passed=True, competitive_pass=None, output_tokens=output_tokens, model_revision=first['manifest']['model_revision'],
                 hardware=first['manifest']['hardware'], comparator=comparator, rows=rows,
                 precision_policies={name: reports[phase]['manifest']['precision']
-                                    for name, phase in (('dllm', 'A1'), (comparator, 'B1'))},
-                limitation=('Within-dllm policy experiment; numerical/lifecycle gates are separate, no cross-engine verdict.' if candidate else
+                                    for name, phase in (('damendaemon', 'A1'), (comparator, 'B1'))},
+                limitation=('Within-damendaemon policy experiment; numerical/lifecycle gates are separate, no cross-engine verdict.' if candidate else
                             'Engineering comparison only; differing intermediate arithmetic, client-visible timings, no complete internal decode/memory gate.'))
 
 

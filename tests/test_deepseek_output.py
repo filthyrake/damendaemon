@@ -1,7 +1,7 @@
 import unittest
 
-from dllm.deepseek_output import DeepSeekOutput,parse_completion,MARKERS
-from dllm.deepseek_text import EOS
+from damendaemon.deepseek_output import DeepSeekOutput,parse_completion,MARKERS
+from damendaemon.deepseek_text import EOS
 
 
 class DeepSeekOutputTests(unittest.TestCase):
@@ -52,7 +52,7 @@ class DeepSeekOutputTests(unittest.TestCase):
             with self.assertRaises(ValueError):parser.feed(value)
 
     def test_tool_calls_are_atomic_across_every_chunk_boundary(self):
-        from dllm.deepseek_tools import render_tool_calls
+        from damendaemon.deepseek_tools import render_tool_calls
         calls=[{'type':'function','function':{'name':'weather','arguments':'{"city": "Montréal"}'}}]
         block=render_tool_calls(calls)
         for thinking,prefix in ((False,'Look up weather.'),(True,'Plan.</think>Look up weather.')):
@@ -72,7 +72,7 @@ class DeepSeekOutputTests(unittest.TestCase):
                 self.assertTrue(parser.tool_buffer.closed)
 
     def test_tool_mode_rejects_partial_malformed_and_reasoning_calls(self):
-        from dllm.deepseek_tools import render_tool_calls
+        from damendaemon.deepseek_tools import render_tool_calls
         block=render_tool_calls([{'type':'function','function':{'name':'f','arguments':'{}'}}])
         for text in ('\n\n'+block,'\n\n'+block+EOS+'trailing','\n\n'+block+EOS+EOS,
                      '\n\n'+block.replace('invoke name="f"','invoke bad="f"')+EOS):
@@ -89,7 +89,7 @@ class DeepSeekOutputTests(unittest.TestCase):
         self.assertTrue(parser.tool_buffer.closed)
 
     def test_truncated_tool_opener_is_not_emitted_as_text(self):
-        from dllm.deepseek_output import TOOL_START
+        from damendaemon.deepseek_output import TOOL_START
         for size in range(3,len(TOOL_START)):
             with self.assertRaises(ValueError):
                 parse_completion(TOOL_START[:size],allow_tool_calls=True,truncated=True)

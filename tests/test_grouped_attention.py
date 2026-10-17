@@ -1,7 +1,7 @@
 import unittest
 import torch
 from torch.nn import functional as F
-from dllm.grouped_attention import attention, use_grouped_prefill
+from damendaemon.grouped_attention import attention, use_grouped_prefill
 
 
 class GroupedAttentionTests(unittest.TestCase):

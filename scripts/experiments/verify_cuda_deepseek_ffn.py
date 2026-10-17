@@ -12,9 +12,9 @@ def main():
     if args.output.exists():raise ValueError('new report path required')
     import torch
     from torch.nn import functional as F
-    from dllm.cuda_packed_expert import CudaPackedExpert,CudaPackedMatrix
-    from dllm.cuda_deepseek_ffn import CudaPackedDeepSeekFeedForward
-    from dllm.cuda_packed_moe import cuda_packed_moe
+    from damendaemon.cuda_packed_expert import CudaPackedExpert,CudaPackedMatrix
+    from damendaemon.cuda_deepseek_ffn import CudaPackedDeepSeekFeedForward
+    from damendaemon.cuda_packed_moe import cuda_packed_moe
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')
     torch.set_num_threads(1);torch.backends.cuda.matmul.allow_tf32=False
     torch.cuda.set_per_process_memory_fraction(128*1024**2/torch.cuda.get_device_properties(0).total_memory)
@@ -56,7 +56,7 @@ def main():
                 def capture(source,experts,selected,coefficients,**kwargs):
                     captured.append((selected.cpu(),coefficients.cpu()))
                     return cuda_packed_moe(source,experts,selected,coefficients,**kwargs)
-                with patch('dllm.cuda_deepseek_ffn.cuda_packed_moe',side_effect=capture):
+                with patch('damendaemon.cuda_deepseek_ffn.cuda_packed_moe',side_effect=capture):
                     actual=ffn(hidden.cuda(),ids.cuda() if hashed else None).cpu()
                 expected=torch.zeros_like(hidden)
                 def expert(x,weights,coefficient=1.):
@@ -81,7 +81,7 @@ def main():
                     rejected(lambda:ffn(hidden.cuda(),torch.full_like(ids,4,device='cuda')))
                     torch.testing.assert_close(ffn.token_table.cpu(),table,rtol=0,atol=0)
                 ffn.max_output_bytes=1
-                with patch('dllm.cuda_deepseek_ffn.F.linear',side_effect=AssertionError('projection before admission')):
+                with patch('damendaemon.cuda_deepseek_ffn.F.linear',side_effect=AssertionError('projection before admission')):
                     rejected(lambda:ffn(hidden.cuda(),ids.cuda() if hashed else None))
                 torch.testing.assert_close(hidden,before,rtol=0,atol=0)
                 report['cases'].append(dict(format=format,hashed=hashed,ids_exact=True,max_absolute=float((actual-expected).abs().max())))

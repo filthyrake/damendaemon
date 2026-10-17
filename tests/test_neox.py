@@ -1,7 +1,7 @@
 import unittest
 import torch
-from dllm.config import decoder_config
-from dllm.neox import load_weights
+from damendaemon.config import decoder_config
+from damendaemon.neox import load_weights
 
 
 def config(**changes):

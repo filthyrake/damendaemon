@@ -7,9 +7,9 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from dllm.bench import events
-from dllm.server import handler_for
-from dllm.runtime import BusyError
+from damendaemon.bench import events
+from damendaemon.server import handler_for
+from damendaemon.runtime import BusyError
 
 
 class FakeRuntime:
@@ -20,18 +20,18 @@ class FakeRuntime:
         return list(self.models)
 
     def manage(self, action, **options):
-        from dllm.management import command
+        from damendaemon.management import command
         self.last_management=command(action,**options)
         return {'models': [{'id':'a','residency':'disk'}]}
 
     def embed(self, alias, inputs, encoding_format='float', dimensions=None):
-        from dllm.embeddings import options
+        from damendaemon.embeddings import options
         values,encoding_format,dimensions=options(inputs,encoding_format,dimensions)
         self.last_embedding=(alias,values,encoding_format,dimensions)
         return {'object':'list','data':[{'object':'embedding','index':i,'embedding':[0.,1.]} for i in range(len(values))]}
 
     def rerank(self,alias,query,documents,top_n=None,return_documents=False):
-        from dllm.reranking import options,ranked
+        from damendaemon.reranking import options,ranked
         query,documents,top_n,return_documents=options(query,documents,top_n,return_documents)
         if alias!='a':raise ValueError('unknown model')
         return {'results':ranked([float(i) for i in range(len(documents))],documents,top_n,return_documents)}
@@ -84,11 +84,11 @@ class ServerTests(unittest.TestCase):
     def test_image_http_validation_requires_opt_in_and_leaves_pixels_to_worker(self):
         messages=[{'role':'user','content':[{'type':'image_url','image_url':
             {'url':'data:image/png;base64,iVBORw0KGgo='}}]}]
-        with patch.dict(os.environ,{'DLLM_EXPERIMENTAL_VISION':'0'}):
+        with patch.dict(os.environ,{'DAMENDAEMON_EXPERIMENTAL_VISION':'0'}):
             with self.assertRaises(HTTPError) as error:self.post(messages=messages)
             self.assertEqual(error.exception.code,400)
-        with patch.dict(os.environ,{'DLLM_EXPERIMENTAL_VISION':'1'}), \
-                patch('dllm.vision_messages.decode_image_messages') as decode:
+        with patch.dict(os.environ,{'DAMENDAEMON_EXPERIMENTAL_VISION':'1'}), \
+                patch('damendaemon.vision_messages.decode_image_messages') as decode:
             with self.post(messages=messages) as response:
                 self.assertEqual(json.load(response)['choices'][0]['message']['content'],'Hello world')
             decode.assert_not_called()
@@ -119,9 +119,9 @@ class ServerTests(unittest.TestCase):
 
     def test_nonfinite_model_output_is_an_execution_error(self):
         import torch
-        from dllm.sampling import Sampler, Sampling
-        from dllm.logprobs import scores
-        from dllm.cpu_pipeline_generation import CpuPipelineReferenceGenerator
+        from damendaemon.sampling import Sampler, Sampling
+        from damendaemon.logprobs import scores
+        from damendaemon.cpu_pipeline_generation import CpuPipelineReferenceGenerator
         from types import SimpleNamespace
         cpu=SimpleNamespace(vocab_size=2,model=SimpleNamespace(config={'vocab_size':2}))
         failures = (
@@ -139,7 +139,7 @@ class ServerTests(unittest.TestCase):
                 yield  # Exercise failures during generator iteration.
             with self.subTest(failure=failure), \
                     patch.object(self.runtime, 'generate', side_effect=generate), \
-                    patch('dllm.server.traceback.print_exc'):
+                    patch('damendaemon.server.traceback.print_exc'):
                 with self.assertRaises(HTTPError) as raised:
                     self.post()
                 with raised.exception as response:
@@ -164,8 +164,8 @@ class ServerTests(unittest.TestCase):
     def test_template_render_failures_return_400_before_inference(self):
         from types import SimpleNamespace
         from unittest.mock import Mock
-        from dllm.qwen2 import ModelWeights
-        from dllm.chat_template import compile_template
+        from damendaemon.qwen2 import ModelWeights
+        from damendaemon.chat_template import compile_template
         model=SimpleNamespace(config={'model_type':'qwen2','vocab_size':4},
             template=compile_template('{{ messages[1].content }}'),
             special_tokens={},tokenizer=Mock())
@@ -177,7 +177,7 @@ class ServerTests(unittest.TestCase):
                        '{% for i in range(30) %}{% endfor %}hello'):
             model.template=compile_template(source)
             with patch.object(self.runtime,'generate',side_effect=generate), \
-                    patch('dllm.chat_template.MAX_TEMPLATE_ITERATIONS',20):
+                    patch('damendaemon.chat_template.MAX_TEMPLATE_ITERATIONS',20):
                 for stream in (False,True):
                     with self.subTest(source=source,stream=stream):
                         with self.assertRaises(HTTPError) as raised:
@@ -195,14 +195,14 @@ class ServerTests(unittest.TestCase):
 
     def test_stream_usage_preserves_timing_without_extra_events_when_disabled(self):
         with self.post() as response:
-            self.assertEqual(json.load(response)['dllm_timing']['queue_seconds'], .125)
+            self.assertEqual(json.load(response)['damendaemon_timing']['queue_seconds'], .125)
         for enabled in (False, True):
             with self.post(stream=True, stream_options={'include_usage': enabled}) as response:
                 chunks = [json.loads(value) for value in events(response) if value != '[DONE]']
-            timed = [chunk for chunk in chunks if 'dllm_timing' in chunk]
+            timed = [chunk for chunk in chunks if 'damendaemon_timing' in chunk]
             self.assertEqual(len(timed), int(enabled))
             if enabled:
-                self.assertEqual(timed[0]['dllm_timing']['queue_seconds'], .125)
+                self.assertEqual(timed[0]['damendaemon_timing']['queue_seconds'], .125)
                 self.assertIn('usage', timed[0])
                 self.assertEqual(timed[0]['choices'], [])
 
@@ -266,7 +266,7 @@ class ServerTests(unittest.TestCase):
         tools = [{'type': 'function', 'function': {'name': 'test',
             'parameters': {'type': 'object', 'extra': nested}}}]
         with patch.object(self.runtime, 'generate') as generate, \
-                patch('dllm.server.traceback.print_exc'):
+                patch('damendaemon.server.traceback.print_exc'):
             with self.assertRaises(HTTPError) as caught: self.post(tools=tools)
             with caught.exception as response:
                 self.assertEqual(response.code, 400)
@@ -566,14 +566,14 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(caught.exception.code,400)
 
     def test_malformed_reranker_output_is_not_a_client_error(self):
-        from dllm.reranking import ranked
+        from damendaemon.reranking import ranked
         body={'model':'a','query':'question','documents':['first','second']}
         for scores in (1., [[1.], [2.]], [None, 2.]):
             with self.subTest(scores=scores):
                 def rerank(*args, **kwargs):
                     return {'results':ranked(scores, body['documents'], 2, False)}
                 with patch.object(self.runtime, 'rerank', side_effect=rerank), \
-                        patch('dllm.server.traceback.print_exc'):
+                        patch('damendaemon.server.traceback.print_exc'):
                     with self.assertRaises(HTTPError) as caught:
                         urlopen(Request(self.url+'/v1/rerank', data=json.dumps(body).encode(),
                             headers={'Content-Type':'application/json'}), timeout=5)

@@ -4,7 +4,7 @@ from unittest.mock import patch
 import torch
 from torch.nn import functional as F
 
-from dllm.packed_moe import PackedExpert, PackedMatrix, packed_moe
+from damendaemon.packed_moe import PackedExpert, PackedMatrix, packed_moe
 from tests.test_packed_projection import fixture
 
 
@@ -72,7 +72,7 @@ class PackedMoETests(unittest.TestCase):
 
     def test_preparation_rejects_geometry_and_budget_without_decoding(self):
         prepared,_ = expert('e2m1')
-        with patch('dllm.packed_projection.decode_tile',side_effect=AssertionError('decode started')):
+        with patch('damendaemon.packed_projection.decode_tile',side_effect=AssertionError('decode started')):
             for options in ({'workspace_bytes':1},{'activation_limit':float('nan')},{'row_chunk':True}):
                 with self.assertRaises(ValueError):
                     PackedExpert(prepared.gate,prepared.up,prepared.down,**options)

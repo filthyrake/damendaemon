@@ -4,8 +4,8 @@ import argparse
 import torch
 from torch.nn import functional as F
 from transformers.models.bloom.modeling_bloom import build_alibi_tensor
-from dllm.bloom import alibi_slopes
-from dllm.runtime import require_gpu
+from damendaemon.bloom import alibi_slopes
+from damendaemon.runtime import require_gpu
 
 
 def main():
@@ -15,9 +15,9 @@ def main():
     device=args.device
     require_gpu()
     if device=='cuda':
-        from dllm import kernels
+        from damendaemon import kernels
     else:
-        from dllm import metal_kernels as kernels
+        from damendaemon import metal_kernels as kernels
     torch.manual_seed(2026)
     checks = []
     for heads in (1, 12, 16):

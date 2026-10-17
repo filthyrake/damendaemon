@@ -5,13 +5,13 @@ import os
 
 import torch
 
-from dllm.runtime import require_gpu
-from dllm.rocm_policy import host_available, memory_limit
+from damendaemon.runtime import require_gpu
+from damendaemon.rocm_policy import host_available, memory_limit
 
 
 def main():
-    if os.environ.get('DLLM_DEVICE') != 'rocm' or memory_limit() != 256*1024**2:
-        raise ValueError('this probe requires ROCm and DLLM_ROCM_MEMORY_GIB=0.25')
+    if os.environ.get('DAMENDAEMON_DEVICE') != 'rocm' or memory_limit() != 256*1024**2:
+        raise ValueError('this probe requires ROCm and DAMENDAEMON_ROCM_MEMORY_GIB=0.25')
     before = host_available()
     if before < 24*1024**3:
         raise MemoryError('probe requires at least 24 GiB available host RAM')

@@ -7,13 +7,13 @@ import json
 import os
 from pathlib import Path
 import torch
-from dllm.scheduler import BatchedRuntime
+from damendaemon.scheduler import BatchedRuntime
 
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('model');parser.add_argument('--output',required=True);args=parser.parse_args()
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':raise RuntimeError('restricted to A2')
-    os.environ['DLLM_DEVICE']='cuda';torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_DEVICE']='cuda';torch.set_num_threads(4)
     runtime=BatchedRuntime({'oss':args.model},context=512,batch_size=2,host_gib=18)
     rows=[]
     try:

@@ -17,14 +17,14 @@ The baseline vocabulary is unchanged. The second file changes only token 260,
 
 For `llama-tokenize -m <fixture.gguf> -p a --ids`:
 
-| Input | Pinned reference | dllm before correction |
+| Input | Pinned reference | damendaemon before correction |
 |---|---|---|
 | Baseline vocabulary, prompt `a` | `[1, 263]` | `[1, 263]` |
 | UNUSED `a`, prompt `a` | `[1, 263]` | `[1, 259, 100]` |
 
 The reference tool explicitly sets `vocab_only=true`. Its SPM implementation
 considers the token map for merges/resegmentation without filtering UNUSED;
-its piece decoder suppresses unsupported attributes such as UNUSED. dllm's
+its piece decoder suppresses unsupported attributes such as UNUSED. damendaemon's
 static-score vocabulary previously dropped these entries, while its positional
 path already rejected them. The same accepted file could therefore encode a
 different prompt without a validation error.
@@ -47,16 +47,16 @@ no tensor weights. It emits exact IDs and byte-hex full/generated decoding for
 both special-token visibility settings. Build it against the CPU-only library:
 
 ```sh
-cmake -S /path/to/llama.cpp -B /tmp/dllm-tokenizer-reference-build \
+cmake -S /path/to/llama.cpp -B /tmp/damendaemon-tokenizer-reference-build \
   -DGGML_METAL=OFF -DGGML_CUDA=OFF -DGGML_OPENMP=OFF \
   -DLLAMA_OPENSSL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF \
   -DLLAMA_BUILD_SERVER=OFF -DLLAMA_BUILD_MTMD=OFF -DCMAKE_BUILD_TYPE=Release
-cmake --build /tmp/dllm-tokenizer-reference-build --target llama --parallel 2
+cmake --build /tmp/damendaemon-tokenizer-reference-build --target llama --parallel 2
 c++ -std=c++17 -O2 tests/reference/sentencepiece_oracle.cpp \
   -I/path/to/llama.cpp/include -I/path/to/llama.cpp/ggml/include \
-  -L/tmp/dllm-tokenizer-reference-build/bin -lllama \
-  -Wl,-rpath,/tmp/dllm-tokenizer-reference-build/bin -o /tmp/dllm-spm-oracle
-.venv/bin/python -m tests.reference.generate_sentencepiece_unused /tmp/dllm-spm-oracle
+  -L/tmp/damendaemon-tokenizer-reference-build/bin -lllama \
+  -Wl,-rpath,/tmp/damendaemon-tokenizer-reference-build/bin -o /tmp/damendaemon-spm-oracle
+.venv/bin/python -m tests.reference.generate_sentencepiece_unused /tmp/damendaemon-spm-oracle
 .venv/bin/python -m unittest tests.test_gguf_sentencepiece
 ```
 
@@ -93,7 +93,7 @@ not establish portable ordering for equal-byte-length overlapping specials.
 The next CPU reference probe confirmed the equal-length caveat is observable,
 not hypothetical. Append user-defined specials `abx`, 32 fillers `x00` through
 `x31`, and `bxy` to the original tiny vocabulary. Prompt `abxy` without automatic
-specials produced `[266,259,124]` in dllm and `[263,299]` in the pinned reference.
+specials produced `[266,259,124]` in damendaemon and `[263,299]` in the pinned reference.
 With four fillers, both returned `[266,259,124]`. The C++ reference sorts specials
 only by byte length using `std::sort`; its equal-length order is unspecified.
 
@@ -125,7 +125,7 @@ The frozen matrix runs in CPU CI without building the reference or using GPUs.
 ## Byte-level UNUSED pieces (#381)
 
 A Llama3 whole-word lookup exposed another silent mismatch: alphabet plus EOS,
-normal `aa`, UNUSED `ab`, and only merge `a a` encoded `ab` as `[64,65]` in dllm
+normal `aa`, UNUSED `ab`, and only merge `a a` encoded `ab` as `[64,65]` in damendaemon
 versus reference `[258]`. Qwen2's control case returned `[64,65]` in both.
 
 Byte-level vocabularies now retain unique UNUSED spellings for lookup and merges.

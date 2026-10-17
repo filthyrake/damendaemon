@@ -6,7 +6,7 @@ import json
 import os
 
 import torch
-from dllm.mxfp4 import unpack,routed_linear
+from damendaemon.mxfp4 import unpack,routed_linear
 
 
 # Independent reference uses the published E2M1 value table and float64 ldexp.
@@ -37,7 +37,7 @@ def main():
             rows.append({'case':'all_codes_all_256_scales','dtype':str(dtype),'exact_values':True,'signed_zero':True})
         # Exact FP16 expansion must also survive the compensated matrix path,
         # including the lowest subnormal and largest safe expert scales.
-        from dllm.precise_matmul import linear as precise_linear
+        from damendaemon.precise_matmul import linear as precise_linear
         for exponent in (104,105,140):
             blocks=torch.randint(0,256,(37,3,16),dtype=torch.uint8)
             scales=torch.full((37,3),exponent,dtype=torch.uint8)
@@ -62,7 +62,7 @@ def main():
                 torch.testing.assert_close(actual,target,rtol=2e-5,atol=3e-5)
                 rows.append({'case':'routed','tokens':count,'experts':experts,'outputs':outputs,'width':width,
                     'top':top,'shared_input':shared,'max_absolute_error':(actual-target).abs().max().item()})
-        from dllm.mxfp4_kernels import swiglu
+        from damendaemon.mxfp4_kernels import swiglu
         activation=torch.randn(3,5760,device='cuda')*20
         activation[0,:10]=torch.tensor([-1000,1000,-7,7,0,-1,7,-7,1000,-1000],device='cuda')
         gate=activation.double()[:,::2].clamp(max=7)

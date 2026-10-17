@@ -8,9 +8,9 @@ import os
 import statistics
 import time
 import torch
-from dllm.encoder import EncoderWeights, EncoderExecutor
-from dllm.device import synchronize, device_name
-from dllm.runtime import require_gpu
+from damendaemon.encoder import EncoderWeights, EncoderExecutor
+from damendaemon.device import synchronize, device_name
+from damendaemon.runtime import require_gpu
 
 
 def main():
@@ -19,7 +19,7 @@ def main():
     parser.add_argument('--device', choices=('cuda', 'mps'), default='cuda')
     parser.add_argument('--rounds', type=int, default=30)
     args = parser.parse_args()
-    os.environ['DLLM_DEVICE'] = args.device
+    os.environ['DAMENDAEMON_DEVICE'] = args.device
     require_gpu()
     torch.set_num_threads(4)
     model = EncoderWeights(args.path, 256)

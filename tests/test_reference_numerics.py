@@ -5,9 +5,9 @@ import unittest
 from unittest.mock import patch
 import torch
 
-from dllm.floating_attention import _norm
-from dllm.hyper_connections import reduce_head, reduce_streams, restore_streams, mixing_weights
-from dllm.deepseek_generation import ReferenceGenerator
+from damendaemon.floating_attention import _norm
+from damendaemon.hyper_connections import reduce_head, reduce_streams, restore_streams, mixing_weights
+from damendaemon.deepseek_generation import ReferenceGenerator
 from tests.test_deepseek_generation import text_fixture, ScriptedModel
 from tests.test_floating_model import fixture
 
@@ -63,7 +63,7 @@ class ReferenceNumericsTests(unittest.TestCase):
                 if weight is model.head['head.weight']:
                     return torch.full((1,4),float('inf'))
                 return linear(value,weight,*args,**kwargs)
-            with patch('dllm.floating_model.F.linear',side_effect=overflow_head):
+            with patch('damendaemon.floating_model.F.linear',side_effect=overflow_head):
                 with self.assertRaisesRegex(ValueError,'vocabulary logits'):model.prefill(ids[:,:3])
         self.assertTrue(owned);self.assertTrue(all(state.attention.closed for state in owned))
         self.assertFalse(model.failed_prefills)
@@ -79,7 +79,7 @@ class ReferenceNumericsTests(unittest.TestCase):
 
     def test_reference_attention_indexer_failure_poisons_decode_and_rejects_prefill(self):
         from tests.test_floating_attention import fixture as attention_fixture
-        from dllm.floating_attention import attention_prefill,attention_decode
+        from damendaemon.floating_attention import attention_prefill,attention_decode
         hidden,weights,freq=attention_fixture(4,5)
         _,state=attention_prefill(hidden[:,:4],weights,freq,groups=2,window=4,
                                   ratio=4,index_top_k=2,max_tokens=6)
@@ -89,7 +89,7 @@ class ReferenceNumericsTests(unittest.TestCase):
             if weight is weights['indexer.wq_b.weight']:
                 return torch.full((*value.shape[:-1],weight.shape[0]),float('inf'))
             return original(value,weight,*args,**kwargs)
-        with patch('dllm.floating_indexer.linear',side_effect=overflow_query):
+        with patch('damendaemon.floating_indexer.linear',side_effect=overflow_query):
             with self.assertRaisesRegex(ValueError,'indexer intermediate'):
                 attention_prefill(hidden,weights,freq,groups=2,window=4,ratio=4,index_top_k=2)
             with self.assertRaisesRegex(ValueError,'indexer intermediate'):
@@ -102,7 +102,7 @@ class ReferenceNumericsTests(unittest.TestCase):
 
     def test_reference_compressor_failure_leaves_decode_state_reusable(self):
         from tests.test_floating_attention import fixture as attention_fixture
-        from dllm.floating_attention import attention_prefill,attention_decode
+        from damendaemon.floating_attention import attention_prefill,attention_decode
         hidden,weights,freq=attention_fixture(4,4)
         _,state=attention_prefill(hidden[:,:3],weights,freq,groups=2,window=4,
                                   ratio=4,index_top_k=2,max_tokens=5)
@@ -113,7 +113,7 @@ class ReferenceNumericsTests(unittest.TestCase):
             if weight is weights['compressor.wkv.weight']:
                 return torch.full((*value.shape[:-1],weight.shape[0]),1e20)
             return original(value,weight,*args,**kwargs)
-        with patch('dllm.floating_compressor.F.linear',side_effect=oversized):
+        with patch('damendaemon.floating_compressor.F.linear',side_effect=oversized):
             with self.assertRaisesRegex(ValueError,'compressor intermediate'):
                 attention_prefill(hidden,weights,freq,groups=2,window=4,ratio=4,index_top_k=2)
             with self.assertRaisesRegex(ValueError,'compressor intermediate'):

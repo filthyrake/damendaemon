@@ -11,7 +11,7 @@ from tokenizers import Tokenizer, models
 from transformers import (BertConfig, BertModel, BertForSequenceClassification,
                           XLMRobertaConfig, XLMRobertaModel, XLMRobertaForSequenceClassification,
                           RobertaConfig, RobertaModel, RobertaForSequenceClassification)
-from dllm.encoder import EncoderWeights, EncoderExecutor
+from damendaemon.encoder import EncoderWeights, EncoderExecutor
 
 
 class EncoderCPUReferenceTests(unittest.TestCase):
@@ -73,13 +73,13 @@ class EncoderCPUReferenceTests(unittest.TestCase):
             if truncate_dim is not None:
                 (root/'config_sentence_transformers.json').write_text(json.dumps({'truncate_dim':truncate_dim}))
             model = EncoderWeights(root, c.max_position_embeddings)
-            from dllm.models import config as dispatch
+            from damendaemon.models import config as dispatch
             self.assertEqual(dispatch(root),model.config)
             # Replace device admission only. Actual loading, tensor operations,
             # padding, positions, attention and task heads run unmocked on CPU.
-            with patch('dllm.encoder.selected_device', return_value='cpu'), \
-                    patch('dllm.encoder.empty_cache'), \
-                    patch('dllm.encoder.available_memory', return_value=2**30):
+            with patch('damendaemon.encoder.selected_device', return_value='cpu'), \
+                    patch('damendaemon.encoder.empty_cache'), \
+                    patch('damendaemon.encoder.available_memory', return_value=2**30):
                 native = EncoderExecutor(model, use_graph=False)
             self.assertEqual(native.compute_dtype, torch.float32)
             rows = [[2, 5, 6, 7, 3], [2, 8, 3], [2, 9, 10, 11, 12, 3]]

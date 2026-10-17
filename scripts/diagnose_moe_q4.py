@@ -9,10 +9,10 @@ from pathlib import Path
 from types import MethodType
 import torch
 from reference_model import load_reference
-from dllm.qwen2 import ModelWeights
-from dllm.runtime import make_executor, require_gpu
-from dllm.quantization import dequantize_q4
-from dllm import expert_routes, moe_kernels
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.runtime import make_executor, require_gpu
+from damendaemon.quantization import dequantize_q4
+from damendaemon import expert_routes, moe_kernels
 
 
 def metrics(value, target):

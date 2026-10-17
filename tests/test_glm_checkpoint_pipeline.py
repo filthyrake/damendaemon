@@ -7,10 +7,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_checkpoint_pipeline import load_reference_pipeline
-from dllm.glm_checkpoint import tensor_specs
-from dllm.glm_reference_loader import load_reference_model
-from dllm.safetensor_header import ITEM_BYTES
+from damendaemon.glm_checkpoint_pipeline import load_reference_pipeline
+from damendaemon.glm_checkpoint import tensor_specs
+from damendaemon.glm_reference_loader import load_reference_model
+from damendaemon.safetensor_header import ITEM_BYTES
 from tests.test_glm_generation import text_fixture
 from tests.test_glm_reference_loader import fixture
 from scripts import run_glm_reference as cli
@@ -23,7 +23,7 @@ class GlmCheckpointPipelineTests(unittest.TestCase):
             specs=tensor_specs(config)
             retained=sum(math.prod(spec.shape)*(1 if spec.storage=='fp8' else 4) for spec in specs.values())
             overlap=max(math.prod(spec.shape)*ITEM_BYTES[headers[name]['dtype']] for name,spec in specs.items())
-            with patch('dllm.glm_reference_loader._payload',side_effect=AssertionError('payload read')):
+            with patch('damendaemon.glm_reference_loader._payload',side_effect=AssertionError('payload read')):
                 for splits,budget in (([2],retained+overlap-1),([1],retained+overlap),([3],retained+overlap),([2,2],retained+overlap)):
                     with self.subTest(splits=splits,budget=budget),self.assertRaises(ValueError):
                         load_reference_pipeline(path,splits,max_weight_bytes=budget)
@@ -38,7 +38,7 @@ class GlmCheckpointPipelineTests(unittest.TestCase):
             finally:state.close();other.close()
 
     def test_config_shard_or_inventory_change_during_construction_rejected(self):
-        import dllm.glm_checkpoint_pipeline as builder
+        import damendaemon.glm_checkpoint_pipeline as builder
         for change in ('config','shard','index'):
             with self.subTest(change=change),tempfile.TemporaryDirectory() as temp:
                 path=Path(temp);fixture(path)
@@ -73,7 +73,7 @@ class GlmCheckpointPipelineTests(unittest.TestCase):
     def test_command_rejects_invalid_request_or_cut_before_loading_payloads(self):
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp);text=text_fixture(path);fixture(path,vocab_size=text.vocab_size)
-            with patch('dllm.glm_reference_loader._payload',side_effect=AssertionError('payload read')),redirect_stderr(io.StringIO()):
+            with patch('damendaemon.glm_reference_loader._payload',side_effect=AssertionError('payload read')),redirect_stderr(io.StringIO()):
                 for extra in (['--layer-splits','1'],['--layer-splits','2','2'],['--layer-splits','2','--context','1']):
                     with self.subTest(extra=extra),self.assertRaises(SystemExit) as error:
                         cli.main([str(path),'--prompt','Hi',*extra])

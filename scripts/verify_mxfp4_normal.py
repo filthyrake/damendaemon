@@ -7,8 +7,8 @@ import os
 import torch
 import triton as tr
 import triton.language as tl
-from dllm.mxfp4 import routed_linear
-from dllm.mxfp4_kernels import _value_normal
+from damendaemon.mxfp4 import routed_linear
+from damendaemon.mxfp4_kernels import _value_normal
 
 
 @tr.jit

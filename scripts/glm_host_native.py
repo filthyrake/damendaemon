@@ -1,7 +1,7 @@
 """Bounded native request preflight for the explicit GLM/Flash host commands."""
 from dataclasses import dataclass
-from dllm.cpu_reference_text import read_json
-from dllm.reference_batch import prepare_batch
+from damendaemon.cpu_reference_text import read_json
+from damendaemon.reference_batch import prepare_batch
 
 
 @dataclass(frozen=True)

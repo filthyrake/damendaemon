@@ -1,15 +1,15 @@
 {
-  "model": "/home/damen/dllm-dev/baselines/llama32-1b-import-q4_k_m.gguf",
+  "model": "/home/damen/damendaemon-dev/baselines/llama32-1b-import-q4_k_m.gguf",
   "model_sha256": "0f94fa98d163d9e70e97026f256da3876a9049e0d88eb6b8e880d754a01d7377",
-  "native_library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+  "native_library": "/home/damen/damendaemon-dev/build-kquant/libdamendaemon-kquant.so",
   "native_library_sha256": "2896d777ef22e1658e1f3f2cae1b67126bf886f071a624f241f1ee816638a61c",
-  "llama_server": "/home/damen/dllm-dev/baselines/llama-cuda-build/bin/llama-server",
+  "llama_server": "/home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/llama-server",
   "llama_server_sha256": "344fe55b9043e7cd362b199a24fcbb9eba7e1d9513e17083a18df4190002401d",
   "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
   "context_per_slot": 512,
   "slots": 4,
   "kv_dtype": "float16",
-  "dllm_precision": "mixed: FP16 matrices, FP32 residual/nonlinear",
+  "damendaemon_precision": "mixed: FP16 matrices, FP32 residual/nonlinear",
   "output_tokens": 16,
   "prompts": {
     "16": [
@@ -569,14 +569,14 @@
   "runs": [
     {
       "phase": 0,
-      "engine": "dllm",
+      "engine": "damendaemon",
       "command": [
-        "/home/damen/dllm-dev/venv/bin/python",
+        "/home/damen/damendaemon-dev/venv/bin/python",
         "-m",
-        "dllm",
+        "damendaemon",
         "serve",
         "--model",
-        "a=/home/damen/dllm-dev/baselines/llama32-1b-import-q4_k_m.gguf",
+        "a=/home/damen/damendaemon-dev/baselines/llama32-1b-import-q4_k_m.gguf",
         "--port",
         "60725",
         "--context",
@@ -592,7 +592,7 @@
         "--prefix-cache-tokens",
         "0"
       ],
-      "log": "results/llama32-q4-k-m-engines-a2-0-dllm.log",
+      "log": "results/llama32-q4-k-m-engines-a2-0-damendaemon.log",
       "cases": [
         {
           "prompt_tokens": 16,
@@ -1379,9 +1379,9 @@
       "phase": 1,
       "engine": "llama.cpp",
       "command": [
-        "/home/damen/dllm-dev/baselines/llama-cuda-build/bin/llama-server",
+        "/home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/llama-server",
         "--model",
-        "/home/damen/dllm-dev/baselines/llama32-1b-import-q4_k_m.gguf",
+        "/home/damen/damendaemon-dev/baselines/llama32-1b-import-q4_k_m.gguf",
         "--alias",
         "a",
         "--host",
@@ -2336,9 +2336,9 @@
       "phase": 2,
       "engine": "llama.cpp",
       "command": [
-        "/home/damen/dllm-dev/baselines/llama-cuda-build/bin/llama-server",
+        "/home/damen/damendaemon-dev/baselines/llama-cuda-build/bin/llama-server",
         "--model",
-        "/home/damen/dllm-dev/baselines/llama32-1b-import-q4_k_m.gguf",
+        "/home/damen/damendaemon-dev/baselines/llama32-1b-import-q4_k_m.gguf",
         "--alias",
         "a",
         "--host",
@@ -3291,14 +3291,14 @@
     },
     {
       "phase": 3,
-      "engine": "dllm",
+      "engine": "damendaemon",
       "command": [
-        "/home/damen/dllm-dev/venv/bin/python",
+        "/home/damen/damendaemon-dev/venv/bin/python",
         "-m",
-        "dllm",
+        "damendaemon",
         "serve",
         "--model",
-        "a=/home/damen/dllm-dev/baselines/llama32-1b-import-q4_k_m.gguf",
+        "a=/home/damen/damendaemon-dev/baselines/llama32-1b-import-q4_k_m.gguf",
         "--port",
         "50837",
         "--context",
@@ -3314,7 +3314,7 @@
         "--prefix-cache-tokens",
         "0"
       ],
-      "log": "results/llama32-q4-k-m-engines-a2-3-dllm.log",
+      "log": "results/llama32-q4-k-m-engines-a2-3-damendaemon.log",
       "cases": [
         {
           "prompt_tokens": 16,

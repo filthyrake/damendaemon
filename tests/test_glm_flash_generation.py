@@ -4,11 +4,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_flash_text import FlashText,render_chat
-from dllm.glm_flash_generation import FlashReferenceGenerator
-from dllm.glm_flash_model import FlashModel
-from dllm.glm_flash_reference_loader import load_reference_model
-from dllm.glm_text import EOS,END_THINK
+from damendaemon.glm_flash_text import FlashText,render_chat
+from damendaemon.glm_flash_generation import FlashReferenceGenerator
+from damendaemon.glm_flash_model import FlashModel
+from damendaemon.glm_flash_reference_loader import load_reference_model
+from damendaemon.glm_text import EOS,END_THINK
 from tests import test_glm_generation,test_glm_flash_reference_loader
 
 

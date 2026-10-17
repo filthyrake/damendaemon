@@ -11,7 +11,7 @@ import sys
 import tempfile
 import time
 from urllib.request import Request, urlopen
-from dllm.bench import events
+from damendaemon.bench import events
 
 
 def main():
@@ -22,12 +22,12 @@ def main():
     with tempfile.TemporaryDirectory() as temporary:
         logpath = Path(temporary) / 'server.log'
         with logpath.open('w') as log:
-            process = subprocess.Popen([sys.executable, '-m', 'dllm', 'serve', '--port', '0',
+            process = subprocess.Popen([sys.executable, '-m', 'damendaemon', 'serve', '--port', '0',
                 '--context', '512', '--batch-size', '4', '--model', 'a='+args.model], stdout=log, stderr=log)
             try:
                 deadline = time.monotonic() + 60
                 while time.monotonic() < deadline and process.poll() is None:
-                    lines = [x for x in logpath.read_text().splitlines() if x.startswith('dllm listening on ')]
+                    lines = [x for x in logpath.read_text().splitlines() if x.startswith('damendaemon listening on ')]
                     if lines:
                         base = lines[-1].split()[-1]
                         break

@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_model import GlmModel
-from dllm.glm_block import GlmBlock
-from dllm.glm_ffn import GlmFeedForward
+from damendaemon.glm_model import GlmModel
+from damendaemon.glm_block import GlmBlock
+from damendaemon.glm_ffn import GlmFeedForward
 from tests.test_glm_cached_attention import fixture
 from tests.test_glm_block import ffn_weights
 
@@ -62,7 +62,7 @@ class GlmModelTests(unittest.TestCase):
         self.assertFalse(model.failed_cleanups)
 
     def test_normalization_output_overflow_is_not_a_valid_head_input(self):
-        from dllm.glm_normalization import rms_norm
+        from damendaemon.glm_normalization import rms_norm
         hidden=torch.tensor([[[1.,0.,0.,0.,0.,0.]]])
         with self.assertRaisesRegex(RuntimeError,'normalization output'):
             rms_norm(hidden,torch.full((6,),torch.finfo(torch.float32).max),1e-5)

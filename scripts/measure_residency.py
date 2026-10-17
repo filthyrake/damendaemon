@@ -6,8 +6,8 @@ import argparse
 import json
 import time
 import torch
-from dllm.runtime import require_gpu,make_executor
-from dllm.qwen2 import ModelWeights,weight_bytes
+from damendaemon.runtime import require_gpu,make_executor
+from damendaemon.qwen2 import ModelWeights,weight_bytes
 
 
 @torch.inference_mode()

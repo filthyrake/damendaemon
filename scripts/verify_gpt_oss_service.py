@@ -14,8 +14,8 @@ from urllib.request import Request,urlopen
 import weakref
 
 import torch
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer,handler_for
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer,handler_for
 
 
 def main():
@@ -24,7 +24,7 @@ def main():
     if args.context<32 or not 0<=args.prompt_tokens<=args.context-16:parser.error('prompt must fit the configured context')
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
-    os.environ['DLLM_DEVICE']='cuda';torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_DEVICE']='cuda';torch.set_num_threads(4)
     runtime=BatchedRuntime({'oss':args.model,'swap':args.swap_model},context=args.context,batch_size=2,
         host_gib=18,gpu_models=1,host_models=2)
     server=BoundedHTTPServer(('127.0.0.1',0),handler_for(runtime))
@@ -60,13 +60,13 @@ def main():
         return content
     try:
         reference,cold=post(data);warm,warm_seconds=post(data);equal(warm,reference)
-        assert warm['dllm_timing']['weight_quantization']=='mxfp4'
+        assert warm['damendaemon_timing']['weight_quantization']=='mxfp4'
         if args.prompt_tokens:assert warm['usage']['prompt_tokens']==args.prompt_tokens
         assert stream()==reference['choices'][0]['text']
         stream(disconnect=True);equal(post(data)[0],reference)
         with ThreadPoolExecutor(2) as pool:concurrent=list(pool.map(lambda _:post(data)[0],range(2)))
         for result in concurrent:equal(result,reference)
-        assert max(r['dllm_timing']['max_batch_size'] for r in concurrent)==2
+        assert max(r['damendaemon_timing']['max_batch_size'] for r in concurrent)==2
         try:
             post({'model':'oss','messages':[{'role':'user','content':'Hello'}],'max_tokens':4,
                 'tool_choice':'required','tools':[{'type':'function','function':{'name':'unqualified','parameters':{'type':'object'}}}]},'/v1/chat/completions')
@@ -82,11 +82,11 @@ def main():
         swap,_=post({**data,'model':'swap','prompt':'The capital of France is','max_tokens':2})
         gc.collect();torch.cuda.synchronize();assert old() is None and graph() is None
         restored,restore_seconds=post(data);equal(restored,reference)
-        assert restored['dllm_timing']['source_tier']=='host'
+        assert restored['damendaemon_timing']['source_tier']=='host'
         runtime.manage('unload',model='oss',release_host=False)
-        again,_=post(data);equal(again,reference);assert again['dllm_timing']['source_tier']=='host'
+        again,_=post(data);equal(again,reference);assert again['damendaemon_timing']['source_tier']=='host'
         print(json.dumps({'passed':True,'gpu':torch.cuda.get_device_name(),'models':{'oss':args.model,'swap':args.swap_model},
-            'context':args.context,'batch_size':2,'prefill_mode':os.environ.get('DLLM_GPT_OSS_PREFILL','default'),'reference':reference,'warm':warm,'cold_http_seconds':cold,
+            'context':args.context,'batch_size':2,'prefill_mode':os.environ.get('DAMENDAEMON_GPT_OSS_PREFILL','default'),'reference':reference,'warm':warm,'cold_http_seconds':cold,
             'warm_http_seconds':warm_seconds,'host_restore_http_seconds':restore_seconds,
             'stream_equivalence':True,'disconnect_recovery':True,'concurrent_equivalence':True,
             'unsupported_forced_harmony_tools_rejected':True,'graph_executor_reclaimed_on_swap':True,

@@ -1,11 +1,11 @@
-"""Prove the benchmark GGUF's dequantized tensors match dllm's Q8 policy."""
+"""Prove the benchmark GGUF's dequantized tensors match damendaemon's Q8 policy."""
 import argparse
 import json
 import torch
 import gguf
 from gguf.quants import dequantize
-from dllm.models import load
-from dllm.quantization import dequantize as restore
+from damendaemon.models import load
+from damendaemon.quantization import dequantize as restore
 
 
 def main():

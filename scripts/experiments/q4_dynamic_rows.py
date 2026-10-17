@@ -38,9 +38,9 @@ def dynamic_rows_enabled(rows,width):
 
 def install_validation_dispatch():
     import os
-    from dllm import q4_stage_kernels
-    os.environ['DLLM_Q4_STAGE_ADJACENT']='1'
-    os.environ['DLLM_Q4_STAGE_RUNTIME_ROWS']='0'
+    from damendaemon import q4_stage_kernels
+    os.environ['DAMENDAEMON_Q4_STAGE_ADJACENT']='1'
+    os.environ['DAMENDAEMON_Q4_STAGE_RUNTIME_ROWS']='0'
     original=q4_stage_kernels.single_dot_adjacent
     class Dispatch:
         def __getitem__(self,grid):

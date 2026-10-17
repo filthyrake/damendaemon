@@ -17,9 +17,9 @@ import torch
 from torch.nn import functional as F
 from torch.nn.attention import SDPBackend, sdpa_kernel
 from torch.nn.attention.bias import causal_lower_right
-from dllm.config import decoder_config
-from dllm.runtime import require_gpu
-from dllm.device import selected_accelerator
+from damendaemon.config import decoder_config
+from damendaemon.runtime import require_gpu
+from damendaemon.device import selected_accelerator
 
 
 @torch.inference_mode()

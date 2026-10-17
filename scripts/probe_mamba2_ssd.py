@@ -3,8 +3,8 @@ import json
 import math
 import statistics
 import torch
-from dllm.runtime import require_gpu
-from dllm import mamba2_kernels,mamba2_ssd
+from damendaemon.runtime import require_gpu
+from damendaemon import mamba2_kernels,mamba2_ssd
 
 
 @torch.inference_mode()

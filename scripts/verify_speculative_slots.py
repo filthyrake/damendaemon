@@ -10,8 +10,8 @@ import time
 import weakref
 
 import torch
-from dllm.runtime import Runtime
-from dllm.speculative import Verifier
+from damendaemon.runtime import Runtime
+from damendaemon.speculative import Verifier
 
 
 def main():
@@ -20,7 +20,7 @@ def main():
     if args.prompt_tokens<0 or args.prompt_tokens+32>args.context:p.error('prompt and output must fit context')
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
-    os.environ['DLLM_DEVICE']='cuda';os.environ['DLLM_SPECULATIVE_TOKENS']='0';torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_DEVICE']='cuda';os.environ['DAMENDAEMON_SPECULATIVE_TOKENS']='0';torch.set_num_threads(4)
     runtime=Runtime({'a':args.model},context=args.context,batch_size=4)
     rows=[]
     @torch.inference_mode()

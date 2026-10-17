@@ -2,8 +2,8 @@
 import json
 from pathlib import Path
 import torch
-from dllm.runtime import Runtime
-from dllm.cli import main
+from damendaemon.runtime import Runtime
+from damendaemon.cli import main
 
 torch.cuda.memory._record_memory_history(max_entries=20000)
 original=Runtime._status

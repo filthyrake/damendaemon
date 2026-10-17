@@ -8,7 +8,7 @@ import runpy
 import sys
 
 import torch
-from dllm import kernels
+from damendaemon import kernels
 from scripts.experiments.attention_tensorcore import attention
 from scripts.experiments.attention_tiles import attention as split_attention
 

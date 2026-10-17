@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
-from dllm.distributed_cli import prompt_tokens, prepare_requests
+from damendaemon.distributed_cli import prompt_tokens, prepare_requests
 
 
 class DistributedCliTests(unittest.TestCase):
@@ -46,25 +46,25 @@ class DistributedCliTests(unittest.TestCase):
             prompt_tokens(self.args(prompt='x' * 65537), model)
 
     def test_main_cli_delegates_without_constructing_local_runtime(self):
-        from dllm.cli import main
-        with patch('sys.argv', ['dllm', 'distributed-run', '/model', '--prompt', 'hello']), \
-                patch('dllm.distributed_cli.main') as distributed:
+        from damendaemon.cli import main
+        with patch('sys.argv', ['damendaemon', 'distributed-run', '/model', '--prompt', 'hello']), \
+                patch('damendaemon.distributed_cli.main') as distributed:
             main()
         distributed.assert_called_once_with(['/model', '--prompt', 'hello'])
 
     def test_explicit_gpu_selection_required_before_cuda_access(self):
-        from dllm.distributed import StagePair
+        from damendaemon.distributed import StagePair
         with patch.dict('os.environ', {'WORLD_SIZE':'2','RANK':'0','LOCAL_RANK':'0','CUDA_VISIBLE_DEVICES':'0'}, clear=True), \
-                patch('dllm.distributed.dist.is_initialized', return_value=False), \
-                patch('dllm.distributed.torch.cuda.is_available') as available:
+                patch('damendaemon.distributed.dist.is_initialized', return_value=False), \
+                patch('damendaemon.distributed.torch.cuda.is_available') as available:
             with self.assertRaisesRegex(ValueError, 'explicit distinct GPU UUIDs'):
                 StagePair('/unused', 512, 'none', lambda model: [1])
             available.assert_not_called()
 
     def test_distributed_precision_guard_is_independent_of_local_partition_support(self):
-        from dllm.distributed import StagePair
-        with patch('dllm.distributed.dist.is_initialized', return_value=False), \
-                patch('dllm.distributed.torch.cuda.is_available') as available:
+        from damendaemon.distributed import StagePair
+        with patch('damendaemon.distributed.dist.is_initialized', return_value=False), \
+                patch('damendaemon.distributed.torch.cuda.is_available') as available:
             with self.assertRaisesRegex(ValueError, 'FP16, Q8 or Q4'):
                 StagePair('/unused', 512, 'awq', lambda model: [])
             available.assert_not_called()
@@ -95,8 +95,8 @@ class DistributedCliTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, '1 MiB'):prepare_requests(args, self.model())
 
     def test_release_completes_before_slot_reuse(self):
-        from dllm.distributed import StagePair
-        from dllm.stage_protocol import StageState, Command, PREFILL, RELEASE
+        from damendaemon.distributed import StagePair
+        from damendaemon.stage_protocol import StageState, Command, PREFILL, RELEASE
         pair = StagePair.__new__(StagePair)
         pair.rank = 0
         pair.max_batch = 1
@@ -115,16 +115,16 @@ class DistributedCliTests(unittest.TestCase):
                          ((0, 2, 0),))
 
     def test_invalid_batch_capacity_rejects_before_cuda_or_rendezvous(self):
-        from dllm.distributed import StagePair
-        with patch('dllm.distributed.torch.cuda.is_available') as available:
+        from damendaemon.distributed import StagePair
+        with patch('damendaemon.distributed.torch.cuda.is_available') as available:
             for capacity in (0,5,True,1.5):
                 with self.subTest(capacity=capacity),self.assertRaisesRegex(ValueError,'batch capacity'):
                     StagePair('/unused',512,'q8_0',lambda model:[],max_batch=capacity)
             available.assert_not_called()
 
     def test_explicit_slots_preserve_order_and_generation_across_reuse(self):
-        from dllm.distributed import StagePair
-        from dllm.stage_protocol import StageState
+        from damendaemon.distributed import StagePair
+        from damendaemon.stage_protocol import StageState
         pair=StagePair.__new__(StagePair);pair.rank=0;pair.max_batch=4
         pair.model=SimpleNamespace(config={'vocab_size':128})
         pair.state=StageState(1,32,4)
@@ -149,7 +149,7 @@ class DistributedCliTests(unittest.TestCase):
 
     def test_output_failure_payload_is_not_a_generated_token(self):
         import torch
-        from dllm.distributed import StagePair
+        from damendaemon.distributed import StagePair
         pair=StagePair.__new__(StagePair);pair.model=SimpleNamespace(config={'vocab_size':128})
         self.assertEqual(pair._result_tokens(torch.tensor([0,65,127])),[0,65,127])
         with self.assertRaisesRegex(RuntimeError,'output stage failed'):
@@ -160,15 +160,15 @@ class DistributedCliTests(unittest.TestCase):
 
     def test_output_exception_uses_existing_result_transfer_before_raising(self):
         import torch
-        from dllm.distributed import StagePair
-        from dllm.stage_protocol import Command, DECODE
+        from damendaemon.distributed import StagePair
+        from damendaemon.stage_protocol import Command, DECODE
         pair=StagePair.__new__(StagePair);pair.stage=Mock();pair.channel=Mock()
         failure=RuntimeError('injected stage error')
         pair.stage.run_decode.side_effect=failure
         command=Command(1,3,DECODE,2,((0,1,4),(1,1,8)))
         payload=torch.tensor([-1,-1],dtype=torch.int64)
         pair.failure_tokens=payload
-        with patch('dllm.distributed.torch.full',return_value=payload) as allocate:
+        with patch('damendaemon.distributed.torch.full',return_value=payload) as allocate:
             with self.assertRaisesRegex(RuntimeError,'injected stage error'):
                 pair._output_tokens(command,None,None,None)
         allocate.assert_not_called()
@@ -179,8 +179,8 @@ class DistributedCliTests(unittest.TestCase):
 
     def test_successful_output_selection_does_not_add_a_transfer(self):
         import torch
-        from dllm.distributed import StagePair
-        from dllm.stage_protocol import Command, DECODE
+        from damendaemon.distributed import StagePair
+        from damendaemon.stage_protocol import Command, DECODE
         pair=StagePair.__new__(StagePair);pair.stage=Mock();pair.channel=Mock()
         pair.stage.run_decode.return_value=torch.tensor([[1.,3.,2.],[4.,2.,1.]])
         command=Command(1,3,DECODE,2,((0,1,4),(1,1,8)))
@@ -190,8 +190,8 @@ class DistributedCliTests(unittest.TestCase):
 
     def test_packed_output_failure_replies_once_per_prompt_not_activation_row(self):
         import torch
-        from dllm.distributed import StagePair
-        from dllm.stage_protocol import Command, PREFILL_BATCH
+        from damendaemon.distributed import StagePair
+        from damendaemon.stage_protocol import Command, PREFILL_BATCH
         pair=StagePair.__new__(StagePair);pair.stage=Mock();pair.channel=Mock()
         pair.stage.run_prefill_packed.side_effect=RuntimeError('packed stage error')
         pair.failure_tokens=torch.full((4,),-1,dtype=torch.int64)
@@ -205,8 +205,8 @@ class DistributedCliTests(unittest.TestCase):
         self.assertEqual(payload.tolist(),[-1,-1])
 
     def test_packed_prompt_metadata_is_bounded_and_result_order_is_preserved(self):
-        from dllm.distributed import StagePair
-        from dllm.stage_protocol import StageState, PREFILL_BATCH
+        from damendaemon.distributed import StagePair
+        from damendaemon.stage_protocol import StageState, PREFILL_BATCH
         pair=StagePair.__new__(StagePair);pair.rank=0;pair.max_batch=4;pair.packed_prefill=True
         pair.model=SimpleNamespace(config={'vocab_size':128});pair.state=StageState(1,8,4)
         pair._exchange=Mock(return_value=[65,66])
@@ -225,8 +225,8 @@ class DistributedCliTests(unittest.TestCase):
 
     def test_nonfinite_output_uses_reserved_failure_token(self):
         import torch
-        from dllm.distributed import StagePair
-        from dllm.stage_protocol import Command, DECODE
+        from damendaemon.distributed import StagePair
+        from damendaemon.stage_protocol import Command, DECODE
         pair=StagePair.__new__(StagePair);pair.stage=Mock();pair.channel=Mock()
         pair.model=SimpleNamespace(config={'vocab_size':3})
         command=Command(1,3,DECODE,2,((0,1,4),(1,1,8)))

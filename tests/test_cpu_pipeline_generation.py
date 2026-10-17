@@ -6,11 +6,11 @@ import unittest
 from unittest.mock import patch
 import torch
 from tokenizers import Tokenizer,models,pre_tokenizers
-from dllm.cpu_pipeline_generation import CpuPipelineReferenceGenerator
-from dllm.cpu_pipeline_build import build_cpu_pipeline,CpuPipelineBuildError
-from dllm.cpu_hybrid_checkpoint import load_cpu_checkpoint
-from dllm.cpu_reference_text import CpuReferenceText
-from dllm.hybrid_pipeline import HybridPipeline,PipelineCancelled
+from damendaemon.cpu_pipeline_generation import CpuPipelineReferenceGenerator
+from damendaemon.cpu_pipeline_build import build_cpu_pipeline,CpuPipelineBuildError
+from damendaemon.cpu_hybrid_checkpoint import load_cpu_checkpoint
+from damendaemon.cpu_reference_text import CpuReferenceText
+from damendaemon.hybrid_pipeline import HybridPipeline,PipelineCancelled
 from scripts.run_cpu_pipeline_reference import main
 from tests.test_cpu_hybrid_stage import model
 from tests.test_cpu_hybrid_checkpoint import snapshot
@@ -45,7 +45,7 @@ class CpuCompletionTests(unittest.TestCase):
                     if i<3:logits,_=pipeline.decode(token)
             finally:pipeline.close()
             out=io.StringIO()
-            with patch('sys.stdout',out),patch('dllm.device.selected_accelerator',side_effect=AssertionError('accelerator')):
+            with patch('sys.stdout',out),patch('damendaemon.device.selected_accelerator',side_effect=AssertionError('accelerator')):
                 self.assertEqual(main([str(self.path),'--prompt','hello world','--context','16','--max-new-tokens','4',
                                        '--prefill-chunk','1','--stages','2','--quantization',mode]),0)
             events=[json.loads(line) for line in out.getvalue().splitlines()]
@@ -68,7 +68,7 @@ class CpuCompletionTests(unittest.TestCase):
 
     def test_invalid_inputs_and_precancel_do_not_build(self):
         runner=self.runner()
-        with patch('dllm.cpu_pipeline_generation.build_cpu_pipeline',side_effect=AssertionError('built')):
+        with patch('damendaemon.cpu_pipeline_generation.build_cpu_pipeline',side_effect=AssertionError('built')):
             for tokens,options in (([60],{}),([True],{}),([],{}),([1],dict(max_new_tokens=16)),
                                    ([1],dict(chunk_size=0)),([1],dict(max_new_tokens=[2])),([1],dict(max_new_tokens=4097))):
                 with self.assertRaises(ValueError):list(runner.generate(tokens,**(dict(max_new_tokens=2)|options)))
@@ -115,7 +115,7 @@ class CpuCompletionTests(unittest.TestCase):
         from unittest.mock import Mock
         stage=SimpleNamespace(release_partial=Mock(side_effect=RuntimeError('release failure')))
         failure=CpuPipelineBuildError('partial construction',[stage]);runner=self.runner()
-        with patch('dllm.cpu_pipeline_generation.build_cpu_pipeline',side_effect=failure):
+        with patch('damendaemon.cpu_pipeline_generation.build_cpu_pipeline',side_effect=failure):
             with self.assertRaises(CpuPipelineBuildError) as caught:list(runner.generate([1],max_new_tokens=1))
         self.assertIs(caught.exception,failure);self.assertIs(runner.pipeline,failure)
         self.assertFalse(failure.closed);stage.release_partial.side_effect=None
@@ -127,9 +127,9 @@ class CpuCompletionTests(unittest.TestCase):
         token_file=self.path/'prompt.json'
         for invalid in ([],[60],[True],list(range(15)),{'messages':[]},'hello'):
             token_file.write_text(json.dumps(invalid))
-            with patch('dllm.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')),patch('sys.stderr',io.StringIO()):
+            with patch('damendaemon.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')),patch('sys.stderr',io.StringIO()):
                 with self.assertRaises(SystemExit) as caught:main(base+['--tokens',str(token_file)])
                 self.assertEqual(caught.exception.code,2)
         (self.path/'generation_config.json').write_text('{"eos_token_id": true}')
-        with patch('dllm.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')),patch('sys.stderr',io.StringIO()):
+        with patch('damendaemon.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')),patch('sys.stderr',io.StringIO()):
             with self.assertRaises(SystemExit):main(base+['--prompt','hello'])

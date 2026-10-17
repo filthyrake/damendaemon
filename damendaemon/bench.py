@@ -1,0 +1,499 @@
+"""Bounded closed-loop or fixed-arrival streaming HTTP benchmark."""
+
+import argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import asdict, dataclass, field
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import statistics
+import sys
+import time
+from urllib.error import HTTPError
+from urllib.parse import urlsplit
+from urllib.request import Request
+from .http_auth import authenticated_urlopen as urlopen
+
+
+MAX_CONTEXT_METADATA_BYTES = 1024 * 1024
+MAX_OUTPUT_EVENTS = 100_000
+MAX_SSE_LINE_BYTES = 1024 * 1024
+MAX_SSE_EVENT_BYTES = 4 * 1024 * 1024
+MAX_SSE_EVENT_LINES = 4096
+
+def _response_json(raw):
+    def unique_fields(pairs):
+        result = {}
+        for name,value in pairs:
+            if name in result:
+                raise ValueError('duplicate benchmark response JSON field')
+            result[name] = value
+        return result
+    try:
+        return json.loads(raw,object_pairs_hook=unique_fields)
+    except RecursionError as error:
+        raise ValueError('benchmark response JSON nesting is too deep') from error
+
+
+def llama_context(base_url, expected):
+    """Fail before timing if the comparator silently capped its KV slot context."""
+    try:
+        with urlopen(base_url.rstrip('/') + '/props', timeout=10) as response:
+            raw = response.read(MAX_CONTEXT_METADATA_BYTES + 1)
+    except HTTPError as error:
+        error.close()
+        raise
+    if len(raw) > MAX_CONTEXT_METADATA_BYTES:
+        raise ValueError('comparator context metadata exceeds 1 MiB limit')
+    props = _response_json(raw)
+    if not isinstance(props, dict) or not isinstance(props.get('default_generation_settings'), dict):
+        raise ValueError('invalid comparator context metadata')
+    actual = props['default_generation_settings'].get('n_ctx')
+    if type(actual) is not int or actual != expected:
+        raise RuntimeError(f'llama.cpp slot context mismatch: requested {expected}, actual {actual}')
+    return {'requested_context': expected, 'actual_context': actual,
+            'total_slots': props.get('total_slots'), 'model_ftype': props.get('model_ftype')}
+
+
+@dataclass
+class Result:
+    index: int
+    model: str
+    seconds: float
+    first_output_seconds: float | None = None
+    output_tokens: int | None = None
+    error: str | None = None
+    output_events: int = 0
+    last_output_seconds: float | None = None
+    output_event_gaps_seconds: list = field(default_factory=list)
+    scheduled_offset_seconds: float | None = None
+    dispatch_delay_seconds: float | None = None
+    reported_server_queue_seconds: float | None = None
+
+
+def events(lines, *, max_line_bytes=MAX_SSE_LINE_BYTES,
+           max_event_bytes=MAX_SSE_EVENT_BYTES, max_event_lines=MAX_SSE_EVENT_LINES,
+           require_terminated=False, max_total_bytes=None):
+    """Decode bounded SSE events, using bounded reads for HTTP/file responses.
+
+    Iterable inputs are checked after delivery; their caller owns line allocation.
+    Strict mode rejects pending data at EOF instead of emitting a partial event.
+    Limits include wire delimiters and ignored fields. They bound parser storage,
+    not total stream duration. Optional max_total_bytes also bounds cumulative
+    wire bytes across events, including comments and delimiters.
+    """
+    if any(type(limit) is not int or limit < 1 for limit in
+           (max_line_bytes, max_event_bytes, max_event_lines)):
+        raise ValueError("invalid SSE parser bounds")
+    if max_total_bytes is not None and (type(max_total_bytes) is not int or max_total_bytes < 1):
+        raise ValueError("invalid SSE parser bounds")
+    total_bytes = 0
+    reader = getattr(lines, 'readline', None)
+    def read_line():
+        limit = max_line_bytes + 1
+        if max_total_bytes is not None:
+            limit = min(limit, max_total_bytes - total_bytes + 1)
+        return reader(limit)
+    source = iter(read_line, b'') if callable(reader) else iter(lines)
+    data = []
+    event_bytes = event_lines = 0
+    for raw in source:
+        total_bytes += len(raw)
+        if max_total_bytes is not None and total_bytes > max_total_bytes:
+            raise ValueError("SSE total byte limit exceeded")
+        if len(raw) > max_line_bytes:
+            raise ValueError("SSE line byte limit exceeded")
+        line = raw.decode("utf-8").rstrip("\r\n")
+        if not line:
+            if data:
+                yield "\n".join(data)
+                data.clear()
+            event_bytes = event_lines = 0
+        else:
+            event_bytes += len(raw)
+            event_lines += 1
+            if event_bytes > max_event_bytes or event_lines > max_event_lines:
+                raise ValueError("SSE event limit exceeded")
+            if line.startswith("data:"):
+                value = line[5:]
+                data.append(value[1:] if value.startswith(" ") else value)
+    if data:
+        if require_terminated:
+            raise ValueError("unterminated SSE event")
+        yield "\n".join(data)
+
+
+def _tool_call_output(calls):
+    """Validate streaming function fragments; metadata alone is not output."""
+    if calls is None:
+        return False
+    if not isinstance(calls, list):
+        raise ValueError('invalid tool-call delta')
+    output = False
+    for call in calls:
+        if (not isinstance(call, dict) or type(call.get('index')) is not int
+                or call['index'] < 0
+                or (call.get('id') is not None and not isinstance(call['id'], str))
+                or call.get('type') not in (None, 'function')):
+            raise ValueError('invalid tool-call delta')
+        function = call.get('function')
+        if function is None:
+            continue
+        if (not isinstance(function, dict)
+                or any(function.get(key) is not None and not isinstance(function[key], str)
+                       for key in ('name', 'arguments'))):
+            raise ValueError('invalid tool-call function delta')
+        output = output or bool(function.get('name') or function.get('arguments'))
+    return output
+
+
+def request_one(base_url, model, prompt, max_tokens, timeout, index, api_key=None):
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0,
+        "max_tokens": max_tokens,
+        "stream": True,
+        "stream_options": {"include_usage": True},
+    }
+    headers = {"Content-Type": "application/json", "Accept": "text/event-stream"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    req = Request(base_url.rstrip("/") + "/chat/completions",
+                  data=json.dumps(payload).encode(), headers=headers)
+    start = time.perf_counter()
+    result = Result(index=index, model=model, seconds=0)
+    done = False
+    finished = False
+    try:
+        with urlopen(req, timeout=timeout) as response:
+            if response.headers.get_content_type() != "text/event-stream":
+                raise ValueError("expected text/event-stream response")
+            for data in events(response, require_terminated=True):
+                if data == "[DONE]":
+                    if not finished:
+                        raise ValueError("stream ended without a completion finish reason")
+                    done = True
+                    break
+                chunk = _response_json(data)
+                if not isinstance(chunk, dict):
+                    raise ValueError("stream event must be an object")
+                if chunk.get("error") is not None:
+                    raise ValueError("server returned an error event")
+                choices = chunk.get("choices", [])
+                if (not isinstance(choices, list) or len(choices) > 1
+                        or any(not isinstance(choice, dict) for choice in choices)):
+                    raise ValueError("expected a single completion choice")
+                if any(not isinstance(choice.get("delta", {}), dict) for choice in choices):
+                    raise ValueError("invalid completion delta")
+                has_output = False
+                for choice in choices:
+                    delta = choice.get("delta", {})
+                    if any(delta.get(key) is not None and not isinstance(delta[key], str)
+                           for key in ("content", "reasoning_content", "reasoning")):
+                        raise ValueError("invalid completion text delta")
+                    # Always validate tool fragments, even alongside text.
+                    tool_output = _tool_call_output(delta.get('tool_calls'))
+                    has_output = has_output or tool_output or any(
+                        delta.get(key) for key in ('content', 'reasoning_content', 'reasoning'))
+                if finished and has_output:
+                    raise ValueError("output received after completion finish")
+                for choice in choices:
+                    reason = choice.get("finish_reason")
+                    if reason is not None:
+                        if not isinstance(reason, str) or not reason:
+                            raise ValueError("invalid completion finish reason")
+                        if finished:
+                            raise ValueError("duplicate completion finish")
+                        finished = True
+                if has_output:
+                    if result.output_events >= MAX_OUTPUT_EVENTS:
+                        raise ValueError("output event sample limit exceeded")
+                    arrived = time.perf_counter() - start
+                    if result.first_output_seconds is None:
+                        result.first_output_seconds = arrived
+                    else:
+                        result.output_event_gaps_seconds.append(arrived-result.last_output_seconds)
+                    result.last_output_seconds = arrived
+                    result.output_events += 1
+                timing = chunk.get("damendaemon_timing")
+                if timing is None:
+                    timing = {}
+                if not isinstance(timing, dict):
+                    raise ValueError("invalid server timing metadata")
+                queued = timing.get("queue_seconds")
+                if queued is not None:
+                    if type(queued) not in (int, float) or not 0 <= queued <= sys.float_info.max:
+                        raise ValueError("invalid reported queue time")
+                    result.reported_server_queue_seconds = queued
+                usage = chunk.get("usage")
+                if usage is None:
+                    usage = {}
+                if not isinstance(usage, dict):
+                    raise ValueError("invalid usage metadata")
+                tokens = usage.get("completion_tokens")
+                if tokens is not None:
+                    if type(tokens) is not int or not 0 <= tokens <= max_tokens:
+                        raise ValueError("invalid completion_tokens usage")
+                    if result.output_tokens is not None and tokens != result.output_tokens:
+                        raise ValueError("conflicting completion_tokens usage")
+                    result.output_tokens = tokens
+        if not done:
+            raise ValueError("stream ended without [DONE]")
+    except HTTPError as exc:
+        # Do not echo response bodies, prompts, credentials, or URLs.
+        result.error = f"HTTP {exc.code}"
+        exc.close()
+    except Exception as exc:
+        result.error = type(exc).__name__
+    result.seconds = time.perf_counter() - start
+    return result
+
+
+def distribution(values):
+    if not values:
+        return None
+    ordered = sorted(values)
+    median = statistics.median(ordered)
+    if len(ordered) % 2 == 0 and math.isinf(median):
+        # Avoid overflow in the sum of two finite midpoint values. Keep the
+        # ordinary path for small values so subnormal midpoints do not underflow.
+        middle = len(ordered) // 2
+        median = ordered[middle - 1] / 2 + ordered[middle] / 2
+    return {"p50": median,
+            "p95": ordered[max(0, math.ceil(len(ordered) * 0.95) - 1)],
+            "p99": ordered[max(0, math.ceil(len(ordered) * 0.99) - 1)]}
+
+
+def summarize(results, elapsed):
+    good = [result for result in results if result.error is None]
+    complete_usage = bool(good) and all(r.output_tokens is not None for r in good)
+    tokens = sum(r.output_tokens for r in good) if complete_usage else None
+    return {
+        "requests": len(results),
+        "succeeded": len(good),
+        "failed": len(results) - len(good),
+        "client_capacity_drops": sum(r.error == "client capacity" for r in results),
+        "http_failures": sum(bool(r.error and r.error.startswith("HTTP ")) for r in results),
+        "wall_seconds": elapsed,
+        "successful_requests_per_second": len(good) / elapsed if elapsed > 0 else None,
+        "successful_output_tokens": tokens,
+        "successful_output_tokens_per_second": tokens / elapsed
+        if tokens is not None and elapsed > 0 else None,
+        "latency_seconds": distribution([r.seconds for r in good]),
+        "first_output_seconds": distribution([
+            r.first_output_seconds for r in good if r.first_output_seconds is not None
+        ]),
+        "output_event_gaps_seconds": distribution([
+            gap for r in good for gap in r.output_event_gaps_seconds]),
+        "max_output_event_gap_seconds_per_request": distribution([
+            max(r.output_event_gaps_seconds) for r in good if r.output_event_gaps_seconds]),
+        "requests_with_output_gaps": sum(bool(r.output_event_gaps_seconds) for r in good),
+        "dispatch_delay_seconds": distribution([
+            r.dispatch_delay_seconds for r in results if r.dispatch_delay_seconds is not None]),
+        "reported_server_queue_seconds": distribution([
+            r.reported_server_queue_seconds for r in good if r.reported_server_queue_seconds is not None]),
+        "requests_with_server_queue_timing": sum(r.reported_server_queue_seconds is not None for r in good),
+        "requests_with_first_output": sum(r.first_output_seconds is not None for r in good),
+    }
+
+
+def evaluate_profile(result, profile):
+    """Judge measured client behavior; never infer tokens from SSE events."""
+    if result.error is not None:
+        return {"status": "error", "reasons": [result.error]}
+    origin = ('scheduled_arrival' if result.scheduled_offset_seconds is not None else 'request_start')
+    timing = {"timing_origin": origin}
+    missing = []
+    delay = 0
+    if origin == 'scheduled_arrival':
+        scheduled = result.scheduled_offset_seconds
+        delay = result.dispatch_delay_seconds
+        if (type(scheduled) not in (int, float) or not math.isfinite(scheduled) or scheduled < 0
+                or type(delay) not in (int, float) or not math.isfinite(delay) or delay < 0):
+            missing.append("valid scheduled-arrival dispatch timing unavailable")
+    if result.first_output_seconds is None:
+        missing.append("first output unavailable")
+    if not result.output_event_gaps_seconds:
+        missing.append("output event gaps unavailable")
+    if result.output_tokens is None or result.seconds <= 0:
+        missing.append("request-average token rate unavailable")
+    if missing:
+        return {"status": "unmeasurable", "reasons": missing, **timing}
+    duration = result.seconds + delay
+    first_output = result.first_output_seconds + delay
+    timing.update(first_output_seconds=first_output, request_seconds=duration)
+    rate = result.output_tokens/duration
+    maximum_gap = max(result.output_event_gaps_seconds)
+    reasons = []
+    if first_output > profile['max_first_output_seconds']:
+        reasons.append('first output budget exceeded')
+    if maximum_gap > profile['max_output_event_gap_seconds']:
+        reasons.append('output event gap budget exceeded')
+    if rate < profile['min_request_output_tokens_per_second']:
+        reasons.append('request-average token rate below budget')
+    return {"status": "failed" if reasons else "passed", "reasons": reasons,
+            "request_output_tokens_per_second": rate,
+            "maximum_output_event_gap_seconds": maximum_gap, **timing}
+
+
+def profile_summary(results, elapsed, profile):
+    evaluations = [(result, evaluate_profile(result, profile)) for result in results]
+    passed = [result for result, evaluation in evaluations if evaluation['status'] == 'passed']
+    tokens = sum(result.output_tokens for result in passed)
+    return {
+        "measurement_scope": "client SSE gaps and whole-request average token rate; not GPU per-token SLO",
+        "timing_policy": "scheduled arrival for fixed-rate requests; request start for closed-loop requests",
+        "budgets": profile,
+        "all_requests_passed": bool(results) and len(passed) == len(results),
+        "counts": {state: sum(evaluation['status'] == state for _, evaluation in evaluations)
+                   for state in ('passed', 'failed', 'unmeasurable', 'error')},
+        "qualifying_requests_per_second": len(passed)/elapsed if elapsed > 0 else None,
+        "qualifying_output_tokens": tokens,
+        "qualifying_output_tokens_per_second": tokens/elapsed if elapsed > 0 else None,
+        "results": [{"index": result.index, **evaluation} for result, evaluation in
+                    sorted(evaluations, key=lambda pair: pair[0].index)],
+    }
+
+
+def fixed_arrivals(send, models, requests, concurrency, rate):
+    """Offer each scheduled arrival once; never queue behind busy client slots."""
+    started = time.perf_counter()
+    results = []
+    def dispatch(index, model, scheduled):
+        delay = max(0, time.perf_counter()-started-scheduled)
+        result = send(index, model)
+        result.scheduled_offset_seconds = scheduled
+        result.dispatch_delay_seconds = delay
+        return result
+    with ThreadPoolExecutor(max_workers=concurrency) as pool:
+        pending = set()
+        for index in range(requests):
+            scheduled = index/rate
+            delay = started+scheduled-time.perf_counter()
+            if delay > 0:
+                time.sleep(delay)
+            completed = {future for future in pending if future.done()}
+            for future in completed:
+                results.append(future.result())
+            pending -= completed
+            model = models[index % len(models)]
+            if len(pending) >= concurrency:
+                results.append(Result(index, model, 0, error="client capacity",
+                    scheduled_offset_seconds=scheduled))
+            else:
+                pending.add(pool.submit(dispatch, index, model, scheduled))
+        for future in as_completed(pending):
+            results.append(future.result())
+    return results
+
+
+def positive_int(value):
+    number = int(value)
+    if number <= 0:
+        raise argparse.ArgumentTypeError("must be positive")
+    return number
+
+
+def positive_float(value):
+    number = float(value)
+    if not math.isfinite(number) or number <= 0:
+        raise argparse.ArgumentTypeError("must be finite and positive")
+    return number
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+    bench = sub.add_parser("bench", help="measure a streaming chat endpoint")
+    bench.add_argument("--base-url", default="http://localhost:8000/v1")
+    bench.add_argument("--models", nargs="+", required=True,
+                       help="cycle models in submission order; use concurrency 1 for switches")
+    bench.add_argument("--requests", type=positive_int, default=8)
+    bench.add_argument("--concurrency", type=positive_int, default=1)
+    bench.add_argument("--arrival-rate", type=positive_float,
+                       help="fixed offered requests/second; concurrency caps client in-flight requests")
+    bench.add_argument("--max-tokens", type=positive_int, default=128)
+    bench.add_argument("--timeout", type=positive_float, default=120,
+                       help="socket inactivity timeout in seconds, not a total request deadline")
+    bench.add_argument("--slo-first-output", type=positive_float,
+                       help="maximum first-output seconds from scheduled arrival (fixed rate) or request start; requires both other --slo options")
+    bench.add_argument("--slo-output-gap", type=positive_float,
+                       help="maximum client SSE output-event gap seconds, not per-token latency")
+    bench.add_argument("--slo-request-rate", type=positive_float,
+                       help="minimum output tokens / request seconds, including prefill and fixed-arrival dispatch delay")
+    bench.add_argument("--prompt-file", type=Path)
+    bench.add_argument("--label", default="unlabeled")
+    args = parser.parse_args()
+    budgets = (args.slo_first_output, args.slo_output_gap, args.slo_request_rate)
+    if any(value is not None for value in budgets) and not all(value is not None for value in budgets):
+        parser.error('a client profile requires all three --slo options')
+    profile = (dict(max_first_output_seconds=args.slo_first_output,
+                    max_output_event_gap_seconds=args.slo_output_gap,
+                    min_request_output_tokens_per_second=args.slo_request_rate)
+               if all(value is not None for value in budgets) else None)
+    parsed = urlsplit(args.base_url)
+    if (parsed.scheme not in ("http", "https") or not parsed.hostname
+            or parsed.username or parsed.password or parsed.query or parsed.fragment):
+        parser.error("base URL must be HTTP(S), without credentials, query, or fragment")
+    try:
+        prompt = args.prompt_file.read_text() if args.prompt_file else (
+            "Explain how a GPU executes matrix multiplication in clear, detailed terms."
+        )
+    except OSError as exc:
+        parser.error(f"cannot read prompt file: {exc.strerror}")
+    api_key = os.environ.get("DAMENDAEMON_API_KEY")
+    start = time.perf_counter()
+    results = []
+    if args.arrival_rate is not None:
+        results = fixed_arrivals(
+            lambda index, model: request_one(args.base_url, model, prompt, args.max_tokens,
+                                            args.timeout, index, api_key),
+            args.models, args.requests, args.concurrency, args.arrival_rate)
+    else:
+        # Keep only concurrency requests submitted at once, avoiding an unbounded
+        # future queue and making request-level timing match admitted client load.
+        with ThreadPoolExecutor(max_workers=args.concurrency) as pool:
+            pending = set()
+            next_index = 0
+            while next_index < args.requests or pending:
+                while next_index < args.requests and len(pending) < args.concurrency:
+                    pending.add(pool.submit(
+                        request_one, args.base_url, args.models[next_index % len(args.models)],
+                        prompt, args.max_tokens, args.timeout, next_index, api_key,
+                    ))
+                    next_index += 1
+                future = next(as_completed(pending))
+                pending.remove(future)
+                results.append(future.result())
+    elapsed = time.perf_counter() - start
+    report = {
+        "schema_version": 3,
+        "label": args.label,
+        "workload": {
+            "base_url": args.base_url, "models": args.models,
+            "arrival_mode": "fixed_rate" if args.arrival_rate is not None else "closed_loop",
+            "offered_requests_per_second": args.arrival_rate,
+            "output_timing_unit": "SSE output event, not token",
+            "raw_request_timing_origin": "request_start",
+            "profile_timing_origin": "scheduled_arrival" if args.arrival_rate is not None else "request_start",
+            "max_output_events_per_request": MAX_OUTPUT_EVENTS,
+            "max_sse_line_bytes": MAX_SSE_LINE_BYTES,
+            "max_sse_event_bytes": MAX_SSE_EVENT_BYTES,
+            "max_sse_event_lines": MAX_SSE_EVENT_LINES,
+            "concurrency": args.concurrency, "max_tokens": args.max_tokens,
+            "temperature": 0, "socket_timeout_seconds": args.timeout,
+            "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(),
+            "warmup_requests": 0,
+        },
+        "summary": summarize(results, elapsed),
+        "results": [asdict(r) for r in sorted(results, key=lambda r: r.index)],
+    }
+    if profile is not None:
+        report['client_profile'] = profile_summary(results, elapsed, profile)
+    print(json.dumps(report, indent=2))
+    if (any(r.error is not None for r in results)
+            or (profile is not None and not report['client_profile']['all_requests_passed'])):
+        raise SystemExit(1)

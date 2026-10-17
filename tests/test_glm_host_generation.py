@@ -3,17 +3,17 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-from dllm.glm_host_generation import HostGlmGenerator,native_session_identity
-from dllm.glm_host_pipeline_build import build_glm_host_pipeline_worker
-from dllm.host_topology import HostTopology
-from dllm.glm_tool_text import GlmToolText
-from dllm.glm_tool_output import GlmToolTokenStream
-from dllm.glm_batch_generation import BatchReferenceGenerator
-from dllm.host_tensor_channel import HostTensorChannel
+from damendaemon.glm_host_generation import HostGlmGenerator,native_session_identity
+from damendaemon.glm_host_pipeline_build import build_glm_host_pipeline_worker
+from damendaemon.host_topology import HostTopology
+from damendaemon.glm_tool_text import GlmToolText
+from damendaemon.glm_tool_output import GlmToolTokenStream
+from damendaemon.glm_batch_generation import BatchReferenceGenerator
+from damendaemon.host_tensor_channel import HostTensorChannel
 from tests import test_host_tls
-from dllm.glm_text import END_THINK,EOS
-from dllm.glm_flash_tools import FlashTools
-from dllm.reference_cancellation import cancellation_scope,ReferenceCancelled
+from damendaemon.glm_text import END_THINK,EOS
+from damendaemon.glm_flash_tools import FlashTools
+from damendaemon.reference_cancellation import cancellation_scope,ReferenceCancelled
 from tests import test_cpu_host_pipeline_build as build_tests,test_host_pipeline_worker as worker_tests
 from tests.test_glm_generation import text_fixture
 from tests.test_glm_reference_loader import fixture,floating_control

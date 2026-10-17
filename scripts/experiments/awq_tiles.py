@@ -1,7 +1,7 @@
 """Isolated wider output tiles for the unchanged packed AWQ MMA kernel."""
 import torch
 import triton as tr
-from dllm.awq_kernels import _gemm
+from damendaemon.awq_kernels import _gemm
 
 
 def linear(x, matrix, bias=None, tile=128):

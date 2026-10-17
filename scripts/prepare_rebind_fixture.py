@@ -35,7 +35,7 @@ def main():
         if path.is_file() and not path.name.endswith('.safetensors') and path.name!='model.safetensors.index.json':
             shutil.copyfile(path,destination/path.name)
     save_file(state,str(destination/'model.safetensors'),metadata={'format':'pt'})
-    (destination/'dllm-test-fixture.json').write_text(json.dumps(dict(source=str(source),changes=changes),indent=2)+'\n')
+    (destination/'damendaemon-test-fixture.json').write_text(json.dumps(dict(source=str(source),changes=changes),indent=2)+'\n')
     print(str(destination))
 
 

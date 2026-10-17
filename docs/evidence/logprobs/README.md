@@ -5,7 +5,7 @@ Issue #28. Chat completions accept `logprobs: true` and optional
 vectors to the host. Requested scores are FP32 log-softmax of original model
 logits, before penalties, bias, temperature, top-k/top-p or grammar masking.
 This follows the raw-logprobs behavior in the local vLLM sampler reference;
-dllm does not import its runtime.
+damendaemon does not import its runtime.
 
 Scores are attached to selected non-EOS tokens, including tokens whose text is
 buffered until a UTF-8 sequence completes. ByteLevel and byte-fallback tokenizer
@@ -66,7 +66,7 @@ are merged without adding/subtracting a large logit offset, preserving numerical
 stability. Top-k ties choose the lowest token ID. The native path is bounded to
 vocabularies up to 262144; larger vocabularies and Apple use PyTorch log-softmax.
 Single-request selected-token-only scoring also uses the faster measured Torch
-path. `DLLM_LOGPROBS_KERNELS=torch` or `triton` can force a backend for diagnosis.
+path. `DAMENDAEMON_LOGPROBS_KERNELS=torch` or `triton` can force a backend for diagnosis.
 
 The native FP64 oracle passes 24 shape/dtype/top-count cases, plus equal-value
 ties, all-masked blocks, non-finite rejection and logit offsets of +/-1e6.

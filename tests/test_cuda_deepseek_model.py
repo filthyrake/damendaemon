@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 from types import SimpleNamespace
 import torch
-from dllm.cuda_deepseek_model import CudaDeepSeekModel
+from damendaemon.cuda_deepseek_model import CudaDeepSeekModel
 
 
 class CudaDeepSeekModelAdmissionTests(unittest.TestCase):

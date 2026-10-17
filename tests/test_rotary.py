@@ -1,8 +1,8 @@
 """CPU checks for normalized static rotary schedules."""
 import unittest
 import torch
-from dllm.config import decoder_config
-from dllm.rotary import inverse_frequencies
+from damendaemon.config import decoder_config
+from damendaemon.rotary import inverse_frequencies
 
 
 class RotaryTests(unittest.TestCase):

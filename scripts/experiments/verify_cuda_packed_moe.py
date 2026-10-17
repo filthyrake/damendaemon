@@ -12,8 +12,8 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new output path required')
     import torch
-    from dllm.cuda_packed_expert import CudaPackedExpert,CudaPackedMatrix
-    from dllm.cuda_packed_moe import cuda_packed_moe
+    from damendaemon.cuda_packed_expert import CudaPackedExpert,CudaPackedMatrix
+    from damendaemon.cuda_packed_moe import cuda_packed_moe
     from tests.test_packed_moe import expert,dense_expert
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')
     torch.set_num_threads(1);torch.backends.cuda.matmul.allow_tf32=False
@@ -24,7 +24,7 @@ def main():
     try:
         controls=[expert('e2m1'),expert('e4m3fn')]
         if args.placement:
-            from dllm.cuda_packed_placement import place_cuda_experts
+            from damendaemon.cuda_packed_placement import place_cuda_experts
             cpu_bank=[item[0] for item in controls]
             admitted=place_cuda_experts(cpu_bank,device='cuda:0',max_bytes=1024*1024,shared=cpu_bank[0])
             bank=admitted.experts

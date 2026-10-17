@@ -5,8 +5,8 @@ import json
 from pathlib import Path
 import torch
 import triton.testing
-from dllm.quantization import quantize, dequantize
-from dllm.runtime import require_gpu
+from damendaemon.quantization import quantize, dequantize
+from damendaemon.runtime import require_gpu
 from experiments.moe_grouped import prepare_routes, linear
 
 

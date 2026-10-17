@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 import torch
 
-from dllm.layer_stream import LayerWeightStore, plan, validate
+from damendaemon.layer_stream import LayerWeightStore, plan, validate
 from tests import test_hybrid_eager_chunks
 
 
@@ -96,11 +96,11 @@ class LayerStreamTests(unittest.TestCase):
 
     def test_policy_rejects_graphs_packing_other_devices_and_precision(self):
         config = {'model_type': 'qwen3_5_text', 'max_position_embeddings': 32768}
-        env = {'DLLM_DEVICE': 'cuda', 'DLLM_EXPERIMENTAL_HYBRID_OFFLOAD': '1', 'DLLM_KERNELS': 'torch'}
+        env = {'DAMENDAEMON_DEVICE': 'cuda', 'DAMENDAEMON_EXPERIMENTAL_HYBRID_OFFLOAD': '1', 'DAMENDAEMON_KERNELS': 'torch'}
         with patch.dict('os.environ', env, clear=True):
             validate(config, 'none', 2048, 4)
-            for overrides in ({'DLLM_DEVICE':'rocm'}, {'DLLM_DEVICE':'xpu'}, {'DLLM_KERNELS':'auto'},
-                              {'DLLM_HYBRID_PRECISION':'float32'}, {'DLLM_EXPERIMENTAL_VISION':'1'}):
+            for overrides in ({'DAMENDAEMON_DEVICE':'rocm'}, {'DAMENDAEMON_DEVICE':'xpu'}, {'DAMENDAEMON_KERNELS':'auto'},
+                              {'DAMENDAEMON_HYBRID_PRECISION':'float32'}, {'DAMENDAEMON_EXPERIMENTAL_VISION':'1'}):
                 with patch.dict('os.environ', overrides), self.assertRaises(ValueError):
                     validate(config, 'none', 512)
             with self.assertRaises(ValueError):
@@ -113,15 +113,15 @@ class LayerStreamTests(unittest.TestCase):
         fixture = test_hybrid_eager_chunks.HybridEagerChunkTests()
         fixture.setUp()
         try:
-            from dllm.hybrid import HybridExecutor
-            from dllm.capacity import hybrid_state_bytes
+            from damendaemon.hybrid import HybridExecutor
+            from damendaemon.capacity import hybrid_state_bytes
             model = fixture.model(fp32=False)
-            with patch.dict('os.environ', {'DLLM_DEVICE':'cuda', 'DLLM_KERNELS':'torch'}, clear=True), \
-                    patch('dllm.hybrid.selected_device', return_value='cpu'), \
-                    patch('dllm.hybrid.empty_cache'), patch('dllm.hybrid.synchronize'), \
-                    patch('dllm.hybrid.available_memory', return_value=2**40):
+            with patch.dict('os.environ', {'DAMENDAEMON_DEVICE':'cuda', 'DAMENDAEMON_KERNELS':'torch'}, clear=True), \
+                    patch('damendaemon.hybrid.selected_device', return_value='cpu'), \
+                    patch('damendaemon.hybrid.empty_cache'), patch('damendaemon.hybrid.synchronize'), \
+                    patch('damendaemon.hybrid.available_memory', return_value=2**40):
                 resident = HybridExecutor(model, use_graph=False, max_batch=2, kernels='torch')
-                with patch.dict('os.environ', DLLM_EXPERIMENTAL_HYBRID_OFFLOAD='1'):
+                with patch.dict('os.environ', DAMENDAEMON_EXPERIMENTAL_HYBRID_OFFLOAD='1'):
                     streamed = HybridExecutor(model, use_graph=False, max_batch=2, kernels='torch')
             store = streamed.offload
             expected_head_workspace = model.weights['head'].numel()*4
@@ -136,7 +136,7 @@ class LayerStreamTests(unittest.TestCase):
                 self.assertLessEqual(store.peak_live_bytes, store.layout.peak_bytes)
             # CUDA selection still uses the actual eager CPU tensor test: no
             # CUDA APIs or hardware are substituted for a qualification result.
-            with patch.dict('os.environ', {'DLLM_DEVICE': 'cuda'}):
+            with patch.dict('os.environ', {'DAMENDAEMON_DEVICE': 'cuda'}):
                 self.assertTrue(streamed.supports_chunked_prefill)
                 self.assertFalse(streamed.requires_full_prefill)
                 prompt = [1, 3, 5, 7, 9, 11]

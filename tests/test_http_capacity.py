@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 from http.server import BaseHTTPRequestHandler
 
-from dllm.server import BoundedHTTPServer
+from damendaemon.server import BoundedHTTPServer
 
 
 class HttpCapacityTests(unittest.TestCase):
@@ -14,7 +14,7 @@ class HttpCapacityTests(unittest.TestCase):
             with self.subTest(capacity=capacity):
                 admission = Mock(reservation_store=object())
                 handler = SimpleNamespace(client_admission=admission)
-                with patch('dllm.server.ThreadingHTTPServer.__init__') as initialize:
+                with patch('damendaemon.server.ThreadingHTTPServer.__init__') as initialize:
                     with self.assertRaises(ValueError):
                         BoundedHTTPServer(('127.0.0.1', 0), handler, capacity)
                     initialize.assert_not_called()

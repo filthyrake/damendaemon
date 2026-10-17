@@ -4,7 +4,7 @@ Issue #30. Qualified checkpoint: state-spaces/mamba-130m-hf revision
 `1e76775f628fbf1350fbe4dbb3d971ba64af25a1`. Weights are downloaded separately.
 Configuration/checkpoint source: https://huggingface.co/state-spaces/mamba-130m-hf
 Algorithm references: the Mamba selective state-space formulation and Hugging
-Face Transformers Mamba implementation (Apache 2.0). dllm owns its loader,
+Face Transformers Mamba implementation (Apache 2.0). damendaemon owns its loader,
 convolution, recurrence, batching and residency; no Transformers model, vLLM,
 mamba-ssm or causal-conv1d runtime is used during production inference.
 
@@ -44,10 +44,10 @@ microbenchmarks or quality comparisons.
 
 | GPU / engine | c1 tokens/s | c2 tokens/s | c4 tokens/s | c1 first text ms |
 |---|---:|---:|---:|---:|
-| A2 dllm | 239.97 | 277.28 | 446.14 | 21.32 |
+| A2 damendaemon | 239.97 | 277.28 | 446.14 | 21.32 |
 | A2 llama.cpp | 156.88 | 190.39 | 221.33 | 26.26 |
 | A2 vLLM | 191.41 | 265.57 | 453.83 | 49.54 |
-| M4 dllm | 53.33 | 94.25 | 182.89 | 28.36 |
+| M4 damendaemon | 53.33 | 94.25 | 182.89 | 28.36 |
 | M4 llama.cpp | 94.14 | 173.02 | 239.66 | 28.45 |
 
 Apple remains materially behind llama.cpp; A2 is slightly below vLLM at
@@ -70,7 +70,7 @@ qualification. A2 packed serving measures 236.04 / 289.19 / 483.76 tokens/s at
 concurrency 1/2/4, versus initial 239.97 / 277.28 / 446.14 in the earlier run.
 
 Metal also implements a fused time-step projection plus recurrence. It is
-**experimental and off by default**: `DLLM_MAMBA_FUSED_DT=1` enables it. The fused
+**experimental and off by default**: `DAMENDAEMON_MAMBA_FUSED_DT=1` enables it. The fused
 CPU kernel/model/state oracles pass, but isolated operation gains do not establish
 a full serving improvement. Counterbalanced isolated medians in microseconds:
 
@@ -104,7 +104,7 @@ Same A2 FP32 serving method/input/32 outputs as above:
 
 | Engine | c1 tokens/s | c2 tokens/s | c4 tokens/s |
 |---|---:|---:|---:|
-| dllm | 92.45 | 106.30 | 183.57 |
+| damendaemon | 92.45 | 106.30 | 183.57 |
 | llama.cpp | 70.79 | 77.25 | 83.79 |
 | vLLM | 87.31 | 97.28 | 186.83 |
 

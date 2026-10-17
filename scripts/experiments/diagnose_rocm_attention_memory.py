@@ -8,14 +8,14 @@ import torch
 from torch.nn import functional as F
 from torch.nn.attention.bias import causal_lower_right
 
-from dllm.device import attention
-from dllm.rocm_policy import host_available, memory_limit
-from dllm.runtime import require_gpu
+from damendaemon.device import attention
+from damendaemon.rocm_policy import host_available, memory_limit
+from damendaemon.runtime import require_gpu
 
 
 @torch.inference_mode()
 def main():
-    if os.environ.get('DLLM_DEVICE') != 'rocm' or memory_limit() != 2*1024**3:
+    if os.environ.get('DAMENDAEMON_DEVICE') != 'rocm' or memory_limit() != 2*1024**3:
         raise ValueError('requires explicit ROCm and a 2-GiB allocator cap')
     if host_available() < 32*1024**3:
         raise MemoryError('diagnostic requires 32 GiB available host RAM')

@@ -3,8 +3,8 @@ from concurrent.futures import ThreadPoolExecutor
 import threading
 import unittest
 from unittest.mock import Mock, patch
-from dllm.runtime import BusyError
-from dllm.scheduler import BatchedRuntime
+from damendaemon.runtime import BusyError
+from damendaemon.scheduler import BatchedRuntime
 from tests.test_scheduler import FakeRuntime
 
 
@@ -12,7 +12,7 @@ class SchedulerWorkerFailureTests(unittest.TestCase):
     def test_fatal_generation_and_command_wake_owned_and_queued_callers(self):
         for operation in ('generation', 'command'):
             with self.subTest(operation=operation):
-                with patch('dllm.scheduler.Runtime', FakeRuntime):
+                with patch('damendaemon.scheduler.Runtime', FakeRuntime):
                     runtime = BatchedRuntime({'a': 'a'}, batch_size=1, queue_size=3)
                 runtime.runtime.close = Mock()
                 entered, release = threading.Event(), threading.Event()

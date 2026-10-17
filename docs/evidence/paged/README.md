@@ -149,7 +149,7 @@ and zero remaining ownership (`paged-prefix-pressure.json`).
 
 ## Llama mixed residual precision
 
-`DLLM_LLAMA_PRECISION=mixed` retains FP16 weights, projections and KV but uses
+`DAMENDAEMON_LLAMA_PRECISION=mixed` retains FP16 weights, projections and KV but uses
 FP32 residual accumulation and precise normalization/rotary/activation
 arithmetic. The default standard policy is unchanged during qualification.
 The 82-check Llama Q4 trace now passes with graph replay for full paged prefill,
@@ -175,7 +175,7 @@ context, 82 replay checks with 256-token chunks at the same context, and 48 Q4
 prefix reuse checks. Maximum relative RMS is 0.003136 / 0.003017 / 0.007133.
 The 8K runs use a 16384-token physical pool; prefix proof uses 2048 tokens.
 With these gates complete, mixed precision is now the CUDA Llama default.
-`DLLM_LLAMA_PRECISION=standard` retains the old policy for explicit comparisons.
+`DAMENDAEMON_LLAMA_PRECISION=standard` retains the old policy for explicit comparisons.
 Apple precision is unchanged.
 
 ## Counterbalanced paging comparison

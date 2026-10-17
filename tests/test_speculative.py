@@ -3,17 +3,17 @@ import threading
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
-from dllm.sampling import Sampling,Sampler
-from dllm.scheduler import BatchedRuntime,Pending
-from dllm.speculative import configured_width,eligible,propose,create
+from damendaemon.sampling import Sampling,Sampler
+from damendaemon.scheduler import BatchedRuntime,Pending
+from damendaemon.speculative import configured_width,eligible,propose,create
 
 
 class SpeculativeTests(unittest.TestCase):
     def test_configuration_and_bounded_proposals(self):
         for value in ('0','2','4','8'):
-            with patch.dict(os.environ,{'DLLM_SPECULATIVE_TOKENS':value}):self.assertEqual(configured_width(),int(value))
+            with patch.dict(os.environ,{'DAMENDAEMON_SPECULATIVE_TOKENS':value}):self.assertEqual(configured_width(),int(value))
         for value in ('1','3','9','-1','garbage'):
-            with patch.dict(os.environ,{'DLLM_SPECULATIVE_TOKENS':value}),self.assertRaises(ValueError):configured_width()
+            with patch.dict(os.environ,{'DAMENDAEMON_SPECULATIVE_TOKENS':value}),self.assertRaises(ValueError):configured_width()
         self.assertEqual(propose([1,2,3,4,1,2],2),[3,4])
         self.assertEqual(propose([1,2,3,4],3),[])
         self.assertEqual(propose([1,2,3]+[8]*1024+[1,2],3),[])
@@ -21,7 +21,7 @@ class SpeculativeTests(unittest.TestCase):
     def test_llama_verifier_requires_explicit_qualified_precision(self):
         executor=SimpleNamespace(device='cuda',kernels=object(),c={'model_type':'llama'},
             llama_precision='mixed',model=SimpleNamespace(scales={}),context=128)
-        with patch.dict(os.environ,{'DLLM_SPECULATIVE_TOKENS':'8'}),patch('dllm.speculative.Verifier') as verifier:
+        with patch.dict(os.environ,{'DAMENDAEMON_SPECULATIVE_TOKENS':'8'}),patch('damendaemon.speculative.Verifier') as verifier:
             for policy in ('standard','mixed'):
                 executor.llama_precision=policy
                 self.assertIsNone(create(executor,True))
@@ -97,8 +97,8 @@ class SpeculativeTests(unittest.TestCase):
     def test_verifier_rejects_invalid_used_predictions_before_acceptance(self):
         import torch
         from unittest.mock import Mock
-        from dllm.speculative import Verifier
-        from dllm.sampling import greedy_tokens
+        from damendaemon.speculative import Verifier
+        from damendaemon.sampling import greedy_tokens
         verifier=Verifier.__new__(Verifier)
         verifier.width=4;verifier.context=32;verifier.slots=2
         verifier.copied=Mock();verifier.graph=Mock();verifier.metadata=Mock()

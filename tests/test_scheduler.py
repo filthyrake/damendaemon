@@ -6,8 +6,8 @@ import time
 import unittest
 from unittest.mock import patch
 
-from dllm.scheduler import BatchedRuntime
-from dllm.runtime import BusyError
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.runtime import BusyError
 
 
 class Tensor:
@@ -71,7 +71,7 @@ class FakeRuntime:
 
 class SchedulerTests(unittest.TestCase):
     def setUp(self):
-        patcher = patch('dllm.scheduler.Runtime', FakeRuntime)
+        patcher = patch('damendaemon.scheduler.Runtime', FakeRuntime)
         patcher.start()
         self.addCleanup(patcher.stop)
         self.runtime = BatchedRuntime({'a': 'a', 'b': 'b'}, batch_size=2, queue_size=4)
@@ -106,7 +106,7 @@ class SchedulerTests(unittest.TestCase):
     def test_admission_wait_runs_once_per_idle_group_not_per_decode(self):
         self.executor.release.set()
         self.runtime.batch_wait_seconds=.001
-        with patch('dllm.scheduler.wait_for_batch') as wait:
+        with patch('damendaemon.scheduler.wait_for_batch') as wait:
             list(self.generate(count=5))
             self.assertEqual(wait.call_count,1)
             self.assertEqual(wait.call_args.args[2],.001)
@@ -176,7 +176,7 @@ class SchedulerTests(unittest.TestCase):
     def test_request_preparation_failures_preserve_admission_capacity(self):
         for path in ('copy', 'generation-pending', 'command-pending'):
             with self.subTest(path=path):
-                target = 'dllm.scheduler.copy.deepcopy' if path == 'copy' else 'dllm.scheduler.Pending'
+                target = 'damendaemon.scheduler.copy.deepcopy' if path == 'copy' else 'damendaemon.scheduler.Pending'
                 with patch(target, side_effect=RuntimeError('injected preparation failure')):
                     with self.assertRaisesRegex(RuntimeError, 'preparation failure'):
                         if path == 'command-pending': self.runtime.manage('status')
@@ -255,7 +255,7 @@ class SchedulerTests(unittest.TestCase):
         import json
         from urllib.error import HTTPError
         from urllib.request import urlopen
-        from dllm.server import handler_for
+        from damendaemon.server import handler_for
         self.runtime.queue_timeout = .05
         server = ThreadingHTTPServer(('127.0.0.1', 0), handler_for(self.runtime))
         thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -314,7 +314,7 @@ class SchedulerTests(unittest.TestCase):
         import json
         from urllib.error import HTTPError
         from urllib.request import Request, urlopen
-        from dllm.server import handler_for
+        from damendaemon.server import handler_for
         self.runtime.queue_timeout = .05
         server = ThreadingHTTPServer(('127.0.0.1', 0), handler_for(self.runtime))
         thread = threading.Thread(target=server.serve_forever, kwargs={'poll_interval': .01}, daemon=True)
@@ -531,7 +531,7 @@ class ExecutorLeaseTests(unittest.TestCase):
                 executor.release.set()
                 self.previous=weakref.ref(executor)
                 yield executor,'disk',0
-        with patch('dllm.scheduler.Runtime',EphemeralRuntime):
+        with patch('damendaemon.scheduler.Runtime',EphemeralRuntime):
             runtime=BatchedRuntime({'a':'a','b':'b'})
             try:
                 for alias in ('a','b','a'):
@@ -571,7 +571,7 @@ class ChunkExecutor(FakeExecutor):
 
 class ChunkedSchedulerTests(unittest.TestCase):
     def setUp(self):
-        patcher=patch('dllm.scheduler.Runtime',FakeRuntime)
+        patcher=patch('damendaemon.scheduler.Runtime',FakeRuntime)
         patcher.start();self.addCleanup(patcher.stop)
         self.runtime=BatchedRuntime({'a':'a','b':'b'},batch_size=2,queue_size=4,prefill_chunk_size=2)
         self.executor=ChunkExecutor()
@@ -681,12 +681,12 @@ class ChunkedSchedulerTests(unittest.TestCase):
 
 class FakePagedExecutor(FakeExecutor):
     def __init__(self):
-        from dllm.pages import PagePool
+        from damendaemon.pages import PagePool
         super().__init__()
         self.pool=PagePool(128,2,self.context)
         self.deferred=0
     def reserve_request(self,slot,tokens):
-        from dllm.pages import PageCapacityError
+        from damendaemon.pages import PageCapacityError
         if self.pool.needed(tokens)>self.pool.capacity:
             raise ValueError('request exceeds pool')
         try:
@@ -706,7 +706,7 @@ class PagedSchedulerTests(SchedulerTests):
         self.addCleanup(self.executor.release.set)
 
     def test_capacity_waits_then_reuses_pages(self):
-        from dllm.pages import PagePool
+        from damendaemon.pages import PagePool
         self.executor.pool=PagePool(32,2,self.executor.context)
         with ThreadPoolExecutor(3) as pool:
             first=pool.submit(lambda:list(self.generate(count=20)))
@@ -759,7 +759,7 @@ class PagedChunkedSchedulerTests(ChunkedSchedulerTests):
         self.assertEqual(self.generate('ab',2)[-1]['usage']['completion_tokens'],2)
 
     def test_chunk_capacity_waits_for_prior_owner(self):
-        from dllm.pages import PagePool
+        from damendaemon.pages import PagePool
         self.executor.pool=PagePool(32,2,self.executor.context)
         with ThreadPoolExecutor(2) as pool:
             first=pool.submit(self.generate,'abcdefghijklmnop',8)
@@ -777,7 +777,7 @@ class PagedChunkedSchedulerTests(ChunkedSchedulerTests):
         logits=torch.zeros(1,10);logits[0,1]=1
         cache=SimpleNamespace(restore=Mock(return_value=(2,logits)),remember=Mock())
         self.runtime.prefix_cache_tokens=32
-        with patch('dllm.prefix.PrefixCache',return_value=cache):
+        with patch('damendaemon.prefix.PrefixCache',return_value=cache):
             result=self.generate('ab',2)
         self.assertEqual(result[-1]['timing']['cached_prompt_tokens'],2)
         self.assertFalse(any(e[0]=='prefill' for e in self.executor.chunk_events))
@@ -788,7 +788,7 @@ class PagedChunkedSchedulerTests(ChunkedSchedulerTests):
         cache=SimpleNamespace(restore=Mock(side_effect=[ValueError('bad snapshot'),(0,None)]),remember=Mock())
         self.runtime.prefix_cache_tokens=32
         self.executor.release.set()
-        with patch('dllm.prefix.PrefixCache',return_value=cache):
+        with patch('damendaemon.prefix.PrefixCache',return_value=cache):
             with self.assertRaisesRegex(ValueError,'bad snapshot'):
                 self.generate('ab',2)
             self.assertEqual(self.generate('ab',2)[-1]['usage']['completion_tokens'],2)
@@ -798,7 +798,7 @@ class CompletionRaceTests(unittest.TestCase):
     def test_final_block_arriving_after_empty_observation_is_drained(self):
         from collections import deque
         import queue
-        from dllm.scheduler import Pending
+        from damendaemon.scheduler import Pending
         runtime=BatchedRuntime.__new__(BatchedRuntime)
         runtime.context=1024
         runtime.models={'a':'model'};runtime.admission=threading.BoundedSemaphore(1)
@@ -817,6 +817,6 @@ class CompletionRaceTests(unittest.TestCase):
                     raise queue.Empty
                 return super().get_nowait()
         request.events=RacingQueue(maxsize=8)
-        with patch('dllm.scheduler.Pending',return_value=request):
+        with patch('damendaemon.scheduler.Pending',return_value=request):
             events=list(runtime.generate('a',[{'role':'user','content':'x'}],1))
         self.assertEqual(events,[{'token':17,'text':'x'},{'finish_reason':'length'}])

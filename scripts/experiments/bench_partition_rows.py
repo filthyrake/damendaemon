@@ -12,10 +12,10 @@ import statistics
 import signal
 import time
 import torch
-from dllm.partition import PartitionExecutor
-from dllm.qwen2 import ModelWeights
-from dllm import q4_stage_kernels
-from dllm import kernels
+from damendaemon.partition import PartitionExecutor
+from damendaemon.qwen2 import ModelWeights
+from damendaemon import q4_stage_kernels
+from damendaemon import kernels
 from scripts.experiments.q4_dynamic_rows import install_validation_dispatch
 
 
@@ -34,7 +34,7 @@ def main():
     signal.signal(signal.SIGTERM,terminate)
     assert torch.cuda.device_count()==2,'select exactly two GPUs'
     prompt=json.loads(Path(args.prompt).read_text());assert len(prompt)==16
-    os.environ.update(DLLM_Q4_STAGE_ADJACENT='1',DLLM_PARTITION_PACKED_PREFILL='1')
+    os.environ.update(DAMENDAEMON_Q4_STAGE_ADJACENT='1',DAMENDAEMON_PARTITION_PACKED_PREFILL='1')
     torch.set_num_threads(4)
     model=ModelWeights(args.model,512,quantization='q4_0')
     original=q4_stage_kernels.single_dot_adjacent
@@ -43,7 +43,7 @@ def main():
         devices=os.environ['CUDA_VISIBLE_DEVICES'],trials=[],
         scope='Same-host model execution ABBA. Static versus selective runtime row bounds only; adjacent weights and packed prefill fixed. Host weights loaded once; all group shapes warmed before steady-state timing. First-shape calls are observed per process/order, not an isolated cold-start comparison. No HTTP or network throughput claim.',
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-                 ('dllm/q4_stage.py','dllm/q4_stage_kernels.py','dllm/kernels.py','dllm/partition.py','dllm/layer_stage.py','dllm/qwen2.py','dllm/partition_policy.py',
+                 ('damendaemon/q4_stage.py','damendaemon/q4_stage_kernels.py','damendaemon/kernels.py','damendaemon/partition.py','damendaemon/layer_stage.py','damendaemon/qwen2.py','damendaemon/partition_policy.py',
                   'scripts/experiments/q4_dynamic_rows.py','scripts/experiments/rope_runtime_tokens.py',__file__)})
     if args.compare_rope:
         report['scope']='Same-host model execution ABBA. Static versus runtime rotary token stride only; integrated selective row bounds, adjacent weights and packed prefill fixed. All group shapes warmed. First-shape observations share process/cache state and are not isolated cold-start evidence. No HTTP or network throughput claim.'
@@ -53,8 +53,8 @@ def main():
         for dynamic in (False,True,True,False):
             q4_stage_kernels.single_dot_adjacent=original
             kernels._rope_store=original_rope
-            os.environ['DLLM_Q4_STAGE_RUNTIME_ROWS']=str(int(args.compare_rope or (dynamic and args.integrated)))
-            os.environ['DLLM_Q4_STAGE_RUNTIME_ROPE']=str(int(args.compare_rope and args.integrated_rope and dynamic))
+            os.environ['DAMENDAEMON_Q4_STAGE_RUNTIME_ROWS']=str(int(args.compare_rope or (dynamic and args.integrated)))
+            os.environ['DAMENDAEMON_Q4_STAGE_RUNTIME_ROPE']=str(int(args.compare_rope and args.integrated_rope and dynamic))
             if args.compare_rope and dynamic and not args.integrated_rope:
                 from scripts.experiments.rope_runtime_tokens import install_validation_dispatch as install_rope
                 install_rope()

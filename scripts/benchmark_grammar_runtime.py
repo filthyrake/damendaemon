@@ -10,7 +10,7 @@ import statistics
 import time
 from types import SimpleNamespace
 
-from dllm.structured import Constraint
+from damendaemon.structured import Constraint
 from scripts.benchmark_grammar_setup import schema
 
 
@@ -63,7 +63,7 @@ def main():
     if args.output.exists():parser.error('new report path required')
     if args.device=='cuda':
         uuid=os.environ.get('CUDA_VISIBLE_DEVICES','')
-        if not uuid.startswith('GPU-') or ',' in uuid or os.environ.get('DLLM_SHARED_CUDA_GUARD')!='1':
+        if not uuid.startswith('GPU-') or ',' in uuid or os.environ.get('DAMENDAEMON_SHARED_CUDA_GUARD')!='1':
             parser.error('CUDA requires shared guard and explicit UUID')
     elif os.environ.get('CUDA_VISIBLE_DEVICES')!='':parser.error('CPU requires CUDA_VISIBLE_DEVICES empty')
     import torch

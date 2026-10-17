@@ -5,10 +5,10 @@ import subprocess
 import sys
 import unittest
 from unittest.mock import patch
-from dllm.cpu_snapshot_identity import fingerprint
-from dllm.deepseek_text import DeepSeekText
-from dllm.deepseek_batch_generation import BatchReferenceGenerator
-from dllm.deepseek_reference_loader import load_reference_model
+from damendaemon.cpu_snapshot_identity import fingerprint
+from damendaemon.deepseek_text import DeepSeekText
+from damendaemon.deepseek_batch_generation import BatchReferenceGenerator
+from damendaemon.deepseek_reference_loader import load_reference_model
 from scripts import run_deepseek_host_topology as cli,run_cpu_host_topology as shared
 from tests import test_glm_host_topology_command as raw
 
@@ -108,7 +108,7 @@ class DeepSeekNativeHostCommandTests(unittest.TestCase):
             ['--prompt','Hi','--ragged-batch'],['--batch-messages',str(rows)],
             ['--prompt','Hi','--max-new-tokens','2048'],['--tokens',str(invalid)],['--prompt','Hi','--workspace-mib','8'],['--prompt','Hi','--reasoning-effort','high']]
         for extra in options:
-            with self.subTest(extra=extra),patch.object(shared,'connect_peer',side_effect=AssertionError('network')),patch('dllm.deepseek_reference_loader._payload',side_effect=AssertionError('payload')),redirect_stderr(io.StringIO()):
+            with self.subTest(extra=extra),patch.object(shared,'connect_peer',side_effect=AssertionError('network')),patch('damendaemon.deepseek_reference_loader._payload',side_effect=AssertionError('payload')),redirect_stderr(io.StringIO()):
                 with self.assertRaises(SystemExit) as error:cli.main(self.args('complete',extra=extra))
                 self.assertEqual(error.exception.code,2)
         args=self.args('complete',extra=['--messages',str(invalid)]);args.remove('--native-chat')
@@ -118,7 +118,7 @@ class DeepSeekNativeHostCommandTests(unittest.TestCase):
 
     def test_failed_stop_withholds_command_success_finals(self):
         workers=self.workers('fp4_fp8_reference');output=io.StringIO()
-        from dllm.host_pipeline_worker import HostPipelineCoordinator
+        from damendaemon.host_pipeline_worker import HostPipelineCoordinator
         with patch.object(HostPipelineCoordinator,'stop',side_effect=RuntimeError('STOP failed')),redirect_stdout(output),redirect_stderr(io.StringIO()):
             with self.assertRaises(SystemExit) as error:cli.main(self.args('complete',extra=['--prompt','Hi']))
         self.assertEqual(error.exception.code,2);self.assertNotIn('finish_reason',output.getvalue())
@@ -135,5 +135,5 @@ class DeepSeekNativeHostCommandTests(unittest.TestCase):
         self.peers.write_text(json.dumps([dict(stage=i,address='127.0.0.1',port=1234+i,
             server_name='localhost',peer_cert=str(self.cert/'server.pem')) for i in (1,2)]))
         self.plan.write_text(json.dumps({'ranges':[[0,1],[1,2],[2,4]]}))
-        with patch.object(shared,'connect_peer',side_effect=AssertionError('network')),patch('dllm.deepseek_reference_loader._payload',side_effect=AssertionError('payload')),redirect_stderr(io.StringIO()),self.assertRaises(SystemExit):
+        with patch.object(shared,'connect_peer',side_effect=AssertionError('network')),patch('damendaemon.deepseek_reference_loader._payload',side_effect=AssertionError('payload')),redirect_stderr(io.StringIO()),self.assertRaises(SystemExit):
             cli.main(self.args('complete',extra=['--prompt','Hi']))

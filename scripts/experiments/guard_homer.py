@@ -12,7 +12,7 @@ import socket
 import subprocess
 import time
 
-from dllm.rocm_policy import host_available
+from damendaemon.rocm_policy import host_available
 from scripts.experiments.homer_cooling import CoolingGuard
 from scripts.experiments.host_memory_watchdog import HostMemoryWatchdog
 

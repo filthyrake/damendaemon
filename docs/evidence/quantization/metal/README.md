@@ -6,7 +6,7 @@ read packed weights directly, as do [bounded short FP32 prompts](short-prefill/R
 larger prompt matrices temporarily expand one projection
 at a time. There is no persistent dequantized model copy. Later qualification adds [Qwen2.5-0.5B Q4](q4/README.md);
 other unqualified Metal quantization combinations still fail clearly.
-Q8 remains opt-in (`DLLM_QUANTIZATION=q8_0` or per-model registration).
+Q8 remains opt-in (`DAMENDAEMON_QUANTIZATION=q8_0` or per-model registration).
 
 The pinned Qwen2.5-0.5B-Instruct, Qwen3-0.6B and Llama-3.2-1B checkpoints used
 by the architecture qualification pass independent CPU FP32/gguf-Q8 reference
@@ -28,24 +28,24 @@ quality; the existing Qwen2 Q8 drift evidence remains applicable.
 ## Serving measurements
 
 Apple M4, context 512, the same 16 input IDs, 32 outputs and five warm rounds.
-FP16 denotes retained weight storage; dllm activations/KV are still FP32.
-The Q8 comparator's 291 tensors match dllm's dequantized values bitwise.
-The comparator rounds retained vectors to dllm's prepared FP16 values before
+FP16 denotes retained weight storage; damendaemon activations/KV are still FP32.
+The Q8 comparator's 291 tensors match damendaemon's dequantized values bitwise.
+The comparator rounds retained vectors to damendaemon's prepared FP16 values before
 storing them as FP32, as required by llama.cpp's vector kernels. The earlier
 source vectors differed slightly; storing vectors directly in FP16 also failed
 upstream execution. Neither failed comparison is used for throughput claims.
 
 | Engine / storage | c1 tokens/s | c2 | c4 | First text ms c1 / c2 / c4 |
 |---|---:|---:|---:|---|
-| dllm Q8 | 48.90 | 83.97 | 148.86 | 50.64 / 85.51 / 125.11 |
+| damendaemon Q8 | 48.90 | 83.97 | 148.86 | 50.64 / 85.51 / 125.11 |
 | llama.cpp Q8 | 128.76 | 211.03 | 259.64 | 18.19 / 21.50 / 58.80 |
-| dllm FP16 | 60.11 | 101.69 | 178.61 | 51.35 / 87.46 / 125.16 |
+| damendaemon FP16 | 60.11 | 101.69 | 178.61 | 51.35 / 87.46 / 125.16 |
 
 These original measurements predate the [guarded indexing optimization](index32/README.md).
-Q8 was slower here than dllm FP16, and dllm trailed llama.cpp. This is added
+Q8 was slower here than damendaemon FP16, and damendaemon trailed llama.cpp. This is added
 lower-memory coverage, not a performance improvement. Apple timing varies;
 these are the recorded runs, not a claim about every workload. Each engine's
-text is stable across concurrency, but dllm and llama.cpp produce different text
+text is stable across concurrency, but damendaemon and llama.cpp produce different text
 despite matching stored values. Their arithmetic is not claimed equivalent.
 
 Pinned revisions:

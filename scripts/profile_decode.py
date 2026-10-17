@@ -7,8 +7,8 @@ import time
 
 import torch
 
-from dllm.models import load
-from dllm.runtime import require_gpu, make_executor
+from damendaemon.models import load
+from damendaemon.runtime import require_gpu, make_executor
 
 
 def main():

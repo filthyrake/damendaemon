@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch
-from dllm.cuda_host_pipeline_build import build_cuda_host_pipeline_worker,CudaHostPipelineBuildError
+from damendaemon.cuda_host_pipeline_build import build_cuda_host_pipeline_worker,CudaHostPipelineBuildError
 from tests import test_glm_host_pipeline_build as glm_tests
 
 
@@ -22,13 +22,13 @@ class CudaHostBuildTests(unittest.TestCase):
 
     def test_placement_failure_closes_claimed_links(self):
         plan=self.plan();links=self.links(plan)[0]
-        with patch('dllm.cuda_host_pipeline_build.place_cuda_stage',side_effect=ValueError('placement admission')):
+        with patch('damendaemon.cuda_host_pipeline_build.place_cuda_stage',side_effect=ValueError('placement admission')):
             with self.assertRaises(CudaHostPipelineBuildError) as caught:self.build(plan,links)
         self.assertTrue(caught.exception.closed);self.assertTrue(all(t.closed for t in links))
 
     def test_device_payload_rejection_precedes_copy(self):
         plan=self.plan();links=self.links(plan)[0]
-        with patch('dllm.cuda_stage_placement._copy',side_effect=AssertionError('premature copy')):
+        with patch('damendaemon.cuda_stage_placement._copy',side_effect=AssertionError('premature copy')):
             with self.assertRaises(CudaHostPipelineBuildError) as caught:self.build(plan,links,max_device_bytes=1)
         self.assertIn('raw payload',str(caught.exception));self.assertTrue(caught.exception.closed)
 

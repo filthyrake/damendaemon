@@ -42,7 +42,7 @@ def main():
     torch.set_num_threads(4)
     torch.cuda.set_device(0)
     props=torch.cuda.get_device_properties(0)
-    report=dict(passed=False,scope='HIP primitive correctness and release only; no dllm model or performance qualification',
+    report=dict(passed=False,scope='HIP primitive correctness and release only; no damendaemon model or performance qualification',
         python=platform.python_version(),torch=torch.__version__,hip=torch.version.hip,
         device=torch.cuda.get_device_name(0),architecture=getattr(props,'gcnArchName',None),
         reported_device_memory=props.total_memory,mem_get_info=list(torch.cuda.mem_get_info()),

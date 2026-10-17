@@ -13,8 +13,8 @@ import time
 
 import torch
 
-from dllm.gguf_model import GgufWeights
-from dllm.runtime import make_executor, require_gpu
+from damendaemon.gguf_model import GgufWeights
+from damendaemon.runtime import make_executor, require_gpu
 
 
 @torch.inference_mode()
@@ -24,11 +24,11 @@ def main():
     parser.add_argument('--output',required=True)
     args=parser.parse_args()
     require_gpu()
-    if torch.cuda.get_device_name()!='NVIDIA A2' or os.environ.get('DLLM_KV_CACHE_TOKENS'):
+    if torch.cuda.get_device_name()!='NVIDIA A2' or os.environ.get('DAMENDAEMON_KV_CACHE_TOKENS'):
         raise ValueError('probe requires an A2 with ordinary fixed KV slots')
     torch.set_num_threads(4)
     source=GgufWeights(args.model,512,'none')
-    library=Path(os.environ['DLLM_Q4_MARLIN_LIBRARY'])
+    library=Path(os.environ['DAMENDAEMON_Q4_MARLIN_LIBRARY'])
     report=dict(passed=False,model=args.model,device=torch.cuda.get_device_name(),
         library_sha256=hashlib.sha256(library.read_bytes()).hexdigest(),
         source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),

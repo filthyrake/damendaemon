@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_flash_ffn import FlashFeedForward,PackedFlashFeedForward
-from dllm.glm_ffn import GlmFeedForward
-from dllm.packed_moe import PackedExpert,PackedMatrix
+from damendaemon.glm_flash_ffn import FlashFeedForward,PackedFlashFeedForward
+from damendaemon.glm_ffn import GlmFeedForward
+from damendaemon.packed_moe import PackedExpert,PackedMatrix
 from tests.test_glm_block import ffn_weights
 from tests.test_glm_packed_attention import packed_pair
 

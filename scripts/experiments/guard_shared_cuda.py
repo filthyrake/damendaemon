@@ -13,7 +13,7 @@ import subprocess
 import time
 from urllib.request import urlopen
 
-from dllm.rocm_policy import host_available
+from damendaemon.rocm_policy import host_available
 
 
 def read_json(url):
@@ -135,9 +135,9 @@ def main():
     with args.report.open('x') as output:
         report = dict(gpu_uuid=args.gpu, incumbent_pid=args.incumbent_pid,
                       timeout_seconds=args.timeout, isolation=False, allow_busy=args.allow_busy)
-        env = {k: v for k, v in os.environ.items() if not k.startswith('DLLM_')}
-        env.update(CUDA_VISIBLE_DEVICES=args.gpu, DLLM_DEVICE='cuda',
-                   OMP_NUM_THREADS='1', MKL_NUM_THREADS='1', DLLM_SHARED_CUDA_GUARD='1')
+        env = {k: v for k, v in os.environ.items() if not k.startswith('DAMENDAEMON_')}
+        env.update(CUDA_VISIBLE_DEVICES=args.gpu, DAMENDAEMON_DEVICE='cuda',
+                   OMP_NUM_THREADS='1', MKL_NUM_THREADS='1', DAMENDAEMON_SHARED_CUDA_GUARD='1')
         try:
             passed = run(command, Probe(args.gpu, args.service, args.incumbent_pid, args.allow_busy),
                          args.timeout, report, env)

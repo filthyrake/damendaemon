@@ -5,7 +5,7 @@ if not __debug__:
 import argparse
 import json
 import torch
-from dllm.models import load,weight_bytes
+from damendaemon.models import load,weight_bytes
 
 
 def main():

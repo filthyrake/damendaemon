@@ -5,12 +5,12 @@ import unittest
 from unittest.mock import patch
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError
-from dllm.glm_flash_host_generation import HostFlashGenerator
-from dllm.glm_flash_host_serving import HostFlashReferenceRuntime
-from dllm.reference_serving import ReferenceRuntime,handler_for_reference
-from dllm.runtime import BusyError
-from dllm.server import BoundedHTTPServer
-from dllm.http_auth import AuthPolicy
+from damendaemon.glm_flash_host_generation import HostFlashGenerator
+from damendaemon.glm_flash_host_serving import HostFlashReferenceRuntime
+from damendaemon.reference_serving import ReferenceRuntime,handler_for_reference
+from damendaemon.runtime import BusyError
+from damendaemon.server import BoundedHTTPServer
+from damendaemon.http_auth import AuthPolicy
 from tests import test_glm_flash_host_generation as native
 from tests.test_glm_tools import TOOLS,CALLS
 
@@ -29,7 +29,7 @@ class FlashHostServingTests(unittest.TestCase):
 
     def serve(self,runtime):
         key=secrets.token_urlsafe(32);admin=secrets.token_urlsafe(32)
-        with patch.dict('os.environ',{'DLLM_API_KEY':key,'DLLM_ADMIN_API_KEY':admin},clear=True):auth=AuthPolicy.from_env()
+        with patch.dict('os.environ',{'DAMENDAEMON_API_KEY':key,'DAMENDAEMON_ADMIN_API_KEY':admin},clear=True):auth=AuthPolicy.from_env()
         server=BoundedHTTPServer(('127.0.0.1',0),handler_for_reference(runtime,auth))
         thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
         def close():server.shutdown();server.server_close();thread.join(3)
@@ -53,7 +53,7 @@ class FlashHostServingTests(unittest.TestCase):
         for key in ('content','reasoning_content'):
             self.assertEqual(message.get(key) or '', ''.join(e.get(key,'') for e in expected))
         self.assertEqual(actual['usage']['completion_tokens'],expected[-1]['usage']['completion_tokens'])
-        self.assertEqual(actual['dllm_timing']['execution'],'host_topology')
+        self.assertEqual(actual['damendaemon_timing']['execution'],'host_topology')
         with self.post(stream=True,stream_options={'include_usage':True}) as response:wire=response.read().decode()
         self.assertIn('data: [DONE]',wire);self.assertIn('host_topology',wire)
         with urlopen(Request(base+'/v1/models/status',headers=self.admin),timeout=3) as response:status=json.load(response)
@@ -82,7 +82,7 @@ class FlashHostServingTests(unittest.TestCase):
     def test_explicit_admission_and_invalid_http_requests_preserve_session(self):
         runtime,text,workers,_=self.runtime();runner=runtime.runner;self.serve(runtime)
         with self.assertRaises(ValueError):ReferenceRuntime(runner)
-        from dllm.glm_host_serving import HostGlmReferenceRuntime
+        from damendaemon.glm_host_serving import HostGlmReferenceRuntime
         with self.assertRaises(ValueError):HostGlmReferenceRuntime(runner)
         with self.assertRaises(ValueError):HostFlashReferenceRuntime(runner)
         with patch.object(workers[0],'prefill_chunk',side_effect=AssertionError('dispatch')):

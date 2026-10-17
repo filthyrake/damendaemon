@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
-from dllm.mamba import config,packable
+from damendaemon.mamba import config,packable
 
 
 class MambaTests(unittest.TestCase):
@@ -32,7 +32,7 @@ class MambaTests(unittest.TestCase):
     def test_saved_eos_replaces_default_before_weights(self):
         from transformers import MambaConfig,MambaForCausalLM,GenerationConfig
         from tokenizers import Tokenizer,models
-        from dllm.mamba import MambaWeights
+        from damendaemon.mamba import MambaWeights
         from unittest.mock import patch
         with TemporaryDirectory() as directory:
             reference=MambaForCausalLM(MambaConfig(hidden_size=8,state_size=4,
@@ -48,7 +48,7 @@ class MambaTests(unittest.TestCase):
             self.assertEqual(MambaWeights(directory,16).eos,{1})
             for bad in (None,True,[],[16],-1,'5'):
                 generation.write_text(json.dumps({'eos_token_id':bad}))
-                with self.subTest(bad=bad),patch('dllm.qwen2.weight_files',side_effect=AssertionError('weights opened')):
+                with self.subTest(bad=bad),patch('damendaemon.qwen2.weight_files',side_effect=AssertionError('weights opened')):
                     with self.assertRaises(ValueError):MambaWeights(directory,16)
             generation.write_text('{"eos_token_id":5,"eos_token_id":6}')
             with self.assertRaises(ValueError):config(directory)

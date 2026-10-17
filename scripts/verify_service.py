@@ -15,7 +15,7 @@ import time
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from dllm.bench import events, request_one
+from damendaemon.bench import events, request_one
 
 
 def main():
@@ -45,32 +45,32 @@ def main():
                 prefill_chunk_size=args.prefill_chunk_size,
                 graph_requested=not args.no_graph, host_gib=args.host_gib,
                 request_timeout=args.request_timeout,
-                hybrid_precision=os.environ.get('DLLM_HYBRID_PRECISION', 'float16'),
+                hybrid_precision=os.environ.get('DAMENDAEMON_HYBRID_PRECISION', 'float16'),
                 rocm_aotriton_experimental=os.environ.get('TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL'),
                 variant='hip-q8-small-batch' if args.candidate_q8_small_batch else 'ordinary')
     prompt = "Explain how matrix multiplication works in detail, with a worked example."
     reports = report["reports"]
     for slots in (1, 2):
-        with tempfile.TemporaryDirectory(prefix="dllm-proof-") as directory:
+        with tempfile.TemporaryDirectory(prefix="damendaemon-proof-") as directory:
             log_path = (Path(args.output).with_suffix(f'.capacity{slots}.log')
                         if args.output else Path(directory) / "server.log")
             with log_path.open("w") as log:
-                entry = ([sys.executable, 'scripts/experiments/hip_q8_small_batch.py', '--module', 'dllm']
-                         if args.candidate_q8_small_batch else [sys.executable, '-m', 'dllm'])
+                entry = ([sys.executable, 'scripts/experiments/hip_q8_small_batch.py', '--module', 'damendaemon']
+                         if args.candidate_q8_small_batch else [sys.executable, '-m', 'damendaemon'])
                 process = subprocess.Popen([
                     *entry, "serve", "--port", "0", "--context", str(args.context),
                     '--prefill-chunk-size', str(args.prefill_chunk_size),
                     '--host-gib', str(args.host_gib),
                     *(['--no-graph'] if args.no_graph else []),
                     "--gpu-models", str(slots), "--model", "a=" + args.model_a,
-                    "--model", "b=" + args.model_b, "--model", "broken=/missing-dllm-model",
+                    "--model", "b=" + args.model_b, "--model", "broken=/missing-damendaemon-model",
                 ], stdout=log, stderr=log)
                 try:
                     deadline = time.monotonic() + 90
                     base = None
                     while time.monotonic() < deadline and process.poll() is None:
                         lines = log_path.read_text().splitlines()
-                        ready = [line for line in lines if line.startswith("dllm listening on ")]
+                        ready = [line for line in lines if line.startswith("damendaemon listening on ")]
                         if ready:
                             base = ready[-1].split()[-1]
                             break
@@ -112,7 +112,7 @@ def main():
                             baseline=stable_allocations.setdefault(alias,allocated(state))
                             assert allocated(state)==baseline, 'live allocation grew after swap warmup'
                         trials.append({"model": alias, "wall_seconds": time.perf_counter() - start,
-                                       "usage": data["usage"], "timing": data["dllm_timing"],
+                                       "usage": data["usage"], "timing": data["damendaemon_timing"],
                                        "allocated_bytes":allocated(state)})
                     expected_tier = "host" if slots == 1 else "gpu"
                     assert trials[2]["timing"]["source_tier"] == expected_tier
@@ -151,7 +151,7 @@ def main():
                         batched = list(pool.map(same_model, range(4)))
                     for response in batched:
                         assert response["choices"][0]["message"]["content"] == texts["a"]
-                    assert max(r["dllm_timing"]["max_batch_size"] for r in batched) == 4
+                    assert max(r["damendaemon_timing"]["max_batch_size"] for r in batched) == 4
                     benchmark = request_one(base + "/v1", "a", prompt, 64, 120, 0)
                     assert benchmark.error is None, benchmark.error
                     for alias in ('a','b'):unload(alias)
@@ -161,7 +161,7 @@ def main():
                     with post('a') as response:
                         reloaded=json.load(response)
                     assert reloaded['choices'][0]['message']['content']==texts['a']
-                    assert reloaded['dllm_timing']['source_tier']=='disk'
+                    assert reloaded['damendaemon_timing']['source_tier']=='disk'
                     unload('a')
                     released_again=status()
                     assert released_again['host_cached_bytes']==0
@@ -169,7 +169,7 @@ def main():
                     reports.append({"gpu_models": slots, "released_status":released,
                                     "released_again_status":released_again, "trials": trials, "sample_text": texts,
                                     "streaming_and_recovery_passed": True,
-                                    "same_model_batch": [r["dllm_timing"] for r in batched],
+                                    "same_model_batch": [r["damendaemon_timing"] for r in batched],
                                     "stream_benchmark": vars(benchmark)})
                 except Exception as error:
                     report['error']=repr(error)

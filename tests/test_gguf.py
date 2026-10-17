@@ -11,8 +11,8 @@ HAS_GGUF = importlib.util.find_spec('gguf') is not None
 if HAS_GGUF:
     from gguf import GGUFReader, GGUFWriter, GGMLQuantizationType
     from gguf.quants import quantize, dequantize
-    from dllm.gguf_reader import BoundedReader
-    from dllm.gguf_model import GgufWeights, plan, tensor_groups, weight_bytes
+    from damendaemon.gguf_reader import BoundedReader
+    from damendaemon.gguf_model import GgufWeights, plan, tensor_groups, weight_bytes
 
 
 def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixed=False, rope_factors=None, causal=True, hidden=32, window=None, split_max_tensors=0, small_first_shard=False, scaling=None, legacy_scaling=None):
@@ -69,7 +69,7 @@ def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixe
 @unittest.skipUnless(HAS_GGUF, 'optional gguf dependency is not installed')
 class GgufTests(unittest.TestCase):
     def test_native_q4_q8_import_matches_independent_dequantization(self):
-        from dllm.quantization import dequantize as q8, dequantize_q4 as q4
+        from damendaemon.quantization import dequantize as q8, dequantize_q4 as q4
         for kind in (0, 1, 2, 8):
             with self.subTest(kind=kind), tempfile.TemporaryDirectory() as folder:
                 path = Path(folder)/'model.gguf'; fixture(path, kind)
@@ -103,8 +103,8 @@ class GgufTests(unittest.TestCase):
     def test_qwen3_config_qk_norm_and_shared_chat_behavior(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder)/'model.gguf'; fixture(path, arch='qwen3')
-            from dllm.models import config, load
-            from dllm.cli import resolve_model
+            from damendaemon.models import config, load
+            from damendaemon.cli import resolve_model
             self.assertEqual(resolve_model(str(path)), path.resolve())
             self.assertEqual(config(path)['model_type'], 'qwen3')
             model = load(path, 64, 'none')
@@ -131,12 +131,12 @@ class GgufTests(unittest.TestCase):
                 actual.append(dequantize(raw[offset:offset+count].reshape(-1,size),GGMLQuantizationType(kind)).reshape(last-first,width))
             np.testing.assert_array_equal(np.concatenate(actual),np.concatenate([expected[f'blk.0.attn_{a}.weight'] for a in ('q','k','v')]))
             self.assertEqual(model.bytes,weight_bytes(path,'none'))
-            with patch('dllm.gguf_model.selected_device',return_value='mps'):
+            with patch('damendaemon.gguf_model.selected_device',return_value='mps'):
                 with self.assertRaisesRegex(ValueError,'require CUDA'):weight_bytes(path,'none')
 
     def test_cache_blob_symlinks_remain_gguf_after_resolution(self):
-        from dllm.cli import resolve_model
-        from dllm.models import config, load, is_gguf
+        from damendaemon.cli import resolve_model
+        from damendaemon.models import config, load, is_gguf
         with tempfile.TemporaryDirectory() as folder:
             blob = Path(folder)/'hash-without-extension'; fixture(blob)
             link = Path(folder)/'model.gguf'; link.symlink_to(blob)
@@ -194,14 +194,14 @@ class GgufTests(unittest.TestCase):
 
     def test_embedding_storage_estimate_tracks_backend_without_stale_plan(self):
         from unittest.mock import patch
-        from dllm.quantization import dequantize
+        from damendaemon.quantization import dequantize
         for tied in (False, True):
             with tempfile.TemporaryDirectory() as folder:
                 path = Path(folder)/'model.gguf'; fixture(path, tied=tied, packed_embedding=True)
-                with patch('dllm.gguf_model.selected_device', return_value='cuda'):
+                with patch('damendaemon.gguf_model.selected_device', return_value='cuda'):
                     packed = GgufWeights(path, 64, 'none')
                     self.assertEqual(packed.bytes, weight_bytes(path, 'none'))
-                with patch('dllm.gguf_model.selected_device', return_value='mps'):
+                with patch('damendaemon.gguf_model.selected_device', return_value='mps'):
                     expanded = GgufWeights(path, 64, 'none')
                     self.assertEqual(expanded.bytes, weight_bytes(path, 'none'))
                 self.assertLess(packed.bytes, expanded.bytes)
@@ -211,7 +211,7 @@ class GgufTests(unittest.TestCase):
 
     def test_packed_embedding_extreme_scale_checks_actual_values(self):
         from unittest.mock import patch
-        from dllm.gguf_model import read_tensor
+        from damendaemon.gguf_model import read_tensor
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder)/'model.gguf'; fixture(path, packed_embedding=True)
             def altered(file, info, nonzero=False):
@@ -220,15 +220,15 @@ class GgufTests(unittest.TestCase):
                     data.zero_(); data[0,0] = 127 if nonzero else 0
                     scales.fill_(65504)
                 return data, scales
-            with patch('dllm.gguf_model.read_tensor', side_effect=altered):
+            with patch('damendaemon.gguf_model.read_tensor', side_effect=altered):
                 GgufWeights(path, 64, 'none')  # Large scales with zero values are finite.
-            with patch('dllm.gguf_model.read_tensor', side_effect=lambda f,i:altered(f,i,True)):
+            with patch('damendaemon.gguf_model.read_tensor', side_effect=lambda f,i:altered(f,i,True)):
                 with self.assertRaisesRegex(ValueError, 'finite FP16'):
                     GgufWeights(path, 64, 'none')
 
 
     def test_llama_restores_packed_qk_rows_and_preserves_rotary_factors(self):
-        from dllm.quantization import dequantize as q8, dequantize_q4 as q4
+        from damendaemon.quantization import dequantize as q8, dequantize_q4 as q4
         factors = [1.0, 1.000123, 2.7182818, 32.0]
         for kind in (0, 2, 8):
             with tempfile.TemporaryDirectory() as folder:
@@ -261,7 +261,7 @@ class GgufTests(unittest.TestCase):
                 with self.assertRaises(ValueError):GgufWeights(path,64,'none')
 
     def test_linear_rotary_metadata_preserves_packed_weights_and_context(self):
-        from dllm.rotary import inverse_frequencies
+        from damendaemon.rotary import inverse_frequencies
         for arch in ('qwen2', 'qwen3', 'llama'):
             for factor in (1.0, 4.0):
                 with self.subTest(arch=arch, factor=factor), tempfile.TemporaryDirectory() as folder:
@@ -283,7 +283,7 @@ class GgufTests(unittest.TestCase):
                         GgufWeights(paths[1], 129, 'none')
 
     def test_legacy_linear_rotary_metadata_is_not_ignored(self):
-        from dllm.rotary import inverse_frequencies
+        from damendaemon.rotary import inverse_frequencies
         with tempfile.TemporaryDirectory() as folder:
             modern, legacy = [Path(folder)/f'{label}.gguf' for label in ('modern', 'legacy')]
             fixture(modern, arch='llama', scaling=4)
@@ -308,7 +308,7 @@ class GgufTests(unittest.TestCase):
                     plan(path)
 
     def test_invalid_rotary_scaling_metadata_fails_preflight(self):
-        from dllm.gguf_model import model_config
+        from damendaemon.gguf_model import model_config
         cases = [{'type': 'linear', 'factor': factor} for factor in (None, True, '4', 0, .5, -1, float('nan'), float('inf'))]
         cases += [{'type': kind, 'factor': 4} for kind in ('none', 'yarn', 'longrope')]
         cases += [{'type': 'linear', 'factor': 4, 'original_context_length': 32}, {'factor': 4}]
@@ -345,7 +345,7 @@ class GgufTests(unittest.TestCase):
                     self.assertTrue(torch.equal(full.scales[name], windowed.scales[name]), name)
 
     def test_invalid_or_nonuniform_window_metadata_fails_preflight(self):
-        from dllm.gguf_model import model_config
+        from damendaemon.gguf_model import model_config
         for arch, value, pattern in (('llama', -1, None), ('llama', True, None),
                                      ('llama', 64.0, None), ('qwen2', 64, None),
                                      ('qwen3', 64, None), ('llama', 64, 4),

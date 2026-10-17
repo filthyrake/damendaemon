@@ -1,5 +1,5 @@
 import unittest
-from dllm.stage_protocol import Command, StageState, decode, PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH, token_rows
+from damendaemon.stage_protocol import Command, StageState, decode, PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH, token_rows
 
 
 class StageProtocolTests(unittest.TestCase):
@@ -126,7 +126,7 @@ class PackedPrefillProtocolTests(unittest.TestCase):
 
 class ChunkProtocolTests(unittest.TestCase):
     def test_explicit_context_limit_and_chunk_generation_offsets(self):
-        from dllm.stage_protocol import PREFILL_CHUNK
+        from damendaemon.stage_protocol import PREFILL_CHUNK
         with self.assertRaises(ValueError):StageState(1,513)
         for limit in (True,0,2**20+1):
             with self.assertRaises(ValueError):StageState(1,512,context_limit=limit)
@@ -143,6 +143,6 @@ class ChunkProtocolTests(unittest.TestCase):
         self.assertEqual((state.lengths[0],state.generations[0]),(2,2))
 
     def test_previous_wire_version_cannot_silently_accept_chunk_protocol(self):
-        from dllm.stage_protocol import VERSION,PREFILL_CHUNK
+        from damendaemon.stage_protocol import VERSION,PREFILL_CHUNK
         words=Command(1,1,PREFILL_CHUNK,2,((0,1,0),)).encode();words[1]=VERSION-1
         with self.assertRaisesRegex(ValueError,'protocol'):decode(words)

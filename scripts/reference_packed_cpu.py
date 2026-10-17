@@ -2,7 +2,7 @@
 
 Transformers owns model execution. CPU expansion uses upstream gguf-py; GPU
 expansion uses independently checked Torch operations, one matrix at a time.
-Neither path uses dllm quantizers, kernels or model math.
+Neither path uses damendaemon quantizers, kernels or model math.
 """
 import torch
 from torch import nn

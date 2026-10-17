@@ -21,7 +21,7 @@ from unittest.mock import patch
 from PIL import Image
 import torch
 from tokenizers import Tokenizer
-from dllm.bench import events
+from damendaemon.bench import events
 
 
 def main():
@@ -60,10 +60,10 @@ def main():
                 model=str(model_path),reference_model=reference['model'],
                 device_uuid=os.environ.get('CUDA_VISIBLE_DEVICES') if args.device=='cuda' else None,
                 source_sha256={str(path):hashlib.sha256(path.read_bytes()).hexdigest() for path in
-                    [Path('dllm')/name for name in ('hybrid.py','hybrid_metal.py','quantized_metal.py','quantization.py','cuda_warmup.py','models.py','qwen2.py','runtime.py','scheduler.py','server.py',
+                    [Path('damendaemon')/name for name in ('hybrid.py','hybrid_metal.py','quantized_metal.py','quantization.py','cuda_warmup.py','models.py','qwen2.py','runtime.py','scheduler.py','server.py',
                     'vision_policy.py','vision_model.py','vision_hybrid.py','vision_qwen35.py','vision_messages.py')]})
-    from dllm.models import weight_bytes
-    with patch.dict(os.environ,{'DLLM_EXPERIMENTAL_VISION':'1'}):
+    from damendaemon.models import weight_bytes
+    with patch.dict(os.environ,{'DAMENDAEMON_EXPERIMENTAL_VISION':'1'}):
         report['estimated_host_weight_bytes']=weight_bytes(model_path,quantization=report['quantization'])
     workspace=0
     if args.allocation_reference:
@@ -75,15 +75,15 @@ def main():
         workspace=sum(allocation['size'] for allocation in allocations)
         report['library_allocation_reference_sha256']=hashlib.sha256(data).hexdigest()
     report['identified_persistent_cublas_workspace_bytes']=workspace
-    with tempfile.TemporaryDirectory(prefix='dllm-vision-http-') as directory:
+    with tempfile.TemporaryDirectory(prefix='damendaemon-vision-http-') as directory:
         logpath=Path(directory)/'server.log'
-        env={**os.environ,'DLLM_EXPERIMENTAL_VISION':'1','DLLM_DEVICE':args.device,
-             'DLLM_QUANTIZATION':reference.get('text_quantization','none')}
-        if args.stage_profile:env['DLLM_VISION_STAGE_PROFILE']=args.stage_profile
+        env={**os.environ,'DAMENDAEMON_EXPERIMENTAL_VISION':'1','DAMENDAEMON_DEVICE':args.device,
+             'DAMENDAEMON_QUANTIZATION':reference.get('text_quantization','none')}
+        if args.stage_profile:env['DAMENDAEMON_VISION_STAGE_PROFILE']=args.stage_profile
         with logpath.open('w') as log:
             command=([sys.executable,'scripts/diagnose_vision_server.py'] if args.allocation_diagnostics
                      else [sys.executable,'scripts/profile_vision_server.py'] if args.stage_profile
-                     else [sys.executable,'-m','dllm'])
+                     else [sys.executable,'-m','damendaemon'])
             process=subprocess.Popen([*command,'serve','--port','0',
                 '--context','1024','--batch-size','4','--gpu-models','1','--host-models','2',
                 '--host-gib','8','--model','a='+model_path,'--model','b='+model_path],
@@ -91,7 +91,7 @@ def main():
             try:
                 deadline=time.monotonic()+180
                 while time.monotonic()<deadline and process.poll() is None:
-                    lines=[line for line in logpath.read_text().splitlines() if line.startswith('dllm listening on ')]
+                    lines=[line for line in logpath.read_text().splitlines() if line.startswith('damendaemon listening on ')]
                     if lines:base=lines[-1].split()[-1];break
                     time.sleep(.1)
                 else:raise RuntimeError(logpath.read_text())
@@ -118,14 +118,14 @@ def main():
                 for index,body in enumerate(payloads):
                     result=request(body);check(result,index,'independent:'+reference['cases'][index]['name'])
                     report['trials'].append(dict(name=reference['cases'][index]['name'],
-                        http_seconds=result['measured_http_seconds'],timing=result['dllm_timing'],usage=result['usage']))
+                        http_seconds=result['measured_http_seconds'],timing=result['damendaemon_timing'],usage=result['usage']))
                 loaded=status('loaded')
                 assert loaded['models'][0]['vision_gpu_weight_bytes']==204977152
                 assert loaded['models'][0]['host_weight_bytes']==report['estimated_host_weight_bytes']
                 for _ in range(args.warm_requests):
                     result=request(payloads[0]);check(result,0,'warm')
                     report['trials'].append(dict(name='warm-square',http_seconds=result['measured_http_seconds'],
-                        timing=result['dllm_timing'],usage=result['usage']))
+                        timing=result['damendaemon_timing'],usage=result['usage']))
                 with ThreadPoolExecutor(4) as pool:
                     responses=list(pool.map(request,[payloads[i] for i in (0,3,2,5)]))
                 for result,index in zip(responses,(0,3,2,5)):check(result,index,'concurrent:'+str(index))
@@ -159,7 +159,7 @@ def main():
                 check(request(payloads[0]),0,'malformed-input-recovery')
                 check(request({**payloads[0],'model':'b'}),0,'second-model-alias')
                 restored=request(payloads[0]);check(restored,0,'host-restore')
-                assert restored['dllm_timing']['source_tier']=='host'
+                assert restored['damendaemon_timing']['source_tier']=='host'
                 for alias in ('a','b'):
                     with open_request('/v1/models/unload',dict(model=alias,release_host=True)) as response:json.load(response)
                 unloaded=status('unloaded')

@@ -32,7 +32,7 @@ def main():
                 'distributed-run', trace['path'], '--context', '512',
                 '--quantization', report['quantization'], '--max-tokens', '8', '--json']
     try:
-        with tempfile.TemporaryDirectory(prefix='dllm-distributed-cli-') as directory:
+        with tempfile.TemporaryDirectory(prefix='damendaemon-distributed-cli-') as directory:
             tokens_file = Path(directory)/'tokens.json'
             for case in selected:
                 tokens_file.write_text(json.dumps(case['prompt']))

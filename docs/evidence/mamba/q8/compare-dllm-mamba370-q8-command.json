@@ -1,8 +1,8 @@
 {
   "command": [
-    "/home/damen/dllm-dev/venv/bin/python",
+    "/home/damen/damendaemon-dev/venv/bin/python",
     "-m",
-    "dllm",
+    "damendaemon",
     "serve",
     "--port",
     "56601",
@@ -13,15 +13,15 @@
     "--host-gib",
     "8",
     "--model",
-    "a=/home/damen/dllm-dev/models/mamba-370m"
+    "a=/home/damen/damendaemon-dev/models/mamba-370m"
   ],
   "model": {
     "repository": "state-spaces/mamba-370m-hf",
     "revision": "b519127f5bfaaa1c27dd938dad051ec360972b23",
-    "path": "/home/damen/dllm-dev/models/mamba-370m"
+    "path": "/home/damen/damendaemon-dev/models/mamba-370m"
   },
   "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
   "runtime_environment": {
-    "DLLM_QUANTIZATION": "q8_0"
+    "DAMENDAEMON_QUANTIZATION": "q8_0"
   }
 }

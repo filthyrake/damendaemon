@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.floating_attention import attention_prefill, attention_decode
+from damendaemon.floating_attention import attention_prefill, attention_decode
 from tests.test_floating_attention import fixture
 
 
@@ -45,7 +45,7 @@ class FloatingAttentionDecodeTests(unittest.TestCase):
     def test_mutation_failure_poisons_and_release_is_idempotent(self):
         hidden, weights, freq = fixture(4,9)
         _, state = attention_prefill(hidden[:,:3], weights, freq, groups=2,window=4,ratio=4,max_tokens=9)
-        with patch('dllm.floating_attention.selected_attention', side_effect=RuntimeError('attention failed')):
+        with patch('damendaemon.floating_attention.selected_attention', side_effect=RuntimeError('attention failed')):
             with self.assertRaisesRegex(RuntimeError, 'attention failed'):
                 attention_decode(hidden[:,3:4],state,position=3)
         self.assertTrue(state.poisoned)
@@ -63,7 +63,7 @@ class FloatingAttentionDecodeTests(unittest.TestCase):
             attention_decode(hidden[:,3:4],state,position=3)
 
     def test_competing_updates_serialize_and_reject_stale_position(self):
-        from dllm import floating_attention
+        from damendaemon import floating_attention
         hidden, weights, freq = fixture(4,9)
         _, state = attention_prefill(hidden[:,:3],weights,freq,groups=2,window=4,ratio=4,max_tokens=9)
         entered, release = threading.Event(), threading.Event()
@@ -73,7 +73,7 @@ class FloatingAttentionDecodeTests(unittest.TestCase):
             if not release.wait(3):
                 raise RuntimeError('test did not release attention')
             return original(*args, **kwargs)
-        with patch('dllm.floating_attention.selected_attention', side_effect=hold), ThreadPoolExecutor(max_workers=2) as pool:
+        with patch('damendaemon.floating_attention.selected_attention', side_effect=hold), ThreadPoolExecutor(max_workers=2) as pool:
             first = pool.submit(attention_decode, hidden[:,3:4], state, position=3)
             try:
                 self.assertTrue(entered.wait(2))
@@ -88,7 +88,7 @@ class FloatingAttentionDecodeTests(unittest.TestCase):
 
     def test_preflight_failures_preserve_state_and_budget_fails_before_projection(self):
         hidden, weights, freq = fixture(4,9)
-        with patch('dllm.floating_attention.linear', side_effect=AssertionError('projection started')):
+        with patch('damendaemon.floating_attention.linear', side_effect=AssertionError('projection started')):
             with self.assertRaises(ValueError):
                 attention_prefill(hidden,weights,freq,groups=2,window=4,ratio=4,max_cache_bytes=1)
         _, state = attention_prefill(hidden[:,:3],weights,freq,groups=2,window=4,ratio=4,max_tokens=4)
@@ -100,7 +100,7 @@ class FloatingAttentionDecodeTests(unittest.TestCase):
             attention_decode(hidden[:,3:5],state,position=3)
         torch.testing.assert_close(state.cache,before)
         self.assertFalse(state.poisoned)
-        with patch('dllm.floating_attention.linear', side_effect=RuntimeError('preparation failed')):
+        with patch('damendaemon.floating_attention.linear', side_effect=RuntimeError('preparation failed')):
             with self.assertRaisesRegex(RuntimeError, 'preparation failed'):
                 attention_decode(hidden[:,3:4],state,position=3)
         torch.testing.assert_close(state.cache,before)

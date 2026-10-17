@@ -8,7 +8,7 @@ import gzip
 import json
 from pathlib import Path
 
-from dllm.capacity import estimate
+from damendaemon.capacity import estimate
 
 
 def main():

@@ -2,7 +2,7 @@
 
 Measured 2026-10-03 on the user-designated lab VM. The probe selected only the
 A2 by UUID. No existing service, container, driver, or device setting was changed.
-Source and executable were placed in `~/dllm-dev/` on the test host.
+Source and executable were placed in `~/damendaemon-dev/` on the test host.
 
 | Property | Observed |
 | --- | --- |

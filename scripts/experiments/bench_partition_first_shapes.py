@@ -26,16 +26,16 @@ def main():
         model=args.model,quantization='q4_0',context=512,capacity=4,first=[],repeat=[],
         scope='Fresh process and private Triton compiler cache for each trial; host checkpoint/filesystem/driver caches are not reset. Same-host first-token computation, including compilation and GPU completion, without HTTP/queue/network. No steady-state throughput claim.',
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-                 ('dllm/q4_stage.py','dllm/q4_stage_kernels.py','dllm/kernels.py','dllm/partition.py','dllm/layer_stage.py','dllm/qwen2.py','dllm/partition_policy.py',
+                 ('damendaemon/q4_stage.py','damendaemon/q4_stage_kernels.py','damendaemon/kernels.py','damendaemon/partition.py','damendaemon/layer_stage.py','damendaemon/qwen2.py','damendaemon/partition_policy.py',
                   'scripts/experiments/q4_dynamic_rows.py','scripts/experiments/rope_runtime_tokens.py',__file__)})
     executor=None
     try:
-        with tempfile.TemporaryDirectory(prefix='dllm-q4-first-shapes-') as cache:
-            os.environ.update(TRITON_CACHE_DIR=cache,DLLM_Q4_STAGE_ADJACENT='1',DLLM_PARTITION_PACKED_PREFILL='1')
+        with tempfile.TemporaryDirectory(prefix='damendaemon-q4-first-shapes-') as cache:
+            os.environ.update(TRITON_CACHE_DIR=cache,DAMENDAEMON_Q4_STAGE_ADJACENT='1',DAMENDAEMON_PARTITION_PACKED_PREFILL='1')
             started=time.perf_counter()
             import torch
-            from dllm.qwen2 import ModelWeights
-            from dllm.partition import PartitionExecutor
+            from damendaemon.qwen2 import ModelWeights
+            from damendaemon.partition import PartitionExecutor
             from scripts.experiments.q4_dynamic_rows import install_validation_dispatch
             report['import_seconds']=time.perf_counter()-started
             assert torch.cuda.device_count()==2,'select exactly two GPUs'
@@ -43,8 +43,8 @@ def main():
             report['devices']=dict(selected=os.environ.get('CUDA_VISIBLE_DEVICES'),
                 names=[torch.cuda.get_device_name(index) for index in range(2)])
             report['torch']=str(torch.__version__)
-            os.environ['DLLM_Q4_STAGE_RUNTIME_ROWS']=str(int(args.dynamic and args.integrated))
-            os.environ['DLLM_Q4_STAGE_RUNTIME_ROPE']=str(int(args.integrated_rope_runtime_tokens))
+            os.environ['DAMENDAEMON_Q4_STAGE_RUNTIME_ROWS']=str(int(args.dynamic and args.integrated))
+            os.environ['DAMENDAEMON_Q4_STAGE_RUNTIME_ROPE']=str(int(args.integrated_rope_runtime_tokens))
             if args.dynamic and not args.integrated:install_validation_dispatch()
             if args.experimental_rope_runtime_tokens:
                 from scripts.experiments.rope_runtime_tokens import install_validation_dispatch as install_rope

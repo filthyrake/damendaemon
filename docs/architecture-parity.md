@@ -1,6 +1,6 @@
 # Architecture qualification beyond the initial decoder matrix
 
-[GitHub issue #3](https://github.com/filthyrake/dllm/issues/3) defines the current
+[GitHub issue #3](https://github.com/filthyrake/damendaemon/issues/3) defines the current
 parity milestones. Active work targets Qwen3 and newer, prioritizing Qwen3.5.
 This document preserves historical qualification evidence, including older
 models; its section order is not the current work priority or a task tracker.
@@ -37,7 +37,7 @@ reference (worst relative RMS 0.0007453%). Mixed-model A2 service tests pass.
 A2 HTTP comparison, identical pinned FP16 checkpoint, 2048 context, 64 output
 tokens, five measured rounds after warmup:
 
-| Concurrent requests | dllm output tokens/s | vLLM output tokens/s | dllm TTFT ms | vLLM TTFT ms |
+| Concurrent requests | damendaemon output tokens/s | vLLM output tokens/s | damendaemon TTFT ms | vLLM TTFT ms |
 |---|---:|---:|---:|---:|
 | 1 | 61.40 | 63.24 | 29.28 | 40.97 |
 | 2 | 109.33 | 116.67 | 47.25 | 55.44 |
@@ -45,7 +45,7 @@ tokens, five measured rounds after warmup:
 
 Values are medians; throughput includes prompt processing. This narrow test
 shows a 3–9% throughput gap, not general performance parity. Serving environments
-use torch 2.6/dllm and torch 2.13/vLLM 0.30, respectively. Raw trials are stored
+use torch 2.6/damendaemon and torch 2.13/vLLM 0.30, respectively. Raw trials are stored
 alongside the qualification evidence.
 
 
@@ -72,7 +72,7 @@ Two reference pitfalls were isolated: Transformers 4.51 auto-allocates a Gemma
 cache only as long as the initial prompt, then overflows it during continuation;
 FP16 arithmetic also produces non-finite reference logits. In Transformers 5.18 /
 torch 2.13, SDPA and eager reference attention disagree on the 513-token case:
-eager matches dllm at relative RMS 0.000179%, while SDPA differs by 76.6% and
+eager matches damendaemon at relative RMS 0.000179%, while SDPA differs by 76.6% and
 selects a different token, with or without cache. The raw diagnostic is retained.
 The suite therefore records its reference attention backend and uses eager for
 Gemma. Reduced-precision CUDA experiments failed the strict numerical gate and
@@ -98,7 +98,7 @@ temperatures. These tests do not promise cross-hardware bitwise reproducibility.
 The retained CUDA path adds fused FP32 normalization, native small-batch GEMV
 with weight reuse across rows, and native windowed decode attention that skips
 expired/unused cache blocks. FP16 weight storage is now the default when native
-CUDA kernels are available; `DLLM_GEMMA_WEIGHT_DTYPE=float32` retains full storage.
+CUDA kernels are available; `DAMENDAEMON_GEMMA_WEIGHT_DTYPE=float32` retains full storage.
 Arithmetic, residuals, norms and KV remain FP32. The exact BF16 checkpoint values
 are representable in FP16 storage; this does not enable FP16 arithmetic. The
 97-check gate still passes (worst relative RMS 0.00465%), and independent matrix
@@ -111,7 +111,7 @@ checks include non-power-of-two widths and activations outside FP16's range.
 | 4 | 86.2 | 206.1 | 136.7 | 159.2 |
 
 A2, same pinned checkpoint, context 2048, 64 output tokens, median of five warm
-HTTP rounds. This compares two dllm implementations, not another engine.
+HTTP rounds. This compares two damendaemon implementations, not another engine.
 Throughput improves 2.2–2.5x; first-token latency is still worse at concurrency
 four. Prefill still converts stored weights for dense FP32 matrix operations,
 and prompts are processed separately. These remain performance gaps. The first
@@ -165,7 +165,7 @@ also verifies the grouping change.
 
 Validation can now generate a reference trace with `verify_stress.py
 --reference-only --golden-output ...` and replay it in a separate process. A
-reference-only report explicitly has `passed: null` and performs no dllm
+reference-only report explicitly has `passed: null` and performs no damendaemon
 qualification. This permits sequential GPU reference/runtime validation without
 two resident model copies. `replay_reference.py --slot N` can isolate one original
 slot for memory-constrained hardware; the report records that reduced scope.
@@ -177,15 +177,15 @@ Mixed-model service passes at GPU residency capacities one and three, with a
 regression also passes on A2. A matched 2048-context, 64-output-token A2 HTTP
 comparison uses the same pinned checkpoint and FP16 weight/KV precision:
 
-| Concurrent requests | dllm tokens/s | vLLM tokens/s | dllm TTFT ms | vLLM TTFT ms |
+| Concurrent requests | damendaemon tokens/s | vLLM tokens/s | damendaemon TTFT ms | vLLM TTFT ms |
 |---|---:|---:|---:|---:|
 | 1 | 21.4 | 21.6 | 58.7 | 72.6 |
 | 2 | 38.0 | 39.3 | 110.4 | 101.4 |
 | 4 | 72.2 | 76.2 | 177.8 | 143.9 |
 
-Medians of five warm rounds. dllm's declared FP32 residual/output accumulation
+Medians of five warm rounds. damendaemon's declared FP32 residual/output accumulation
 is part of its numerical policy; this does not mean all operations are FP16.
-vLLM uses its standard `--dtype half` path, version 0.30 / torch 2.13; dllm uses
+vLLM uses its standard `--dtype half` path, version 0.30 / torch 2.13; damendaemon uses
 torch 2.6. vLLM receives a 90% A2 memory budget to fit this checkpoint, and the
 engines run sequentially. Throughput is within roughly 1–5% on this workload;
 batched first-token latency remains worse. This is not blanket engine parity.
@@ -197,7 +197,7 @@ described above.
 
 ## Experimental Q8_0 weight execution
 
-Issue #10. `DLLM_QUANTIZATION=q8_0` quantizes supported safetensors matrices
+Issue #10. `DAMENDAEMON_QUANTIZATION=q8_0` quantizes supported safetensors matrices
 on host load. CUDA/Triton only; the default remains unquantized. This is not a
 GGUF, GPTQ, or AWQ importer. Embeddings, norms, convolution and recurrent state
 retain their original storage policy. A tied output head becomes a separate
@@ -208,7 +208,7 @@ temporarily expands one matrix at a time. Broad quality evaluation is pending.
 The native format matches upstream llama.cpp Q8_0 byte-for-byte in four format
 cases. Ten native CUDA matrix cases pass against independently dequantized
 matrix multiplication (worst relative RMS 0.00784%). Independent Transformers
-references use upstream gguf-py's quantizer, not dllm's quantization code.
+references use upstream gguf-py's quantizer, not damendaemon's quantization code.
 At context 2048, Qwen2.5-0.5B passes 82/82 checks with worst relative RMS
 0.6711%; Qwen3.5-0.8B passes 84/84 at 0.2653%. Both retain exact greedy agreement
 with their quantized references. Qwen2 host weights occupy 797,246,208 bytes;
@@ -243,12 +243,12 @@ The optimized Qwen2 A2 HTTP comparison uses the same pinned checkpoint,
 Q8_0 projection/output matrices, FP16 input embeddings, FP16 KV, 2048-token
 per-request context, 43 prompt tokens, and 64 output tokens. A benchmark-only
 GGUF conversion explicitly adds a separately quantized tied output head to
-match dllm's storage policy. llama.cpp is pinned to
+match damendaemon's storage policy. llama.cpp is pinned to
 `836d57176dc699a726c55418e4f96b8ca628e1bf`, native CUDA build for SM86,
 flash attention enabled, four slots, prompt caching disabled. Engines run
 sequentially; values are medians of five warm rounds.
 
-| Concurrent requests | dllm tokens/s | llama.cpp tokens/s | dllm TTFT ms | llama.cpp TTFT ms |
+| Concurrent requests | damendaemon tokens/s | llama.cpp tokens/s | damendaemon TTFT ms | llama.cpp TTFT ms |
 |---|---:|---:|---:|---:|
 | 1 | 218.8 | 116.7 | 31.8 | 33.8 |
 | 2 | 277.7 | 160.2 | 48.3 | 44.1 |
@@ -340,7 +340,7 @@ engines. The corrected Q8 comparison uses the same 23 input token IDs, 64
 output tokens, 2048 context per request, FP16 KV and matching Q8 matrix/FP16
 embedding storage on the A2. Five warm rounds give these medians:
 
-| Concurrency | dllm tokens/s | llama.cpp tokens/s | dllm TTFT ms | llama.cpp TTFT ms |
+| Concurrency | damendaemon tokens/s | llama.cpp tokens/s | damendaemon TTFT ms | llama.cpp TTFT ms |
 |---|---:|---:|---:|---:|
 | 1 | 19.63 | 20.74 | 232.8 | 89.5 |
 | 2 | 29.45 | 39.81 | 373.4 | 98.5 |
@@ -475,7 +475,7 @@ decode continuations: six cases cover mixed lengths, repeated prompts, two to
 four requests, reordered slots and a 130-total-token fallback. The sequential
 control and experimental implementation both pass all 234 checks (experimental
 worst relative RMS 0.000098%). This is independent target reuse, not a new
-reference computed by dllm. Normal-runtime qualification is described below.
+reference computed by damendaemon. Normal-runtime qualification is described below.
 See [oracle provenance](evidence/architectures/olmoe-short-batch-reference-provenance.json),
 [control](evidence/architectures/olmoe-short-batch-control-reference-a2.json),
 [candidate](evidence/architectures/olmoe-packed-prefill-reference-a2.json)
@@ -746,7 +746,7 @@ larger prompts and FP32 input retain the existing path. A2 measurements select
 
 Repeating the identical-token Mistral comparison above after this change gives:
 
-| Concurrency | dllm tokens/s | llama.cpp tokens/s | dllm TTFT ms | llama.cpp TTFT ms |
+| Concurrency | damendaemon tokens/s | llama.cpp tokens/s | damendaemon TTFT ms | llama.cpp TTFT ms |
 |---|---:|---:|---:|---:|
 | 1 | 20.56 | 20.71 | 84.3 | 89.4 |
 | 2 | 31.50 | 39.63 | 150.9 | 100.5 |
@@ -797,7 +797,7 @@ and 1028. Residual error starts at zero in the embedding and accumulates through
 middle layers to roughly 2–3%; this is not just output-head rounding. Increasing
 only Q/K/V arithmetic precision did not clear the gate.
 
-`DLLM_QWEN3_PRECISION=float32` now enables FP32 matrix/activation/KV arithmetic
+`DAMENDAEMON_QWEN3_PRECISION=float32` now enables FP32 matrix/activation/KV arithmetic
 while retaining FP16 matrix storage. The pinned BF16 checkpoint's values are
 exactly representable in this storage. All 84 checks pass against the independent
 FP32 reference, worst relative RMS 0.002080%. The default `standard` path is
@@ -808,7 +808,7 @@ Initial A2 HTTP medians for the accurate path at concurrency 1/2/4 are
 throughput trails the prior standard path (325.7 tokens/sec), motivating further
 matrix-kernel work. The FP32 vLLM run gives 66.23 / 92.86 / 174.26 tokens/sec and
 50.1 / 75.1 / 108.1 ms. Both use the pinned checkpoint, 26 input/64 output tokens,
-2048 context and FP32 arithmetic/KV; dllm stores exact checkpoint matrix values
+2048 context and FP32 arithmetic/KV; damendaemon stores exact checkpoint matrix values
 in FP16, whereas this vLLM run stores FP32 weights. This is explicitly a storage
 policy difference, not a matched-storage engine comparison. Reports and the
 layerwise diagnostic are under `evidence/models`.
@@ -1016,13 +1016,13 @@ rejected or unqualified. Evidence is in `evidence/architectures/gpt2-*.json`.
 GPT-2 matched FP32 A2 HTTP comparison, same pinned checkpoint and token IDs,
 context1024, 14 prompt tokens and 64 output tokens, five measured rounds:
 
-| Concurrent requests | dllm tokens/s | vLLM tokens/s | dllm TTFT ms | vLLM TTFT ms |
+| Concurrent requests | damendaemon tokens/s | vLLM tokens/s | damendaemon TTFT ms | vLLM TTFT ms |
 |---|---:|---:|---:|---:|
 | 1 | 271.00 | 236.06 | 12.43 | 30.63 |
 | 2 | 476.50 | 424.90 | 20.23 | 43.62 |
 | 4 | 753.68 | 800.57 | 42.16 | 48.70 |
 
-Both use FP32 weights/arithmetic; environments differ (dllm torch2.6, vLLM0.30
+Both use FP32 weights/arithmetic; environments differ (damendaemon torch2.6, vLLM0.30
 with torch2.13). These medians include prompt processing and exclude first
 model-load warmup. This narrow result leads at concurrency1/2 but remains about
 6% behind at concurrency4; it does not establish general runtime parity.
@@ -1047,7 +1047,7 @@ path. Intermediate chunks skip the unused vocabulary output projection.
 The final path passes 82 Qwen2 A2 reference checks, 84 accurate-Qwen3 A2 checks,
 82 Llama 3.2 A2 checks, and 82 Qwen2 M4 checks with uneven 127-token chunks.
 Q8 Mistral passes 97 checks using 257-token chunks through its 4096-token window. Qwen3 qualification uses
-`DLLM_QWEN3_PRECISION=float32`; the existing standard-Qwen3 accuracy limitation
+`DAMENDAEMON_QWEN3_PRECISION=float32`; the existing standard-Qwen3 accuracy limitation
 is unchanged. Phi-3's 257-token-chunk test fails one absolute-error gate despite
 matching every greedy token, so it is deliberately excluded from chunking;
 its full-prefill support is unchanged. Failed evidence is retained alongside
@@ -1195,7 +1195,7 @@ Mistral7B Q4 now passes all 97 independent CPU FP32 eager-reference checks at
 0.003294, host weight storage 4,262,273,024 bytes. The original implementation's
 matched Q4 serving comparison is poor and retained as the optimization baseline:
 
-| Concurrent requests | dllm tokens/s | llama.cpp tokens/s | dllm TTFT ms | llama.cpp TTFT ms |
+| Concurrent requests | damendaemon tokens/s | llama.cpp tokens/s | damendaemon TTFT ms | llama.cpp TTFT ms |
 |---|---:|---:|---:|---:|
 | 1 | 4.18 | 34.20 | 165.90 | 67.24 |
 | 2 | 14.99 | 64.09 | 370.07 | 86.85 |
@@ -1204,7 +1204,7 @@ matched Q4 serving comparison is poor and retained as the optimization baseline:
 Identical pinned Mistral checkpoint, matching Q4_0 projection/FP16 embedding
 policy, 23 explicit prompt token IDs, 64 output tokens, context 2048, FP16 KV,
 A2 only, sequential servers and five warm measured rounds. This establishes a
-real execution bottleneck; Q4 is not yet a performance improvement in dllm.
+real execution bottleneck; Q4 is not yet a performance improvement in damendaemon.
 
 ## GPT-NeoX / Pythia
 
@@ -1229,7 +1229,7 @@ Matched M4 HTTP comparison: identical checkpoint converted to FP32 GGUF,
 identical explicit prompt IDs, FP32 KV, 2048 context, 64 output tokens, five
 warm rounds, sequential engines:
 
-| Concurrent requests | dllm tokens/s | llama.cpp tokens/s | dllm TTFT ms | llama.cpp TTFT ms |
+| Concurrent requests | damendaemon tokens/s | llama.cpp tokens/s | damendaemon TTFT ms | llama.cpp TTFT ms |
 |---|---:|---:|---:|---:|
 | 1 | 116.20 | 129.99 | 20.94 | 9.68 |
 | 2 | 211.84 | 197.00 | 43.69 | 13.25 |
@@ -1257,7 +1257,7 @@ gap rather than a claim of general four-bit performance parity.
 Matched A2 FP32 Pythia-160M comparison, using the same explicit prompt IDs,
 2048 context, 64 output tokens and five warm rounds:
 
-| Concurrent requests | dllm tokens/s | vLLM tokens/s | dllm TTFT ms | vLLM TTFT ms |
+| Concurrent requests | damendaemon tokens/s | vLLM tokens/s | damendaemon TTFT ms | vLLM TTFT ms |
 |---|---:|---:|---:|---:|
 | 1 | 256.08 | 240.87 | 15.16 | 24.24 |
 | 2 | 436.95 | 440.62 | 23.72 | 31.47 |
@@ -1265,7 +1265,7 @@ Matched A2 FP32 Pythia-160M comparison, using the same explicit prompt IDs,
 
 The four-request throughput deficit is about 14%; this architecture is
 numerically/API qualified but is not a general performance-parity claim.
-Serving environments remain torch 2.6/dllm versus torch 2.13/vLLM 0.30.
+Serving environments remain torch 2.6/damendaemon versus torch 2.13/vLLM 0.30.
 
 An optional independent CUDA C++ kernel now vectorizes Q4 nibble conversion
 with FP16 pairs while preserving the dequantized FP16 rounding boundary and
@@ -1274,7 +1274,7 @@ measurements are retained. Eighteen vectorized matrix shapes pass with and
 without bias (36 checks); full Mistral replay passes 97/97, worst RMS 0.003693.
 The C interface validates dimensions, uses the caller's stream and reports
 launch errors. Python validates device/dtype/shape/contiguity and library ABI.
-The library is explicitly selected at startup with `DLLM_Q4_CUDA_LIBRARY`.
+The library is explicitly selected at startup with `DAMENDAEMON_Q4_CUDA_LIBRARY`.
 
 Measured native selection is restricted to one FP16 input row, input width at
 least 4096 and at least 1024 outputs. Batched and smaller matrix workloads stay
@@ -1305,7 +1305,7 @@ Issue #26. Pinned [BigScience BLOOM-560m](https://huggingface.co/bigscience/bloo
 revision `ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971` adds an independent
 ALiBi decoder. The attention-bias method follows
 [Press et al.](https://arxiv.org/abs/2108.12409); Transformers' BLOOM implementation
-is used only as the independent test oracle. dllm implements geometric head
+is used only as the independent test oracle. damendaemon implements geometric head
 slopes, head-interleaved QKV reordering, embedding and block LayerNorm,
 tanh GELU, residual connections and tied output weights. CUDA decode adds
 ALiBi inside the shared slotted attention kernel. Prefill uses bounded
@@ -1328,12 +1328,12 @@ is a conservative qualification boundary, not a claim of length extrapolation.
 
 Initial BLOOM M4 FP32 comparison: same pinned checkpoint and explicit token IDs,
 FP32 KV, 64 output tokens and five measured warm rounds. **This initial comparison
-is not context-matched:** dllm used 2048 slots, but llama.cpp silently capped its
+is not context-matched:** damendaemon used 2048 slots, but llama.cpp silently capped its
 slots at 1024 based on converter metadata. Corrected measurements follow separately. The
 llama.cpp build is the existing pinned comparator; the GGUF is an FP32 conversion
 of the same safetensors checkpoint. Throughput includes prompt processing.
 
-| Concurrent requests | Initial dllm tokens/s | Native Metal attention | Packed prefill + native attention | llama.cpp tokens/s | Final dllm TTFT ms | llama.cpp TTFT ms |
+| Concurrent requests | Initial damendaemon tokens/s | Native Metal attention | Packed prefill + native attention | llama.cpp tokens/s | Final damendaemon TTFT ms | llama.cpp TTFT ms |
 |---|---:|---:|---:|---:|---:|---:|
 | 1 | 16.89 | 36.43 | 37.07 | 36.29 | 32.92 | 34.01 |
 | 2 | 26.23 | 68.84 | 70.49 | 57.22 | 42.61 | 41.95 |
@@ -1365,7 +1365,7 @@ from the requested value, with a regression test for the observed 1024/2048 case
 Same pinned FP32 weights, FP32 KV, ten explicit prompt token IDs, 64 output
 tokens, five warm measured rounds, isolated GPU runs:
 
-| GPU | Concurrent requests | dllm tokens/s | llama.cpp tokens/s | dllm TTFT ms | llama.cpp TTFT ms |
+| GPU | Concurrent requests | damendaemon tokens/s | llama.cpp tokens/s | damendaemon TTFT ms | llama.cpp TTFT ms |
 |---|---:|---:|---:|---:|---:|
 | M4 | 1 | 37.07 | 36.50 | 32.92 | 34.44 |
 | M4 | 2 | 70.49 | 57.13 | 42.61 | 42.55 |
@@ -1401,7 +1401,7 @@ include 198 independent FP32 logit checks per GPU plus real API and residency
 proof. Original T5-small additionally qualifies tied embeddings and ReLU, with
 573 checks through the full decoder context on both GPUs. The llama.cpp server
 baseline fails startup or matched output validation; a separate public-API core
-comparison produces identical token IDs and exposes dllm's slower encoder but
+comparison produces identical token IDs and exposes damendaemon's slower encoder but
 faster decoder. Core timings and HTTP throughput are reported separately.
 
 ## Mamba-1 recurrent state (issue #30)
@@ -1531,7 +1531,7 @@ count matches between the two modes:
 Complete requests improve 1.46–10.11× on these workloads. First-use compilation
 is excluded. Peak allocated memory in the largest grouped workload is
 13,959,017,984 bytes. All 72 independent CPU reference checks pass with grouped
-prefill and bounded token-count buckets. `DLLM_GPT_OSS_PREFILL=routed` retains the
+prefill and bounded token-count buckets. `DAMENDAEMON_GPT_OSS_PREFILL=routed` retains the
 baseline for diagnosis. This comparison changes expert execution arithmetic
 from FP32 reductions to compensated products; it is not a bitwise-logit claim,
 and it is not a comparison with another engine.
@@ -1677,7 +1677,7 @@ produced a greedy mismatch at a 789-token prefix with both bounded and unbounded
 attention. IEEE FP32 attention projections now repair all five targeted output
 prefixes; longer-context internal-state qualification remains open.
 See [all measurements, failed checks and reproduction](evidence/gpt-oss/context-4k/README.md)
-and [issue #41](https://github.com/filthyrake/dllm/issues/41).
+and [issue #41](https://github.com/filthyrake/damendaemon/issues/41).
 
 ### GPT-OSS bounded fused prefill attention
 
@@ -1685,7 +1685,7 @@ Prefills of 256 or more tokens now use bounded fused FP32 sink attention and
 IEEE FP32 attention projections. The sink normalization comes from the fused
 operator's log-sum-exp output. Full attention partitions heads; windowed
 attention trims each query tile's key range. The unchanged decode graphs and
-short-prefill path remain in use. `DLLM_GPT_OSS_ATTENTION=native` provides the
+short-prefill path remain in use. `DAMENDAEMON_GPT_OSS_ATTENTION=native` provides the
 bounded native attention path with the same IEEE projection policy for matched
 comparisons.
 
@@ -1707,7 +1707,7 @@ See [routing proof and matched measurements](evidence/gpt-oss/expert-routing/REA
 
 ## Standalone GGUF checkpoint import
 
-Dense Qwen2/Qwen3 now load standalone GGUF files into dllm's native decoder.
+Dense Qwen2/Qwen3 now load standalone GGUF files into damendaemon's native decoder.
 Qwen2.5 Q4_0/Q8_0 and Qwen3-0.6B Q8_0 import/execution equivalence is qualified
 on A2, including actual HTTP model swapping and the embedded tokenizer/chat
 path. Quantized matrices retain their supplied values and scales. This is
@@ -1732,8 +1732,8 @@ concurrency 1/2/4, while remaining 26–79% slower on those measured workloads.
 Subsequent normal model/layout and HTTP lifecycle proof reaches 2048 context,
 including cross-model swaps. The same-file llama.cpp comparison at that context
 retains long-prompt and concurrent output differences; all 96 independent HF
-checks on those exact prompts agree with dllm. The optional residual path lowers
-single-request latency 2.7–8.1% versus original dllm in that separate workload.
+checks on those exact prompts agree with damendaemon. The optional residual path lowers
+single-request latency 2.7–8.1% versus original damendaemon in that separate workload.
 This does not establish general SentencePiece, unused-token or grammar support
 on the positional path, longer-window semantics or performance parity.
 
@@ -1758,7 +1758,7 @@ Shapes were independently transcribed from the pinned config/index and
 Source/index fingerprints are recorded in `tests/fixtures/glm53_flash_contract.json`.
 The checkpoint's MIT license is preserved in `docs/licenses/glm53-flash-MIT.txt`.
 Flash text execution, vision, MTP, quality and hardware qualification remain open
-in [#57](https://github.com/filthyrake/dllm/issues/57).
+in [#57](https://github.com/filthyrake/damendaemon/issues/57).
 
 `glm_flash_hyper.FlashHyperConnection` supplies bounded CPU FP32 residual
 collapse/restoration and the Flash unweighted final stream mean. It normalizes

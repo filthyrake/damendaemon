@@ -8,10 +8,10 @@ import json
 import os
 import time
 import torch
-from dllm.qwen2 import ModelWeights
-from dllm.runtime import require_gpu, make_executor
-from dllm.device import device_name, selected_accelerator, synchronize
-from dllm.quantization import mode
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.runtime import require_gpu, make_executor
+from damendaemon.device import device_name, selected_accelerator, synchronize
+from damendaemon.quantization import mode
 from scripts.reference_trace import validate_replay
 
 

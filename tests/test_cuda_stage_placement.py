@@ -3,9 +3,9 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.cuda_stage_placement import place_cuda_stage,_recipe
+from damendaemon.cuda_stage_placement import place_cuda_stage,_recipe
 from tests import test_glm_reference_loader as glm_fixture,test_glm_flash_reference_loader as flash_fixture,test_deepseek_reference_loader as ds_fixture
-from dllm import glm_reference_loader,glm_flash_reference_loader,deepseek_reference_loader
+from damendaemon import glm_reference_loader,glm_flash_reference_loader,deepseek_reference_loader
 
 
 class CudaStagePlacementTests(unittest.TestCase):
@@ -26,7 +26,7 @@ class CudaStagePlacementTests(unittest.TestCase):
                     self.assertEqual(rebuilt.head is None,end!=3)
                     self.assertIsNot(rebuilt.config,source.config)
                     with self.assertRaises(ValueError):module._tensors(source)
-                    with patch('dllm.cuda_stage_placement._copy',side_effect=AssertionError('copy before admission')):
+                    with patch('damendaemon.cuda_stage_placement._copy',side_effect=AssertionError('copy before admission')):
                         with self.assertRaises(ValueError):place_cuda_stage(source,device='cuda:0',max_bytes=1)
                         if source.last:
                             if family=='deepseek':source.head['norm.weight']=torch.ones(1)

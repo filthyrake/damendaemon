@@ -12,11 +12,11 @@ import unittest
 from unittest.mock import patch
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError
-from dllm.http_auth import AuthPolicy,ClientKey
-from dllm.client_admission import ClientAdmission,ClientRateLimitError,ClientOutputRateLimitError
-from dllm.shared_client_reservations import SharedClientReservations,SharedReservationUnavailable
-from dllm.shared_client_rates import SharedClientRates
-from dllm.server import BoundedHTTPServer,handler_for
+from damendaemon.http_auth import AuthPolicy,ClientKey
+from damendaemon.client_admission import ClientAdmission,ClientRateLimitError,ClientOutputRateLimitError
+from damendaemon.shared_client_reservations import SharedClientReservations,SharedReservationUnavailable
+from damendaemon.shared_client_rates import SharedClientRates
+from damendaemon.server import BoundedHTTPServer,handler_for
 from tests.test_server import FakeRuntime
 from tests.test_distributed_drain import wait_for
 
@@ -38,7 +38,7 @@ class SharedReservationHttpTests(unittest.TestCase):
         self.addCleanup(cleanup)
 
     def serve(self,runtime=None):
-        with patch.dict('os.environ',{'DLLM_CLIENT_RESERVATION_DB':str(self.path)},clear=True):
+        with patch.dict('os.environ',{'DAMENDAEMON_CLIENT_RESERVATION_DB':str(self.path)},clear=True):
             handler=handler_for(runtime or FakeRuntime(),self.auth)
         server=BoundedHTTPServer(('127.0.0.1',0),handler)
         thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start();self.servers.append((server,thread))
@@ -140,7 +140,7 @@ class SharedReservationHttpTests(unittest.TestCase):
         self.assertTrue(admission.pending_releases);admission.retry_releases()
 
     def test_close_refuses_live_leases_and_retries_ended_failed_release(self):
-        with patch.dict('os.environ',{},clear=True),patch('dllm.shared_client_reservations.fcntl',None):
+        with patch.dict('os.environ',{},clear=True),patch('damendaemon.shared_client_reservations.fcntl',None):
             local=ClientAdmission(self.auth)
             with self.assertRaisesRegex(ValueError,'POSIX'):SharedClientReservations(self.path,self.auth.clients)
         self.assertIsNone(local.reservation_store);self.assertFalse(self.path.exists());local.close()
@@ -160,7 +160,7 @@ class SharedReservationHttpTests(unittest.TestCase):
 
     def test_server_bind_failure_releases_new_owner_and_close_preserves_active_claim(self):
         a=self.serve()
-        with patch.dict('os.environ',{'DLLM_CLIENT_RESERVATION_DB':str(self.path)},clear=True):handler=handler_for(FakeRuntime(),self.auth)
+        with patch.dict('os.environ',{'DAMENDAEMON_CLIENT_RESERVATION_DB':str(self.path)},clear=True):handler=handler_for(FakeRuntime(),self.auth)
         with self.assertRaises(OSError):BoundedHTTPServer(('127.0.0.1',a.server_port),handler)
         self.assertTrue(handler.client_admission.reservation_store.closed)
         admission=a.RequestHandlerClass.client_admission

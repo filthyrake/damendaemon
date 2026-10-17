@@ -5,10 +5,10 @@ import json
 import statistics
 import torch
 
-from dllm.cuda_warmup import warmup_stream
-from dllm.qwen2 import ModelWeights
-from dllm.quantization import dequantize
-from dllm.runtime import require_gpu
+from damendaemon.cuda_warmup import warmup_stream
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.quantization import dequantize
+from damendaemon.runtime import require_gpu
 from scripts.experiments.hip_q8_small_batch import candidate, ordinary
 
 

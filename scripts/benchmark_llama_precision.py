@@ -11,8 +11,8 @@ import time
 from urllib.request import Request,urlopen
 
 import torch
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer,handler_for
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer,handler_for
 
 
 PROMPTS={
@@ -26,9 +26,9 @@ def main():
     parser=argparse.ArgumentParser();parser.add_argument('model');args=parser.parse_args()
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
-    torch.set_num_threads(4);os.environ['DLLM_DEVICE']='cuda';reports=[]
+    torch.set_num_threads(4);os.environ['DAMENDAEMON_DEVICE']='cuda';reports=[]
     for precision,width in (('mixed',0),('float32',0),('float32',8)):
-        os.environ['DLLM_LLAMA_PRECISION']=precision;os.environ['DLLM_SPECULATIVE_TOKENS']=str(width)
+        os.environ['DAMENDAEMON_LLAMA_PRECISION']=precision;os.environ['DAMENDAEMON_SPECULATIVE_TOKENS']=str(width)
         runtime=BatchedRuntime({'a':args.model},context=512,batch_size=4)
         server=BoundedHTTPServer(('127.0.0.1',0),handler_for(runtime))
         thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
@@ -49,7 +49,7 @@ def main():
                         outputs.append(result['choices'][0]['message']['content'])
                 assert len(set(outputs))==1 and len(set(counts))==1
                 rows.append({'case':name,'prompt':prompt,'milliseconds':times,'median_ms':statistics.median(times),
-                    'completion_tokens':counts[0],'output':outputs[0],'timing':result['dllm_timing']})
+                    'completion_tokens':counts[0],'output':outputs[0],'timing':result['damendaemon_timing']})
             reports.append({'precision':precision,'speculative_width':width,'rows':rows})
         finally:
             server.shutdown();server.server_close();thread.join();runtime.close()

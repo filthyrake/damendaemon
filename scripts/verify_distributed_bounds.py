@@ -20,14 +20,14 @@ def main():
     p.add_argument('--worker',choices=('capacity','context','prefill_policy','q4_layout'))
     args=p.parse_args();output=Path(args.output)
     if args.worker:
-        from dllm.distributed import StagePair
+        from damendaemon.distributed import StagePair
         rank=int(os.environ['RANK'])
         capacity=1 if args.worker=='capacity' and rank==1 else 4
         context=256 if args.worker=='context' and rank==1 else 512
-        if args.worker=='prefill_policy':os.environ['DLLM_PARTITION_PACKED_PREFILL']=str(1-rank)
+        if args.worker=='prefill_policy':os.environ['DAMENDAEMON_PARTITION_PACKED_PREFILL']=str(1-rank)
         if args.worker=='q4_layout':
-            os.environ['DLLM_Q4_STAGE_ADJACENT']=str(1-rank)
-            os.environ['DLLM_PARTITION_PACKED_PREFILL']='0'  # Isolate layout disagreement.
+            os.environ['DAMENDAEMON_Q4_STAGE_ADJACENT']=str(1-rank)
+            os.environ['DAMENDAEMON_PARTITION_PACKED_PREFILL']='0'  # Isolate layout disagreement.
         quantization='q4_0' if args.worker=='q4_layout' else 'q8_0'
         try:
             pair=StagePair(args.model,context,quantization,lambda model:[],
@@ -42,7 +42,7 @@ def main():
         raise AssertionError('mismatched session was accepted')
     from distributed_job import run_job
     report=dict(passed=False,scope='Real GPU startup rejection and cleanup, not performance evidence',
-                source_sha256=hashlib.sha256(Path('dllm/distributed.py').read_bytes()).hexdigest(),checks=[])
+                source_sha256=hashlib.sha256(Path('damendaemon/distributed.py').read_bytes()).hexdigest(),checks=[])
     try:
         for mismatch in ('capacity','context','prefill_policy','q4_layout'):
             command=[sys.executable,'-m','torch.distributed.run','--standalone','--nproc-per-node','2',

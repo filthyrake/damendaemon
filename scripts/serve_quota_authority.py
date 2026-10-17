@@ -3,9 +3,9 @@ import argparse
 import json
 import signal
 import threading
-from dllm.remote_quota_config import authority_policy,authority_listener,frontend_client,owner_credential,recovery_request
-from dllm.remote_quota_transport import RemoteQuotaServer
-from dllm.remote_reservation_ledger import RemoteReservationLedger
+from damendaemon.remote_quota_config import authority_policy,authority_listener,frontend_client,owner_credential,recovery_request
+from damendaemon.remote_quota_transport import RemoteQuotaServer
+from damendaemon.remote_reservation_ledger import RemoteReservationLedger
 
 
 def parser_for_command():

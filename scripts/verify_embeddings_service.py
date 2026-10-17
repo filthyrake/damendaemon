@@ -32,16 +32,16 @@ def main():
     tokenizer.no_padding()
     tokenizer.no_truncation()
     ids=[tokenizer.encode(text,add_special_tokens=True).ids for text in inputs]
-    with tempfile.TemporaryDirectory(prefix='dllm-embedding-api-') as directory:
+    with tempfile.TemporaryDirectory(prefix='damendaemon-embedding-api-') as directory:
         logpath=Path(directory)/'server.log'
         with logpath.open('w') as log:
-            process=subprocess.Popen([sys.executable,'-m','dllm','serve','--port','0','--device',args.device,
+            process=subprocess.Popen([sys.executable,'-m','damendaemon','serve','--port','0','--device',args.device,
                 '--context','512','--gpu-models','1','--host-models','2','--model','chat='+decoder],stdout=log,stderr=log,
-                env={**os.environ,'DLLM_QUANTIZATION':args.decoder_quantization})
+                env={**os.environ,'DAMENDAEMON_QUANTIZATION':args.decoder_quantization})
             try:
                 deadline=time.monotonic()+120
                 while time.monotonic()<deadline and process.poll() is None:
-                    ready=[s for s in logpath.read_text().splitlines() if s.startswith('dllm listening on ')]
+                    ready=[s for s in logpath.read_text().splitlines() if s.startswith('damendaemon listening on ')]
                     if ready:base=ready[-1].split()[-1];break
                     time.sleep(.1)
                 else:raise RuntimeError(logpath.read_text())
@@ -65,10 +65,10 @@ def main():
                 chat=post('/v1/chat/completions',{'model':'chat','messages':[{'role':'user','content':'What is 2 + 2?'}],'max_tokens':8})
                 assert chat['choices'][0]['message']['content']
                 restored=embed()
-                assert restored['dllm_timing']['source_tier']=='host' and restored['data']==first['data']
+                assert restored['damendaemon_timing']['source_tier']=='host' and restored['data']==first['data']
                 chat_again=post('/v1/chat/completions',{'model':'chat','messages':[{'role':'user','content':'What is 2 + 2?'}],'max_tokens':8})
-                assert chat_again['choices']==chat['choices'] and chat_again['dllm_timing']['source_tier']=='host'
-                assert chat_again['dllm_timing']['weight_quantization']==args.decoder_quantization
+                assert chat_again['choices']==chat['choices'] and chat_again['damendaemon_timing']['source_tier']=='host'
+                assert chat_again['damendaemon_timing']['weight_quantization']==args.decoder_quantization
                 with urlopen(base+'/v1/models/status',timeout=180) as response:status=json.load(response)
                 assert {m['id']:m['quantization'] for m in status['models']}=={'chat':args.decoder_quantization,'encoder':'none'}
                 try:

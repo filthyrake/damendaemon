@@ -2,7 +2,7 @@
 import torch
 import triton as tr
 import triton.language as tl
-from dllm.kernels import _merge
+from damendaemon.kernels import _merge
 
 
 @tr.jit

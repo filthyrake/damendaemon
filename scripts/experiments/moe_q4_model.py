@@ -7,12 +7,12 @@ from scripts.experiments.moe_q4 import routed_linear
 
 
 def install_validation_dispatch():
-    import dllm.qwen2 as qwen2
-    from dllm.moe import OlmoeExecutor
-    from dllm import moe_kernels
-    from dllm.config import decoder_config
-    from dllm.moe_prefill import qualified_scope
-    from dllm.quantization import mode, quantize_q4
+    import damendaemon.qwen2 as qwen2
+    from damendaemon.moe import OlmoeExecutor
+    from damendaemon import moe_kernels
+    from damendaemon.config import decoder_config
+    from damendaemon.moe_prefill import qualified_scope
+    from damendaemon.quantization import mode, quantize_q4
     import reference_model
     if torch.cuda.get_device_name() != 'NVIDIA A2':
         raise ValueError('Q4 MoE model experiment is limited to A2')
@@ -65,7 +65,7 @@ def install_validation_dispatch():
     def expert_linear(self, x, weight, expert, outputs):
         if weight.dtype != torch.uint8:
             return original_expert(self,x,weight,expert,outputs)
-        from dllm.quantized_kernels_q4 import linear
+        from damendaemon.quantized_kernels_q4 import linear
         matrix = weight.view(self.c['num_experts'],outputs,-1)[expert]
         scales = self._expert_scales(weight).view(self.c['num_experts'],outputs,-1)[expert]
         return linear(x,matrix,scales)
@@ -81,7 +81,7 @@ def install_validation_dispatch():
             return original_reference(path,reference_quantization=reference_quantization,**kwargs)
         check_scope(path)
         # Independently construct the documented mixed storage policy using
-        # upstream GGUF conversion, never dllm's quantizer/dequantizer.
+        # upstream GGUF conversion, never damendaemon's quantizer/dequantizer.
         from gguf.quants import quantize, dequantize
         from gguf.constants import GGMLQuantizationType
         model = original_reference(path,reference_quantization='none',**kwargs)

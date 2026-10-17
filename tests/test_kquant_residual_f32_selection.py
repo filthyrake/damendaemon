@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.native_kquant_residual_f32 import qualified_scope, select
+from damendaemon.native_kquant_residual_f32 import qualified_scope, select
 
 
 class Float32ResidualSelectionTests(unittest.TestCase):
@@ -29,17 +29,17 @@ class Float32ResidualSelectionTests(unittest.TestCase):
 
     def test_opt_in_is_per_executor_and_preserves_fallback(self):
         args = (self.config, self.layouts, 'cuda', torch.float32, 'float32', 2048)
-        with patch.dict(os.environ, {}, clear=True), patch('dllm.native_kquant_residual_f32.library') as load:
+        with patch.dict(os.environ, {}, clear=True), patch('damendaemon.native_kquant_residual_f32.library') as load:
             self.assertIsNone(select(*args))
             load.assert_not_called()
-        with patch.dict(os.environ, {'DLLM_KQUANT_RESIDUAL_F32_LIBRARY': '/first.so'}), \
-                patch('dllm.native_kquant_residual_f32.library') as load:
+        with patch.dict(os.environ, {'DAMENDAEMON_KQUANT_RESIDUAL_F32_LIBRARY': '/first.so'}), \
+                patch('damendaemon.native_kquant_residual_f32.library') as load:
             decode = select(*args)
             load.assert_called_once_with('/first.so')
         weight = torch.zeros(1, dtype=torch.uint8)
         result = torch.ones(1, 16)
-        with patch.dict(os.environ, {'DLLM_KQUANT_RESIDUAL_F32_LIBRARY': '/second.so'}), \
-                patch('dllm.native_kquant_residual_f32.linear', return_value=result) as multiply:
+        with patch.dict(os.environ, {'DAMENDAEMON_KQUANT_RESIDUAL_F32_LIBRARY': '/second.so'}), \
+                patch('damendaemon.native_kquant_residual_f32.linear', return_value=result) as multiply:
             for rows in (1, 2, 4):
                 for width in (2048, 8192):
                     self.assertIs(decode(torch.zeros(rows, width), weight,

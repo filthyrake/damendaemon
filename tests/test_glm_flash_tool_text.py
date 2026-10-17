@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
 
-from dllm.glm_flash_tool_text import render_tool_chat,FlashToolText
+from damendaemon.glm_flash_tool_text import render_tool_chat,FlashToolText
 from tests.test_glm_flash_generation import text_fixture
 
 FIXTURE=json.loads((Path(__file__).parent/'fixtures/glm53_flash_tool_prompt_contract.json').read_text())

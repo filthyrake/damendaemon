@@ -5,10 +5,10 @@ import json
 from pathlib import Path
 import torch
 import triton.testing
-from dllm.awq import Matrix
-from dllm.awq_model import AwqWeights
-from dllm.awq_kernels import linear
-from dllm.runtime import require_gpu
+from damendaemon.awq import Matrix
+from damendaemon.awq_model import AwqWeights
+from damendaemon.awq_kernels import linear
+from damendaemon.runtime import require_gpu
 from experiments import awq_splitk
 
 

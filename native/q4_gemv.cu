@@ -61,7 +61,7 @@ __global__ void q4_gemv(const half* __restrict__ x,
     }
 }
 
-extern "C" int dllm_q4_gemv(const void* x, const void* weights, const void* scales,
+extern "C" int damendaemon_q4_gemv(const void* x, const void* weights, const void* scales,
                            const void* bias, void* output, int rows, int n, int k,
                            void* stream_pointer) {
     if (rows < 1 || rows > 4 || n <= 0 || k <= 0 || k % 32)
@@ -81,4 +81,4 @@ extern "C" int dllm_q4_gemv(const void* x, const void* weights, const void* scal
     return static_cast<int>(cudaGetLastError());
 }
 
-extern "C" int dllm_q4_abi_version() { return 1; }
+extern "C" int damendaemon_q4_abi_version() { return 1; }

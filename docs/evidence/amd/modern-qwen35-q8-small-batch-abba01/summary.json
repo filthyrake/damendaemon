@@ -4,11 +4,11 @@
   "phases": [
     {
       "phase": "A1",
-      "engine": "dllm",
+      "engine": "damendaemon",
       "command": [
         "/home/damen/strixenv/bin/python",
         "-m",
-        "dllm",
+        "damendaemon",
         "serve",
         "--port",
         "49899",
@@ -22,18 +22,18 @@
         "a=/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17"
       ],
       "passed": true,
-      "readiness_semantics": "HTTP ready; dllm loads on first request, llama.cpp preloads",
+      "readiness_semantics": "HTTP ready; damendaemon loads on first request, llama.cpp preloads",
       "process_ready_seconds": 0.8070232197642326,
       "phase_seconds": 240.38021970260888
     },
     {
       "phase": "B1",
-      "engine": "dllm",
+      "engine": "damendaemon",
       "command": [
         "/home/damen/strixenv/bin/python",
         "scripts/experiments/hip_q8_small_batch.py",
         "--module",
-        "dllm",
+        "damendaemon",
         "serve",
         "--port",
         "36215",
@@ -47,18 +47,18 @@
         "a=/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17"
       ],
       "passed": true,
-      "readiness_semantics": "HTTP ready; dllm loads on first request, llama.cpp preloads",
+      "readiness_semantics": "HTTP ready; damendaemon loads on first request, llama.cpp preloads",
       "process_ready_seconds": 0.8052974520251155,
       "phase_seconds": 163.3139988500625
     },
     {
       "phase": "B2",
-      "engine": "dllm",
+      "engine": "damendaemon",
       "command": [
         "/home/damen/strixenv/bin/python",
         "scripts/experiments/hip_q8_small_batch.py",
         "--module",
-        "dllm",
+        "damendaemon",
         "serve",
         "--port",
         "54435",
@@ -72,17 +72,17 @@
         "a=/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17"
       ],
       "passed": true,
-      "readiness_semantics": "HTTP ready; dllm loads on first request, llama.cpp preloads",
+      "readiness_semantics": "HTTP ready; damendaemon loads on first request, llama.cpp preloads",
       "process_ready_seconds": 0.8051553871482611,
       "phase_seconds": 159.2974413735792
     },
     {
       "phase": "A2",
-      "engine": "dllm",
+      "engine": "damendaemon",
       "command": [
         "/home/damen/strixenv/bin/python",
         "-m",
-        "dllm",
+        "damendaemon",
         "serve",
         "--port",
         "58167",
@@ -96,13 +96,13 @@
         "a=/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17"
       ],
       "passed": true,
-      "readiness_semantics": "HTTP ready; dllm loads on first request, llama.cpp preloads",
+      "readiness_semantics": "HTTP ready; damendaemon loads on first request, llama.cpp preloads",
       "process_ready_seconds": 0.8055030032992363,
       "phase_seconds": 234.9424681616947
     }
   ],
   "limitations": [
-    "within-dllm isolated Q8 launch policy; identical arithmetic/storage policy",
+    "within-damendaemon isolated Q8 launch policy; identical arithmetic/storage policy",
     "client-visible decode proxy; internal decode and peak memory telemetry outstanding"
   ],
   "gguf_sha256": "081df5a36f002c4367a4677c965a786fba2bf018b6839abcf185d4d39f55dcaf",

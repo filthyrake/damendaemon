@@ -4,10 +4,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.deepseek_layer_stage import DeepSeekLayerStage
-from dllm.deepseek_reference_loader import load_reference_model,load_reference_stage
-from dllm.deepseek_checkpoint import tensor_specs
-from dllm.safetensor_header import ITEM_BYTES
+from damendaemon.deepseek_layer_stage import DeepSeekLayerStage
+from damendaemon.deepseek_reference_loader import load_reference_model,load_reference_stage
+from damendaemon.deepseek_checkpoint import tensor_specs
+from damendaemon.safetensor_header import ITEM_BYTES
 from tests.test_deepseek_reference_loader import fixture
 from tests.test_deepseek_checkpoint import config as geometry
 
@@ -46,7 +46,7 @@ class DeepSeekLayerStageTests(unittest.TestCase):
                 torch.testing.assert_close(hidden,expected,rtol=4e-5,atol=4e-6)
 
     def test_selected_payloads_exact_weight_budget_and_unowned_header_audit(self):
-        import dllm.deepseek_reference_loader as loader
+        import damendaemon.deepseek_reference_loader as loader
         specs=tensor_specs(self.config);original=loader._payload
         for start,end in ((0,1),(1,2),(2,3)):
             names={n for n in specs if n.startswith(tuple(f'layers.{i}.' for i in range(start,end)))}
@@ -86,7 +86,7 @@ class DeepSeekLayerStageTests(unittest.TestCase):
             with self.assertRaises(ValueError):stage.decode(ids,state,position=position)
         self.assertEqual(state.position,3);self.assertFalse(state.poisoned)
         with self.assertRaises(ValueError):load_reference_stage(self.path,0,True)
-        from dllm.deepseek_generation import ReferenceGenerator
+        from damendaemon.deepseek_generation import ReferenceGenerator
         with self.assertRaises(ValueError):ReferenceGenerator(stage,None)
 
     def test_hash_routing_on_later_stage_requires_original_tokens_and_preserves_full_streams(self):

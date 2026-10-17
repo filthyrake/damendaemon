@@ -5,19 +5,19 @@
   "scope": "Synthetic one-row native Q4 matrices. Identical weights/activations; exact production-output gate plus independent FP16 coefficient oracle. Warm CUDA graph ABBA timings include activation quantization and GEMV. No model or HTTP claim.",
   "libraries": {
     "baseline": {
-      "path": "results/libdllm-q4-launch-control.so",
+      "path": "results/libdamendaemon-q4-launch-control.so",
       "sha256": "b8e24a30746149ddd1d951e01fb559491fa395889633d4d22bc2afabbe9a5b4b"
     },
     "production": {
-      "path": "results/libdllm-q4-paired-production.so",
+      "path": "results/libdamendaemon-q4-paired-production.so",
       "sha256": "b17d2b3dbcdd5346612aa835f69839915319f5bfe0532a764358e566d5a6fc1e"
     }
   },
   "sources": {
     "native/q4_residual.cu": "822af944452caf7830981cedcd5c9609e6e47e1112ff171633cebd7af47dacc6",
     "scripts/experiments/q4_residual_launch.cu": "c657e74746763d3c575bef5e61991bbdaeff808f040550cd5b502fd0372f281d",
-    "dllm/native_q4_residual.py": "a5884d63849ad259cedf534d8b9e1aafd24d71dc1c101e4066f5974ebe579acb",
-    "/home/damen/dllm-dev/scripts/experiments/bench_q4_residual_launch.py": "39150a1112a0ec3f3a1952976b2fbb1174c8faa1ea1027610419a5528cb15244"
+    "damendaemon/native_q4_residual.py": "a5884d63849ad259cedf534d8b9e1aafd24d71dc1c101e4066f5974ebe579acb",
+    "/home/damen/damendaemon-dev/scripts/experiments/bench_q4_residual_launch.py": "39150a1112a0ec3f3a1952976b2fbb1174c8faa1ea1027610419a5528cb15244"
   },
   "checks": [
     {

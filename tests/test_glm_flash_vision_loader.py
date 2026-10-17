@@ -5,8 +5,8 @@ import unittest
 from unittest.mock import patch
 import torch
 from safetensors.torch import save_file
-from dllm.glm_flash_vision_loader import load_reference_vision
-from dllm.glm_flash_vision import FlashVision,ROOT
+from damendaemon.glm_flash_vision_loader import load_reference_vision
+from damendaemon.glm_flash_vision import FlashVision,ROOT
 from tests.test_glm_flash_vision import fixture
 
 
@@ -29,7 +29,7 @@ class FlashVisionLoaderTests(unittest.TestCase):
         old=torch.get_num_threads();torch.set_num_threads(1);self.addCleanup(torch.set_num_threads,old)
 
     def test_selected_values_only_and_owned_mixed_float_buffers(self):
-        from dllm import glm_flash_vision_loader as loader
+        from damendaemon import glm_flash_vision_loader as loader
         for split in (False,True,None):
             with tempfile.TemporaryDirectory() as temp:
                 path=Path(temp);c,values,_=snapshot(path,split);readers=[];payload=loader._payload;header=loader.read_header
@@ -48,7 +48,7 @@ class FlashVisionLoaderTests(unittest.TestCase):
     def test_bad_metadata_and_weight_budget_precede_payload(self):
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp);_,_,config=snapshot(path)
-            with patch('dllm.glm_flash_vision_loader._payload',side_effect=AssertionError('read payload')):
+            with patch('damendaemon.glm_flash_vision_loader._payload',side_effect=AssertionError('read payload')):
                 with self.assertRaisesRegex(ValueError,'budget'):load_reference_vision(path,max_weight_bytes=1)
                 with self.assertRaisesRegex(ValueError,'workspace'):load_reference_vision(path,max_workspace_bytes=1)
                 config['quantization_config']['modules_to_not_convert']=[];(path/'config.json').write_text(json.dumps(config))
@@ -60,7 +60,7 @@ class FlashVisionLoaderTests(unittest.TestCase):
                 with self.assertRaises(ValueError):load_reference_vision(path)
 
     def test_payload_failure_and_mutation_close_descriptors(self):
-        from dllm import glm_flash_vision_loader as loader
+        from damendaemon import glm_flash_vision_loader as loader
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp);readers=[];header=loader.read_header;payload=loader._payload
             def record(reader,**options):readers.append(reader);return header(reader,**options)

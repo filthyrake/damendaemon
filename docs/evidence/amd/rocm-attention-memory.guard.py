@@ -1,6 +1,6 @@
 import json, os, signal, subprocess, sys
 from pathlib import Path
-from dllm.rocm_policy import host_available
+from damendaemon.rocm_policy import host_available
 from scripts.experiments.host_memory_watchdog import HostMemoryWatchdog
 before=host_available()
 if before < 32*1024**3: raise SystemExit('insufficient initial headroom')

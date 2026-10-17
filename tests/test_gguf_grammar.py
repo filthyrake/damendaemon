@@ -4,9 +4,9 @@ import json
 from types import SimpleNamespace
 import unittest
 
-from dllm.gguf_model import tokenizer
-from dllm.gguf_sentencepiece import restore_tokenizer
-from dllm.structured import Constraint
+from damendaemon.gguf_model import tokenizer
+from damendaemon.gguf_sentencepiece import restore_tokenizer
+from damendaemon.structured import Constraint
 from tests.reference.generate_gguf_bpe_literals import metadata as bpe_metadata
 from tests.test_gguf_sentencepiece import metadata as spm_metadata
 

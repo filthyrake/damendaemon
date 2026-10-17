@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
-from dllm.report_io import save_report
+from damendaemon.report_io import save_report
 
 
 class ReportIOTests(unittest.TestCase):
@@ -22,7 +22,7 @@ class ReportIOTests(unittest.TestCase):
 
     def test_unreadable_reports_never_replace_previous_evidence(self):
         from unittest.mock import patch
-        from dllm.report_io import load_report
+        from damendaemon.report_io import load_report
         invalid=(None,[],[{'passed':True}],True,1,'text',
                  {'metrics':{'1':0,1:1}}, {'metrics':{'null':0,None:1}},
                  {'text':'x'*256})
@@ -32,14 +32,14 @@ class ReportIOTests(unittest.TestCase):
                 with self.subTest(report=report):
                     save_report(path,{'passed':False,'phase':'previous'})
                     previous=path.read_bytes()
-                    with patch('dllm.report_io.MAX_REPORT_BYTES',128):
+                    with patch('damendaemon.report_io.MAX_REPORT_BYTES',128):
                         with self.assertRaises(ValueError):save_report(path,report)
                     self.assertEqual(path.read_bytes(),previous)
                     self.assertEqual(load_report(path),{'passed':False,'phase':'previous'})
                     self.assertEqual(list(Path(directory).iterdir()),[path])
 
     def test_unambiguous_integer_keys_and_nested_arrays_remain_readable(self):
-        from dllm.report_io import load_report
+        from damendaemon.report_io import load_report
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'report.json'
             save_report(path,{'cases':{1:[None,True,{'value':3}]}})
@@ -64,7 +64,7 @@ class ReportIOTests(unittest.TestCase):
 
 class ReportReadTests(unittest.TestCase):
     def test_duplicate_fields_and_invalid_roots_are_rejected(self):
-        from dllm.report_io import load_report
+        from damendaemon.report_io import load_report
         values=('null','[]','{"passed":false,"passed":true}',
                 '{"case":{"tokens":[1],"tokens":[2]}}','['*10000+']'*10000)
         with tempfile.TemporaryDirectory() as directory:
@@ -77,7 +77,7 @@ class ReportReadTests(unittest.TestCase):
     def test_reader_bounds_actual_bytes_and_closes_on_failure(self):
         import io
         from unittest.mock import patch
-        from dllm.report_io import load_report
+        from damendaemon.report_io import load_report
         class Reader(io.BytesIO):
             def read(self,size=-1):
                 self.requested=size
@@ -93,7 +93,7 @@ class ReportReadTests(unittest.TestCase):
 
     def test_failed_numerical_diagnostics_remain_schema_owned(self):
         import math
-        from dllm.report_io import load_report
+        from damendaemon.report_io import load_report
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'report.json'
             path.write_text('{"passed":false,"error":NaN,"tokens":[1,2]}')

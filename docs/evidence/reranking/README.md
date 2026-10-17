@@ -78,7 +78,7 @@ each workload; warm models, loopback HTTP, no model-loading time. Latency is the
 median individual request time; throughput is the median aggregate pairs/s per
 round. These limited samples are not a general retrieval benchmark.
 
-| Pairs/request | Clients | dllm ms | vLLM ms | dllm pairs/s | vLLM pairs/s |
+| Pairs/request | Clients | damendaemon ms | vLLM ms | damendaemon pairs/s | vLLM pairs/s |
 |---|---:|---:|---:|---:|---:|
 | 1 | 1 | 5.81 | 18.96 | 162 | 52 |
 | 1 | 4 | 12.29 | 27.21 | 246 | 131 |
@@ -90,7 +90,7 @@ round. These limited samples are not a general retrieval benchmark.
 | 64 | 4 | 82.64 | 231.28 | 2319 | 983 |
 
 All240 responses, including warmups, pass score agreement within3.34e-6 and
-identical token usage. dllm uses torch2.6+cu124; baseline vLLM0.30.0 uses
+identical token usage. damendaemon uses torch2.6+cu124; baseline vLLM0.30.0 uses
 torch2.13.0+cu130, Triton3.7.1 and Transformers5.18.0. Versions differ because
 these are independently installed supported engine stacks; this is an engine
 comparison, not an isolated kernel comparison. vLLM uses its pooling runner,

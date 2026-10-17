@@ -43,7 +43,7 @@ def response(request,**kwargs):
             wire+=('data: '+json.dumps({'choices':[],'usage':usage})+'\n\n')*(2 if case=='stream-usage-duplicate' else 1)
         if case!='no-done':wire+='data: [DONE]\n\n'
         return io.BytesIO(wire.encode())
-    payload={'choices':[{'text':text}],'dllm_timing':{},'usage':usage}
+    payload={'choices':[{'text':text}],'damendaemon_timing':{},'usage':usage}
     if case=='usage-missing':payload.pop('usage')
     return io.BytesIO(json.dumps(payload).encode())
 with tempfile.TemporaryDirectory() as tmp:

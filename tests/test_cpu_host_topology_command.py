@@ -9,7 +9,7 @@ from unittest.mock import Mock,patch
 from urllib.request import Request,urlopen
 from scripts import run_cpu_host_topology as cli
 from scripts.run_cpu_pipeline_reference import main as local_main
-from dllm.cpu_snapshot_identity import fingerprint
+from damendaemon.cpu_snapshot_identity import fingerprint
 from tests import test_cpu_host_command as fixtures
 
 

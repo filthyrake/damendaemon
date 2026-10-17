@@ -2,8 +2,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock,patch
 import torch
-from dllm.cuda_host_stage import CudaHostStageSlots
-from dllm.glm_flash_host_image_generation import HostFlashImageGenerator
+from damendaemon.cuda_host_stage import CudaHostStageSlots
+from damendaemon.glm_flash_host_image_generation import HostFlashImageGenerator
 
 
 class CudaHostImagePreparationTests(unittest.TestCase):

@@ -4,8 +4,8 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.native_kquant_residual import qualified_scope, select
-from dllm.quantization import Linear
+from damendaemon.native_kquant_residual import qualified_scope, select
+from damendaemon.quantization import Linear
 
 
 class ResidualSelectionTests(unittest.TestCase):
@@ -51,17 +51,17 @@ class ResidualSelectionTests(unittest.TestCase):
         self.assertFalse(qualified_scope(self.config, self.layouts, 'cuda', torch.float16, 'mixed', 2048))
 
     def test_opt_in_captures_library_and_falls_back_for_other_shapes(self):
-        with patch.dict(os.environ, {}, clear=True), patch('dllm.native_kquant_residual.library') as load:
+        with patch.dict(os.environ, {}, clear=True), patch('damendaemon.native_kquant_residual.library') as load:
             self.assertIsNone(select(self.config, self.layouts, 'cuda', torch.float16, 'mixed', 512))
             load.assert_not_called()
-        with patch.dict(os.environ, {'DLLM_KQUANT_RESIDUAL_LIBRARY': '/first.so'}), \
-                patch('dllm.native_kquant_residual.library') as load:
+        with patch.dict(os.environ, {'DAMENDAEMON_KQUANT_RESIDUAL_LIBRARY': '/first.so'}), \
+                patch('damendaemon.native_kquant_residual.library') as load:
             decode = select(self.config, self.layouts, 'cuda', torch.float16, 'mixed', 512)
             load.assert_called_once_with('/first.so')
         weight = torch.zeros(1, dtype=torch.uint8)
         result = torch.ones(1, 16)
-        with patch.dict(os.environ, {'DLLM_KQUANT_RESIDUAL_LIBRARY': '/second.so'}), \
-                patch('dllm.native_kquant_residual.linear', return_value=result) as multiply:
+        with patch.dict(os.environ, {'DAMENDAEMON_KQUANT_RESIDUAL_LIBRARY': '/second.so'}), \
+                patch('damendaemon.native_kquant_residual.linear', return_value=result) as multiply:
             self.assertIsNone(decode(torch.zeros(2, 2048), weight, self.layouts['qkv']))
             self.assertIsNone(decode(torch.zeros(1, 8192), weight, (8192, self.layouts['qkv'][1])))
             self.assertIs(decode(torch.zeros(1, 2048), weight, self.layouts['qkv']), result)

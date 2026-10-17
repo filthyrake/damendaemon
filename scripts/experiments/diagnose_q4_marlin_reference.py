@@ -5,9 +5,9 @@ isolated library under results/. This diagnostic does not change runtime policy.
 """
 import json
 import torch
-from dllm.gguf_model import GgufWeights
-from dllm.quantization import dequantize_q4
-from dllm.quantized_kernels_q4 import linear
+from damendaemon.gguf_model import GgufWeights
+from damendaemon.quantization import dequantize_q4
+from damendaemon.quantized_kernels_q4 import linear
 from scripts.experiments.q4_marlin import Library
 
 torch.set_num_threads(4);torch.manual_seed(619)
@@ -18,7 +18,7 @@ n,k=w.shape[0],w.shape[1]*2
 oracle=dequantize_q4(w,s,torch.float16)
 bias=torch.randn(n,device='cuda',dtype=torch.float16)
 x=torch.randn(2,k,device='cuda',dtype=torch.float16)
-lib=Library('results/libdllm-q4-marlin-experiment.so');prepared=lib.prepare(w,s)
+lib=Library('results/libdamendaemon-q4-marlin-experiment.so');prepared=lib.prepare(w,s)
 rows=[]
 for exponent in (-14,-8,0,10):
  value=(x.float()*2.**exponent).half()

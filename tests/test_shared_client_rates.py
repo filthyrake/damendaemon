@@ -13,10 +13,10 @@ import unittest
 from unittest.mock import patch
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError
-from dllm.http_auth import AuthPolicy,ClientKey
-from dllm.shared_client_rates import SharedClientRates,SharedRateRejected,SharedRateUnavailable
-from dllm.client_admission import ClientAdmission,ClientRateLimitError,ClientOutputRateLimitError
-from dllm.server import handler_for
+from damendaemon.http_auth import AuthPolicy,ClientKey
+from damendaemon.shared_client_rates import SharedClientRates,SharedRateRejected,SharedRateUnavailable
+from damendaemon.client_admission import ClientAdmission,ClientRateLimitError,ClientOutputRateLimitError
+from damendaemon.server import handler_for
 from tests.test_server import FakeRuntime
 
 
@@ -64,8 +64,8 @@ class SharedClientRateTests(unittest.TestCase):
         client=ClientKey('a',secrets.token_urlsafe(32),128,max_requests_per_minute=17,max_output_tokens_per_minute=101)
         self.store([client])
         code='''import json,secrets,sys
-from dllm.http_auth import ClientKey
-from dllm.shared_client_rates import SharedClientRates,SharedRateRejected
+from damendaemon.http_auth import ClientKey
+from damendaemon.shared_client_rates import SharedClientRates,SharedRateRejected
 client=ClientKey('a',secrets.token_urlsafe(32),128,max_requests_per_minute=17,max_output_tokens_per_minute=101)
 store=SharedClientRates(sys.argv[1],[client],clock=lambda:1.5)
 counts=[0,0]
@@ -121,7 +121,7 @@ print(json.dumps(counts))
         headers=['Bearer '+client.key];calls=[]
         class Runtime(FakeRuntime):
             def generate(self,*args,**kwargs):calls.append(True);yield from super().generate(*args,**kwargs)
-        with patch('dllm.client_admission.ClientAdmission',return_value=admission):handler=handler_for(Runtime(),auth)
+        with patch('damendaemon.client_admission.ClientAdmission',return_value=admission):handler=handler_for(Runtime(),auth)
         server=ThreadingHTTPServer(('127.0.0.1',0),handler);thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
         self.addCleanup(lambda:(server.shutdown(),server.server_close(),thread.join(3)))
         def request():
@@ -144,7 +144,7 @@ print(json.dumps(counts))
 
     def test_explicit_environment_opt_in_and_no_unlimited_accidental_store(self):
         auth=AuthPolicy(clients=(self.client,))
-        with patch.dict('os.environ',{'DLLM_CLIENT_RATE_DB':str(self.path)}):
+        with patch.dict('os.environ',{'DAMENDAEMON_CLIENT_RATE_DB':str(self.path)}):
             first=ClientAdmission(auth);second=ClientAdmission(auth)
             for _ in range(3):
                 with first.lease(['Bearer '+self.client.key]):pass

@@ -7,14 +7,14 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_flash_checkpoint_pipeline import load_reference_pipeline
-from dllm.glm_flash_checkpoint import tensor_specs
-from dllm.glm_flash_reference_loader import load_reference_model,load_reference_stage
-from dllm.safetensor_header import ITEM_BYTES
+from damendaemon.glm_flash_checkpoint_pipeline import load_reference_pipeline
+from damendaemon.glm_flash_checkpoint import tensor_specs
+from damendaemon.glm_flash_reference_loader import load_reference_model,load_reference_stage
+from damendaemon.safetensor_header import ITEM_BYTES
 from tests.test_glm_flash_generation import text_fixture
 from tests.test_glm_flash_reference_loader import fixture,floating_control
 from tests.test_glm_tools import TOOLS
-from dllm.glm_text import EOS
+from damendaemon.glm_text import EOS
 from scripts import run_glm_flash_reference as cli
 
 
@@ -29,7 +29,7 @@ class FlashCheckpointPipelineTests(unittest.TestCase):
         specs=tensor_specs(self.config)
         retained=sum(math.prod(spec.shape)*(1 if spec.storage=='fp8' else 4) for spec in specs.values())
         overlap=max(math.prod(spec.shape)*ITEM_BYTES[self.headers[name]['dtype']] for name,spec in specs.items())
-        with patch('dllm.glm_flash_reference_loader._payload',side_effect=AssertionError('payload')):
+        with patch('damendaemon.glm_flash_reference_loader._payload',side_effect=AssertionError('payload')):
             for cuts,budget in (([1,2],retained+overlap-1),([3],retained+overlap),([1,1],retained+overlap),([2,1],retained+overlap),([True],retained+overlap)):
                 with self.assertRaises(ValueError):load_reference_pipeline(self.path,cuts,max_weight_bytes=budget)
             with self.assertRaises(ValueError):load_reference_model(self.path,inspect_only=True)
@@ -43,7 +43,7 @@ class FlashCheckpointPipelineTests(unittest.TestCase):
         finally:state.close();other.close()
 
     def test_receipts_reject_replacement_after_stage_or_final_construction(self):
-        import dllm.glm_flash_checkpoint_pipeline as builder
+        import damendaemon.glm_flash_checkpoint_pipeline as builder
         for name,target in (('config.json','load_reference_stage'),('part-0.safetensors','load_reference_stage'),
                             ('model.safetensors.index.json','load_reference_stage'),('part-1.safetensors','FlashLayerPipeline')):
             original=getattr(builder,target);calls=[]
@@ -70,7 +70,7 @@ class FlashCheckpointPipelineTests(unittest.TestCase):
             self.assertEqual(results[1][0]['stage_layers'],[[0,1],[1,2],[2,3]])
 
     def test_bad_native_request_and_cut_fail_before_payload(self):
-        with patch('dllm.glm_flash_reference_loader._payload',side_effect=AssertionError('payload')),redirect_stderr(io.StringIO()):
+        with patch('damendaemon.glm_flash_reference_loader._payload',side_effect=AssertionError('payload')),redirect_stderr(io.StringIO()):
             for extra in (['--layer-splits','3'],['--layer-splits','2','2'],['--layer-splits','1','--context','1']):
                 with self.assertRaises(SystemExit) as error:cli.main([str(self.path),'--prompt','Hi',*extra])
                 self.assertEqual(error.exception.code,2)

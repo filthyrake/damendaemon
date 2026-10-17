@@ -50,7 +50,7 @@ This is 1.89x single-request and 1.84x four-request decode throughput on the
 same precision and hardware. It is not an upstream-engine comparison or
 whole-request latency claim. Reproduce with
 `scripts/experiments/bench_metal_indices.py --quantization q8_0` and matching
-`DLLM_QUANTIZATION=q8_0`, `DLLM_DEVICE=mps`, `DLLM_METAL_WEIGHT_DTYPE=float16`.
+`DAMENDAEMON_QUANTIZATION=q8_0`, `DAMENDAEMON_DEVICE=mps`, `DAMENDAEMON_METAL_WEIGHT_DTYPE=float16`.
 
 ## Optimized HTTP observations
 
@@ -78,7 +78,7 @@ runtime comparison, not arithmetic equivalence. No upstream repository changed.
 | 2 | 211.19 | 21.71 | 302.81 |
 | 4 | 258.32 | 34.34 | 486.63 |
 
-dllm is close in four-request throughput on this workload, but still trails
+damendaemon is close in four-request throughput on this workload, but still trails
 in single/two-request throughput and first text latency. This does not establish
 overall parity. Raw reports and launch/context metadata are `llama-q8-*.json`.
 

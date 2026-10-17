@@ -1,17 +1,17 @@
 {
-  "engine": "dllm",
-  "model": "/home/damen/dllm-dev/models/minilm-reranker",
+  "engine": "damendaemon",
+  "model": "/home/damen/damendaemon-dev/models/minilm-reranker",
   "command": [
-    "/home/damen/dllm-dev/venv/bin/python",
+    "/home/damen/damendaemon-dev/venv/bin/python",
     "-m",
-    "dllm",
+    "damendaemon",
     "serve",
     "--port",
     "38841",
     "--context",
     "512",
     "--model",
-    "rank=/home/damen/dllm-dev/models/minilm-reranker"
+    "rank=/home/damen/damendaemon-dev/models/minilm-reranker"
   ],
   "rows": [
     {

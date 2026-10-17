@@ -1,6 +1,6 @@
 # GLM CPU layer stages
 
-`dllm.glm_reference_loader.load_reference_stage(path, start, end, ...)` loads an
+`damendaemon.glm_reference_loader.load_reference_stage(path, start, end, ...)` loads an
 explicit half-open GLM layer range from the same admitted local checkpoint as
 `load_reference_model`. It audits the full checkpoint header inventory but reads
 only assigned layer payloads, plus embeddings for the first stage or norm/head

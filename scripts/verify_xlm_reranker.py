@@ -9,14 +9,14 @@ import time
 
 import torch
 from transformers import AutoModelForSequenceClassification,AutoTokenizer
-from dllm.encoder import EncoderWeights,EncoderExecutor
-from dllm.device import device_name
-from dllm.runtime import require_gpu
+from damendaemon.encoder import EncoderWeights,EncoderExecutor
+from damendaemon.device import device_name
+from damendaemon.runtime import require_gpu
 
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--device',required=True,choices=('cuda','mps'));args=p.parse_args()
-    os.environ['DLLM_DEVICE']=args.device;require_gpu();torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_DEVICE']=args.device;require_gpu();torch.set_num_threads(4)
     if args.device=='cuda' and os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
     model=EncoderWeights(args.model,2048);executor=EncoderExecutor(model)

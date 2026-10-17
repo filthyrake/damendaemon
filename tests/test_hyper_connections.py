@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.hyper_connections import mixing_weights, reduce_head, reduce_streams, restore_streams
+from damendaemon.hyper_connections import mixing_weights, reduce_head, reduce_streams, restore_streams
 
 
 def scalar_weights(values, scale, bias, streams, iterations, epsilon):
@@ -97,7 +97,7 @@ class HyperConnectionTests(unittest.TestCase):
 
     def test_invalid_parameters_before_projection(self):
         hidden, projection, scale, bias = self.fixture()
-        with patch('dllm.hyper_connections.F.linear', side_effect=AssertionError('projection started')):
+        with patch('damendaemon.hyper_connections.F.linear', side_effect=AssertionError('projection started')):
             for options in ({'iterations':0}, {'iterations':True}, {'iterations':129},
                             {'norm_epsilon':float('nan')}, {'connection_epsilon':0},
                             {'norm_epsilon':float('inf')}):

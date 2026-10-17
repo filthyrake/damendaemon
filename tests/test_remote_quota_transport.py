@@ -7,8 +7,8 @@ import threading
 import time
 import unittest
 from unittest.mock import patch
-from dllm.host_tls import QUOTA_ALPN,client_context,server_context,certificate_pin,wrap_peer
-from dllm.remote_quota_transport import RemoteQuotaServer,RemoteQuotaClient,RemoteQuotaUnavailable,RemoteQuotaRejected,QuotaRequest,MAX_REQUEST,_json,_send,_receive
+from damendaemon.host_tls import QUOTA_ALPN,client_context,server_context,certificate_pin,wrap_peer
+from damendaemon.remote_quota_transport import RemoteQuotaServer,RemoteQuotaClient,RemoteQuotaUnavailable,RemoteQuotaRejected,QuotaRequest,MAX_REQUEST,_json,_send,_receive
 from tests import test_host_tls as tls,test_remote_reservation_ledger as ledger_fixture
 from tests.test_distributed_drain import wait_for
 
@@ -76,7 +76,7 @@ class RemoteQuotaTransportTests(unittest.TestCase):
         def delayed(*args):
             validate(*args)
             offset[0]=2.0
-        with patch('dllm.remote_quota_transport.time.monotonic',side_effect=lambda:monotonic()+offset[0]), \
+        with patch('damendaemon.remote_quota_transport.time.monotonic',side_effect=lambda:monotonic()+offset[0]), \
                 patch.object(client,'_result',side_effect=delayed):
             with self.assertRaises(RemoteQuotaUnavailable):client.call(request)
         self.assertEqual(self.ledger.status(self.owner,self.key)['claims'],1)

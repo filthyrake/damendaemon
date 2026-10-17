@@ -3,7 +3,7 @@ import os
 import subprocess
 import time
 
-from dllm.rocm_policy import host_available
+from damendaemon.rocm_policy import host_available
 
 
 class A30CapacityGuard:

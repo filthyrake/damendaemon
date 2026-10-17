@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import patch
 
 from PIL import Image
-from dllm.vision_messages import decode_image_messages,validate_image_messages
+from damendaemon.vision_messages import decode_image_messages,validate_image_messages
 
 
 def image_part(color='red',format_name='PNG',size=(8,6)):

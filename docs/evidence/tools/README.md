@@ -5,7 +5,7 @@ Chat completions accept function `tools` and auto, none, required or named
 Initial format scope is the published JSON `<tool_call>` templates in
 Qwen2.5-0.5B-Instruct and Qwen3-0.6B. A qualified model/template is required;
 other architecture formats do not silently inherit a parser. No tool function
-is imported or executed by dllm.
+is imported or executed by damendaemon.
 
 The independent incremental parser recognizes complete declared calls with JSON
 object arguments. It preserves ordinary text, reasoning, malformed/undeclared
@@ -34,7 +34,7 @@ Additional formats and automatic strict selection remain in #32.
 ## Real GPU proof
 
 Both A2 CUDA and M4 Metal pass `scripts/verify_tools_service.py`, with Qwen3
-thinking disabled and enabled. CUDA uses `DLLM_QWEN3_PRECISION=float32`; Metal
+thinking disabled and enabled. CUDA uses `DAMENDAEMON_QWEN3_PRECISION=float32`; Metal
 uses its native FP32 path. The script checks:
 
 - Exact tokenizer-reference IDs for tool definitions and result history.

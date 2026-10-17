@@ -1,5 +1,5 @@
 import unittest
-from dllm.pages import PagePool, PageCapacityError
+from damendaemon.pages import PagePool, PageCapacityError
 
 
 class PagePoolTests(unittest.TestCase):

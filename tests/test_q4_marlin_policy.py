@@ -2,7 +2,7 @@ import unittest
 
 import torch
 
-from dllm.q4_marlin_policy import plan
+from damendaemon.q4_marlin_policy import plan
 
 
 class Q4MarlinPolicyTests(unittest.TestCase):

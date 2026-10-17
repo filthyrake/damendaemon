@@ -13,9 +13,9 @@ import numpy as np
 import torch
 from gguf import GGMLQuantizationType, GGML_QUANT_SIZES
 from gguf.quants import dequantize
-from dllm.runtime import require_gpu
-from dllm.device import device_name
-from dllm.kquant_kernels import expand, embedding, linear
+from damendaemon.runtime import require_gpu
+from damendaemon.device import device_name
+from damendaemon.kquant_kernels import expand, embedding, linear
 
 
 def fixture(rng,kind,rows,width):
@@ -84,7 +84,7 @@ def main():
                     del graph,output
                 record['bitwise_dequantization']=True;record['graph_lookup_changed_ids']=True;reports.append(record)
     print(json.dumps({'passed':True,'device':device_name(),'torch':torch.__version__,'triton':triton.__version__,
-        'native_library':os.environ.get('DLLM_KQUANT_CUDA_LIBRARY'),
+        'native_library':os.environ.get('DAMENDAEMON_KQUANT_CUDA_LIBRARY'),
         'gguf':importlib.metadata.version('gguf'),'cases':reports},indent=2))
 
 

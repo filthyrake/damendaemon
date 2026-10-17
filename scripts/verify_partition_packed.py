@@ -18,9 +18,9 @@ def main():
     p.add_argument('--quantization',choices=('none','q8_0','q4_0'),required=True)
     p.add_argument('--no-graph',action='store_true')
     p.add_argument('--sequential',action='store_true',help='control: disable packing on the identical trace');args=p.parse_args()
-    os.environ.update(DLLM_EXPERIMENTAL_LAYER_SPLIT='12',DLLM_PARTITION_PACKED_PREFILL=str(int(not args.sequential)),
-                      DLLM_QUANTIZATION=args.quantization)
-    from dllm.layer_stage import LayerStage
+    os.environ.update(DAMENDAEMON_EXPERIMENTAL_LAYER_SPLIT='12',DAMENDAEMON_PARTITION_PACKED_PREFILL=str(int(not args.sequential)),
+                      DAMENDAEMON_QUANTIZATION=args.quantization)
+    from damendaemon.layer_stage import LayerStage
     original=LayerStage.run_prefill_packed;calls=[]
     def observed(stage,inputs,lengths,slots):
         result=original(stage,inputs,lengths,slots)
@@ -44,7 +44,7 @@ def main():
         report.update(packed_stage_calls=calls,sequential_control=args.sequential,
             trace_sha256=hashlib.sha256(Path(args.trace).read_bytes()).hexdigest(),scope='Real two-GPU packed prefill reference replay; not a performance comparison',
             sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-                     ('dllm/batch.py','dllm/layer_stage.py','dllm/partition.py','dllm/partition_policy.py','dllm/q4_stage.py','dllm/q4_stage_kernels.py','dllm/kernels.py','dllm/qwen2.py')})
+                     ('damendaemon/batch.py','damendaemon/layer_stage.py','damendaemon/partition.py','damendaemon/partition_policy.py','damendaemon/q4_stage.py','damendaemon/q4_stage_kernels.py','damendaemon/kernels.py','damendaemon/qwen2.py')})
         Path(args.output).write_text(json.dumps(report,indent=2)+'\n')
         print(json.dumps(dict(passed=report['passed'],checks=len(report['checks']),packed_stage_calls=len(calls),
             failures=[check for check in report['checks'] if not check['passed']])),flush=True)

@@ -6,7 +6,7 @@ import json
 import statistics
 import torch
 from torch.nn import functional as F
-from dllm.runtime import require_gpu
+from damendaemon.runtime import require_gpu
 from fp32_matmul_experiment import linear
 
 

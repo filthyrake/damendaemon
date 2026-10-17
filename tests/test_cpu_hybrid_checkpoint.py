@@ -6,9 +6,9 @@ import unittest
 from unittest.mock import patch
 import torch
 from safetensors.torch import save_file
-from dllm.cpu_hybrid_checkpoint import load_cpu_checkpoint
-from dllm.cpu_pipeline_build import build_cpu_pipeline
-from dllm.quantization import quantize,quantize_q4
+from damendaemon.cpu_hybrid_checkpoint import load_cpu_checkpoint
+from damendaemon.cpu_pipeline_build import build_cpu_pipeline
+from damendaemon.quantization import quantize,quantize_q4
 from tests.test_cpu_hybrid_stage import model
 from tests.test_cpu_stage_plan import OPTIONS
 
@@ -76,7 +76,7 @@ class CpuCheckpointTests(unittest.TestCase):
                     for name,value in list(control.weights.items()):
                         if value.ndim==2 and name!='embed':
                             control.weights[name],control.scales[name]=(quantize_q4 if mode=='q4_0' else quantize)(value)
-                with patch('dllm.device.selected_accelerator',side_effect=AssertionError('device selection')):
+                with patch('damendaemon.device.selected_accelerator',side_effect=AssertionError('device selection')):
                     loaded=load_cpu_checkpoint(self.path,quantization=mode,max_context=16)
                     actual=build_cpu_pipeline(loaded,[2**22]*2,**OPTIONS)
                 expected=build_cpu_pipeline(control,[2**22]*2,**OPTIONS)
@@ -111,14 +111,14 @@ class CpuCheckpointTests(unittest.TestCase):
         snapshot(self.path)
         for options in (dict(max_weight_bytes=1),dict(max_workspace_bytes=1),dict(max_context=65),
                         dict(max_context=True),dict(quantization='fp8')):
-            with patch('dllm.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')):
+            with patch('damendaemon.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')):
                 with self.assertRaises(ValueError):load_cpu_checkpoint(self.path,**options)
         original=json.loads((self.path/'config.json').read_text())
         for update in (dict(vision_config={}),dict(text_config={}),dict(model_type='qwen3_5'),dict(tie_word_embeddings=1),
                        dict(rms_norm_eps=float('nan')),dict(rope_parameters=None),dict(hidden_size=2**22),
                        dict(layer_types=['linear_attention']),dict(quantization_config={'quant_method':'fp8'})):
             (self.path/'config.json').write_text(json.dumps(original|update))
-            with patch('dllm.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')):
+            with patch('damendaemon.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')):
                 with self.assertRaises(ValueError):load_cpu_checkpoint(self.path,max_context=16)
 
     def test_inventory_shape_dtype_index_reject_before_payload(self):
@@ -133,11 +133,11 @@ class CpuCheckpointTests(unittest.TestCase):
                 p=self.path/'model.safetensors.index.json';index=json.loads(p.read_text())
                 index['weight_map'][name]='model-1.safetensors';p.write_text(json.dumps(index))
             elif defect=='duplicate':save_file(raw,str(self.path/'model-1.safetensors'))
-            with patch('dllm.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')):
+            with patch('damendaemon.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')):
                 with self.assertRaises(ValueError):load_cpu_checkpoint(self.path,max_context=16)
 
     def test_payload_failure_nonfinite_and_mutation_close_descriptors(self):
-        from dllm import cpu_hybrid_checkpoint as loader
+        from damendaemon import cpu_hybrid_checkpoint as loader
         payload=loader._payload
         for defect in ('failure','nonfinite','mutation'):
             _,raw=snapshot(self.path)
@@ -163,5 +163,5 @@ class CpuCheckpointTests(unittest.TestCase):
                          max_workspace_bytes=loaded.loader_workspace_bytes)
             load_cpu_checkpoint(self.path,**options)
             for key in ('max_weight_bytes','max_workspace_bytes'):
-                with patch('dllm.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')):
+                with patch('damendaemon.cpu_hybrid_checkpoint._payload',side_effect=AssertionError('payload')):
                     with self.assertRaises(ValueError):load_cpu_checkpoint(self.path,**(options|{key:options[key]-1}))

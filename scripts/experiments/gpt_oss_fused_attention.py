@@ -1,7 +1,7 @@
 """Experiment-only GPT-OSS executor for full-model sink-attention qualification."""
 import torch
 from torch.nn import functional as F
-from dllm.gpt_oss import GptOssExecutor
+from damendaemon.gpt_oss import GptOssExecutor
 from scripts.experiments.sink_attention import bounded_attention
 
 

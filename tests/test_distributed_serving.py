@@ -4,8 +4,8 @@ import threading
 import time
 import unittest
 
-from dllm.distributed_serving import DistributedRuntime
-from dllm.runtime import BusyError
+from damendaemon.distributed_serving import DistributedRuntime
+from damendaemon.runtime import BusyError
 
 
 class Model:

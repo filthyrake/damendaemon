@@ -13,8 +13,8 @@ CACHE_LIMIT = 4 * 1024**3
 
 
 def install_validation_dispatch():
-    from dllm.quantization import Linear
-    from dllm.kquant_kernels import expand
+    from damendaemon.quantization import Linear
+    from damendaemon.kquant_kernels import expand
 
     original_init = Linear.__init__
     original_call = Linear.__call__

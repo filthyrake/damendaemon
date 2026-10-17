@@ -1,6 +1,6 @@
 import unittest
 import torch
-from dllm.cuda_host_stage import CudaHostStageSlots,_host_tensor,_budget
+from damendaemon.cuda_host_stage import CudaHostStageSlots,_host_tensor,_budget
 
 
 class CudaHostBoundaryTests(unittest.TestCase):

@@ -3,8 +3,8 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.floating_model import FloatingModel
-from dllm.hyper_connections import reduce_head
+from damendaemon.floating_model import FloatingModel
+from damendaemon.hyper_connections import reduce_head
 from tests.test_floating_block import fixture as block_fixture
 
 

@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_flash_sparse import FlashSparseAttention
+from damendaemon.glm_flash_sparse import FlashSparseAttention
 from tests import test_glm_flash_indexer
 
 
@@ -58,7 +58,7 @@ class FlashSparseTests(unittest.TestCase):
     def test_late_failure_is_transactional_and_retryable(self):
         c,w,x=fixture();state=c.new_state(2,8);c.forward(x[:,:3],state,position=0)
         old=[v.clone() for v in (state.latents,state.keys,state.gates)]
-        with patch('dllm.glm_flash_sparse.linear',side_effect=RuntimeError('late projection')):
+        with patch('damendaemon.glm_flash_sparse.linear',side_effect=RuntimeError('late projection')):
             with self.assertRaisesRegex(RuntimeError,'late projection'):c.forward(x[:,3:],state,position=3)
         self.assertEqual(state.position,3)
         for a,b in zip((state.latents,state.keys,state.gates),old):torch.testing.assert_close(a,b)
@@ -71,6 +71,6 @@ class FlashSparseTests(unittest.TestCase):
         with self.assertRaises(ValueError):c.new_state(2,7,max_cache_bytes=1)
         with self.assertRaises(ValueError):c.forward(x,state,position=1)
         c.max_workspace_bytes=1
-        with patch('dllm.glm_flash_sparse.project_nope',side_effect=AssertionError('projection before admission')):
+        with patch('damendaemon.glm_flash_sparse.project_nope',side_effect=AssertionError('projection before admission')):
             with self.assertRaises(ValueError):c.forward(x,state,position=0)
         self.assertEqual(state.position,0)

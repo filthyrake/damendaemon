@@ -11,7 +11,7 @@
       "mode": "sequential",
       "results": [
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 1,
           "thinking": "auto",
           "raw": true,
@@ -149,7 +149,7 @@
           ]
         },
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 2,
           "thinking": "auto",
           "raw": true,
@@ -365,7 +365,7 @@
           ]
         },
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 4,
           "thinking": "auto",
           "raw": true,
@@ -742,7 +742,7 @@
       "mode": "packed",
       "results": [
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 1,
           "thinking": "auto",
           "raw": true,
@@ -880,7 +880,7 @@
           ]
         },
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 2,
           "thinking": "auto",
           "raw": true,
@@ -1096,7 +1096,7 @@
           ]
         },
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 4,
           "thinking": "auto",
           "raw": true,
@@ -1473,7 +1473,7 @@
       "mode": "packed",
       "results": [
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 1,
           "thinking": "auto",
           "raw": true,
@@ -1611,7 +1611,7 @@
           ]
         },
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 2,
           "thinking": "auto",
           "raw": true,
@@ -1827,7 +1827,7 @@
           ]
         },
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 4,
           "thinking": "auto",
           "raw": true,
@@ -2204,7 +2204,7 @@
       "mode": "sequential",
       "results": [
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 1,
           "thinking": "auto",
           "raw": true,
@@ -2342,7 +2342,7 @@
           ]
         },
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 2,
           "thinking": "auto",
           "raw": true,
@@ -2558,7 +2558,7 @@
           ]
         },
         {
-          "engine": "dllm",
+          "engine": "damendaemon",
           "concurrency": 4,
           "thinking": "auto",
           "raw": true,
@@ -2934,10 +2934,10 @@
   ],
   "devices": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283,GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
   "sources": {
-    "dllm/batch.py": "b074a0bc205c4a958efb71b5b0e433897d80b0d2b881e5edfea6a49865d42d42",
-    "dllm/layer_stage.py": "77498f98e70328858ef4a69c5d38d0637ea7275407825fa3377e2c5f99fd91cf",
-    "dllm/partition.py": "b8ba83ad0980691b5972a2f2c2973d04f107d917eb56d1c4a5e71d7c9e94845c",
-    "dllm/partition_policy.py": "6cc155e04d6f9d0a362b6944a78030816a56598d8c8c84f430144cfa40b5fbcd"
+    "damendaemon/batch.py": "b074a0bc205c4a958efb71b5b0e433897d80b0d2b881e5edfea6a49865d42d42",
+    "damendaemon/layer_stage.py": "77498f98e70328858ef4a69c5d38d0637ea7275407825fa3377e2c5f99fd91cf",
+    "damendaemon/partition.py": "b8ba83ad0980691b5972a2f2c2973d04f107d917eb56d1c4a5e71d7c9e94845c",
+    "damendaemon/partition_policy.py": "6cc155e04d6f9d0a362b6944a78030816a56598d8c8c84f430144cfa40b5fbcd"
   },
   "scope": "Same model, precision, GPU pair and HTTP workload; sequential versus packed stage prefill only.",
   "summary": [

@@ -4,8 +4,8 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 import unittest
 import torch
-from dllm.config import hybrid_config
-from dllm.hybrid import load_weights
+from damendaemon.config import hybrid_config
+from damendaemon.hybrid import load_weights
 from tests.test_capacity_cli import fixture
 
 
@@ -43,7 +43,7 @@ class HybridCheckpointContractTests(unittest.TestCase):
                 result=load_weights(untied,{**c,'tie_word_embeddings':False})
                 torch.testing.assert_close(result['head'],state['lm_head.weight'].half()+1)
                 meta={name:torch.empty_like(value,device='meta') for name,value in state.items()}
-                with patch('dllm.device.selected_accelerator',side_effect=AssertionError('hardware queried')),patch('dllm.layer_stream.enabled',return_value=False):
+                with patch('damendaemon.device.selected_accelerator',side_effect=AssertionError('hardware queried')),patch('damendaemon.layer_stream.enabled',return_value=False):
                     planned=load_weights(meta,c)
                 self.assertEqual(meta,{})
                 self.assertEqual(set(planned),set(expected))

@@ -4,11 +4,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_flash_layer_stage import FlashLayerStage
-from dllm.glm_flash_reference_loader import load_reference_stage
-from dllm.glm_flash_model import FlashModel
-from dllm.glm_flash_checkpoint import tensor_specs,ROOT
-from dllm.safetensor_header import ITEM_BYTES
+from damendaemon.glm_flash_layer_stage import FlashLayerStage
+from damendaemon.glm_flash_reference_loader import load_reference_stage
+from damendaemon.glm_flash_model import FlashModel
+from damendaemon.glm_flash_checkpoint import tensor_specs,ROOT
+from damendaemon.safetensor_header import ITEM_BYTES
 from tests.test_glm_flash_reference_loader import fixture,floating_control
 
 
@@ -49,7 +49,7 @@ class FlashLayerStageTests(unittest.TestCase):
             torch.testing.assert_close(hidden,wanted,rtol=3e-5,atol=3e-6)
 
     def test_range_payload_selection_and_exact_selected_weight_budget(self):
-        import dllm.glm_flash_reference_loader as loader
+        import damendaemon.glm_flash_reference_loader as loader
         specs=tensor_specs(self.config)
         for start,end in ((0,1),(1,2),(2,3)):
             names={name for name in specs if name.startswith(tuple(ROOT+f'layers.{i}.' for i in range(start,end)))}
@@ -68,7 +68,7 @@ class FlashLayerStageTests(unittest.TestCase):
                 if block.feed_forward.experts:self.assertEqual(block.feed_forward.experts[0].gate.weight.dtype,torch.uint8)
 
     def test_bad_ranges_full_header_audit_and_output_preflight_precede_mutation(self):
-        import dllm.glm_flash_reference_loader as loader
+        import damendaemon.glm_flash_reference_loader as loader
         with patch.object(loader,'_payload',side_effect=AssertionError('payload')):
             for start,end in ((-1,2),(0,0),(0,4),(True,2),(None,2),(1,None)):
                 with self.assertRaises(ValueError):load_reference_stage(self.path,start,end)
@@ -95,7 +95,7 @@ class FlashLayerStageTests(unittest.TestCase):
         def allocate(*args,**kwargs):
             value=original(*args,**kwargs);created.append(value);return value
         with patch.object(first,'new_state',allocate),patch.object(stage.blocks[1],'new_state',side_effect=MemoryError('allocation')):
-            from dllm.glm_flash_block import FlashBlockState
+            from damendaemon.glm_flash_block import FlashBlockState
             with patch.object(FlashBlockState,'close',side_effect=RuntimeError('cleanup')):
                 with self.assertRaises(MemoryError):stage.new_state(1,4)
                 self.assertTrue(stage.failed_cleanups)
@@ -114,12 +114,12 @@ class FlashLayerStageTests(unittest.TestCase):
                 last.new_state(2,4,max_cache_bytes=2*last._cache_per_slot(4)-1)
         # A range cannot hide an invalid required tensor owned by another stage.
         import json
-        from dllm.safetensor_header import read_header
+        from damendaemon.safetensor_header import read_header
         from tests.test_packed_checkpoint import write_raw
         name=ROOT+'layers.2.input_layernorm.weight'
         mapping=json.loads((self.path/'model.safetensors.index.json').read_text())['weight_map']
         file=self.path/mapping[name];raw=file.read_bytes()
         with file.open('rb') as reader:entries,base,_=read_header(reader)
         entries[name]['dtype']='I16';write_raw(file,entries,raw[base:])
-        with patch('dllm.glm_flash_reference_loader._payload',side_effect=AssertionError('payload')):
+        with patch('damendaemon.glm_flash_reference_loader._payload',side_effect=AssertionError('payload')):
             with self.assertRaises(ValueError):load_reference_stage(self.path,0,1)

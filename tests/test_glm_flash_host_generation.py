@@ -3,17 +3,17 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-from dllm.glm_flash_host_generation import HostFlashGenerator,native_session_identity,native_excluded_ids
-from dllm.glm_flash_host_pipeline_build import build_glm_flash_host_pipeline_worker
-from dllm.host_topology import HostTopology
-from dllm.glm_flash_tool_text import FlashToolText
-from dllm.glm_flash_tool_output import FlashToolTokenStream
-from dllm.glm_flash_batch_generation import FlashBatchReferenceGenerator
-from dllm.host_tensor_channel import HostTensorChannel
+from damendaemon.glm_flash_host_generation import HostFlashGenerator,native_session_identity,native_excluded_ids
+from damendaemon.glm_flash_host_pipeline_build import build_glm_flash_host_pipeline_worker
+from damendaemon.host_topology import HostTopology
+from damendaemon.glm_flash_tool_text import FlashToolText
+from damendaemon.glm_flash_tool_output import FlashToolTokenStream
+from damendaemon.glm_flash_batch_generation import FlashBatchReferenceGenerator
+from damendaemon.host_tensor_channel import HostTensorChannel
 from tests import test_host_tls
-from dllm.glm_text import END_THINK,EOS
-from dllm.glm_flash_tools import FlashTools
-from dllm.reference_cancellation import cancellation_scope,ReferenceCancelled
+from damendaemon.glm_text import END_THINK,EOS
+from damendaemon.glm_flash_tools import FlashTools
+from damendaemon.reference_cancellation import cancellation_scope,ReferenceCancelled
 from tests import test_cpu_host_pipeline_build as build_tests,test_host_pipeline_worker as worker_tests
 from tests.test_glm_flash_generation import text_fixture
 from tests.test_glm_flash_reference_loader import fixture,floating_control
@@ -46,7 +46,7 @@ class FlashHostGenerationTests(unittest.TestCase):
         temp=tempfile.TemporaryDirectory();self.addCleanup(temp.cleanup);path=Path(temp.name)
         base=text_fixture(path)
         if media:
-            from dllm.glm_flash_image_text import MEDIA
+            from damendaemon.glm_flash_image_text import MEDIA
             base.tokenizer.add_special_tokens(list(MEDIA));base.tokenizer.save(str(path/'tokenizer.json'))
         text=FlashToolText(path,vocab_size=base.vocab_size)
         config,_,values=fixture(path,vocab_size=text.vocab_size)
@@ -197,13 +197,13 @@ class FlashHostGenerationTests(unittest.TestCase):
 
     def test_media_policy_and_exact_family_admission_precede_dispatch(self):
         text,workers,_=self.session(media=True);worker=workers[0]
-        from dllm.glm_tool_text import GlmToolText
-        from dllm.glm_host_generation import native_session_identity as glm_identity,HostGlmGenerator
+        from damendaemon.glm_tool_text import GlmToolText
+        from damendaemon.glm_host_generation import native_session_identity as glm_identity,HostGlmGenerator
         other=GlmToolText.__new__(GlmToolText);other.__dict__.update(text.__dict__)
         self.assertNotEqual(native_session_identity(text),glm_identity(other))
         with self.assertRaises(ValueError):HostGlmGenerator(worker,other)
         runner=HostFlashGenerator(worker,text);self.addCleanup(runner.close)
-        from dllm.reference_serving import ReferenceRuntime
+        from damendaemon.reference_serving import ReferenceRuntime
         with self.assertRaises(ValueError):ReferenceRuntime(runner)
         image=text.tokenizer.token_to_id('<|image|>');self.assertIn(image,worker.excluded_ids)
         with patch.object(runner.text,'chat_tokens',return_value=[image]),patch.object(worker,'prefill_chunk',side_effect=AssertionError('dispatch')):

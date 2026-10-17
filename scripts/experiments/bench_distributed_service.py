@@ -21,12 +21,12 @@ from urllib.request import urlopen
 
 
 def worker(args):
-    from dllm.distributed_server_cli import main as serve
+    from damendaemon.distributed_server_cli import main as serve
     options=[args.model,'--quantization',args.quantization,'--alias','a','--port','0',
              '--batch-size',str(args.batch_size)]
     if os.environ['RANK']!='0':serve(options);return
-    from dllm.distributed_serving import DistributedRuntime
-    from dllm.server import BoundedHTTPServer
+    from damendaemon.distributed_serving import DistributedRuntime
+    from damendaemon.server import BoundedHTTPServer
     original_init=BoundedHTTPServer.__init__;original_run=DistributedRuntime.run
     original_publish=DistributedRuntime._publish
     timings=[]
@@ -38,8 +38,8 @@ def worker(args):
                 model=args.model,context=512,output_tokens=32,results=[],
                 devices=os.environ.get('CUDA_VISIBLE_DEVICES'),
                 sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-                         ('dllm/distributed.py','dllm/distributed_serving.py','dllm/distributed_server_cli.py',
-                          'dllm/batch.py','dllm/layer_stage.py','dllm/partition_policy.py','dllm/q4_stage.py','dllm/q4_stage_kernels.py','dllm/kernels.py','dllm/qwen2.py',__file__)})
+                         ('damendaemon/distributed.py','damendaemon/distributed_serving.py','damendaemon/distributed_server_cli.py',
+                          'damendaemon/batch.py','damendaemon/layer_stage.py','damendaemon/partition_policy.py','damendaemon/q4_stage.py','damendaemon/q4_stage_kernels.py','damendaemon/kernels.py','damendaemon/qwen2.py',__file__)})
     def capture(server,*positional,**keywords):
         nonlocal base
         original_init(server,*positional,**keywords);base=f'http://127.0.0.1:{server.server_port}'
@@ -51,7 +51,7 @@ def worker(args):
             for concurrency in (1,2,4):
                 start=len(timings)
                 result=subprocess.run([sys.executable,'scripts/compare_llama.py',base+'/v1',
-                    '--engine','dllm','--concurrency',str(concurrency),'--max-tokens','32',
+                    '--engine','damendaemon','--concurrency',str(concurrency),'--max-tokens','32',
                     '--prompt-token-ids',args.prompt],capture_output=True,text=True,check=True,timeout=120)
                 measured=json.loads(result.stdout)
                 observed=timings[start:]
@@ -127,18 +127,18 @@ def main():
                  else 'Q4 runtime rotary token stride' if args.compare=='runtime-rope'
                  else 'stage prefill packing')+' changes.',trials=[])
     output=Path(args.output)
-    previous={key:os.environ.get(key) for key in ('DLLM_PARTITION_PACKED_PREFILL','DLLM_Q4_STAGE_ADJACENT','DLLM_Q4_STAGE_RUNTIME_ROWS','DLLM_Q4_STAGE_RUNTIME_ROPE')}
+    previous={key:os.environ.get(key) for key in ('DAMENDAEMON_PARTITION_PACKED_PREFILL','DAMENDAEMON_Q4_STAGE_ADJACENT','DAMENDAEMON_Q4_STAGE_RUNTIME_ROWS','DAMENDAEMON_Q4_STAGE_RUNTIME_ROPE')}
     try:
         reference=None
         modes=(1,4,4,1) if args.compare=='capacity' else (0,1,1,0)
         for index,mode in enumerate(modes):
             batch=mode if args.compare=='capacity' else 4
             if args.compare=='runtime-rope':
-                os.environ.update(DLLM_PARTITION_PACKED_PREFILL='1',DLLM_Q4_STAGE_ADJACENT='1',DLLM_Q4_STAGE_RUNTIME_ROWS='1',DLLM_Q4_STAGE_RUNTIME_ROPE=str(mode))
+                os.environ.update(DAMENDAEMON_PARTITION_PACKED_PREFILL='1',DAMENDAEMON_Q4_STAGE_ADJACENT='1',DAMENDAEMON_Q4_STAGE_RUNTIME_ROWS='1',DAMENDAEMON_Q4_STAGE_RUNTIME_ROPE=str(mode))
             elif args.compare=='runtime-rows':
-                os.environ.update(DLLM_PARTITION_PACKED_PREFILL='1',DLLM_Q4_STAGE_ADJACENT='1',DLLM_Q4_STAGE_RUNTIME_ROWS=str(mode),DLLM_Q4_STAGE_RUNTIME_ROPE='0')
-            elif args.compare!='capacity':os.environ['DLLM_PARTITION_PACKED_PREFILL']=str(mode)
-            if args.compare=='q4-policy':os.environ['DLLM_Q4_STAGE_ADJACENT']=str(mode)
+                os.environ.update(DAMENDAEMON_PARTITION_PACKED_PREFILL='1',DAMENDAEMON_Q4_STAGE_ADJACENT='1',DAMENDAEMON_Q4_STAGE_RUNTIME_ROWS=str(mode),DAMENDAEMON_Q4_STAGE_RUNTIME_ROPE='0')
+            elif args.compare!='capacity':os.environ['DAMENDAEMON_PARTITION_PACKED_PREFILL']=str(mode)
+            if args.compare=='q4-policy':os.environ['DAMENDAEMON_Q4_STAGE_ADJACENT']=str(mode)
             trial=output.with_name(output.stem+f'-{index}.json')
             command=[sys.executable,'-m','torch.distributed.run','--standalone','--nproc-per-node','2',
                 '--run-path',str(Path(__file__).resolve()),args.model,args.prompt,'--quantization',args.quantization,

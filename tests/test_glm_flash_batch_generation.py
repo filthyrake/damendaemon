@@ -8,11 +8,11 @@ import unittest
 from unittest.mock import patch
 import torch
 
-from dllm.glm_flash_batch_generation import FlashBatchReferenceGenerator
-from dllm.glm_flash_generation import FlashReferenceGenerator
-from dllm.glm_flash_model import FlashModel
-from dllm.glm_flash_reference_loader import load_reference_model
-from dllm.glm_text import END_THINK, EOS
+from damendaemon.glm_flash_batch_generation import FlashBatchReferenceGenerator
+from damendaemon.glm_flash_generation import FlashReferenceGenerator
+from damendaemon.glm_flash_model import FlashModel
+from damendaemon.glm_flash_reference_loader import load_reference_model
+from damendaemon.glm_text import END_THINK, EOS
 from scripts import run_glm_flash_reference as cli
 from tests.test_glm_flash_generation import text_fixture, snapshot
 

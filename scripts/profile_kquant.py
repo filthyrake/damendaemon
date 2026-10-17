@@ -7,8 +7,8 @@ import json
 import os
 import torch
 import triton as tr
-from dllm.gguf_model import GgufWeights
-from dllm.kquant_kernels import _gemv, _gemm, expand, linear, split_gemv
+from damendaemon.gguf_model import GgufWeights
+from damendaemon.kquant_kernels import _gemv, _gemm, expand, linear, split_gemv
 
 
 def timing(fn):
@@ -59,8 +59,8 @@ def main():
                               'expanded_resident':variants['expanded_resident'],
                               'residual_float32':lambda:residual_linear(x,weight,layout)}
                 elif args.native_only:
-                    from dllm.native_kquant import linear_if_enabled
-                    assert os.environ.get('DLLM_KQUANT_CUDA_LIBRARY')
+                    from damendaemon.native_kquant import linear_if_enabled
+                    assert os.environ.get('DAMENDAEMON_KQUANT_CUDA_LIBRARY')
                     variants={'expanded_resident':variants['expanded_resident'],
                               'cuda_native':lambda:linear_if_enabled(x,weight,layout)}
                     if args.residual:

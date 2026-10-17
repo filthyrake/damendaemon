@@ -2,7 +2,7 @@ import math
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_flash_hyper import FlashHyperConnection
+from damendaemon.glm_flash_hyper import FlashHyperConnection
 
 
 def component(**options):
@@ -59,7 +59,7 @@ class FlashHyperTests(unittest.TestCase):
         state=torch.zeros(1,2,2,3)
         for option in ('max_workspace_bytes','max_output_bytes'):
             c=component(**{option:1})
-            with patch('dllm.glm_flash_hyper._finite',side_effect=AssertionError('scanned before admission')):
+            with patch('damendaemon.glm_flash_hyper._finite',side_effect=AssertionError('scanned before admission')):
                 for invoke in (lambda:c.reduce(state),lambda:c.head(state),lambda:c.restore(torch.zeros(1,2,3),state,torch.zeros(1,2,2),torch.zeros(1,2,2,2))):
                     with self.assertRaisesRegex(ValueError,'budget'):invoke()
 

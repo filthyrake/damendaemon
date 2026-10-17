@@ -2,7 +2,7 @@ import math
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_flash_indexer import FlashIndexer
+from damendaemon.glm_flash_indexer import FlashIndexer
 
 
 def indexer(**options):
@@ -74,6 +74,6 @@ class FlashIndexerTests(unittest.TestCase):
         with self.assertRaises(ValueError):c.select(hidden,low,keys,gates,pos)
         for option in ('max_workspace_bytes','max_output_bytes'):
             c=indexer(**{option:1})
-            with patch('dllm.glm_flash_indexer._finite',side_effect=AssertionError('scanned before admission')):
+            with patch('damendaemon.glm_flash_indexer._finite',side_effect=AssertionError('scanned before admission')):
                 with self.assertRaisesRegex(ValueError,'budget'):c.project_keys(hidden)
                 with self.assertRaisesRegex(ValueError,'budget'):c.select(hidden,low,keys,gates,pos)

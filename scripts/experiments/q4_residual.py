@@ -6,13 +6,13 @@ import os
 from pathlib import Path
 
 import torch
-from dllm.native_kquant_residual import library as base_library
+from damendaemon.native_kquant_residual import library as base_library
 
 
 @lru_cache(maxsize=None)
 def library(path):
     handle, quantize, _ = base_library(path)
-    multiply=handle.dllm_q4_residual_gemv
+    multiply=handle.damendaemon_q4_residual_gemv
     multiply.argtypes=[ctypes.c_void_p]*7+[ctypes.c_int]*3+[ctypes.c_void_p]
     multiply.restype=ctypes.c_int
     return handle,quantize,multiply
@@ -20,7 +20,7 @@ def library(path):
 
 def activation_terms(path):
     handle,_,_=library(path)
-    function=getattr(handle,'dllm_q4_activation_terms',None)
+    function=getattr(handle,'damendaemon_q4_activation_terms',None)
     if function is None:return 2  # Earlier two-term experimental builds.
     function.argtypes=[];function.restype=ctypes.c_int
     terms=function()
@@ -37,7 +37,7 @@ def linear(x,weights,scales,bias=None):
         raise ValueError('unsupported experimental Q4 buffers')
     if bias is not None and (bias.device!=x.device or bias.dtype!=x.dtype or tuple(bias.shape)!=(outputs,)
             or not bias.is_contiguous()):raise ValueError('invalid experimental Q4 bias')
-    _,quantize,multiply=library(os.environ['DLLM_EXPERIMENTAL_Q4_RESIDUAL_LIBRARY'])
+    _,quantize,multiply=library(os.environ['DAMENDAEMON_EXPERIMENTAL_Q4_RESIDUAL_LIBRARY'])
     a=torch.empty_like(x,dtype=torch.int8);b=torch.empty_like(a)
     xs=torch.empty((rows,width//32,4),dtype=torch.float32,device=x.device)
     output=torch.empty((rows,outputs),dtype=x.dtype,device=x.device)
@@ -52,8 +52,8 @@ def linear(x,weights,scales,bias=None):
 
 
 def install_validation_dispatch():
-    from dllm import native_q4
-    path=Path(os.environ['DLLM_EXPERIMENTAL_Q4_RESIDUAL_LIBRARY']).resolve()
+    from damendaemon import native_q4
+    path=Path(os.environ['DAMENDAEMON_EXPERIMENTAL_Q4_RESIDUAL_LIBRARY']).resolve()
     library(str(path)); original=native_q4.linear_if_enabled
     def candidate(x,weights,scales,bias=None):
         if x.is_cuda and x.dtype==torch.float16 and x.shape[0]==1 and weights.shape[0]>=1024 and x.shape[1]>=4096 and x.shape[1]%256==0:

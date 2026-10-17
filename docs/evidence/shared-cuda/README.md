@@ -5,7 +5,7 @@ explicitly owned correctness checks on a CUDA device already serving traffic.
 It does not partition the GPU or guarantee incumbent latency. Polling cannot
 prevent transient contention, allocation races, or driver-wide failures.
 
-The launcher pins one UUID, clears inherited DLLM configuration, limits CPU
+The launcher pins one UUID, clears inherited DAMENDAEMON configuration, limits CPU
 thread defaults, requires a known incumbent PID/start time, healthy `/health`,
 and a nonempty `/slots` response with boolean processing states. By default all
 slots must be idle. Explicit `--allow-busy` also accepts active slots without

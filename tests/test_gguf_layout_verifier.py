@@ -45,7 +45,7 @@ with tempfile.TemporaryDirectory() as tmp:
     if case=='context':args+=['--context','2048','--experimental-q4-marlin-context','2048']
     if case=='budget':args+=['--experimental-q4-marlin-prefill-budget','1024']
     try:
-        with patch('sys.argv',args),patch.dict(os.environ,{'DLLM_Q4_MARLIN_LIBRARY':str(path)},clear=True), \
+        with patch('sys.argv',args),patch.dict(os.environ,{'DAMENDAEMON_Q4_MARLIN_LIBRARY':str(path)},clear=True), \
                 patch.dict(sys.modules,modules),patch.object(verify,'require_gpu'), \
                 patch.object(verify,'GgufWeights',return_value=model),patch.object(verify,'make_executor',side_effect=Executor), \
                 patch.object(verify,'device_name',return_value='fixture'),patch.object(verify,'empty_cache'):

@@ -8,9 +8,9 @@ from transformers import (Qwen2Config,Qwen2ForCausalLM,Qwen3Config,Qwen3ForCausa
     LlamaConfig,LlamaForCausalLM,MistralConfig,MistralForCausalLM,Phi3Config,Phi3ForCausalLM)
 from tokenizers import Tokenizer,models
 from safetensors.torch import save_file
-from dllm.config import decoder_config
-from dllm.dense_checkpoint import validate
-from dllm.qwen2 import ModelWeights
+from damendaemon.config import decoder_config
+from damendaemon.dense_checkpoint import validate
+from damendaemon.qwen2 import ModelWeights
 
 
 class DenseCheckpointTests(unittest.TestCase):
@@ -32,7 +32,7 @@ class DenseCheckpointTests(unittest.TestCase):
                 validate(state,parsed)
                 with self.assertRaisesRegex(ValueError,'parameter dtype'):
                     validate({**state,'model.norm.weight':state['model.norm.weight'].to(torch.int8)},parsed)
-                with patch('dllm.qwen2.selected_device',return_value='cpu'):
+                with patch('damendaemon.qwen2.selected_device',return_value='cpu'):
                     loaded=ModelWeights(root,16)
                 self.assertIs(loaded.weights['head'],loaded.weights['embed'])
                 for name,value in state.items():
@@ -47,5 +47,5 @@ class DenseCheckpointTests(unittest.TestCase):
                 validate(corrupt,{**parsed,'tie_word_embeddings':False})
                 # Exercise the real constructor boundary, not only the validator.
                 save_file({name:value.clone() for name,value in corrupt.items()},str(root/'model.safetensors'))
-                with patch('dllm.qwen2.selected_device',return_value='cpu'),patch.object(ModelWeights,'finalize_weights',side_effect=AssertionError('packing reached')):
+                with patch('damendaemon.qwen2.selected_device',return_value='cpu'),patch.object(ModelWeights,'finalize_weights',side_effect=AssertionError('packing reached')):
                     with self.assertRaisesRegex(ValueError,'unequal tied'):ModelWeights(root,16)

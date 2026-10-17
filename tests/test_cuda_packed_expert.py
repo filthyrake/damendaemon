@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.cuda_packed_expert import CudaPackedExpert,CudaPackedMatrix
-from dllm.expert_ffn import activate_expert
+from damendaemon.cuda_packed_expert import CudaPackedExpert,CudaPackedMatrix
+from damendaemon.expert_ffn import activate_expert
 
 
 class CudaPackedExpertTests(unittest.TestCase):

@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_flash_block import FlashBlock
-from dllm.glm_flash_hyper import FlashHyperConnection
-from dllm.glm_flash_ffn import FlashFeedForward
+from damendaemon.glm_flash_block import FlashBlock
+from damendaemon.glm_flash_hyper import FlashHyperConnection
+from damendaemon.glm_flash_ffn import FlashFeedForward
 from tests import test_glm_flash_linear,test_glm_flash_sparse,test_glm_flash_hyper
 
 

@@ -7,8 +7,8 @@ import json
 import os
 import torch
 from transformers import AutoModelForSeq2SeqLM
-from dllm.models import load
-from dllm.runtime import require_gpu,make_executor
+from damendaemon.models import load
+from damendaemon.runtime import require_gpu,make_executor
 
 
 @torch.inference_mode()
@@ -17,7 +17,7 @@ def main():
     p.add_argument('--device',choices=('cuda','mps'),default='cuda')
     p.add_argument('--context',type=int,default=512)
     p.add_argument('--full-decoder',action='store_true')
-    args=p.parse_args();os.environ['DLLM_DEVICE']=args.device
+    args=p.parse_args();os.environ['DAMENDAEMON_DEVICE']=args.device
     require_gpu();torch.set_num_threads(4)
     model=load(args.model,args.context)
     executor=make_executor(model,max_batch=4)

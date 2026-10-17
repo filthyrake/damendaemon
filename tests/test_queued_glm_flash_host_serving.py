@@ -6,9 +6,9 @@ import unittest
 from unittest.mock import patch
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError
-from dllm.glm_flash_host_generation import HostFlashGenerator
-from dllm.queued_glm_flash_host_serving import QueuedHostFlashReferenceRuntime
-from dllm.runtime import BusyError
+from damendaemon.glm_flash_host_generation import HostFlashGenerator
+from damendaemon.queued_glm_flash_host_serving import QueuedHostFlashReferenceRuntime
+from damendaemon.runtime import BusyError
 from tests import test_glm_flash_host_serving as hosts
 
 
@@ -41,7 +41,7 @@ class QueuedFlashHostServingTests(unittest.TestCase):
         for result in results:
             self.assertEqual(result['choices'][0]['message'].get('reasoning_content') or '', ''.join(e.get('reasoning_content','') for e in expected))
             self.assertEqual(result['usage']['completion_tokens'],expected[-1]['usage']['completion_tokens'])
-            self.assertGreaterEqual(result['dllm_timing']['queue_seconds'],0)
+            self.assertGreaterEqual(result['damendaemon_timing']['queue_seconds'],0)
         self.assertTrue(all(worker.stage.states==[None,None] for worker in workers))
         with urlopen(Request(self.base+'/v1/scheduler/drain',b'{}',self.admin),timeout=3) as response:self.assertTrue(json.load(response)['drained'])
         with self.assertRaises(HTTPError) as error:self.post()
@@ -104,7 +104,7 @@ class QueuedFlashHostServingTests(unittest.TestCase):
         self.assertTrue(runtime.closed)
 
     def test_client_turns_and_input_snapshot_are_preserved(self):
-        from dllm.request_scope import cache_scope
+        from damendaemon.request_scope import cache_scope
         runtime,workers,_=self.runtime(queue_size=3);seen=[];entered=threading.Event();release=threading.Event()
         original=workers[0].prefill_chunk
         def prefill(tokens,*args):

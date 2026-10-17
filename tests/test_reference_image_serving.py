@@ -9,14 +9,14 @@ from urllib.error import HTTPError
 from urllib.request import Request,urlopen
 import torch
 
-from dllm.reference_serving import ReferenceRuntime,handler_for_reference
-from dllm.glm_flash_image_tool_generation import FlashImageToolReferenceGenerator
-from dllm.glm_flash_image_tool_text import FlashImageToolText
-from dllm.glm_flash_tools import FlashTools
-from dllm.glm_text import END_THINK,EOS
-from dllm.http_auth import AuthPolicy
-from dllm.server import BoundedHTTPServer
-from dllm.runtime import BusyError
+from damendaemon.reference_serving import ReferenceRuntime,handler_for_reference
+from damendaemon.glm_flash_image_tool_generation import FlashImageToolReferenceGenerator
+from damendaemon.glm_flash_image_tool_text import FlashImageToolText
+from damendaemon.glm_flash_tools import FlashTools
+from damendaemon.glm_text import END_THINK,EOS
+from damendaemon.http_auth import AuthPolicy
+from damendaemon.server import BoundedHTTPServer
+from damendaemon.runtime import BusyError
 from tests.test_glm_flash_inline_images import messages as image_messages
 from tests.test_glm_flash_image_generation import text_fixture,vision,ScriptedImageModel
 from tests.test_reference_serving import TOOLS,CALLS

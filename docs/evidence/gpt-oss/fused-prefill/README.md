@@ -20,7 +20,7 @@ The attention projections at these longer prefills use IEEE FP32 products with
 one transiently expanded matrix. This repairs the observed nearly tied expert
 routing case without expanding all resident weights or changing expert
 projections. TF32-enabled global matmul policy is rejected, including changes
-after model loading. `DLLM_GPT_OSS_ATTENTION=native` selects the bounded native
+after model loading. `DAMENDAEMON_GPT_OSS_ATTENTION=native` selects the bounded native
 attention kernel while retaining the same IEEE attention-projection policy.
 
 ## Verification
@@ -65,7 +65,7 @@ CPU tests pass, including rejection of a changed global TF32 policy.
 
 ## Limits
 
-This does not close [issue #41](https://github.com/filthyrake/dllm/issues/41).
+This does not close [issue #41](https://github.com/filthyrake/damendaemon/issues/41).
 Longer full-layer traces still fail the unchanged absolute hidden-state gate,
 although the tested sensitive outputs are repaired. Independent CPU and CUDA
 reference traces themselves also exceed that gate in late layers. Historical

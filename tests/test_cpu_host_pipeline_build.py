@@ -5,13 +5,13 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.config import hybrid_config
-from dllm.cpu_host_pipeline_build import build_cpu_host_pipeline_worker,CpuHostPipelineBuildError
-from dllm.cpu_hybrid_checkpoint import load_cpu_checkpoint,load_cpu_stage_checkpoint
-from dllm.cpu_hybrid_stage import CpuHybridStage
-from dllm.cpu_snapshot_identity import fingerprint
-from dllm.host_topology import HostTopology
-from dllm.host_tensor_channel import HostTensorChannel
+from damendaemon.config import hybrid_config
+from damendaemon.cpu_host_pipeline_build import build_cpu_host_pipeline_worker,CpuHostPipelineBuildError
+from damendaemon.cpu_hybrid_checkpoint import load_cpu_checkpoint,load_cpu_stage_checkpoint
+from damendaemon.cpu_hybrid_stage import CpuHybridStage
+from damendaemon.cpu_snapshot_identity import fingerprint
+from damendaemon.host_topology import HostTopology
+from damendaemon.host_tensor_channel import HostTensorChannel
 from tests.test_cpu_hybrid_checkpoint import snapshot
 from tests.test_cpu_pipeline_generation import OPTIONS
 from tests import test_host_tls
@@ -73,7 +73,7 @@ class CpuHostPipelineBuildTests(unittest.TestCase):
         cases=[dict(index=0,transports=links,epoch=0),dict(index=0,transports=list(reversed(links)),epoch=1),
                dict(index=1,transports=links[:1],epoch=1),dict(index=0,transports=links,epoch=1,verify_source=1)]
         for options in cases:
-            with patch('dllm.cpu_host_pipeline_build.load_cpu_stage_checkpoint',side_effect=AssertionError('loaded')):
+            with patch('damendaemon.cpu_host_pipeline_build.load_cpu_stage_checkpoint',side_effect=AssertionError('loaded')):
                 with self.assertRaises(ValueError):build_cpu_host_pipeline_worker(self.path,plan,**options)
             self.assertTrue(all(not t.closed and getattr(t,'_cpu_worker_builder_owner',None) is None for t in links))
         worker=self.build(plan,0,links)
@@ -96,7 +96,7 @@ class CpuHostPipelineBuildTests(unittest.TestCase):
             result=load_cpu_stage_checkpoint(*args,**kwargs)
             (self.path/'tokenizer.json').write_text('{"changed":true}')
             return result
-        with patch('dllm.cpu_host_pipeline_build.load_cpu_stage_checkpoint',side_effect=changed), \
+        with patch('damendaemon.cpu_host_pipeline_build.load_cpu_stage_checkpoint',side_effect=changed), \
                 patch.object(CpuHybridStage,'__init__',side_effect=AssertionError('allocated')):
             with self.assertRaisesRegex(CpuHostPipelineBuildError,'changed') as caught:self.build(plan,1,links,verify_source=True)
         self.assertTrue(caught.exception.closed);self.assertTrue(links[0].closed)

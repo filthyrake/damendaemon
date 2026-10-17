@@ -3,8 +3,8 @@ import json
 import torch
 import triton as tr
 import triton.language as tl
-from dllm.kernels import linear_fp32
-from dllm.runtime import require_gpu
+from damendaemon.kernels import linear_fp32
+from damendaemon.runtime import require_gpu
 
 
 @tr.jit

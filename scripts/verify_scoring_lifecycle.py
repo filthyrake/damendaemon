@@ -7,12 +7,12 @@ import json
 import os
 from concurrent.futures import ThreadPoolExecutor
 import torch
-from dllm.scheduler import BatchedRuntime
+from damendaemon.scheduler import BatchedRuntime
 
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--device',required=True);args=p.parse_args()
-    os.environ['DLLM_DEVICE']=args.device;torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_DEVICE']=args.device;torch.set_num_threads(4)
     runtime=BatchedRuntime({'a':args.model},context=256,batch_size=4,host_models=1,host_gib=8)
     prompt=[40,298,1111,13]*4
     def generate():

@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 import torch
-from dllm.vision_inputs import prepare_images
+from damendaemon.vision_inputs import prepare_images
 
 
 def main():
@@ -17,7 +17,7 @@ def main():
     reference=torch.load(args.reference,map_location='cpu',weights_only=True)
     report=dict(passed=False,torch=str(torch.__version__),cases=[],
         reference_sha256=hashlib.sha256(Path(args.reference).read_bytes()).hexdigest(),
-        source_sha256=hashlib.sha256(Path('dllm/vision_inputs.py').read_bytes()).hexdigest())
+        source_sha256=hashlib.sha256(Path('damendaemon/vision_inputs.py').read_bytes()).hexdigest())
     for case in reference['cases']:
         pixels,grids=prepare_images(case['images'])
         same_shape=pixels.shape==case['pixel_values'].shape

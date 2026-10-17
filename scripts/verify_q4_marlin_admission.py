@@ -13,9 +13,9 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.gguf_model import GgufWeights
-from dllm.qwen2 import Executor
-from dllm.runtime import require_gpu
+from damendaemon.gguf_model import GgufWeights
+from damendaemon.qwen2 import Executor
+from damendaemon.runtime import require_gpu
 
 
 def main():
@@ -26,7 +26,7 @@ def main():
     args=parser.parse_args()
     require_gpu()
     torch.set_num_threads(4)
-    path=Path(os.environ['DLLM_Q4_MARLIN_LIBRARY']).resolve()
+    path=Path(os.environ['DAMENDAEMON_Q4_MARLIN_LIBRARY']).resolve()
     source=GgufWeights(args.model,512,'none')
     report=dict(passed=False,model=args.model,device=torch.cuda.get_device_name(),
                 library_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),cycles=[])
@@ -43,9 +43,9 @@ def main():
         before=torch.cuda.memory_allocated()
         for budget in (0,None):
             if budget is None:budget=rejected.required_memory_bytes-1
-            with patch('dllm.qwen2.available_memory',return_value=budget), \
+            with patch('damendaemon.qwen2.available_memory',return_value=budget), \
                  patch.object(torch.Tensor,'to',forbid_cuda), \
-                 patch('dllm.native_q4_marlin.Library.allocate_workspace',side_effect=AssertionError('workspace before admission')):
+                 patch('damendaemon.native_q4_marlin.Library.allocate_workspace',side_effect=AssertionError('workspace before admission')):
                 try:Executor.__init__(rejected,source,use_graph=False,max_batch=4)
                 except MemoryError:pass
                 else:raise AssertionError('insufficient memory admitted')

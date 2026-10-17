@@ -2,7 +2,7 @@ import copy
 import json
 import unittest
 from types import SimpleNamespace
-from dllm.tool_calls import JsonToolCallStream,prepare_tools,ToolCallStream,select_tools,validate_tools,validate_messages,template_messages
+from damendaemon.tool_calls import JsonToolCallStream,prepare_tools,ToolCallStream,select_tools,validate_tools,validate_messages,template_messages
 
 TOOLS=[{'type':'function','function':{'name':'weather','description':'Get weather',
     'parameters':{'type':'object','properties':{'city':{'type':'string'}}}}}]
@@ -39,7 +39,7 @@ class ToolCallTests(unittest.TestCase):
                 validate_tools(tools)
 
     def test_unqualified_model_template_rejected_before_rendering(self):
-        from dllm.qwen2 import ModelWeights
+        from damendaemon.qwen2 import ModelWeights
         model=SimpleNamespace(template=object(),supports_tool_calls=False)
         with self.assertRaisesRegex(ValueError,'qualified'):
             ModelWeights.chat_tokens(model,[{'role':'user','content':'Weather?'}],tools=TOOLS)
@@ -136,7 +136,7 @@ class ForcedToolTests(unittest.TestCase):
             'additionalProperties':False}}} for name,kind in [('text','string'),('number','integer')]]
 
     def test_correlated_union_and_named_choice(self):
-        from dllm.structured import matches_schema
+        from damendaemon.structured import matches_schema
         selected,encoded=prepare_tools(self.tools,'required');schema=json.loads(encoded)
         self.assertEqual(len(selected),2)
         for value,expected in [({'name':'text','arguments':{'value':'yes'}},True),

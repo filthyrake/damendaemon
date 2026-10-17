@@ -4,8 +4,8 @@ import json
 import os
 from pathlib import Path
 import torch
-from dllm.qwen2 import ModelWeights
-from dllm.gpt_oss import GptOssExecutor
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.gpt_oss import GptOssExecutor
 
 
 def main():
@@ -20,7 +20,7 @@ def main():
     ids=(base*((args.tokens+len(base)-1)//len(base)))[:args.tokens]
     executor.prefill(ids);torch.cuda.synchronize()
     with torch.inference_mode(),torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU,torch.profiler.ProfilerActivity.CUDA]) as profile:
-        with torch.profiler.record_function('dllm.prefill'):executor.prefill(ids)
+        with torch.profiler.record_function('damendaemon.prefill'):executor.prefill(ids)
         torch.cuda.synchronize()
     rows=[{'operator':e.key,'device_type':str(e.device_type),'calls':e.count,'self_cpu_us':e.self_cpu_time_total,
         'cpu_total_us':e.cpu_time_total,'self_device_us':e.self_device_time_total,

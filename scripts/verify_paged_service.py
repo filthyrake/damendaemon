@@ -11,9 +11,9 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 from tokenizers import Tokenizer
 
-from dllm.runtime import require_gpu
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer, handler_for
+from damendaemon.runtime import require_gpu
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer, handler_for
 
 
 def main():
@@ -23,7 +23,7 @@ def main():
     parser.add_argument('--prefix-tokens',type=int,default=0)
     args=parser.parse_args()
     require_gpu()
-    if os.environ.get('DLLM_KV_CACHE_TOKENS')!='512':
+    if os.environ.get('DAMENDAEMON_KV_CACHE_TOKENS')!='512':
         raise ValueError('this proof requires a 512-token shared pool')
     runtime=BatchedRuntime({'a':args.path,'b':args.path},context=1024,batch_size=4,
                            gpu_models=1,host_models=2,host_gib=8,queue_timeout=10,
@@ -49,7 +49,7 @@ def main():
         with ThreadPoolExecutor(4) as pool:
             outputs=list(pool.map(concurrent,range(4)))
         assert len({x['choices'][0]['text'] for x in outputs})==1
-        assert all(x['dllm_timing']['max_batch_size']==1 for x in outputs)
+        assert all(x['damendaemon_timing']['max_batch_size']==1 for x in outputs)
         runtime.manage('status')
         executor=runtime.runtime.gpu['a']
         assert executor.pool.used_tokens==0
@@ -75,7 +75,7 @@ def main():
         other=post('b')
         restored=post('a')
         assert other['choices']==restored['choices']==outputs[0]['choices']
-        assert restored['dllm_timing']['source_tier']=='host'
+        assert restored['damendaemon_timing']['source_tier']=='host'
         runtime.manage('status')
         assert runtime.runtime.gpu['a'].pool.used_tokens==0
         print(json.dumps({'passed':True,'budget_tokens':512,'context_per_slot':1024,'slot_capacity':4,
@@ -84,7 +84,7 @@ def main():
             'peak_reserved_tokens':peak,'capacity_pressure_requests':4,'max_active_under_pressure':1,
             'oversized_request_rejected':True,'cancelled_after_tokens':cancelled_tokens,
             'pages_after_completion_and_cancel':0,'model_switch_and_host_restore':True,
-            'kernel_backend':restored['dllm_timing']['kernel_backend']},indent=2))
+            'kernel_backend':restored['damendaemon_timing']['kernel_backend']},indent=2))
     finally:
         server.shutdown()
         server.server_close()

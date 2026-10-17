@@ -4,11 +4,11 @@ import os
 import torch
 from scripts.experiments import replay_hybrid_fp32
 from scripts.experiments.hip_q8_bf16x3 import linear as compensated
-from dllm import quantized_kernels, hybrid
+from damendaemon import quantized_kernels, hybrid
 
 original_linear = quantized_kernels.linear
 original_init = hybrid.HybridExecutor.__init__
-minimum_rows = int(os.environ.get('DLLM_EXPERIMENT_BF16X3_MIN_ROWS', '5'))
+minimum_rows = int(os.environ.get('DAMENDAEMON_EXPERIMENT_BF16X3_MIN_ROWS', '5'))
 if not 1 <= minimum_rows <= 128:
     raise ValueError('experimental compensated projection minimum rows must be 1..128')
 

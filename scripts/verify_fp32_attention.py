@@ -10,7 +10,7 @@ import time
 import torch
 from torch.nn import functional as F
 from torch.nn.attention import sdpa_kernel,SDPBackend
-from dllm.device import attention
+from damendaemon.device import attention
 
 
 def main():

@@ -3,10 +3,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_flash_stage_slots import FlashStageSlots
-from dllm.glm_stage_slots import GlmStageSlots
-from dllm.cpu_stage_slots import CpuStageSlots
-from dllm.glm_flash_reference_loader import load_reference_stage
+from damendaemon.glm_flash_stage_slots import FlashStageSlots
+from damendaemon.glm_stage_slots import GlmStageSlots
+from damendaemon.cpu_stage_slots import CpuStageSlots
+from damendaemon.glm_flash_reference_loader import load_reference_stage
 from tests.test_glm_flash_reference_loader import fixture,floating_control
 
 

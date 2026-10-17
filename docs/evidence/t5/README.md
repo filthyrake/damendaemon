@@ -5,7 +5,7 @@ reference only. Qualified checkpoint: google/flan-t5-small revision
 `0fc9ddf78a1e988dac52e2dac162b0ede4fd74ab` (Apache 2.0 model license).
 Architecture/configuration reference: the pinned model's config and Hugging Face
 Transformers T5 implementation (Apache 2.0). No upstream model runtime is called
-by dllm. Model weights are downloaded separately, not committed.
+by damendaemon. Model weights are downloaded separately, not committed.
 
 This introduces bidirectional encoder attention, unscaled relative-bias decoder
 attention, cross-attention, independent encoder/decoder lengths and gated GELU.
@@ -40,13 +40,13 @@ Initial serving baseline, exact shared 19-token encoder input, 8 output tokens,
 | M4 | 2 | 179.66 | 20.34 |
 | M4 | 4 | 275.72 | 31.75 |
 
-These are dllm measurements, not competitive speedup claims. llama.cpp commit
+These are damendaemon measurements, not competitive speedup claims. llama.cpp commit
 836d57176dc699a726c55418e4f96b8ca628e1bf converts the checkpoint to FP32 GGUF,
 but its four-slot server crashes in attention graph construction. Single-slot,
 flash-attention-off starts but emits only two tokens, failing the matched-output
 gate. The source server has no llama_encode path at this revision; its standalone
 completion example does. Failed commands/logs are retained; no valid server
-baseline exists yet. Do not compare those partial runs against dllm.
+baseline exists yet. Do not compare those partial runs against damendaemon.
 
 Initial scope: raw completions; explicit context up to configured 512; FP32;
 fixed decoder and cross-attention caches. No T5 chat template, quantization,
@@ -107,16 +107,16 @@ All output IDs agree. Timings exclude model load and HTTP/tokenizer overhead.
 
 | Core inference | First token ms | Total for 8 outputs ms | Subsequent token ms |
 |---|---:|---:|---:|
-| dllm | 16.426 | 25.800 | 1.339 |
+| damendaemon | 16.426 | 25.800 | 1.339 |
 | llama.cpp | 6.155 | 26.806 | 2.950 |
 
-Dllm has substantially slower encoder/prefill latency in this workload, while
+Damendaemon has substantially slower encoder/prefill latency in this workload, while
 its decoder is faster. Total times are close; this is not a universal win or an
 HTTP comparison. Raw core trials and llama.cpp initialization log are retained.
 
 ## Opt-in CUDA prompt graphs
 
-`DLLM_T5_PREFILL_GRAPHS=1..8` enables a bounded LRU of captured prompt shapes
+`DAMENDAEMON_T5_PREFILL_GRAPHS=1..8` enables a bounded LRU of captured prompt shapes
 and slot assignments. Default 0 retains eager prompt execution. Input token IDs
 are replaced on replay; this caches GPU execution, not prompt outputs. Decoder
 and cross-attention state are recomputed for every request. `--no-graph` disables

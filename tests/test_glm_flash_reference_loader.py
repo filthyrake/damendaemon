@@ -5,18 +5,18 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_flash_reference_loader import load_reference_model
-from dllm.glm_flash_checkpoint import tensor_specs
-from dllm.glm_flash_checkpoint import ROOT
-from dllm.glm_flash_linear import FlashLinearAttention
-from dllm.glm_flash_indexer import FlashIndexer
-from dllm.glm_flash_sparse import FlashSparseAttention
-from dllm.glm_flash_hyper import FlashHyperConnection
-from dllm.glm_flash_ffn import FlashFeedForward
-from dllm.glm_flash_block import FlashBlock
-from dllm.glm_flash_model import FlashModel
-from dllm.prepared_projection import PackedProjection
-from dllm.safetensor_header import ITEM_BYTES
+from damendaemon.glm_flash_reference_loader import load_reference_model
+from damendaemon.glm_flash_checkpoint import tensor_specs
+from damendaemon.glm_flash_checkpoint import ROOT
+from damendaemon.glm_flash_linear import FlashLinearAttention
+from damendaemon.glm_flash_indexer import FlashIndexer
+from damendaemon.glm_flash_sparse import FlashSparseAttention
+from damendaemon.glm_flash_hyper import FlashHyperConnection
+from damendaemon.glm_flash_ffn import FlashFeedForward
+from damendaemon.glm_flash_block import FlashBlock
+from damendaemon.glm_flash_model import FlashModel
+from damendaemon.prepared_projection import PackedProjection
+from damendaemon.safetensor_header import ITEM_BYTES
 from tests.test_glm_flash_checkpoint import config as geometry
 from tests.test_packed_checkpoint import write_raw
 
@@ -100,7 +100,7 @@ class FlashReferenceLoaderTests(unittest.TestCase):
             for name,spec in tensor_specs(config).items():
                 count=math.prod(spec.shape);retained+=count*(1 if spec.storage=='fp8' else 4)
                 largest=max(largest,count*ITEM_BYTES[headers[name]['dtype']])
-            with patch('dllm.glm_flash_reference_loader._payload',side_effect=AssertionError('values read')):
+            with patch('damendaemon.glm_flash_reference_loader._payload',side_effect=AssertionError('values read')):
                 for options in ({'max_weight_bytes':retained+largest-1},{'projection_workspace_bytes':1},{'max_workspace_bytes':1}):
                     with self.assertRaises(ValueError):load_reference_model(path,**options)
                 for change in ({'rms_norm_eps':float('nan')},{'routed_scaling_factor':0},{'index_topk':4097}):
@@ -108,11 +108,11 @@ class FlashReferenceLoaderTests(unittest.TestCase):
                     with self.assertRaises(ValueError):load_reference_model(path)
             (path/'config.json').write_text(json.dumps(config))
             self.assertEqual(len(load_reference_model(path,max_weight_bytes=retained+largest).blocks),3)
-            with patch('dllm.glm_flash_reference_loader.sys.byteorder','big'):
+            with patch('damendaemon.glm_flash_reference_loader.sys.byteorder','big'):
                 with self.assertRaisesRegex(ValueError,'endian'):load_reference_model(path)
 
     def test_visual_and_mtp_omitted_payload_failure_closes_descriptors_and_mutation_rejected(self):
-        import dllm.glm_flash_reference_loader as loader
+        import damendaemon.glm_flash_reference_loader as loader
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp);config,_,_=fixture(path);opened=[];read=[]
             original_header=loader.read_header;original_payload=loader._payload
@@ -131,7 +131,7 @@ class FlashReferenceLoaderTests(unittest.TestCase):
     def test_header_storage_index_and_duplicate_config_rejected_before_values(self):
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp);config,_,_=fixture(path)
-            with patch('dllm.glm_flash_reference_loader._payload',side_effect=AssertionError('values read')):
+            with patch('damendaemon.glm_flash_reference_loader._payload',side_effect=AssertionError('values read')):
                 index_path=path/'model.safetensors.index.json';index=json.loads(index_path.read_text())
                 index['weight_map'][ROOT+'embed_tokens.weight']='part-1.safetensors';index_path.write_text(json.dumps(index))
                 with self.assertRaisesRegex(ValueError,'index'):load_reference_model(path)

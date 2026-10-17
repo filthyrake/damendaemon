@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.cuda_deepseek_layer_stage import CudaDeepSeekLayerStage
+from damendaemon.cuda_deepseek_layer_stage import CudaDeepSeekLayerStage
 from tests.test_floating_block import fixture
 
 
@@ -15,5 +15,5 @@ class CudaDeepSeekStageAdmissionTests(unittest.TestCase):
         stage=object.__new__(CudaDeepSeekLayerStage)
         stage.device=torch.device('cuda:0');stage.streams=2;stage.dim=8
         stage.last=False;stage.max_output_bytes=1;stage.workspace_bytes=1024**2
-        with FakeTensorMode(),patch('dllm.deepseek_layer_stage._DeepSeekLayerStage._input',side_effect=AssertionError('payload before admission')):
+        with FakeTensorMode(),patch('damendaemon.deepseek_layer_stage._DeepSeekLayerStage._input',side_effect=AssertionError('payload before admission')):
             with self.assertRaisesRegex(ValueError,'budget'):stage._input(torch.empty(1,2,device='cuda',dtype=torch.int64),None,False)

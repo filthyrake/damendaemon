@@ -91,7 +91,7 @@ __global__ void q4_residual(const int8_t* q1, const int8_t* q2, const float4* xs
     }
 }
 
-extern "C" int dllm_q4_residual_quantize(const void* x, void* q1, void* q2, void* scales,
+extern "C" int damendaemon_q4_residual_quantize(const void* x, void* q1, void* q2, void* scales,
                                          int rows, int k, void* stream) {
     if (!x || !q1 || !q2 || !scales || rows!=1 || k<=0 || k%256) return cudaErrorInvalidValue;
     const int groups=k/32;
@@ -100,7 +100,7 @@ extern "C" int dllm_q4_residual_quantize(const void* x, void* q1, void* q2, void
     return cudaGetLastError();
 }
 
-extern "C" int dllm_q4_residual_gemv(const void* q1,const void* q2,const void* xs,
+extern "C" int damendaemon_q4_residual_gemv(const void* q1,const void* q2,const void* xs,
     const void* w,const void* ws,const void* bias,void* output,int rows,int n,int k,void* stream) {
     if (!q1 || !q2 || !xs || !w || !ws || !output || rows!=1 || n<=0 || k<=0 || k%256)
         return cudaErrorInvalidValue;
@@ -120,4 +120,4 @@ extern "C" int dllm_q4_residual_gemv(const void* q1,const void* q2,const void* x
     return cudaGetLastError();
 }
 
-extern "C" int dllm_q4_residual_abi_version() { return 202; }
+extern "C" int damendaemon_q4_residual_abi_version() { return 202; }

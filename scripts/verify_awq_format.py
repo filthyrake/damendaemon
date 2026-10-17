@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from safetensors import safe_open
-from dllm.awq import Matrix, group_size
+from damendaemon.awq import Matrix, group_size
 
 
 def main():
@@ -36,7 +36,7 @@ def main():
     report = dict(passed=False, model=str(path.resolve()), revision=path.name,
                   model_sha256=checksum, config=config['quantization_config'], matrices=[],
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-                  codec_sha256=hashlib.sha256((Path(__file__).resolve().parents[1]/'dllm/awq.py').read_bytes()).hexdigest(),
+                  codec_sha256=hashlib.sha256((Path(__file__).resolve().parents[1]/'damendaemon/awq.py').read_bytes()).hexdigest(),
                   scope='host format and scalar coefficient checks; no model execution or performance qualification')
     try:
         with safe_open(str(weight_path), framework='pt', device='cpu') as source:

@@ -27,7 +27,7 @@ malformed calls fail, including a partial tool opener at truncation. A call cann
 begin before reasoning closes. Retained completion text is bounded to 1 MiB.
 
 Use returned call IDs in subsequent `tool_call_id` results. The next history must
-include every result exactly once. The caller supplies those results; dllm does
+include every result exactly once. The caller supplies those results; damendaemon does
 not invoke functions. Close abandoned iterators. Parser/decode/cancellation paths
 release cache ownership and close the output buffer; failed cache release stays
 owned for retry. Final success follows release. Earlier deltas/call data remain

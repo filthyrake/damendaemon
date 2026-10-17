@@ -12,7 +12,7 @@ import statistics
 import torch
 import triton.testing
 
-from dllm.gguf_model import GgufWeights
+from damendaemon.gguf_model import GgufWeights
 from scripts.experiments.q4_marlin import Library
 from scripts.experiments.q4_marlin_repack import repack
 
@@ -46,7 +46,7 @@ def main():
                 values=torch.cat((blocks&15,blocks>>4),dim=-1).reshape(n,k).T.contiguous()
                 awq=(values.reshape(k,n//8,8)<<shifts).sum(-1,dtype=torch.int32).contiguous()
                 output=torch.empty((k//16,n*2),device=weight.device,dtype=torch.int32)
-                library.check(library.lib.dllm_q4_marlin_repack(awq.data_ptr(),output.data_ptr(),
+                library.check(library.lib.damendaemon_q4_marlin_repack(awq.data_ptr(),output.data_ptr(),
                     k,n,library.sms,library.shared,torch.cuda.current_stream().cuda_stream))
                 return output
             functions={'original_pipeline':original}

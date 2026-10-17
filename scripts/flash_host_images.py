@@ -1,9 +1,9 @@
 """Explicit coordinator-only Flash inline-image host command admission."""
 from dataclasses import dataclass
-from dllm.cpu_reference_text import read_json
-from dllm.glm_flash_inline_images import decode_inline_images
-from dllm.glm_flash_images import plan_images
-from dllm.glm_flash_tools import FlashTools
+from damendaemon.cpu_reference_text import read_json
+from damendaemon.glm_flash_inline_images import decode_inline_images
+from damendaemon.glm_flash_images import plan_images
+from damendaemon.glm_flash_tools import FlashTools
 
 
 _FIELDS=('vision_weight_mib','image_workspace_mib','image_output_mib','max_patches')
@@ -81,7 +81,7 @@ def prepare_request(args,text,config):
 
 def load_vision(args,plan,verified):
     """Finish local vision I/O before any peer is asked to wait for commands."""
-    from dllm.glm_flash_vision_loader import load_reference_vision
+    from damendaemon.glm_flash_vision_loader import load_reference_vision
     if verified is not None:verified.verify_unchanged()
     vision=load_reference_vision(args.snapshot,**limits(args))
     if vision.source_config!=plan.config:raise ValueError('Flash host vision source differs from topology')

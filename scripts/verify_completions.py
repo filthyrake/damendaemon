@@ -14,7 +14,7 @@ import time
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 from tokenizers import Tokenizer
-from dllm.bench import events
+from damendaemon.bench import events
 
 
 def main():
@@ -26,7 +26,7 @@ def main():
     source = args.path.resolve()
     text = 'def binary_search(values, target):\n    '
     ids = Tokenizer.from_file(str(source/'tokenizer.json')).encode(text, add_special_tokens=True).ids
-    with tempfile.TemporaryDirectory(prefix='dllm-raw-') as directory:
+    with tempfile.TemporaryDirectory(prefix='damendaemon-raw-') as directory:
         root = Path(directory)
         model = root/'base'
         model.mkdir()
@@ -38,12 +38,12 @@ def main():
         (model/'tokenizer_config.json').write_text(json.dumps(config))
         logpath = root/'server.log'
         with logpath.open('w') as log:
-            process = subprocess.Popen([sys.executable,'-m','dllm','serve','--port','0',
+            process = subprocess.Popen([sys.executable,'-m','damendaemon','serve','--port','0',
                 '--context','512','--device',args.device,'--host-gib',str(args.host_gib),'--model','a='+str(model)],stdout=log,stderr=log)
             try:
                 deadline = time.monotonic()+180
                 while time.monotonic()<deadline and process.poll() is None:
-                    ready=[line for line in logpath.read_text().splitlines() if line.startswith('dllm listening on ')]
+                    ready=[line for line in logpath.read_text().splitlines() if line.startswith('damendaemon listening on ')]
                     if ready:
                         base=ready[-1].split()[-1]
                         break
@@ -73,7 +73,7 @@ def main():
                 with ThreadPoolExecutor(4) as pool:
                     concurrent=list(pool.map(lambda _:request(),range(4)))
                 assert all(item['choices'][0]['text']==content for item in concurrent)
-                assert max(item['dllm_timing']['max_batch_size'] for item in concurrent)==4
+                assert max(item['damendaemon_timing']['max_batch_size'] for item in concurrent)==4
                 seeded=[request(temperature=.8,top_k=20,seed=17) for _ in range(2)]
                 assert seeded[0]['choices']==seeded[1]['choices']
                 stopped=request(stop=content[:8])

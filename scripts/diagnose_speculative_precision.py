@@ -4,7 +4,7 @@ import json
 import os
 
 import torch
-from dllm.runtime import Runtime
+from damendaemon.runtime import Runtime
 
 
 def main():
@@ -14,7 +14,7 @@ def main():
     if args.width not in (2,4,8):p.error('width must be 2, 4 or 8')
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
-    os.environ['DLLM_DEVICE']='cuda';os.environ['DLLM_SPECULATIVE_TOKENS']='0';torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_DEVICE']='cuda';os.environ['DAMENDAEMON_SPECULATIVE_TOKENS']='0';torch.set_num_threads(4)
     runtime=Runtime({'a':args.model},context=256,batch_size=4)
     report={'model':args.model,'width':args.width,'carry_state':args.carry_state,'blocks':[]}
     try:

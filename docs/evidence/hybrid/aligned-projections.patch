@@ -1,7 +1,7 @@
-diff --git a/dllm/hybrid.py b/dllm/hybrid.py
+diff --git a/damendaemon/hybrid.py b/damendaemon/hybrid.py
 index ef141e0..0337af6 100644
---- a/dllm/hybrid.py
-+++ b/dllm/hybrid.py
+--- a/damendaemon/hybrid.py
++++ b/damendaemon/hybrid.py
 @@ -38,8 +38,10 @@ def load_weights(state, config):
              for name in ('q', 'k'):
                  w[f'{i}.{name}_norm'] = take(layer+f'self_attn.{name}_norm.weight', torch.float32) + 1

@@ -4,8 +4,8 @@ import json
 import os
 import time
 import torch
-from dllm.qwen2 import ModelWeights
-from dllm.gpt_oss import GptOssExecutor
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.gpt_oss import GptOssExecutor
 
 
 def main():

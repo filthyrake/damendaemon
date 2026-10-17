@@ -5,8 +5,8 @@ import json
 import os
 import time
 import torch
-from dllm.qwen2 import ModelWeights
-from dllm.runtime import require_gpu, make_executor
+from damendaemon.qwen2 import ModelWeights
+from damendaemon.runtime import require_gpu, make_executor
 
 
 @torch.inference_mode()
@@ -21,7 +21,7 @@ def main():
     events = [e for e in trace['trace'] if e['kind']=='prefill' and max(map(len,e['prompts'])) >= 64]
     timings = []
     for backend in ('scan','fla'):
-        os.environ['DLLM_HYBRID_PREFILL'] = backend
+        os.environ['DAMENDAEMON_HYBRID_PREFILL'] = backend
         executor = make_executor(model, max_batch=4)
         for trial in range(5):
             for event in events:

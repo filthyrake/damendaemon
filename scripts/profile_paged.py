@@ -1,12 +1,12 @@
 """Profile fixed/paged prompt and decode work; not a throughput benchmark."""
-from dllm.evidence_environment import report_environment
+from damendaemon.evidence_environment import report_environment
 import argparse
 from collections import defaultdict
 import json
 import os
 import torch
-from dllm.runtime import require_gpu,make_executor
-from dllm.models import load
+from damendaemon.runtime import require_gpu,make_executor
+from damendaemon.models import load
 
 
 @torch.inference_mode()

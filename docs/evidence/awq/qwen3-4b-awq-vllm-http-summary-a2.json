@@ -1,6 +1,6 @@
 {
-  "scope": "Single refreshed vLLM phase versus repeated dllm native medians; same pinned Qwen3 AWQ checkpoint, A2, 129 input IDs, 64 output tokens, context 2048, capacity 4; prefix caching disabled",
-  "precision": "Both use FP16 matrices/KV; dllm Qwen3 retains FP32 residual/elementwise arithmetic; vLLM requested dtype half. Internal arithmetic is not identical.",
+  "scope": "Single refreshed vLLM phase versus repeated damendaemon native medians; same pinned Qwen3 AWQ checkpoint, A2, 129 input IDs, 64 output tokens, context 2048, capacity 4; prefix caching disabled",
+  "precision": "Both use FP16 matrices/KV; damendaemon Qwen3 retains FP32 residual/elementwise arithmetic; vLLM requested dtype half. Internal arithmetic is not identical.",
   "cases": [
     {
       "concurrency": 1,
@@ -8,8 +8,8 @@
       "vllm_total_seconds": 1.2377336740028113,
       "vllm_first_output_seconds": 0.10652708300040103,
       "vllm_tokens_per_second": 51.688175172721216,
-      "dllm_native_tokens_per_second": 50.51949201289092,
-      "dllm_throughput_deficit_percent": 2.2610261552570288
+      "damendaemon_native_tokens_per_second": 50.51949201289092,
+      "damendaemon_throughput_deficit_percent": 2.2610261552570288
     },
     {
       "concurrency": 2,
@@ -17,8 +17,8 @@
       "vllm_total_seconds": 1.3145533854985842,
       "vllm_first_output_seconds": 0.15168030401400756,
       "vllm_tokens_per_second": 96.71137195759061,
-      "dllm_native_tokens_per_second": 88.59391124752844,
-      "dllm_throughput_deficit_percent": 8.393491422727205
+      "damendaemon_native_tokens_per_second": 88.59391124752844,
+      "damendaemon_throughput_deficit_percent": 8.393491422727205
     },
     {
       "concurrency": 4,
@@ -26,8 +26,8 @@
       "vllm_total_seconds": 1.5015558209997835,
       "vllm_first_output_seconds": 0.3391180580074433,
       "vllm_tokens_per_second": 169.93029548311517,
-      "dllm_native_tokens_per_second": 147.77761211496386,
-      "dllm_throughput_deficit_percent": 13.036335460472658
+      "damendaemon_native_tokens_per_second": 147.77761211496386,
+      "damendaemon_throughput_deficit_percent": 13.036335460472658
     }
   ],
   "identical_output_text": true

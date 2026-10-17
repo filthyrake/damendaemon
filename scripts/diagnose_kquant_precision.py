@@ -19,9 +19,9 @@ def main():
     for name in args.cases:
         options,native=cases[name]
         environment=os.environ.copy()
-        environment.pop('DLLM_KQUANT_RESIDUAL_LIBRARY',None)
-        if name=='standard':environment['DLLM_LLAMA_PRECISION']='standard'
-        if not native:environment.pop('DLLM_KQUANT_CUDA_LIBRARY',None)
+        environment.pop('DAMENDAEMON_KQUANT_RESIDUAL_LIBRARY',None)
+        if name=='standard':environment['DAMENDAEMON_LLAMA_PRECISION']='standard'
+        if not native:environment.pop('DAMENDAEMON_KQUANT_CUDA_LIBRARY',None)
         output=Path(args.prefix+'-'+name+'.json');log=output.with_suffix('.log')
         command=[sys.executable,'scripts/verify_gguf_reference.py',args.model,args.hf_config,
             '--output',str(output),'--teacher-trace',args.teacher,'--context',str(args.context),*options]

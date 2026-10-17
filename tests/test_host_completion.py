@@ -3,10 +3,10 @@ import threading
 import unittest
 from unittest.mock import patch
 
-from dllm.host_completion import HostCompletion
-from dllm.cpu_hybrid_checkpoint import load_cpu_checkpoint
-from dllm.cpu_pipeline_generation import CpuPipelineReferenceGenerator
-from dllm.hybrid_pipeline import PipelineCancelled
+from damendaemon.host_completion import HostCompletion
+from damendaemon.cpu_hybrid_checkpoint import load_cpu_checkpoint
+from damendaemon.cpu_pipeline_generation import CpuPipelineReferenceGenerator
+from damendaemon.hybrid_pipeline import PipelineCancelled
 from tests import test_cpu_host_worker_build as fixtures
 from tests.test_cpu_pipeline_generation import OPTIONS
 

@@ -8,14 +8,14 @@ import json
 import os
 import time
 import torch
-from dllm.scheduler import BatchedRuntime
+from damendaemon.scheduler import BatchedRuntime
 
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');args=p.parse_args()
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
-    os.environ['DLLM_DEVICE']='cuda';os.environ['DLLM_SPECULATIVE_TOKENS']='8';torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_DEVICE']='cuda';os.environ['DAMENDAEMON_SPECULATIVE_TOKENS']='8';torch.set_num_threads(4)
     runtime=BatchedRuntime({'a':args.model},context=256,batch_size=4)
     messages=[{'role':'user','content':'Write the following sentence exactly ten times, with no introduction: The quick brown fox jumps over the lazy dog.'}]
     try:

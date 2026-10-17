@@ -4,8 +4,8 @@ from copy import copy
 import runpy
 import sys
 
-from dllm import hybrid_precision, hybrid_q4_policy
-from dllm.device import selected_accelerator
+from damendaemon import hybrid_precision, hybrid_q4_policy
+from damendaemon.device import selected_accelerator
 
 
 @contextmanager
@@ -52,7 +52,7 @@ def main():
             runpy.run_path('scripts/replay_reference.py', run_name='__main__')
         else:
             sys.argv.insert(1, 'serve')
-            runpy.run_module('dllm', run_name='__main__')
+            runpy.run_module('damendaemon', run_name='__main__')
 
 
 if __name__ == '__main__':

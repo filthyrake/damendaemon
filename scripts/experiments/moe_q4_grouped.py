@@ -60,8 +60,8 @@ def install_validation_dispatch():
     """Opt-in model experiment, installed after the Q4 construction policy."""
     import hashlib
     from pathlib import Path
-    from dllm.moe import OlmoeExecutor
-    from dllm.grouped_moe import prepare_routes
+    from damendaemon.moe import OlmoeExecutor
+    from damendaemon.grouped_moe import prepare_routes
     if torch.cuda.get_device_name() != 'NVIDIA A2':
         raise ValueError('grouped Q4 model experiment is limited to A2')
     original = OlmoeExecutor.experts

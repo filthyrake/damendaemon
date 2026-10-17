@@ -1,8 +1,8 @@
-# dllm documentation
+# damendaemon documentation
 
-[Project overview](../README.md) · [Support matrix](support.md) · [Parity milestones](https://github.com/filthyrake/dllm/issues/3)
+[Project overview](../README.md) · [Support matrix](support.md) · [Parity milestones](https://github.com/filthyrake/damendaemon/issues/3)
 
-## Use dllm
+## Use damendaemon
 
 | Guide | What it covers |
 | --- | --- |
@@ -23,7 +23,7 @@ Model acceptance does not imply qualification at every context or precision.
 - [Architecture and residency design](architecture.md)
 - [Current support boundaries](support.md)
 - [AMD/ROCm target and current qualification status](amd.md)
-- [Fixed performance scorecard acceptance](https://github.com/filthyrake/dllm/issues/54)
+- [Fixed performance scorecard acceptance](https://github.com/filthyrake/damendaemon/issues/54)
 - [Upstream inference research](upstream-inference-research.md)
 
 ## Inspect qualification evidence
@@ -39,4 +39,4 @@ Model acceptance does not imply qualification at every context or precision.
 - [Original runtime baseline](runtime-proof.md) and [A2 hardware probe](a2-hardware.md)
 
 Evidence reports preserve the measured scope and historical results; they do not
-replace the [GitHub issue tracker](https://github.com/filthyrake/dllm/issues).
+replace the [GitHub issue tracker](https://github.com/filthyrake/damendaemon/issues).

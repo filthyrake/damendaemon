@@ -6,7 +6,7 @@ import inspect
 import runpy
 import textwrap
 import torch
-from dllm import hybrid
+from damendaemon import hybrid
 
 torch.backends.cuda.matmul.allow_tf32 = False
 

@@ -5,10 +5,10 @@ import subprocess
 import sys
 import unittest
 from unittest.mock import patch
-from dllm.cpu_snapshot_identity import fingerprint
-from dllm.glm_flash_tool_text import FlashToolText
-from dllm.glm_flash_batch_generation import FlashBatchReferenceGenerator
-from dllm.glm_flash_tool_generation import FlashToolReferenceGenerator
+from damendaemon.cpu_snapshot_identity import fingerprint
+from damendaemon.glm_flash_tool_text import FlashToolText
+from damendaemon.glm_flash_batch_generation import FlashBatchReferenceGenerator
+from damendaemon.glm_flash_tool_generation import FlashToolReferenceGenerator
 from scripts import run_glm_flash_host_topology as cli,run_cpu_host_topology as shared
 from tests import test_glm_host_topology_command as raw
 from tests.test_glm_flash_reference_loader import floating_control
@@ -23,7 +23,7 @@ class FlashNativeHostCommandTests(unittest.TestCase):
     def snapshot(self,count):
         from tests.test_glm_flash_generation import text_fixture
         from tests.test_glm_flash_reference_loader import fixture
-        from dllm.glm_text import EOS
+        from damendaemon.glm_text import EOS
         self.count=count;text=text_fixture(self.path)
         self.config,_,self.values=fixture(self.path,vocab_size=text.vocab_size)
         self.config['text_config'].update(eos_token_id=sorted(text.eos),pad_token_id=text.tokenizer.token_to_id(EOS),bos_token_id=None)
@@ -111,7 +111,7 @@ class FlashNativeHostCommandTests(unittest.TestCase):
 
     def test_failed_stop_withholds_command_success_finals(self):
         workers=self.workers('fp8_reference');output=io.StringIO()
-        from dllm.host_pipeline_worker import HostPipelineCoordinator
+        from damendaemon.host_pipeline_worker import HostPipelineCoordinator
         with patch.object(HostPipelineCoordinator,'stop',side_effect=RuntimeError('STOP failed')),redirect_stdout(output),redirect_stderr(io.StringIO()):
             with self.assertRaises(SystemExit) as error:cli.main(self.args('complete',extra=['--prompt','Hi']))
         self.assertEqual(error.exception.code,2);self.assertNotIn('finish_reason',output.getvalue())

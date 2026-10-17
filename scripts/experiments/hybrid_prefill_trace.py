@@ -61,7 +61,7 @@ class Trace:
 def trace_prefill(trace, executor_class=None, attention_module=None):
     """Install temporary experiment hooks; decode and ordinary entrypoints are untouched."""
     if executor_class is None:
-        from dllm import hybrid
+        from damendaemon import hybrid
         executor_class, attention_module = hybrid.HybridExecutor, hybrid
     original_forward = executor_class.forward_embeddings
     original_attention = attention_module.scaled_attention
@@ -118,7 +118,7 @@ def main():
     if not args.probe_args or args.probe_args[0] not in ('serve', 'replay'):
         parser.error('provide serve or replay and the Q4 context probe arguments')
     import torch
-    from dllm.device import selected_accelerator, selected_device
+    from damendaemon.device import selected_accelerator, selected_device
     if selected_accelerator() not in ('cuda', 'rocm'):
         parser.error('prefill tracing requires the CUDA/ROCm Q4 context probe')
     device = selected_device()

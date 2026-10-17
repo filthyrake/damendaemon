@@ -2,7 +2,7 @@
 import json
 import torch
 import triton
-from dllm.quantized_kernels import _linear, _matmul
+from damendaemon.quantized_kernels import _linear, _matmul
 
 for m,n,k in ((4,28672,4096),(64,28672,4096),(4,4096,14336),(4,151936,896)):
     x=torch.randn(m,k,device='cuda',dtype=torch.float16)

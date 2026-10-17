@@ -59,7 +59,7 @@ def linear(x, matrix, bias=None, splits=4):
 
 
 def install_validation_dispatch(splits=4):
-    from dllm import awq_kernels
+    from damendaemon import awq_kernels
     original = awq_kernels.linear
     awq_kernels.linear = lambda x, matrix, bias=None: (
         linear(x, matrix, bias, splits) if x.shape[0] <= 4 else original(x, matrix, bias))

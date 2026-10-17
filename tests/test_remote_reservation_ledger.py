@@ -8,8 +8,8 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
-from dllm.http_auth import ClientKey
-from dllm.remote_reservation_ledger import RemoteReservationLedger,RemoteLedgerUnavailable,RemoteOwnerDenied,RemoteSequenceError
+from damendaemon.http_auth import ClientKey
+from damendaemon.remote_reservation_ledger import RemoteReservationLedger,RemoteLedgerUnavailable,RemoteOwnerDenied,RemoteSequenceError
 
 
 def reserve(outputs=0,requests=1,client='alice'):return dict(op='reserve',client=client,requests=requests,outputs=outputs)
@@ -89,8 +89,8 @@ class RemoteReservationLedgerTests(unittest.TestCase):
 
     def test_process_contention_and_process_exit_leave_capacity_charged(self):
         code='''import json,secrets,sys
-from dllm.http_auth import ClientKey
-from dllm.remote_reservation_ledger import RemoteReservationLedger
+from damendaemon.http_auth import ClientKey
+from damendaemon.remote_reservation_ledger import RemoteReservationLedger
 client=ClientKey('alice',secrets.token_urlsafe(32),2,max_reserved_output_tokens=10)
 ledger=RemoteReservationLedger(sys.argv[1],[client])
 owner,key=secrets.token_hex(16),secrets.token_bytes(32)
@@ -130,9 +130,9 @@ print(json.dumps(result),flush=True)
         self.run_command(2,dict(op='release',claim=claim))
 
     def test_bounds_unsafe_storage_and_lock_contention(self):
-        with patch('dllm.remote_reservation_ledger.MAX_OWNERS',1):
+        with patch('damendaemon.remote_reservation_ledger.MAX_OWNERS',1):
             with self.assertRaises(RemoteLedgerUnavailable):self.ledger.register(secrets.token_hex(16),secrets.token_bytes(32),['alice'])
-        with patch('dllm.remote_reservation_ledger.MAX_CLAIMS',0):self.assertEqual(self.run_command(1,reserve())['code'],'claim_limit')
+        with patch('damendaemon.remote_reservation_ledger.MAX_CLAIMS',0):self.assertEqual(self.run_command(1,reserve())['code'],'claim_limit')
         connection=sqlite3.connect(self.path);connection.execute('BEGIN IMMEDIATE')
         try:
             with self.assertRaises(RemoteLedgerUnavailable):self.run_command(2,reserve())

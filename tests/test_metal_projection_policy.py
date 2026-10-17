@@ -1,5 +1,5 @@
 import unittest
-from dllm.metal_projection_policy import use_packed_projection
+from damendaemon.metal_projection_policy import use_packed_projection
 
 
 class MetalProjectionPolicyTests(unittest.TestCase):

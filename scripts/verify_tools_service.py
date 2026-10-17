@@ -2,7 +2,7 @@
 if not __debug__:
     raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
 
-from dllm.evidence_environment import report_environment
+from damendaemon.evidence_environment import report_environment
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json
@@ -13,12 +13,12 @@ from urllib.request import Request,urlopen
 from urllib.error import HTTPError
 import torch
 from transformers import AutoTokenizer
-from dllm.bench import events
-from dllm.runtime import require_gpu
-from dllm.models import config as model_config, is_gguf
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer,handler_for
-from dllm.tool_calls import template_messages
+from damendaemon.bench import events
+from damendaemon.runtime import require_gpu
+from damendaemon.models import config as model_config, is_gguf
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer,handler_for
+from damendaemon.tool_calls import template_messages
 
 TOOLS=[{'type':'function','function':{'name':'get_weather',
     'description':'Get current weather for a city. Use this for current conditions.',
@@ -35,10 +35,10 @@ def main():
     p.add_argument('--reference-model', help='HF tokenizer reference when the model is a standalone GGUF')
     p.add_argument('--other-reference-model', help='HF tokenizer reference for the other model')
     p.add_argument('--device',choices=('cuda','mps'),default='cuda');args=p.parse_args()
-    os.environ['DLLM_DEVICE']=args.device;require_gpu();torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_DEVICE']=args.device;require_gpu();torch.set_num_threads(4)
     paths={'a':args.model,'b':args.other_model}
     references={'a':args.reference_model or args.model, 'b':args.other_reference_model or args.other_model}
-    from dllm.chat_template import read_override, override_metadata
+    from damendaemon.chat_template import read_override, override_metadata
     templates = {alias:read_override(file) for alias,file in
                  (('a',args.chat_template),('b',args.other_chat_template)) if file is not None}
     runtime=BatchedRuntime({},context=2048,batch_size=4,gpu_models=1,host_models=2,host_gib=16)
@@ -139,19 +139,19 @@ def main():
                 'tool_call':call['function'],'continuation':continuation['choices'][0],
                 'stream_and_nonstream_equal':True,'tool_choice_none':True})
         restored=request('a');check(restored)
-        assert restored['dllm_timing']['source_tier']=='host'
+        assert restored['damendaemon_timing']['source_tier']=='host'
         barrier=threading.Barrier(4)
         def concurrent(_):barrier.wait();return request('a')
         with ThreadPoolExecutor(4) as pool:outputs=list(pool.map(concurrent,range(4)))
         ids=[check(result)['id'] for result in outputs];assert len(set(ids))==4
         assert all(check(result)['function']==baseline['a'] for result in outputs)
-        max_batch=max(r['dllm_timing']['max_batch_size'] for r in outputs);assert max_batch>=2,max_batch
+        max_batch=max(r['damendaemon_timing']['max_batch_size'] for r in outputs);assert max_batch>=2,max_batch
         with post('a',stream=True) as response:next(events(response, require_terminated=True))
         runtime.manage('status');check(request('a'))
         for alias in paths:
             manage('unload',model=alias,release_host=True)
             reloaded=request(alias);check(reloaded)
-            assert reloaded['dllm_timing']['source_tier']=='disk'
+            assert reloaded['damendaemon_timing']['source_tier']=='disk'
         status=runtime.manage('status')
         for item in status['models']:
             assert item['chat_template']==override_metadata(templates.get(item['id']))

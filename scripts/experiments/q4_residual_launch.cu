@@ -1,23 +1,23 @@
-// Isolated launch-geometry / unused-sum experiment derived from dllm's own
+// Isolated launch-geometry / unused-sum experiment derived from damendaemon's own
 // native/q4_residual.cu. Production source and selection remain unchanged.
-#ifndef DLLM_Q4_LAUNCH_WARPS
-#define DLLM_Q4_LAUNCH_WARPS 4
+#ifndef DAMENDAEMON_Q4_LAUNCH_WARPS
+#define DAMENDAEMON_Q4_LAUNCH_WARPS 4
 #endif
-#ifndef DLLM_Q4_SKIP_SUM
-#define DLLM_Q4_SKIP_SUM 0
+#ifndef DAMENDAEMON_Q4_SKIP_SUM
+#define DAMENDAEMON_Q4_SKIP_SUM 0
 #endif
-#ifndef DLLM_Q4_SHARED_INPUTS
-#define DLLM_Q4_SHARED_INPUTS 0
+#ifndef DAMENDAEMON_Q4_SHARED_INPUTS
+#define DAMENDAEMON_Q4_SHARED_INPUTS 0
 #endif
-#ifndef DLLM_Q4_STREAM_WEIGHTS
-#define DLLM_Q4_STREAM_WEIGHTS 0
+#ifndef DAMENDAEMON_Q4_STREAM_WEIGHTS
+#define DAMENDAEMON_Q4_STREAM_WEIGHTS 0
 #endif
-#ifndef DLLM_Q4_PAIRED_ACTIVATIONS
-#define DLLM_Q4_PAIRED_ACTIVATIONS 0
+#ifndef DAMENDAEMON_Q4_PAIRED_ACTIVATIONS
+#define DAMENDAEMON_Q4_PAIRED_ACTIVATIONS 0
 #endif
-static_assert(DLLM_Q4_LAUNCH_WARPS == 2 || DLLM_Q4_LAUNCH_WARPS == 4 ||
-              DLLM_Q4_LAUNCH_WARPS == 8 || DLLM_Q4_LAUNCH_WARPS == 16);
-static_assert(DLLM_Q4_SHARED_INPUTS >= 0 && DLLM_Q4_SHARED_INPUTS <= 2);
+static_assert(DAMENDAEMON_Q4_LAUNCH_WARPS == 2 || DAMENDAEMON_Q4_LAUNCH_WARPS == 4 ||
+              DAMENDAEMON_Q4_LAUNCH_WARPS == 8 || DAMENDAEMON_Q4_LAUNCH_WARPS == 16);
+static_assert(DAMENDAEMON_Q4_SHARED_INPUTS >= 0 && DAMENDAEMON_Q4_SHARED_INPUTS <= 2);
 // Independent single-row Q4_0 integer dots with two dyadic int8 activation terms.
 // Preserve packed source coefficients; scale in FP32 rather than rounding each
 // coefficient to FP16. Explicitly selected only for the qualified model scope.
@@ -49,7 +49,7 @@ __global__ void quantize(const half* x, int8_t* q1, int8_t* q2, float4* scales, 
         maximum = fmaxf(maximum, __shfl_xor_sync(0xffffffff, maximum, offset));
     const float d2 = dyadic_scale(maximum);
     const int second = d2 == 0.f ? 0 : max(-127, min(127, __float2int_rn(residual / d2)));
-#if DLLM_Q4_PAIRED_ACTIVATIONS
+#if DAMENDAEMON_Q4_PAIRED_ACTIVATIONS
     // Keep both dyadic terms exact, but put each low/high nibble dot's four
     // activation bytes together. Each term retains its original K-byte size.
     unsigned packed_first = (static_cast<unsigned>(first)&255u) << ((lane&3)*8);
@@ -67,7 +67,7 @@ __global__ void quantize(const half* x, int8_t* q1, int8_t* q2, float4* scales, 
 #else
     q1[index] = static_cast<int8_t>(first);q2[index] = static_cast<int8_t>(second);
 #endif
-#if DLLM_Q4_SKIP_SUM
+#if DAMENDAEMON_Q4_SKIP_SUM
     // The Q4 GEMV consumes only x/y scales. Keep ABI storage, zero unused z.
     sum = 0.f;
 #else
@@ -82,8 +82,8 @@ __global__ void q4_residual(const int8_t* q1, const int8_t* q2, const float4* xs
                           const uint8_t* w, const half* ws, const half* bias,
                           half* output, int n, int k) {
     const int lane = threadIdx.x & 31;
-    const int row = blockIdx.x*DLLM_Q4_LAUNCH_WARPS + threadIdx.x/32;
-#if DLLM_Q4_SHARED_INPUTS
+    const int row = blockIdx.x*DAMENDAEMON_Q4_LAUNCH_WARPS + threadIdx.x/32;
+#if DAMENDAEMON_Q4_SHARED_INPUTS
     // All warps, including tail rows, participate before the block barrier.
     extern __shared__ __align__(16) unsigned char scratch[];
     int8_t* shared_q1 = reinterpret_cast<int8_t*>(scratch);
@@ -92,14 +92,14 @@ __global__ void q4_residual(const int8_t* q1, const int8_t* q2, const float4* xs
         reinterpret_cast<int*>(shared_q1)[index] = reinterpret_cast<const int*>(q1)[index];
         reinterpret_cast<int*>(shared_q2)[index] = reinterpret_cast<const int*>(q2)[index];
     }
-#if DLLM_Q4_SHARED_INPUTS == 2
+#if DAMENDAEMON_Q4_SHARED_INPUTS == 2
     float4* shared_scales = reinterpret_cast<float4*>(scratch + 2*k);
     for (int group=threadIdx.x; group<k/32; group+=blockDim.x)
         shared_scales[group] = xs[group];
 #endif
     __syncthreads();
     q1 = shared_q1; q2 = shared_q2;
-#if DLLM_Q4_SHARED_INPUTS == 2
+#if DAMENDAEMON_Q4_SHARED_INPUTS == 2
     xs = shared_scales;
 #endif
 #endif
@@ -122,7 +122,7 @@ __global__ void q4_residual(const int8_t* q1, const int8_t* q2, const float4* xs
         #pragma unroll
         for (int r=0; r<Rows; ++r) {
             const int index=r*k+column;
-#if DLLM_Q4_PAIRED_ACTIVATIONS
+#if DAMENDAEMON_Q4_PAIRED_ACTIVATIONS
             const uint2 first_pair=*reinterpret_cast<const uint2*>(q1+r*k+2*packed_column);
             const uint2 second_pair=*reinterpret_cast<const uint2*>(q2+r*k+2*packed_column);
             const int a=__dp4a(static_cast<int>(lo),static_cast<int>(first_pair.x),
@@ -147,7 +147,7 @@ __global__ void q4_residual(const int8_t* q1, const int8_t* q2, const float4* xs
     }
 }
 
-extern "C" int dllm_q4_residual_quantize(const void* x, void* q1, void* q2, void* scales,
+extern "C" int damendaemon_q4_residual_quantize(const void* x, void* q1, void* q2, void* scales,
                                          int rows, int k, void* stream) {
     if (!x || !q1 || !q2 || !scales || rows!=1 || k<=0 || k%256) return cudaErrorInvalidValue;
     const int groups=k/32;
@@ -156,24 +156,24 @@ extern "C" int dllm_q4_residual_quantize(const void* x, void* q1, void* q2, void
     return cudaGetLastError();
 }
 
-extern "C" int dllm_q4_residual_gemv(const void* q1,const void* q2,const void* xs,
+extern "C" int damendaemon_q4_residual_gemv(const void* q1,const void* q2,const void* xs,
     const void* w,const void* ws,const void* bias,void* output,int rows,int n,int k,void* stream) {
     if (!q1 || !q2 || !xs || !w || !ws || !output || rows!=1 || n<=0 || k<=0 || k%256)
         return cudaErrorInvalidValue;
-    const int blocks=(n+DLLM_Q4_LAUNCH_WARPS-1)/DLLM_Q4_LAUNCH_WARPS;
-    const int shared=DLLM_Q4_SHARED_INPUTS ? 2*k+(DLLM_Q4_SHARED_INPUTS==2 ? (k/32)*sizeof(float4) : 0) : 0;
-    #define LAUNCH_STREAM(S) q4_residual<1,S><<<blocks,32*DLLM_Q4_LAUNCH_WARPS,shared,reinterpret_cast<cudaStream_t>(stream)>>>( \
+    const int blocks=(n+DAMENDAEMON_Q4_LAUNCH_WARPS-1)/DAMENDAEMON_Q4_LAUNCH_WARPS;
+    const int shared=DAMENDAEMON_Q4_SHARED_INPUTS ? 2*k+(DAMENDAEMON_Q4_SHARED_INPUTS==2 ? (k/32)*sizeof(float4) : 0) : 0;
+    #define LAUNCH_STREAM(S) q4_residual<1,S><<<blocks,32*DAMENDAEMON_Q4_LAUNCH_WARPS,shared,reinterpret_cast<cudaStream_t>(stream)>>>( \
         static_cast<const int8_t*>(q1),static_cast<const int8_t*>(q2),static_cast<const float4*>(xs), \
         static_cast<const uint8_t*>(w),static_cast<const half*>(ws),static_cast<const half*>(bias), \
         static_cast<half*>(output),n,k)
-    #if DLLM_Q4_STREAM_WEIGHTS == 2
+    #if DAMENDAEMON_Q4_STREAM_WEIGHTS == 2
     if (n==4096 && k==14336) { LAUNCH_STREAM(true); }
     else { LAUNCH_STREAM(false); }
     #else
-    LAUNCH_STREAM(DLLM_Q4_STREAM_WEIGHTS == 1);
+    LAUNCH_STREAM(DAMENDAEMON_Q4_STREAM_WEIGHTS == 1);
     #endif
     #undef LAUNCH_STREAM
     return cudaGetLastError();
 }
 
-extern "C" int dllm_q4_residual_abi_version() { return 201; }
+extern "C" int damendaemon_q4_residual_abi_version() { return 201; }

@@ -3,12 +3,12 @@ import json
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.cpu_host_worker_build import build_cpu_host_worker
-from dllm.host_hybrid_worker import HostHybridWorker
-from dllm.host_stage_channel import HostStageChannel
-from dllm.stage_protocol import StageState
-from dllm.cpu_hybrid_checkpoint import load_cpu_stage_checkpoint
-from dllm.cpu_hybrid_stage import CpuHybridStage
+from damendaemon.cpu_host_worker_build import build_cpu_host_worker
+from damendaemon.host_hybrid_worker import HostHybridWorker
+from damendaemon.host_stage_channel import HostStageChannel
+from damendaemon.stage_protocol import StageState
+from damendaemon.cpu_hybrid_checkpoint import load_cpu_stage_checkpoint
+from damendaemon.cpu_hybrid_stage import CpuHybridStage
 from tests import test_cpu_host_worker_build as fixture_module
 from tests.test_cpu_stage_plan import OPTIONS
 

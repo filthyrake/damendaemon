@@ -10,7 +10,7 @@ _owners=[]
 
 @lru_cache(maxsize=1)
 def credentials():
-    owner=tempfile.TemporaryDirectory(prefix='dllm-test-tls-')
+    owner=tempfile.TemporaryDirectory(prefix='damendaemon-test-tls-')
     path=Path(owner.name)
     def openssl(*args):
         try:
@@ -21,14 +21,14 @@ def credentials():
     try:
         # Explicit configuration avoids depending on a machine's OpenSSL defaults.
         (path/'ca.cnf').write_text('[req]\ndistinguished_name=dn\nx509_extensions=ca\nprompt=no\n'
-            '[dn]\nCN=dllm temporary test CA\n[ca]\nbasicConstraints=critical,CA:TRUE\n'
+            '[dn]\nCN=damendaemon temporary test CA\n[ca]\nbasicConstraints=critical,CA:TRUE\n'
             'keyUsage=critical,keyCertSign,cRLSign\nsubjectKeyIdentifier=hash\n')
         openssl('req','-x509','-newkey','rsa:2048','-nodes','-days','2','-sha256',
                 '-config','ca.cnf','-keyout','ca.key','-out','ca.pem')
         (path/'ca.key').chmod(0o600)
         for name in ('server','client','untrusted'):
             (path/(name+'.cnf')).write_text('[req]\ndistinguished_name=dn\nprompt=no\n'
-                '[dn]\nCN='+('localhost' if name=='server' else 'dllm temporary '+name)+'\n')
+                '[dn]\nCN='+('localhost' if name=='server' else 'damendaemon temporary '+name)+'\n')
             openssl('req','-new','-newkey','rsa:2048','-nodes','-sha256','-config',name+'.cnf',
                     '-keyout',name+'.key','-out',name+'.csr')
             (path/(name+'.key')).chmod(0o600)

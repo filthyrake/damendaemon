@@ -1,4 +1,4 @@
-"""Match dllm's Q8 output head while retaining a tied checkpoint's FP16 embedding.
+"""Match damendaemon's Q8 output head while retaining a tied checkpoint's FP16 embedding.
 
 Only creates a new validation artifact. Upstream code and source GGUF stay
 unchanged. All original tensor bytes must survive the conversion exactly.

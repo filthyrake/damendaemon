@@ -9,9 +9,9 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from dllm.bench import events
-from dllm.http_auth import AuthPolicy
-from dllm.server import handler_for
+from damendaemon.bench import events
+from damendaemon.http_auth import AuthPolicy
+from damendaemon.server import handler_for
 
 
 class HttpTerminalTests(unittest.TestCase):
@@ -59,7 +59,7 @@ class HttpTerminalTests(unittest.TestCase):
             json.dumps(payload).encode(), {'Content-Type': 'application/json'}), timeout=3)
 
     def test_missing_or_invalid_terminal_never_publishes_stream_success(self):
-        with patch('dllm.server.traceback.print_exc'):
+        with patch('damendaemon.server.traceback.print_exc'):
             for case in ('missing','duplicate','late-output','cleanup-fails',
                          'invalid-final','missing-metadata','output-lease-fails'):
                 with self.subTest(case=case):
@@ -76,7 +76,7 @@ class HttpTerminalTests(unittest.TestCase):
                                          for choice in item.get('choices',[])))
 
     def test_missing_final_is_server_error_including_empty_stream(self):
-        with patch('dllm.server.traceback.print_exc'):
+        with patch('damendaemon.server.traceback.print_exc'):
             for case, stream in (('missing',False),('empty',False),('empty',True)):
                 with self.subTest(case=case,stream=stream):
                     self.case=case

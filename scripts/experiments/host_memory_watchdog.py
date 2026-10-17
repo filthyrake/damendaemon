@@ -1,7 +1,7 @@
 """Host-side protection for an owned experiment, independent of GPU accounting."""
 import threading
 
-from dllm.rocm_policy import host_available
+from damendaemon.rocm_policy import host_available
 
 
 class HostMemoryWatchdog:

@@ -7,15 +7,15 @@ import threading
 import time
 from urllib.request import Request,urlopen
 import torch
-from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer,handler_for
+from damendaemon.scheduler import BatchedRuntime
+from damendaemon.server import BoundedHTTPServer,handler_for
 
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');args=p.parse_args();torch.set_num_threads(4)
     results=[];baseline={}
     for limit in (0,4):
-        os.environ['DLLM_PREFILL_GRAPHS']=str(limit)
+        os.environ['DAMENDAEMON_PREFILL_GRAPHS']=str(limit)
         runtime=BatchedRuntime({'a':args.model},context=256,batch_size=4,host_models=1,host_gib=8)
         server=BoundedHTTPServer(('127.0.0.1',0),handler_for(runtime))
         worker=threading.Thread(target=server.serve_forever,daemon=True);worker.start()

@@ -10,11 +10,11 @@ exercised. This is accounting infrastructure, not remote workload fencing,
 automatic dead-host reclamation or distributed inference qualification.
 
 Both endpoints require TLS 1.3, trusted client/server certificates, exact DER
-certificate pins and the distinct `dllm-quota/1` application protocol. Build
+certificate pins and the distinct `damendaemon-quota/1` application protocol. Build
 contexts using `client_context(..., alpn=QUOTA_ALPN)` and the corresponding server
-function in `dllm.host_tls`. Clients pin one authority certificate and validate
+function in `damendaemon.host_tls`. Clients pin one authority certificate and validate
 its hostname. Authorities explicitly allow at most 128 distinct client pins.
-Existing tensor-worker TLS retains `dllm-host/1` by default. Keep contexts
+Existing tensor-worker TLS retains `damendaemon-host/1` by default. Keep contexts
 immutable after setup. No certificate/private key is embedded in the repository;
 TLS tests generate temporary credentials.
 

@@ -11,8 +11,8 @@ import time
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from dllm.bench import events, _response_json, _tool_call_output
-from dllm.token_workload import load_token_prompt
+from damendaemon.bench import events, _response_json, _tool_call_output
+from damendaemon.token_workload import load_token_prompt
 
 
 MAX_RESPONSE_BYTES = 64 * 1024 * 1024
@@ -54,7 +54,7 @@ def _score_count(logprobs, requested_top):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("base_url")
-    parser.add_argument("--engine", choices=["dllm", "llama.cpp", "vllm"], required=True)
+    parser.add_argument("--engine", choices=["damendaemon", "llama.cpp", "vllm"], required=True)
     parser.add_argument("--concurrency", type=int, default=1)
     parser.add_argument("--thinking", choices=("auto", "on", "off"), default="auto")
     parser.add_argument('--raw', action='store_true', help='benchmark a raw code-completion prompt')

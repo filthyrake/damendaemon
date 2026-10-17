@@ -5,7 +5,7 @@ from pathlib import Path
 import torch
 import triton as tr
 
-from dllm import kquant_kernels
+from damendaemon import kquant_kernels
 
 
 def install_validation_dispatch():

@@ -19,11 +19,11 @@ from gguf.quants import dequantize
 from transformers import AutoConfig, AutoModelForCausalLM
 from transformers.modeling_utils import no_init_weights
 
-from dllm.gguf_model import GgufWeights
-from dllm.runtime import make_executor
-from dllm.report_io import load_report
-from dllm.token_workload import token_workload_digest, teacher_token_lookup
-from dllm.device import empty_cache, device_name
+from damendaemon.gguf_model import GgufWeights
+from damendaemon.runtime import make_executor
+from damendaemon.report_io import load_report
+from damendaemon.token_workload import token_workload_digest, teacher_token_lookup
+from damendaemon.device import empty_cache, device_name
 
 
 def reference_prefill(reference, tokens, chunk_size=0):
@@ -87,14 +87,14 @@ def main():
     p.add_argument('--extra-prompt-tokens',type=int,nargs='*',default=[],help='additional raw prompt lengths, leaving eight decode positions')
     p.add_argument('--weight-rounding',choices=('float16','kquant-float32'),default='float16',
                    help='explicit coefficient policy; FP32 K projections retain FP16 embedding/vector values')
-    p.add_argument('--serial-reference',action='store_true',help='cache independent HF logits, release HF GPU weights, then run dllm')
+    p.add_argument('--serial-reference',action='store_true',help='cache independent HF logits, release HF GPU weights, then run damendaemon')
     p.add_argument('--reference-prefill-chunk-size', type=int, default=0,
                    help='bound independent HF prefill attention memory; zero uses whole prompts')
     p.add_argument('--reference-dtype', choices=('float16', 'float32'), default='float16')
     p.add_argument('--teacher-trace', help='hold token inputs fixed to a previous report')
     p.add_argument('--extended', action='store_true', help='additional multi-turn, Unicode, code and raw-prefix cases')
     p.add_argument('--window-boundaries', action='store_true', help='include prompts before, at and after the declared sliding window')
-    p.add_argument('--expanded-control',action='store_true',help='diagnostic: expand the same coefficients before dllm execution')
+    p.add_argument('--expanded-control',action='store_true',help='diagnostic: expand the same coefficients before damendaemon execution')
     p.add_argument('--require-q4-marlin',action='store_true',help='require normal Q4 Marlin layout replacement')
     p.add_argument('--require-resident-cache', action='store_true', help='fail unless normal resident cache selection is active')
     p.add_argument('--require-q4-small-tiles', action='store_true', help='fail unless normal A2 prompt tile selection is active for this model')
@@ -117,8 +117,8 @@ def main():
         p.error('kquant-float32 weights require --reference-dtype float32')
     experiment = None
     if args.experimental_q4_marlin_context:
-        if not os.environ.get('DLLM_Q4_MARLIN_LIBRARY'):
-            p.error('context experiment requires DLLM_Q4_MARLIN_LIBRARY')
+        if not os.environ.get('DAMENDAEMON_Q4_MARLIN_LIBRARY'):
+            p.error('context experiment requires DAMENDAEMON_Q4_MARLIN_LIBRARY')
         args.require_q4_marlin=True
         if args.context!=args.experimental_q4_marlin_context:
             p.error('context override must equal the actual requested context')
@@ -226,7 +226,7 @@ def main():
     reference.eval().to(device="cuda", dtype=getattr(torch, args.reference_dtype))
     reference_cache = {}
     if args.serial_reference:
-        # Large checkpoints need not hold HF's expanded weights and dllm's
+        # Large checkpoints need not hold HF's expanded weights and damendaemon's
         # packed weights on the GPU together. The oracle still executes independently.
         with torch.inference_mode():
             for graph in (False, True):
@@ -249,7 +249,7 @@ def main():
         for graph in (False, True):
             executor = make_executor(source, use_graph=graph)
             if args.require_q4_small_tiles:
-                from dllm import q4_prefill_policy
+                from damendaemon import q4_prefill_policy
                 weight = executor.w['0.qkv.weight']
                 selected = (weight.dtype == torch.uint8 and executor.compute_dtype == torch.float16
                             and q4_prefill_policy.use_small_tile(64, weight.shape[0], weight.shape[1]*2, weight.device))
@@ -318,8 +318,8 @@ def main():
             gc.collect(); empty_cache()
     with Path(args.gguf).open('rb') as file: sha = hashlib.file_digest(file, 'sha256').hexdigest()
     passed = all(not c['greedy_mismatches'] and all(e['max_absolute'] < .5 and e['relative_rms'] < .01 for e in c['errors']) for c in cases)
-    residual_variable=('DLLM_KQUANT_RESIDUAL_F32_LIBRARY' if 'cuda-kquant-residual-f32' in precision['backend']
-                       else 'DLLM_KQUANT_RESIDUAL_LIBRARY')
+    residual_variable=('DAMENDAEMON_KQUANT_RESIDUAL_F32_LIBRARY' if 'cuda-kquant-residual-f32' in precision['backend']
+                       else 'DAMENDAEMON_KQUANT_RESIDUAL_LIBRARY')
     residual_path=os.environ.get(residual_variable)
     residual_selected='cuda-kquant-residual' in precision['backend']
     residual_library=None
@@ -328,15 +328,15 @@ def main():
             sha256=hashlib.sha256(Path(residual_path).read_bytes()).hexdigest() if residual_selected else None)
     prefill_kernel=None
     if 'compensated-kquant-prefill-f32' in precision['backend']:
-        from dllm import kquant_prefill_kernels
+        from damendaemon import kquant_prefill_kernels
         prefill_kernel=hashlib.sha256(Path(kquant_prefill_kernels.__file__).read_bytes()).hexdigest()
-    q4_path=os.environ.get('DLLM_Q4_CUDA_LIBRARY')
+    q4_path=os.environ.get('DAMENDAEMON_Q4_CUDA_LIBRARY')
     q4_library=dict(path=q4_path, selected='+cuda-gemv' in precision['backend'],
                     sha256=hashlib.sha256(Path(q4_path).read_bytes()).hexdigest()) if q4_path else None
-    q4_residual_path=os.environ.get('DLLM_Q4_RESIDUAL_LIBRARY')
+    q4_residual_path=os.environ.get('DAMENDAEMON_Q4_RESIDUAL_LIBRARY')
     q4_residual_library=dict(path=q4_residual_path,selected='+cuda-q4-residual' in precision['backend'],
         sha256=hashlib.sha256(Path(q4_residual_path).read_bytes()).hexdigest()) if q4_residual_path else None
-    kquant_path=os.environ.get('DLLM_KQUANT_CUDA_LIBRARY')
+    kquant_path=os.environ.get('DAMENDAEMON_KQUANT_CUDA_LIBRARY')
     kquant_library=dict(path=kquant_path,sha256=hashlib.sha256(Path(kquant_path).read_bytes()).hexdigest()) if kquant_path else None
     tokenizer_runtime=dict(kind=type(source.tokenizer).__name__)
     if hasattr(source.tokenizer,'native_model'):
@@ -350,7 +350,7 @@ def main():
                   weight_rounding=args.weight_rounding, tf32=False, formats=formats, embedding_type=embedding_type,
                   teacher_trace=args.teacher_trace,expanded_control=args.expanded_control,
                   host_bytes=source.bytes, experiment=experiment, production_residual_library=residual_library, cases=cases)
-    marlin_path=os.environ.get('DLLM_Q4_MARLIN_LIBRARY')
+    marlin_path=os.environ.get('DAMENDAEMON_Q4_MARLIN_LIBRARY')
     if marlin_path:
         report['native_q4_marlin_library']=dict(path=marlin_path,selected='+cuda-q4-marlin' in precision['backend'],abi=precision.get('q4_marlin_abi'),
             sha256=hashlib.sha256(Path(marlin_path).read_bytes()).hexdigest())

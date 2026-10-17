@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.cuda_prepared_projection import CudaPackedProjection
-from dllm.cuda_glm_attention import project_mla,sparse_latent_attention
-from dllm.glm_attention import project_mla as cpu_project, _projection
+from damendaemon.cuda_prepared_projection import CudaPackedProjection
+from damendaemon.cuda_glm_attention import project_mla,sparse_latent_attention
+from damendaemon.glm_attention import project_mla as cpu_project, _projection
 
 
 class CudaGlmAttentionTests(unittest.TestCase):
@@ -24,7 +24,7 @@ class CudaGlmAttentionTests(unittest.TestCase):
             self.assertEqual((selected.start,selected.stop),(126,131))
             self.assertIs(selected.weight,weight);self.assertIs(selected.scales,scales)
             self.assertFalse(_projection(selected));self.assertTrue(_projection(selected,'cuda:0'))
-            with patch('dllm.cuda_prepared_projection.cuda_packed_linear',side_effect=AssertionError('executed')):
+            with patch('damendaemon.cuda_prepared_projection.cuda_packed_linear',side_effect=AssertionError('executed')):
                 self.assertEqual(selected.linear(torch.empty(0,3,160,device='cuda:0')).shape,(0,3,5))
                 for hidden in (torch.empty(1,160),torch.empty(1,160,device='cuda:1'),torch.empty(1,160,dtype=torch.float16,device='cuda:0')):
                     with self.assertRaises(ValueError):selected.linear(hidden)

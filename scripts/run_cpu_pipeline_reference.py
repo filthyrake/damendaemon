@@ -3,10 +3,10 @@ import argparse
 from contextlib import closing
 import json
 from pathlib import Path
-from dllm.cpu_reference_text import CpuReferenceText,read_json
-from dllm.cpu_hybrid_checkpoint import load_cpu_checkpoint
-from dllm.cpu_pipeline_generation import CpuPipelineReferenceGenerator
-from dllm.cpu_completion_inputs import completion_inputs
+from damendaemon.cpu_reference_text import CpuReferenceText,read_json
+from damendaemon.cpu_hybrid_checkpoint import load_cpu_checkpoint
+from damendaemon.cpu_pipeline_generation import CpuPipelineReferenceGenerator
+from damendaemon.cpu_completion_inputs import completion_inputs
 
 
 def _positive(value):

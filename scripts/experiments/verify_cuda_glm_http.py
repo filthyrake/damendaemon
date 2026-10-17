@@ -17,15 +17,15 @@ def main():
     import torch
     from tests.test_glm_generation import text_fixture
     from tests.test_glm_reference_loader import fixture
-    from dllm.glm_reference_loader import load_reference_model
-    from dllm.cuda_glm_placement import place_cuda_glm
-    from dllm.cuda_glm_generation import CudaGlmToolGenerator
-    from dllm.glm_tool_generation import GlmToolReferenceGenerator
-    from dllm.glm_tool_text import GlmToolText
-    from dllm.cuda_reference_serving import CudaGlmReferenceRuntime
-    from dllm.reference_serving import handler_for_reference
-    from dllm.server import BoundedHTTPServer
-    from dllm.http_auth import AuthPolicy
+    from damendaemon.glm_reference_loader import load_reference_model
+    from damendaemon.cuda_glm_placement import place_cuda_glm
+    from damendaemon.cuda_glm_generation import CudaGlmToolGenerator
+    from damendaemon.glm_tool_generation import GlmToolReferenceGenerator
+    from damendaemon.glm_tool_text import GlmToolText
+    from damendaemon.cuda_reference_serving import CudaGlmReferenceRuntime
+    from damendaemon.reference_serving import handler_for_reference
+    from damendaemon.server import BoundedHTTPServer
+    from damendaemon.http_auth import AuthPolicy
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')
     torch.set_num_threads(1);torch.backends.cuda.matmul.allow_tf32=False
     torch.cuda.set_per_process_memory_fraction(128*1024**2/torch.cuda.get_device_properties(0).total_memory)
@@ -33,7 +33,7 @@ def main():
                 official_model_qualified=False,performance_qualified=False)
     save(args.output,report);server=thread=runtime=None
     try:
-        with tempfile.TemporaryDirectory(prefix='dllm-cuda-http-') as temp:
+        with tempfile.TemporaryDirectory(prefix='damendaemon-cuda-http-') as temp:
             path=Path(temp);base_text=text_fixture(path);fixture(path,vocab_size=base_text.vocab_size)
             text=GlmToolText(path,vocab_size=base_text.vocab_size)
             cpu=load_reference_model(path,max_weight_bytes=1024*1024);cpu.head.zero_()
@@ -55,7 +55,7 @@ def main():
             def post(value):return urlopen(Request(base+'/v1/chat/completions',data=json.dumps(value).encode(),headers={'Content-Type':'application/json'}),timeout=20)
             with post(body) as response:result=json.load(response)
             if result['choices'][0]['message'].get('reasoning_content','')!=expected_text:raise AssertionError('CUDA chat differs from CPU wire control')
-            if result['dllm_timing']['source_tier']!='cuda_prepared_reference' or result['dllm_timing']['kernel_backend']!='glm_moe_dsa-cuda-prepared-reference':raise AssertionError('HTTP timing mislabeled CUDA execution')
+            if result['damendaemon_timing']['source_tier']!='cuda_prepared_reference' or result['damendaemon_timing']['kernel_backend']!='glm_moe_dsa-cuda-prepared-reference':raise AssertionError('HTTP timing mislabeled CUDA execution')
             with post(body|dict(stream=True)) as response:wire=response.read().decode()
             events=[json.loads(line[6:]) for line in wire.splitlines() if line.startswith('data: {')]
             streamed=''.join(choice.get('delta',{}).get('reasoning_content','') for event in events for choice in event['choices'])

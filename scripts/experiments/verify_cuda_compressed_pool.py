@@ -14,7 +14,7 @@ def main():
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
-    from dllm.cuda_compressed_pool import pool_projected,reorder_pool
+    from damendaemon.cuda_compressed_pool import pool_projected,reorder_pool
     from tests.test_compressed_pool import CompressedPoolTests,scalar_pool
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')
     torch.set_num_threads(1);torch.backends.cuda.matmul.allow_tf32=False
@@ -49,14 +49,14 @@ def main():
             torch.testing.assert_close(reordered.values,state.values[order],atol=0,rtol=0)
             reordered.values[0].add_(1);torch.testing.assert_close(reordered.values[2],state.values[1],atol=0,rtol=0)
             for option in ('max_workspace_bytes','max_output_bytes'):
-                with patch('dllm.cuda_compressed_pool.torch.isfinite',side_effect=AssertionError('scan before admission')):
+                with patch('damendaemon.cuda_compressed_pool.torch.isfinite',side_effect=AssertionError('scan before admission')):
                     rejected(lambda:pool_projected(values,gates,offsets,**{option:1}))
                     rejected(lambda:reorder_pool(state,order,**{option:1}))
             rejected(lambda:pool_projected(values+float('nan'),gates,offsets,state=state))
             rejected(lambda:pool_projected(values,gates.cpu(),offsets))
             rejected(lambda:reorder_pool(state,order.cpu()))
             rejected(lambda:reorder_pool(state,order+10))
-            with patch('dllm.cuda_compressed_pool._pool',side_effect=RuntimeError('injected core failure')):
+            with patch('damendaemon.cuda_compressed_pool._pool',side_effect=RuntimeError('injected core failure')):
                 try:pool_projected(values,gates,offsets,state=state)
                 except RuntimeError as error:assert 'injected core failure' in str(error)
                 else:raise AssertionError('injected failure ignored')

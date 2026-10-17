@@ -17,7 +17,7 @@ def linear(x,weight,scales,bias=None,kernel=single_dot):
 
 def install_validation_dispatch(kind='single-dot'):
     import os
-    os.environ['DLLM_Q4_STAGE_ADJACENT']='0'  # Experiments own their representation.
+    os.environ['DAMENDAEMON_Q4_STAGE_ADJACENT']='0'  # Experiments own their representation.
     if kind=='stage-dynamic':
         from scripts.experiments.q4_dynamic_rows import install_validation_dispatch as install_dynamic
         return install_dynamic()
@@ -25,7 +25,7 @@ def install_validation_dispatch(kind='single-dot'):
         from scripts.experiments.q4_adjacent_body import install_validation_dispatch as install_adjacent
         return install_adjacent(kind=='adjacent-gate',kind=='adjacent-inplace')
     kernel={'single-dot':single_dot,'paired-load':single_dot_paired_load}[kind]
-    from dllm.quantization import Linear
+    from damendaemon.quantization import Linear
     original_init,original_call=Linear.__init__,Linear.__call__
     def initialize(self,weights,*args,**kwargs):
         original_init(self,weights,*args,**kwargs)

@@ -5,8 +5,8 @@ Historical measurements from the initial serialized executor. See
 
 Measured on 2026-10-03, NVIDIA A2 (15 GiB usable), compute capability 8.6.
 All test GPU processes selected the A2 by UUID. The A30 continued its existing
-workload. Temporary dllm and baseline servers were stopped after their tests;
-test environments, downloads, and logs remain in `~/dllm-dev/` on the lab VM.
+workload. Temporary damendaemon and baseline servers were stopped after their tests;
+test environments, downloads, and logs remain in `~/damendaemon-dev/` on the lab VM.
 
 ## Model identities and runtime
 
@@ -15,7 +15,7 @@ test environments, downloads, and logs remain in `~/dllm-dev/` on the lab VM.
 | Qwen/Qwen2.5-0.5B-Instruct | `7ae557604adf67be50417f59c2c2f167def9a775` |
 | Qwen/Qwen2.5-1.5B-Instruct | `989aa7980e4cf806f80c7fef2b1adb7bc71aa306` |
 
-dllm: FP16 weights and KV, PyTorch 2.6.0+cu124, tokenizer 0.21.1, safetensors
+damendaemon: FP16 weights and KV, PyTorch 2.6.0+cu124, tokenizer 0.21.1, safetensors
 0.5.3. Context capacity 256 for these measurements. Python 3.11. No quantization,
 prefix caching, speculation, batching, or offloaded inference. Host CPU threads
 were capped at four for the API tests. These are shared-VM measurements; no GPU
@@ -23,7 +23,7 @@ clock or power settings were changed.
 
 ## Correctness
 
-`scripts/verify_qwen2.py` compares dllm against Transformers 4.51.3's separate
+`scripts/verify_qwen2.py` compares damendaemon against Transformers 4.51.3's separate
 Qwen2 implementation with FP16 and SDPA. It checks chat-template token equality,
 then compares the full vocabulary logits and greedy token at each of 16
 teacher-forced positions for three prompts, with and without CUDA graphs.
@@ -58,7 +58,7 @@ token. It excludes model loading and graph capture. Three trials per mode.
 
 ## Real API and model switching
 
-`scripts/verify_service.py` launches the actual `python -m dllm serve` command,
+`scripts/verify_service.py` launches the actual `python -m damendaemon serve` command,
 then sends HTTP requests. It verifies A -> B -> A -> B -> A output stability,
 streaming/non-streaming agreement, usage counts, two overlapping requests,
 disconnect recovery, oversized-request rejection, and recovery after an invalid
@@ -84,7 +84,7 @@ The final source passed a [second complete API run](evidence/service-final.json)
 A separate [real GPU recovery check](evidence/recovery.json) verifies normal EOS
 stopping, host-weight-budget rejection before eviction of the ready model, and
 direct generator cancellation followed by a successful request. The installed
-`dllm run` command was also exercised with the pinned repository name and default
+`damendaemon run` command was also exercised with the pinned repository name and default
 1024-token context; it returned `4` and stopped after two generated tokens.
 
 ## Matching llama.cpp HTTP baseline
@@ -94,7 +94,7 @@ converter at `836d57176dc699a726c55418e4f96b8ca628e1bf`. Used the existing CUDA
 server image with digest
 `sha256:f90b9de8baf5244c2c43f9594d7522424470f0d472323fe10405eceae714405b`.
 All layers on A2, flash attention enabled, one slot, 256 context, Jinja template,
-default FP16 KV. The server's CPU thread setting was 16; dllm used four.
+default FP16 KV. The server's CPU thread setting was 16; damendaemon used four.
 
 `scripts/compare_llama.py` sends the same 43-token chat prompt and asks for 64
 greedy output tokens. Both report 43 input and 64 output tokens. llama.cpp prompt
@@ -105,7 +105,7 @@ sequences differ, so this is equal-length work, not identical continuation token
 
 | Engine | Median total HTTP time | Median first output | Median post-first output rate |
 | --- | --- | --- | --- |
-| dllm | 0.627 s | 31.0 ms | 106.1 tokens/s |
+| damendaemon | 0.627 s | 31.0 ms | 106.1 tokens/s |
 | llama.cpp image above | 0.995 s | 33.7 ms | 65.7 tokens/s |
 
 The rate is `(completion_tokens - 1) / (request_duration - first_output_latency)`.
@@ -115,7 +115,7 @@ The ratio is approximately 1.61x for this specific short, single-request FP16
 workload. It does not establish superiority for quantized models, larger models,
 long prompts, concurrent throughput, or different hardware.
 
-Raw evidence: [dllm](evidence/compare-dllm.json), [llama.cpp](evidence/compare-llama.json).
+Raw evidence: [damendaemon](evidence/compare-damendaemon.json), [llama.cpp](evidence/compare-llama.json).
 
 ## Current vLLM baseline
 
@@ -125,7 +125,7 @@ separate benchmark-only virtual environment. Its resolved PyTorch version was
 `--max-model-len 256`, `--max-num-seqs 1`, `--gpu-memory-utilization 0.5`,
 `--no-enable-prefix-caching`, and `--generation-config vllm`. Default compilation
 and CUDA graphs remained enabled. CPU threads were capped at four. No vLLM code
-or runtime dependency is used by dllm.
+or runtime dependency is used by damendaemon.
 
 vLLM required Python development headers for its JIT compilation. Headers were
 extracted into the benchmark directory from `python3.11-devel-3.11.13-10.el9_8.x86_64`
@@ -136,13 +136,13 @@ Compilation and graph capture were allowed to finish before measurement.
 | Engine | Median total HTTP time | Median first output | Median post-first output rate |
 | --- | --- | --- | --- |
 | vLLM 0.30.0 | 0.461 s | 40.4 ms | 149.6 tokens/s |
-| dllm | 0.627 s | 31.0 ms | 106.1 tokens/s |
+| damendaemon | 0.627 s | 31.0 ms | 106.1 tokens/s |
 
-The completed 64-token response text matched dllm's response in all six trials.
-dllm is approximately 29% below vLLM's decode delivery rate in this test; there
+The completed 64-token response text matched damendaemon's response in all six trials.
+damendaemon is approximately 29% below vLLM's decode delivery rate in this test; there
 is no performance-parity claim. The lower measured first-output latency is a
 small-sample observation, not a tail-latency claim. Concurrent-throughput benchmarks
-would not be meaningful parity tests yet because dllm serializes requests.
+would not be meaningful parity tests yet because damendaemon serializes requests.
 Different engine dependency/toolkit versions are part of these tested stacks.
 
 Raw evidence: [vLLM](evidence/compare-vllm.json).

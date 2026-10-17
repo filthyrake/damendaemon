@@ -3,8 +3,8 @@ import struct
 from pathlib import Path
 import tempfile
 import unittest
-from dllm.download import read_index
-from dllm.safetensor_header import read_header
+from damendaemon.download import read_index
+from damendaemon.safetensor_header import read_header
 
 
 class CheckpointJsonTests(unittest.TestCase):
@@ -20,7 +20,7 @@ class CheckpointJsonTests(unittest.TestCase):
             with path.open('rb') as reader,self.assertRaises(ValueError):read_header(reader)
 
     def test_shared_parser_preserves_values_and_rejects_duplicates(self):
-        from dllm.safetensor_header import parse_metadata_json
+        from damendaemon.safetensor_header import parse_metadata_json
         self.assertEqual(parse_metadata_json(b'{"shape":[1,2],"missing":null}'),{'shape':[1,2],'missing':None})
         self.assertEqual(parse_metadata_json('[1,2]'),[1,2])
         for raw in ('{"x":1,"x":2}','{"nested":{"x":1,"x":2}}'):

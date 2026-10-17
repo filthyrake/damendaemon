@@ -1,6 +1,6 @@
 import unittest
 import torch
-from dllm.glm_flash_attention import project_nope,attend_nope
+from damendaemon.glm_flash_attention import project_nope,attend_nope
 
 
 def fixture():

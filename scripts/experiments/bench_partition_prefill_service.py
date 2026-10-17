@@ -35,7 +35,7 @@ def main():
         batch_wait_ms=args.batch_wait_ms,compare=args.compare,candidate_packed=args.candidate_packed,output_tokens=32,trials=[],
         devices=os.environ.get('CUDA_VISIBLE_DEVICES'),
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-                 ('dllm/batch.py','dllm/layer_stage.py','dllm/partition.py','dllm/partition_policy.py')},
+                 ('damendaemon/batch.py','damendaemon/layer_stage.py','damendaemon/partition.py','damendaemon/partition_policy.py')},
         scope='Same model, precision, GPU pair and HTTP workload; '+
               ('sequential versus packed stage prefill only.' if args.compare=='prefill' else
                'paired versus contiguous packed Q4 body arithmetic; prompt packing disabled in both.'))
@@ -43,24 +43,24 @@ def main():
         report['scope']='Same model, precision, GPU pair and HTTP workload; candidate changes both Q4 body arithmetic and prompt packing.'
     if args.compare=='q4-body':
         report['body_kernel']=args.body_kernel
-        for name in ('dllm/quantized_kernels_q4.py','scripts/experiments/q4_prefill.py',
+        for name in ('damendaemon/quantized_kernels_q4.py','scripts/experiments/q4_prefill.py',
                      'scripts/experiments/q4_body_single_dot.py','scripts/experiments/q4_adjacent_body.py',
-                     'scripts/experiments/run_q4_body.py','dllm/q4_stage.py','dllm/q4_stage_kernels.py'):
+                     'scripts/experiments/run_q4_body.py','damendaemon/q4_stage.py','damendaemon/q4_stage_kernels.py'):
             report['sources'][name]=hashlib.sha256(Path(name).read_bytes()).hexdigest()
-    env={**os.environ,'DLLM_DEVICE':'cuda','DLLM_QUANTIZATION':args.quantization,'OMP_NUM_THREADS':'4'}
+    env={**os.environ,'DAMENDAEMON_DEVICE':'cuda','DAMENDAEMON_QUANTIZATION':args.quantization,'OMP_NUM_THREADS':'4'}
     reference=None
     try:
-        with tempfile.TemporaryDirectory(prefix='dllm-partition-prefill-') as directory:
+        with tempfile.TemporaryDirectory(prefix='damendaemon-partition-prefill-') as directory:
             logpath=Path(directory)/'server.log'
             for mode in (modes[0],modes[1],modes[1],modes[0]):
                 with logpath.open('w') as log:
                     experimental=mode=='contiguous' and args.body_kernel!='stage'
-                    module='scripts.experiments.run_q4_body' if experimental else 'dllm'
+                    module='scripts.experiments.run_q4_body' if experimental else 'damendaemon'
                     extra=['--body-kernel',args.body_kernel] if experimental else []
-                    server_env={**env,'DLLM_PARTITION_PACKED_PREFILL':str(int(
+                    server_env={**env,'DAMENDAEMON_PARTITION_PACKED_PREFILL':str(int(
                         mode=='packed' or (mode=='contiguous' and args.candidate_packed)))}
                     if args.compare=='q4-body':
-                        server_env['DLLM_Q4_STAGE_ADJACENT']=str(int(mode=='contiguous' and args.body_kernel=='stage'))
+                        server_env['DAMENDAEMON_Q4_STAGE_ADJACENT']=str(int(mode=='contiguous' and args.body_kernel=='stage'))
                     process=subprocess.Popen([sys.executable,'-m',module,*extra,'serve','--port','0','--context','512',
                         '--layer-split','12','--batch-size','4','--batch-wait-ms',str(args.batch_wait_ms),
                         '--model','a='+args.model],
@@ -69,14 +69,14 @@ def main():
                     try:
                         deadline=time.monotonic()+120
                         while time.monotonic()<deadline and process.poll() is None:
-                            lines=[line for line in logpath.read_text().splitlines() if line.startswith('dllm listening on ')]
+                            lines=[line for line in logpath.read_text().splitlines() if line.startswith('damendaemon listening on ')]
                             if lines:base=lines[-1].split()[-1];break
                             time.sleep(.1)
                         else:raise RuntimeError('partition server did not become ready')
                         results=[]
                         for concurrency in (1,2,4):
                             result=subprocess.run([sys.executable,'scripts/compare_llama.py',base+'/v1',
-                                '--engine','dllm','--concurrency',str(concurrency),'--max-tokens','32',
+                                '--engine','damendaemon','--concurrency',str(concurrency),'--max-tokens','32',
                                 '--prompt-token-ids',args.prompt],env=env,capture_output=True,text=True,check=True,timeout=150)
                             data=json.loads(result.stdout)
                             for trial in data['trials']:

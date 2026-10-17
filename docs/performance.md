@@ -6,7 +6,7 @@ Measure first-token latency and decode rate separately. Optional caches and sche
 
 ## Chunked prefill and prefix reuse
 
-Opt-in scheduler chunking is available with `dllm serve --prefill-chunk-size 256`.
+Opt-in scheduler chunking is available with `damendaemon serve --prefill-chunk-size 256`.
 On supported dense rotary decoders, the worker processes at most that many
 prompt tokens before returning to active decoding, and samples the first output
 only after the full prompt is cached. The default is 0 (full prefill). This can
@@ -16,13 +16,13 @@ architectures, including Phi-3 pending a numerical fix, retain full prefill.
 This does not implement paged KV or prefix caching. Measurements and exact
 qualified model/precision combinations are in the architecture evidence.
 
-For repeated prompt prefixes, `dllm serve --prefix-cache-tokens 4096` enables
+For repeated prompt prefixes, `damendaemon serve --prefix-cache-tokens 4096` enables
 bounded GPU KV snapshots on the same decoders qualified for chunked prefill.
 The budget is per resident model, with at most four entries. Exact repeats can
 reuse final prompt logits; divergent suffixes resume from matching cached KV.
 The cache copies KV into independent request slots, so decoding one request
 cannot modify another's snapshot. Evicting a model also evicts its prefix cache.
-`dllm_timing.cached_prompt_tokens` reports reuse; ordinary usage still counts
+`damendaemon_timing.cached_prompt_tokens` reports reuse; ordinary usage still counts
 all input tokens. The default is disabled. This uses additional GPU memory and
 copies; it is not paged KV or zero-copy sharing. Under memory pressure, caching
 is skipped while ordinary inference continues. Numerical qualification and
@@ -44,10 +44,10 @@ times. Full prefill remains the default.
 
 ## Shared paged KV cache (CUDA, opt-in)
 
-`dllm serve --kv-cache-tokens 2048 --context 2048 --batch-size 4 ...` allocates
+`damendaemon serve --kv-cache-tokens 2048 --context 2048 --batch-size 4 ...` allocates
 one shared 2048-token KV pool per resident model, instead of four separate
 2048-token caches. The budget must be a multiple of 16 and fit at least one
-page per slot. `DLLM_KV_CACHE_TOKENS=2048` selects the same policy; an explicit
+page per slot. `DAMENDAEMON_KV_CACHE_TOKENS=2048` selects the same policy; an explicit
 `--kv-cache-tokens 0` restores fixed slots. Fixed slots remain the default.
 
 The CUDA dense path supports Qwen2, Qwen3, Llama and Mistral, including supported
@@ -61,11 +61,11 @@ read the live page table without rebuilding graphs at page boundaries.
 Add `--prefill-chunk-size 128` to interleave bounded prompt chunks with active
 decodes while keeping each request's page reservation. Qwen2, accurate Qwen3
 and Mistral Q4 pass chunked reference checks. CUDA Llama defaults to
-`DLLM_LLAMA_PRECISION=mixed`: FP32 residual accumulation and precise elementwise
+`DAMENDAEMON_LLAMA_PRECISION=mixed`: FP32 residual accumulation and precise elementwise
 arithmetic resolve the standard FP16 path's numerical gate failure while
 retaining FP16 weights, Tensor Core projections and FP16 KV. The mixed policy
 passes Q4 full/chunked fixed and paged replay at context 2048, FP16 full/chunked
-replay at context 8192, and Q4 prefix reuse. `DLLM_LLAMA_PRECISION=standard`
+replay at context 8192, and Q4 prefix reuse. `DAMENDAEMON_LLAMA_PRECISION=standard`
 restores the legacy arithmetic, including its known chunked numerical failure.
 Add `--prefix-cache-tokens 4096` for bounded copied prefix snapshots alongside
 the page pool. Snapshot storage has its own budget and consumes additional GPU
@@ -79,11 +79,11 @@ long requests. See [paged-cache evidence](evidence/paged/README.md).
 
 ## Optional n-gram speculative decoding
 
-`DLLM_SPECULATIVE_TOKENS=8` enables bounded full-target CUDA verification for
+`DAMENDAEMON_SPECULATIVE_TOKENS=8` enables bounded full-target CUDA verification for
 qualified unquantized Qwen2/Qwen3 greedy requests; 2/4 are also supported and 0
 (the default) disables it. It reuses repeated prompt/output fragments as draft
 proposals and verifies every accepted token with the full target vocabulary.
-Llama3.2-1B additionally requires explicit `DLLM_LLAMA_PRECISION=float32`;
+Llama3.2-1B additionally requires explicit `DAMENDAEMON_LLAMA_PRECISION=float32`;
 its default mixed precision fails the exact-token gate and remains excluded.
 The higher-precision policy retains FP16 stored matrices but uses FP32 KV and
 residual arithmetic. It adds cost on ordinary prose; see the measured
@@ -111,7 +111,7 @@ the tested Qwen3/Llama cases, with independent reference and exact-output gates.
 
 ## Optional prompt coalescing
 
-`dllm serve --batch-wait-ms 1` waits up to 1 ms before an idle model group starts,
+`damendaemon serve --batch-wait-ms 1` waits up to 1 ms before an idle model group starts,
 allowing closely arriving requests to share prompt processing. The default is
 0 (disabled), and the supported range is 0–10 ms. It does not wait between active
 decode steps or cross queued model/management barriers.
@@ -127,8 +127,8 @@ first output while bringing later requests forward. See
 ## Prompt graph cache
 
 For repeated short Qwen2/Qwen3 prompts on NVIDIA, opt-in
-`DLLM_PREFILL_GRAPHS=4` caches up to four prompt-length/slot CUDA graphs per
-resident executor. `DLLM_PREFILL_GRAPH_MAX_TOKENS` defaults to128. First captures
+`DAMENDAEMON_PREFILL_GRAPHS=4` caches up to four prompt-length/slot CUDA graphs per
+resident executor. `DAMENDAEMON_PREFILL_GRAPH_MAX_TOKENS` defaults to128. First captures
 are expensive; dynamic workloads may not amortize them. Quantization, paged KV,
 and packed/chunked prefill retain their existing paths. Direct token scoring
 uses separate graph keys for each ordered candidate set, sharing the same cache budget.
@@ -136,19 +136,19 @@ uses separate graph keys for each ordered candidate set, sharing the same cache 
 
 ## Direct generation graphs
 
-Direct CUDA generation (`dllm run` and `Runtime.generate`) reuses the native
+Direct CUDA generation (`damendaemon run` and `Runtime.generate`) reuses the native
 one-request decode graph. A2 measurements show 2.5–3.0× faster Qwen3-0.6B FP32
 decode and about 2% faster GPT-OSS decode versus the previous scalar dispatch;
 HTTP batching already used these graphs. [Scope and evidence](evidence/scalar-decode/README.md).
 
 ## Fixed-rate HTTP load and observed stream stalls
 
-`dllm bench` defaults to closed-loop load: each completed request frees a client
+`damendaemon bench` defaults to closed-loop load: each completed request frees a client
 slot for the next one. Add `--arrival-rate` to offer requests on a fixed schedule
 independent of response completion:
 
 ```sh
-dllm bench --base-url http://127.0.0.1:8088/v1 --models chat \
+damendaemon bench --base-url http://127.0.0.1:8088/v1 --models chat \
   --requests 100 --concurrency 8 --arrival-rate 2 --max-tokens 128
 ```
 
@@ -217,7 +217,7 @@ were incomplete. Fix the profile before comparing engines; no automatic budget
 relaxation occurs. SSE transport behavior still prevents claiming per-token GPU
 latency or sustainable-user qualification from this report alone.
 
-When a server supplies `dllm_timing.queue_seconds`, the benchmark retains it as
+When a server supplies `damendaemon_timing.queue_seconds`, the benchmark retains it as
 `reported_server_queue_seconds` and reports its successful-request distribution
 and coverage count. This is server-reported worker-queue delay, separate from
 client dispatch lag and client-observed first-output latency. Older or other

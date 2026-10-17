@@ -9,8 +9,8 @@ from http.client import HTTPResponse
 from http.server import ThreadingHTTPServer
 from unittest.mock import Mock, patch
 
-from dllm.http_auth import AuthPolicy, ClientKey
-from dllm.server import handler_for
+from damendaemon.http_auth import AuthPolicy, ClientKey
+from damendaemon.server import handler_for
 
 
 class HttpFramingTests(unittest.TestCase):
@@ -42,7 +42,7 @@ class HttpFramingTests(unittest.TestCase):
             return claim
         admission._reserve = observe_reserve
         stop = threading.Event()
-        with patch('dllm.server.BODY_READ_SECONDS', .15, create=True), \
+        with patch('damendaemon.server.BODY_READ_SECONDS', .15, create=True), \
                 socket.create_connection(self.server.server_address, timeout=.8) as connection:
             connection.sendall(b'POST /v1/embeddings HTTP/1.1\r\n'
                 b'Host: localhost\r\nContent-Type: application/json\r\n'
@@ -146,5 +146,5 @@ class HttpFramingTests(unittest.TestCase):
         self.runtime.manage.assert_called_once_with('register', model='a',
             chat_template={'value': 1.25, 'text': 'NaN'})
         self.runtime.manage.side_effect = RecursionError('runtime failure')
-        with patch('dllm.server.traceback.print_exc'):
+        with patch('damendaemon.server.traceback.print_exc'):
             self.assertEqual(self.request(headers, body, '/v1/models/register')[0], 500)

@@ -5,13 +5,13 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import torch
-from dllm.glm_flash_stage_slots import FlashStageSlots
-from dllm.glm_flash_reference_loader import load_reference_stage
-from dllm.host_topology import HostTopology
-from dllm.host_pipeline_worker import HostPipelineCoordinator,HostPipelineWorker
-from dllm.host_tensor_channel import HostTensorChannel
-from dllm.planned_host_stage_channel import PlannedHostStageChannel
-from dllm.stage_protocol import StageState
+from damendaemon.glm_flash_stage_slots import FlashStageSlots
+from damendaemon.glm_flash_reference_loader import load_reference_stage
+from damendaemon.host_topology import HostTopology
+from damendaemon.host_pipeline_worker import HostPipelineCoordinator,HostPipelineWorker
+from damendaemon.host_tensor_channel import HostTensorChannel
+from damendaemon.planned_host_stage_channel import PlannedHostStageChannel
+from damendaemon.stage_protocol import StageState
 from tests import test_host_tls,test_glm_host_pipeline as glm_tests
 from tests.test_glm_flash_reference_loader import fixture,floating_control
 
@@ -61,10 +61,10 @@ class FlashHostPipelineTests(unittest.TestCase):
         changed=self.plan(config);self.assertIn(28,changed.excluded_ids);self.assertNotEqual(plan.identity,changed.identity)
         config=deepcopy(self.config);config['text_config']['multimodal_token_ids']=None
         with self.assertRaises(ValueError):self.plan(config)
-        from dllm.glm_host_pipeline_build import build_glm_host_pipeline_worker
+        from damendaemon.glm_host_pipeline_build import build_glm_host_pipeline_worker
         with self.assertRaises(ValueError):build_glm_host_pipeline_worker('/unused',plan,0,[],epoch=1)
         _,owners,_=self.session()
-        from dllm.host_serving import HostServingTopology
+        from damendaemon.host_serving import HostServingTopology
         with self.assertRaises(ValueError):HostServingTopology._validate_topology(None,owners[0],4)
         with self.assertRaises(ValueError):owners[0].prefill([29])
         self.assertTrue(owners[0].ready);self.command(owners,owners[0].stop)

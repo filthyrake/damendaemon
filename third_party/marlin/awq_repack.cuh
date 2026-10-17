@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright contributors to the vLLM project.
-// dllm adaptation: retain upstream device kernel; omit Torch host binding.
+// damendaemon adaptation: retain upstream device kernel; omit Torch host binding.
 #include "marlin.cuh"
 
 namespace MARLIN_NAMESPACE_NAME {

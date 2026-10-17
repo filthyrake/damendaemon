@@ -1,5 +1,5 @@
 import unittest
-from dllm.stopping import stop_sequences, text_delta
+from damendaemon.stopping import stop_sequences, text_delta
 
 
 class StoppingTests(unittest.TestCase):

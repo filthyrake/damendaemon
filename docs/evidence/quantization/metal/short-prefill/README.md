@@ -30,7 +30,7 @@ medians below. All output argmax IDs match; worst logit RMS difference is below
 | Q8 | 32 | 45.44 | 45.35 |
 
 Reproduce using `scripts/experiments/bench_metal_quant_prefill.py` with matching
-`DLLM_QUANTIZATION`, `DLLM_DEVICE=mps`, `DLLM_METAL_WEIGHT_DTYPE=float16`.
+`DAMENDAEMON_QUANTIZATION`, `DAMENDAEMON_DEVICE=mps`, `DAMENDAEMON_METAL_WEIGHT_DTYPE=float16`.
 The harness explicitly forces the previous expansion threshold for its control,
 so future default changes do not silently invalidate the comparison.
 

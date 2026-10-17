@@ -14,7 +14,7 @@ import statistics
 import time
 
 import torch
-from dllm.runtime import Runtime
+from damendaemon.runtime import Runtime
 
 
 def ngram(history,limit):
@@ -96,7 +96,7 @@ def main():
     p=argparse.ArgumentParser();p.add_argument('model');args=p.parse_args()
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
-    os.environ['DLLM_DEVICE']='cuda';torch.set_num_threads(4)
+    os.environ['DAMENDAEMON_DEVICE']='cuda';torch.set_num_threads(4)
     runtime=Runtime({'model':args.model},context=1024,batch_size=1)
     report={'model':args.model,'gpu':'NVIDIA A2','experiment_only':True,
         'oracle_is_unattainable_upper_bound':True,'full_target_vocabulary':True,'rows':[],'gates':[]}

@@ -6,9 +6,9 @@ import unittest
 from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.request import Request,urlopen
-from dllm.client_admission import ClientAdmission,ClientLimitError,ClientRateLimitError
-from dllm.http_auth import AuthPolicy,ClientKey
-from dllm.server import handler_for
+from damendaemon.client_admission import ClientAdmission,ClientLimitError,ClientRateLimitError
+from damendaemon.http_auth import AuthPolicy,ClientKey
+from damendaemon.server import handler_for
 from tests.test_server import FakeRuntime
 
 ALICE='alice-rate-limit-key-1234'
@@ -24,9 +24,9 @@ def policy(limit=2,inflight=4):
 class ClientRequestRateTests(unittest.TestCase):
     def test_strict_configuration_and_omitted_unlimited(self):
         for value in (None,True,0,-1,1.5,'2',60001):
-            with patch.dict('os.environ',{'DLLM_CLIENT_KEYS':json.dumps({'alice':dict(key=ALICE,max_inflight=1,max_requests_per_minute=value)})},clear=True):
+            with patch.dict('os.environ',{'DAMENDAEMON_CLIENT_KEYS':json.dumps({'alice':dict(key=ALICE,max_inflight=1,max_requests_per_minute=value)})},clear=True):
                 with self.assertRaises(ValueError):AuthPolicy.from_env()
-        with patch.dict('os.environ',{'DLLM_CLIENT_KEYS':json.dumps({'alice':dict(key=ALICE,max_inflight=1,max_requests_per_minute=2)})},clear=True):
+        with patch.dict('os.environ',{'DAMENDAEMON_CLIENT_KEYS':json.dumps({'alice':dict(key=ALICE,max_inflight=1,max_requests_per_minute=2)})},clear=True):
             self.assertEqual(AuthPolicy.from_env().clients[0].max_requests_per_minute,2)
         admission=ClientAdmission(AuthPolicy(clients=(ClientKey('alice',ALICE,1),)))
         for _ in range(5):
@@ -80,7 +80,7 @@ class ClientRequestRateTests(unittest.TestCase):
         now=[0.];auth=policy();admission=ClientAdmission(auth,clock=lambda:now[0]);calls=[]
         class Runtime(FakeRuntime):
             def generate(self,*args,**kwargs):calls.append('generate');yield from super().generate(*args,**kwargs)
-        with patch('dllm.client_admission.ClientAdmission',return_value=admission):handler=handler_for(Runtime(),auth)
+        with patch('damendaemon.client_admission.ClientAdmission',return_value=admission):handler=handler_for(Runtime(),auth)
         server=ThreadingHTTPServer(('127.0.0.1',0),handler);thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
         def request(key,route='/v1/completions',body=None,method='POST'):
             if body is None:body=dict(model='a',prompt='Hi',max_tokens=2)

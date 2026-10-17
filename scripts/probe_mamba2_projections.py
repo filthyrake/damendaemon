@@ -1,6 +1,6 @@
 """Isolated compensated projection check, including exact weight conversion cost."""
 import json,torch
-from dllm.precise_matmul import linear
+from damendaemon.precise_matmul import linear
 from torch.nn import functional as F
 from triton.testing import do_bench_cudagraph
 rows=[]

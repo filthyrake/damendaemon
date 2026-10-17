@@ -13,10 +13,10 @@ import torch
 import triton as tr
 import triton.testing
 
-from dllm import kquant_kernels
-from dllm.gguf_model import GgufWeights
-from dllm.kquant_kernels import _expand, expand
-from dllm.runtime import require_gpu
+from damendaemon import kquant_kernels
+from damendaemon.gguf_model import GgufWeights
+from damendaemon.kquant_kernels import _expand, expand
+from damendaemon.runtime import require_gpu
 
 
 def main():

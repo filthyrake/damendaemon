@@ -1,6 +1,6 @@
 # Text Harmony qualification
 
-Tracking: [#39](https://github.com/filthyrake/dllm/issues/39).
+Tracking: [#39](https://github.com/filthyrake/damendaemon/issues/39).
 Checkpoint and core numerical qualification are recorded in the parent folder.
 
 - `harmony-format-generated-reference.json`: 19 CPU prompt/parser comparisons.

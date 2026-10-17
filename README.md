@@ -1,14 +1,14 @@
-# dllm
+# damendaemon
 
 Damen's independent GPU inference runtime: fast generation and quick model switching.
 
 **Follow development:** [project board](https://github.com/users/filthyrake/projects/3),
-[current status and ordered next steps](https://github.com/filthyrake/dllm/issues/3),
-[active work](https://github.com/filthyrake/dllm/issues?q=is%3Aopen%20label%3Astatus%3Aactive),
-and [next tasks](https://github.com/filthyrake/dllm/issues?q=is%3Aopen%20label%3Astatus%3Anext).
+[current status and ordered next steps](https://github.com/filthyrake/damendaemon/issues/3),
+[active work](https://github.com/filthyrake/damendaemon/issues?q=is%3Aopen%20label%3Astatus%3Aactive),
+and [next tasks](https://github.com/filthyrake/damendaemon/issues?q=is%3Aopen%20label%3Astatus%3Anext).
 Issue bodies carry the current status; comments and linked reports preserve the evidence.
 
-dllm owns model execution, scheduling, sampling and residency. It uses
+damendaemon owns model execution, scheduling, sampling and residency. It uses
 PyTorch/cuBLAS, fused Triton kernels, native CUDA kernels and Apple Metal;
 it does not run vLLM, llama.cpp, Ollama or Transformers generation internally.
 Transformers is used for validation and optional tokenizer adaptation.
@@ -35,8 +35,8 @@ python -m pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/
 python -m pip install -e '.[runtime]'
 export CUDA_VISIBLE_DEVICES=GPU-your-device-uuid
 
-dllm run Qwen/Qwen3.5-0.8B --thinking off --prompt 'Explain CUDA graphs in one paragraph.'
-dllm serve --model small=Qwen/Qwen3.5-0.8B
+damendaemon run Qwen/Qwen3.5-0.8B --thinking off --prompt 'Explain CUDA graphs in one paragraph.'
+damendaemon serve --model small=Qwen/Qwen3.5-0.8B
 ```
 
 The fast CUDA path also needs a C compiler and matching Python development
@@ -61,9 +61,9 @@ decode speed and concurrent throughput separately, with independent correctness
 checks and explicit qualification limits. See the linked evidence before
 extrapolating a result to another model or device.
 
-The [parity milestones and acceptance gates](https://github.com/filthyrake/dllm/issues/3)
-define the ordered work; [GitHub Issues](https://github.com/filthyrake/dllm/issues)
+The [parity milestones and acceptance gates](https://github.com/filthyrake/damendaemon/issues/3)
+define the ordered work; [GitHub Issues](https://github.com/filthyrake/damendaemon/issues)
 are the bug and task tracker. [AMD/ROCm bring-up](docs/amd.md) includes bounded Qwen3.5
 and opt-in Qwen3.8-27B Q8 text correctness and lifecycle evidence; practical long-context
-and competitive performance qualification remain open in [the Qwen tracker](https://github.com/filthyrake/dllm/issues/55). See [project license](LICENSE.md) and the separately retained
+and competitive performance qualification remain open in [the Qwen tracker](https://github.com/filthyrake/damendaemon/issues/55). See [project license](LICENSE.md) and the separately retained
 [Marlin license](third_party/marlin/LICENSE).

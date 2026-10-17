@@ -171,15 +171,15 @@ class NumericalTraceTests(unittest.TestCase):
             def close(self):self.closed=True
         model=SimpleNamespace(eos={2})
         executor=Executor()
-        with patch('dllm.runtime.make_executor',return_value=executor), \
-             patch('dllm.prompts.decode_output',return_value=''):
+        with patch('damendaemon.runtime.make_executor',return_value=executor), \
+             patch('damendaemon.prompts.decode_output',return_value=''):
             result=trace(model,[1],4)
         self.assertEqual(result['tokens'],[2])
         self.assertEqual(len(result['logits_sha256']),1)
         self.assertTrue(executor.closed)
         executor=Executor()
         with patch.object(executor,'prefill',return_value=torch.tensor([[float('nan')]])), \
-             patch('dllm.runtime.make_executor',return_value=executor):
+             patch('damendaemon.runtime.make_executor',return_value=executor):
             with self.assertRaisesRegex(ValueError,'nonfinite'):trace(model,[1],4)
         self.assertTrue(executor.closed)
 

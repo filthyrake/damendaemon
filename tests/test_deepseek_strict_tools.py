@@ -8,11 +8,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from dllm.deepseek_tool_prompt import prepare_tools, render_tool_chat, validate_tool_arguments
-from dllm.deepseek_generation import ReferenceGenerator
-from dllm.deepseek_batch_generation import BatchReferenceGenerator
-from dllm.deepseek_text import EOS
-from dllm.deepseek_tools import render_tool_calls
+from damendaemon.deepseek_tool_prompt import prepare_tools, render_tool_chat, validate_tool_arguments
+from damendaemon.deepseek_generation import ReferenceGenerator
+from damendaemon.deepseek_batch_generation import BatchReferenceGenerator
+from damendaemon.deepseek_text import EOS
+from damendaemon.deepseek_tools import render_tool_calls
 from tests.test_deepseek_generation import text_fixture, ScriptedModel
 from tests.test_deepseek_batch_generation import ScriptedDeepSeek
 from tests.test_deepseek_reference_loader import fixture
