@@ -160,7 +160,6 @@ class BatchedRuntime:
                 "admission_outstanding": self.admitted_count-self.released_count,
                 "admitted_total": self.admitted_count,
                 "released_total": self.released_count,
-                "admission_semaphore": getattr(self.admission, '_value', None),
             }
 
     def drain(self):
@@ -278,8 +277,6 @@ class BatchedRuntime:
         request = Pending(alias, copy.deepcopy(messages), max_tokens, enable_thinking, sampler, stops, raw_prompt, schema,tools=tools,tool_json=tool_schema is not None,reasoning_effort=reasoning_effort)
         if not self.admission.acquire(blocking=False):
             raise BusyError("request queue is full")
-        with self.condition:
-            self.admitted_count += 1
         try:
             with self.condition:
                 if self.closed or self.draining:
