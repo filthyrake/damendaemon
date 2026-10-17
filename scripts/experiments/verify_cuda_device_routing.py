@@ -160,7 +160,17 @@ def main():
                     patch('torch.Tensor.tolist', side_effect=AssertionError('host readback')):
                 fused = cuda_packed_moe(cast_hidden, fused_bank, fused_selected, weights,
                                         shared=fused_bank[0], fused=True)
-            torch.testing.assert_close(fused, control, rtol=2e-4, atol=1e-5)
+            report['fused_debug'] = dict(
+                dtype=str(dtype), shared=shared is not None,
+                routes=fused_selected.tolist(),
+                diff_positions=(fused.float()-control.float()).abs().gt(1e-4).nonzero().tolist(),
+                fused_sample=[round(v, 5) for v in fused[1, 8:16].tolist()],
+                control_sample=[round(v, 5) for v in control[1, 8:16].tolist()])
+            save(args.output, report)
+            # The fused bmm reduction order differs from the per-row matmul;
+            # FP16/BF16 casts amplify the 1-ULP FP32 difference to one ULP.
+            rtol, atol = (2e-4, 1e-5) if dtype == torch.float32 else (.02, .002)
+            torch.testing.assert_close(fused, control, rtol=rtol, atol=atol)
             fused_cases += 1
         with patch('torch.Tensor.item', side_effect=AssertionError('host readback')), \
                 patch('torch.Tensor.cpu', side_effect=AssertionError('host readback')):
