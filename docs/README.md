@@ -13,6 +13,7 @@
 | [Multi-GPU execution](multi-gpu.md) | Qualified layer partitions, fast swaps, network and recovery limits |
 | [Model-specific guidance](models.md) | Embeddings, reranking, text decoders, recurrent models and MoE |
 | [Benchmarking](benchmarking.md) | Repeatable HTTP measurements, reported metrics, CUDA hardware probe |
+| [Split GGUF import](gguf-split.md) | Shard-aware import of split GGUF checkpoints |
 
 Examples assume commands run from the repository root after installation.
 Model acceptance does not imply qualification at every context or precision.
@@ -24,7 +25,21 @@ Model acceptance does not imply qualification at every context or precision.
 - [Current support boundaries](support.md)
 - [AMD/ROCm target and current qualification status](amd.md)
 - [Fixed performance scorecard acceptance](https://github.com/filthyrake/damendaemon/issues/54)
+  and the [fixed qualification scorecards](qualification-scorecard.md)
 - [Upstream inference research](upstream-inference-research.md)
+
+## Host execution and CPU reference paths
+
+Prepared host sessions, owned workers, and the CPU reference batches used for
+numerical gates:
+
+- [Planned CPU host stages](cpu-host-topology.md)
+- [Owned CPU host-worker construction](cpu-host-worker-build.md)
+- [Completion streams over prepared CPU host workers](host-completion.md)
+- [Native GLM generation on a prepared CPU host session](glm-host-generation.md)
+- [Server token observations](token-observation.md)
+- Reference text batches: [DeepSeek V4](deepseek-reference-batches.md),
+  [Flash](flash-reference-batches.md), [GLM-5.3 sparse attention](glm-reference-batches.md)
 
 ## Inspect qualification evidence
 
