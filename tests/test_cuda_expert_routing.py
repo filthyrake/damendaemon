@@ -91,6 +91,15 @@ class DeviceRoutingEquivalenceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'correction bias'):
             select_experts_device(logits, 2, correction_bias=torch.zeros(3))
 
+    def test_empty_batch_routes_without_host_readback(self):
+        logits = torch.zeros(0, 8)
+        with patch('torch.Tensor.item', side_effect=AssertionError('host readback')):
+            for case in ({}, dict(group_count=2, correction_bias=torch.zeros(8))):
+                with self.subTest(case=case):
+                    weights, selected = select_experts_device(logits, 2, **case)
+                    self.assertEqual(weights.shape, (0, 2))
+                    self.assertEqual(selected.shape, (0, 2))
+
     def test_device_routes_feed_prepared_experts_directly(self):
         # The routing outputs must satisfy the packed-MoE admission contract
         # (int64 device IDs, matching FP32 coefficients) without reshaping.

@@ -31,18 +31,21 @@ def main():
         logits_cpu[0, :] = logits_cpu[0, 2]  # one fully tied row: device ties prefer lower IDs
         logits = logits_cpu.cuda()
         bias = torch.linspace(-.2, .2, 8)
+        bias_dev = bias.cuda()
         cases = [dict(), dict(renormalize=True), dict(scoring='sigmoid', renormalize=True),
                  dict(scoring='sqrtsoftplus'), dict(scale=3), dict(group_count=2, groups_to_keep=1),
-                 dict(group_count=2, correction_bias=bias, renormalize=True)]
+                 dict(group_count=2, correction_bias='bias', renormalize=True)]
         from unittest.mock import patch
         for case in cases:
+            device_case = {k: (bias_dev if v == 'bias' else v) for k, v in case.items()}
+            host_case = {k: (bias if v == 'bias' else v) for k, v in case.items()}
             with patch('torch.Tensor.item', side_effect=AssertionError('host readback')), \
                     patch('torch.Tensor.cpu', side_effect=AssertionError('host readback')), \
                     patch('torch.Tensor.tolist', side_effect=AssertionError('host readback')):
-                weights, selected = select_experts_device(logits, 2, **case)
+                weights, selected = select_experts_device(logits, 2, **device_case)
             if weights.device != logits.device or selected.dtype != torch.int64:
                 raise AssertionError('routes left the routing device')
-            expected_w, expected_s = select_experts(logits_cpu, 2, **case)
+            expected_w, expected_s = select_experts(logits_cpu, 2, **host_case)
             torch.testing.assert_close(weights.cpu(), expected_w)
             if case.get('group_count', 1) > 1:
                 if not torch.equal(selected.cpu(), expected_s):
@@ -60,7 +63,7 @@ def main():
             save(args.output, report)
         # Fully tied row: device IDs must be 0,1 with equal weights.
         weights, selected = select_experts_device(logits[:1], 2)
-        if not torch.equal(selected[0], torch.tensor([0, 1])):
+        if not torch.equal(selected[0].cpu(), torch.tensor([0, 1])):
             raise AssertionError('device tie contract violated')
         report['tied_row_ids'] = [0, 1]
         # Prepared packed experts consume the device routes directly.

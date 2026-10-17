@@ -1,0 +1,59 @@
+{
+  "cases": [
+    {
+      "case": {},
+      "matched": true
+    },
+    {
+      "case": {
+        "renormalize": true
+      },
+      "matched": true
+    },
+    {
+      "case": {
+        "renormalize": true,
+        "scoring": "sigmoid"
+      },
+      "matched": true
+    },
+    {
+      "case": {
+        "scoring": "sqrtsoftplus"
+      },
+      "matched": true
+    },
+    {
+      "case": {
+        "scale": 3
+      },
+      "matched": true
+    },
+    {
+      "case": {
+        "group_count": 2,
+        "groups_to_keep": 1
+      },
+      "matched": true
+    },
+    {
+      "case": {
+        "correction_bias": "bias",
+        "group_count": 2,
+        "renormalize": true
+      },
+      "matched": true
+    }
+  ],
+  "device": "NVIDIA A2",
+  "expert_consumed": true,
+  "model_qualified": false,
+  "passed": true,
+  "peak_reserved_bytes": 23068672,
+  "performance_qualified": false,
+  "tied_row_ids": [
+    0,
+    1
+  ],
+  "torch": "2.6.0+cu124"
+}
