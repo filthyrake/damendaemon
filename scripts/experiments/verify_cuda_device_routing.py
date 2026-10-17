@@ -129,6 +129,10 @@ def main():
                                               shared=glm_bank[0], top_k=2, device_routing=True,
                                               activation_limit=2)
         torch.testing.assert_close(device_ffn(hidden3), host_ffn(hidden3), rtol=2e-4, atol=1e-5)
+        batched_ffn = CudaPackedGlmFeedForward(glm_bank, router=router, correction_bias=bias,
+                                               shared=glm_bank[0], top_k=2, device_routing=True,
+                                               composition='batched', activation_limit=2)
+        torch.testing.assert_close(batched_ffn(hidden3), host_ffn(hidden3), rtol=2e-4, atol=1e-5)
         ffn_cases += 1
         ds_bank = []
         for original, _ in controls[4:8]:

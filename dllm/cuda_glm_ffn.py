@@ -29,6 +29,35 @@ def _routed(hidden,experts,selected,coefficients,shared):
     return output
 
 
+def _routed_batched(hidden,experts,selected,coefficients,shared):
+    """Per-expert batched rows with post-down weighting.
+
+    GLM weights the completed down projection, never the activation: experts
+    run without route weights and their results are scaled by the gathered
+    per-route coefficients before accumulation. One host count readback, same
+    as the per-token path.
+    """
+    output=torch.zeros_like(hidden)
+    flat_coefficients=coefficients.reshape(-1)
+    token_ids=torch.arange(hidden.shape[0],device=hidden.device).repeat_interleave(selected.shape[1])
+    route_expert=selected.reshape(-1)
+    order=torch.argsort(route_expert,stable=True)
+    counts=torch.bincount(route_expert,minlength=len(experts)).cpu().tolist()
+    if len(counts)!=len(experts):raise ValueError('expert route exceeds configured expert count')
+    start=0
+    for expert_id,count in enumerate(counts):
+        if count:
+            rows=order[start:start+count]
+            source=hidden.index_select(0,token_ids[rows])
+            value=experts[expert_id].forward_batched(source)
+            scaled=value.float()*flat_coefficients[rows].reshape(-1,1)
+            output.index_add_(0,token_ids[rows],scaled)
+            start+=count
+    if shared is not None:
+        output.add_(shared.forward_batched(hidden).float())
+    return output.to(hidden.dtype)
+
+
 class CudaPackedGlmFeedForward:
     """Borrow a resident GLM bank and router; compute one token at a time.
 
@@ -38,6 +67,7 @@ class CudaPackedGlmFeedForward:
     """
     def __init__(self,experts,*,router=None,correction_bias=None,shared=None,top_k=8,
                  route_scale=2.5,activation_limit=None,device_routing=False,
+                 composition='per_token',
                  max_output_bytes=64*1024**2,workspace_bytes=64*1024**2):
         dense=isinstance(experts,CudaPackedExpert)
         if dense:
@@ -74,6 +104,9 @@ class CudaPackedGlmFeedForward:
         self.top_k,self.route_scale=top_k,route_scale
         if type(device_routing) is not bool:raise ValueError('CUDA GLM device routing must be boolean')
         self.device_routing=device_routing
+        if composition not in ('per_token','batched'):
+            raise ValueError("CUDA GLM composition must be 'per_token' or 'batched'")
+        self.composition=composition
         self.max_output_bytes,self.workspace_bytes=max_output_bytes,workspace_bytes
         self.required_workspace_bytes=scratch
 
@@ -84,6 +117,20 @@ class CudaPackedGlmFeedForward:
             raise ValueError('CUDA GLM FFN needs same-device FP32 [batch,sequence,width]')
         _budgets(4*hidden.numel(),self.required_workspace_bytes,self.max_output_bytes,self.workspace_bytes)
         if not torch.isfinite(hidden).all():raise ValueError('CUDA GLM hidden states must be finite')
+        if self.composition=='batched':
+            rows=hidden.reshape(-1,hidden.shape[-1])
+            gathered=4*rows.shape[0]*self.top_k*rows.shape[1]*3
+            if gathered>self.workspace_bytes:
+                raise ValueError('batched GLM composition exceeds the workspace budget; use per_token or smaller batches')
+            if self.dense:
+                value=self.experts[0].forward_batched(rows).reshape(hidden.shape)
+            else:
+                logits=F.linear(rows,self.router)
+                if not torch.isfinite(logits).all():raise ValueError('CUDA GLM routing logits must be finite')
+                coefficients,ids=_select(logits,self.correction_bias,self.top_k,self.route_scale,self.device_routing)
+                value=_routed_batched(rows,self.experts,ids,coefficients,self.shared).reshape(hidden.shape)
+            if not torch.isfinite(value).all():raise ValueError('nonfinite CUDA GLM FFN output')
+            return value
         output=torch.empty_like(hidden)
         for batch in range(hidden.shape[0]):
             for token in range(hidden.shape[1]):

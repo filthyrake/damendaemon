@@ -2,7 +2,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock
 import torch
-from dllm.cuda_glm_ffn import CudaPackedGlmFeedForward,_select,_routed
+from dllm.cuda_glm_ffn import CudaPackedGlmFeedForward,_select,_routed,_routed_batched
 from dllm.cuda_packed_expert import CudaPackedExpert
 from dllm.glm_ffn import select_glm_experts
 
@@ -26,6 +26,28 @@ class CudaGlmTests(unittest.TestCase):
         torch.testing.assert_close(device_weights,host_weights,rtol=0,atol=0)
         self.assertTrue(torch.equal(device_ids,host_ids))
         self.assertEqual(device_weights.device,logits.device)
+
+    def test_batched_composition_matches_per_token_control(self):
+        # Fake experts exposing forward/forward_batched; the batched path runs
+        # all rows per expert and weights AFTER the down projection.
+        rng=torch.Generator().manual_seed(484)
+        experts=[SimpleNamespace(forward=Mock(side_effect=lambda x,i=i:x*(3+i)),
+                                 forward_batched=Mock(side_effect=lambda x,i=i:x*(3+i)))
+                 for i in range(3)]
+        shared=SimpleNamespace(forward=Mock(side_effect=lambda x:x*7),
+                               forward_batched=Mock(side_effect=lambda x:x*7))
+        logits=torch.randn(6,3,generator=rng)
+        coefficients,ids=_select(logits,torch.zeros(3),2,2.5)
+        rows=torch.randn(6,4,generator=rng)
+        per_token=_routed(rows,experts,ids,coefficients,shared)
+        batched=_routed_batched(rows,experts,ids,coefficients,shared)
+        torch.testing.assert_close(batched,per_token,rtol=0,atol=0)
+        # Coefficients touched only the completed down projection.
+        for expert in experts:
+            for call in expert.forward_batched.call_args_list:
+                self.assertNotIn('route_weights',call.kwargs)
+        empty=_routed_batched(rows[:0],experts,ids[:0],coefficients[:0],shared)
+        self.assertEqual(empty.shape,(0,4))
 
     def test_coefficients_applied_after_completed_expert(self):
         experts=[SimpleNamespace(forward=Mock(side_effect=lambda x:x*3+1)),
