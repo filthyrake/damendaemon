@@ -23,8 +23,8 @@ not continuous batching. Header-only placement accounts for declared storage,
 not measured peak memory. Weighted scheduling and durable quota accounting
 provide software controls; they do not establish GPU capacity or a user SLO.
 
-The snapshot contains fourteen explicit software cells: nine retained CPU/serving
-foundations and five explicit CUDA/model/host/storage scopes. Their pushed commit pins
+The snapshot contains fifteen explicit software cells: nine retained CPU/serving
+foundations and six explicit CUDA/model/host/storage scopes. Their pushed commit pins
 identify implementations, not experiment revisions. The source/test map below
 makes those scopes reviewable; local tests are CPU/loopback controls. Separately retained tiny shared-A2
 reports establish only their bounded numerical/ownership/protocol gates, not
@@ -43,6 +43,7 @@ from fixture dimensions or a test count.
 | Weighted prompt/decode service | [Serving](serving.md) | `tests/test_weighted_prefill_turns.py`, `tests/test_client_decode_turns.py` |
 | Same-host rates and outstanding leases | [Shared reservations](shared-client-reservations.md) | `tests/test_shared_client_rates.py`, `tests/test_shared_reservation_http.py` |
 | Remote owner quota authority and HTTP | [Quota commands](quota-commands.md), [admission](remote-quota-admission.md) | `tests/test_remote_quota_admission.py`, `tests/test_quota_commands.py` |
+| Device-resident routing and batched expert composition | [Packed CUDA evidence](packed-cuda/README.md), [device routing](packed-cuda/cuda-device-routing.json) | `tests/test_cuda_expert_routing.py`, `tests/test_cuda_packed_moe.py` |
 
 Explicit CUDA scopes retain unknown practical identity fields and do not attach
 synthetic qualification records to the software cells. The shared-A2 evidence
