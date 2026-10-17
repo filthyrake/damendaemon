@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 import torch
 from dllm.cuda_packed_expert import CudaPackedExpert
-from dllm.cuda_packed_moe import cuda_packed_moe, _accumulate
+from dllm.cuda_packed_moe import _accumulate, _accumulate_batched, cuda_packed_moe
 
 
 class CudaPackedMoeTests(unittest.TestCase):
@@ -23,6 +23,52 @@ class CudaPackedMoeTests(unittest.TestCase):
         torch.testing.assert_close(result,expected,rtol=0,atol=0)
         self.assertEqual(_accumulate(x[:0],bank,ids[:0],weights[:0],bank[0]).shape,(0,2))
         with self.assertRaises(ValueError):cuda_packed_moe(x,bank,ids,weights)
+
+    def batched_bank(self,device):
+        # Fakes exposing both interfaces; forward_batched mirrors _row per row.
+        bank=self.bank(device)
+        for expert in bank:
+            def make_forward(e):
+                def forward_batched(hidden,*,route_weights=None):
+                    output=torch.empty_like(hidden)
+                    for row in range(hidden.shape[0]):
+                        coefficient=None if route_weights is None else route_weights[row:row+1]
+                        output[row:row+1]=e._row(hidden[row:row+1],coefficient)
+                    return output
+                return forward_batched
+            expert.forward_batched=make_forward(expert)
+        return bank
+
+    def test_batched_composition_matches_control_exactly_on_cpu(self):
+        bank=self.batched_bank('cpu')
+        rng=torch.Generator().manual_seed(479)
+        cases=[(torch.tensor([[1.,2.],[3.,4.]],dtype=torch.float16),
+                torch.tensor([[1,1],[1,0]]),torch.tensor([[.25,.5],[0.,.75]])),
+               (torch.randn(3,2,generator=rng).half(),
+                torch.tensor([[0,1],[1,1],[1,1]]),torch.rand(3,2,generator=rng)),
+               (torch.randn(2,2,generator=rng).half(),
+                torch.zeros(2,2,dtype=torch.int64),torch.ones(2,2)),
+               (torch.zeros(0,2,dtype=torch.float16),
+                torch.zeros(0,2,dtype=torch.int64),torch.zeros(0,2))]
+        for hidden,ids,weights in cases:
+            for shared in (None,bank[0]):
+                with self.subTest(shared=shared is not None,rows=hidden.shape[0]):
+                    control=_accumulate(hidden,bank,ids,weights,shared)
+                    batched=_accumulate_batched(hidden,bank,ids,weights,shared)
+                    torch.testing.assert_close(batched,control,rtol=0,atol=0)
+
+    def test_batched_opt_in_requires_forward_batched_and_validates(self):
+        bank=self.bank('cpu');x=torch.tensor([[1.,2.]],dtype=torch.float16)
+        ids=torch.tensor([[1,0]]);weights=torch.tensor([[.5,.5]])
+        with self.assertRaises(ValueError):cuda_packed_moe(x,bank,ids,weights,batched=True)
+        real=self.batched_bank('cpu')
+        with patch('dllm.cuda_packed_moe._validate'), \
+                patch('dllm.cuda_packed_moe._accumulate_batched',return_value=x) as compute:
+            cuda_packed_moe(x,real,ids,weights,batched=True)
+            compute.assert_called_once()
+            compute.reset_mock()
+            cuda_packed_moe(x,real,ids,weights)
+            compute.assert_not_called()
 
     def test_fake_cuda_metadata_rejections(self):
         from torch._subclasses.fake_tensor import FakeTensorMode

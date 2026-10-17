@@ -75,3 +75,22 @@ class CudaPackedExpert:
             coefficient=None if route_weights is None else route_weights[row:row+1]
             output[row:row+1]=self._row(hidden[row:row+1],coefficient)
         return output
+
+    @torch.no_grad()
+    def forward_batched(self,hidden,*,route_weights=None):
+        """Batched rows through one projection call per layer of the expert.
+
+        Identical per-row arithmetic and cast order as ``_row``; only the
+        projection calls see multiple rows at once.
+        """
+        if (not isinstance(hidden,torch.Tensor) or hidden.ndim!=2 or hidden.shape[1]!=self.width
+                or hidden.device!=self.device or hidden.dtype not in (torch.float16,torch.bfloat16,torch.float32)):
+            raise ValueError('CUDA expert input must match device and floating [tokens,width]')
+        if route_weights is not None and (not isinstance(route_weights,torch.Tensor)
+                or route_weights.shape!=(hidden.shape[0],1) or route_weights.dtype!=torch.float32
+                or route_weights.device!=self.device):
+            raise ValueError('CUDA route weights must match device and FP32 [tokens,1]')
+        gate=self._project(hidden,self.gate).to(hidden.dtype).float()
+        up=self._project(hidden,self.up).to(hidden.dtype).float()
+        activated=activate_expert(gate,up,route_weights,self.activation_limit).to(hidden.dtype)
+        return self._project(activated,self.down).to(hidden.dtype)

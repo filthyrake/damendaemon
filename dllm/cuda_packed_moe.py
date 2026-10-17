@@ -28,7 +28,7 @@ def _validate(hidden, experts, selected, coefficients, shared):
 
 
 @torch.no_grad()
-def cuda_packed_moe(hidden, experts, selected, coefficients, *, shared=None):
+def cuda_packed_moe(hidden, experts, selected, coefficients, *, shared=None, batched=False):
     """Add routed contributions in stable expert order, with optional shared FFN.
 
     IDs/coefficients/gathers remain on CUDA. Range validation synchronizes one
@@ -37,12 +37,47 @@ def cuda_packed_moe(hidden, experts, selected, coefficients, *, shared=None):
     Only one gathered row and expert result are live at a time. Resident bank,
     output accumulator, route sort/count buffers and allocator overhead require
     separate admission; each expert owns its existing scratch allowance.
+
+    ``batched=True`` keeps the same single count readback but runs one
+    multi-row projection call per expert (``forward_batched``) instead of one
+    call per token row. Per-row arithmetic and cast order are identical;
+    duplicate-route accumulation order is deterministic on CPU and atomic on
+    CUDA, so shared-device comparisons use tolerances. Bank entries must expose
+    ``forward_batched``.
     """
     _validate(hidden,experts,selected,coefficients,shared)
     if selected.numel() and bool(((selected < 0) | (selected >= len(experts))).any()):
         # Check before bincount: an invalid huge ID must not allocate huge counts.
         raise ValueError('CUDA route outside prepared bank')
+    if batched:
+        participants = list(experts)+([shared] if shared is not None else [])
+        if any(not hasattr(entry,'forward_batched') for entry in participants):
+            raise ValueError('batched composition requires experts with forward_batched')
+        return _accumulate_batched(hidden,experts,selected,coefficients,shared)
     return _accumulate(hidden,experts,selected,coefficients,shared)
+
+
+def _accumulate_batched(hidden,experts,selected,coefficients,shared):
+    """Per-expert batched rows; the same single host count readback as _accumulate."""
+    output = torch.zeros_like(hidden,dtype=torch.float32)
+    flat_coefficients = coefficients.reshape(-1)
+    token_ids = torch.arange(hidden.shape[0],device=hidden.device).repeat_interleave(selected.shape[1])
+    route_expert = selected.reshape(-1)
+    order = torch.argsort(route_expert,stable=True)
+    counts = torch.bincount(route_expert,minlength=len(experts)).cpu().tolist()
+    if len(counts)!=len(experts):raise ValueError('expert route exceeds configured expert count')
+    start = 0
+    for expert_id,count in enumerate(counts):
+        if count:
+            rows = order[start:start+count]
+            source = hidden.index_select(0,token_ids[rows])
+            coefficient = flat_coefficients.index_select(0,rows).reshape(-1,1)
+            result = experts[expert_id].forward_batched(source,route_weights=coefficient)
+            output.index_add_(0,token_ids[rows],result.float())
+            start += count
+    if shared is not None and hidden.shape[0]:
+        output.add_(shared.forward_batched(hidden).float())
+    return output.to(hidden.dtype)
 
 
 def _accumulate(hidden,experts,selected,coefficients,shared):

@@ -87,6 +87,26 @@ def main():
                 expected[row:row+1] += dense_expert(hidden[row:row+1].cpu(), dense, host_w.cpu()).float().cuda()
         torch.testing.assert_close(result, expected.to(result.dtype), rtol=2e-4, atol=1e-5)
         report['expert_consumed'] = True
+        # Batched composition: same routes through forward_batched groups.
+        batched_bank = []
+        for original, _ in controls:
+            matrices = [CudaPackedMatrix(m.weight.cuda(), m.scales.cuda(), m.format)
+                        for m in (original.gate, original.up, original.down)]
+            batched_bank.append(CudaPackedExpert(*matrices, row_chunk=13, column_chunk=17, activation_limit=2))
+        batched_cases = 0
+        for dtype in (torch.float32, torch.float16, torch.bfloat16):
+            cast_hidden = hidden.to(dtype)
+            for shared in (None, batched_bank[0]):
+                per_token = cuda_packed_moe(cast_hidden, batched_bank, selected, weights, shared=shared)
+                batched = cuda_packed_moe(cast_hidden, batched_bank, selected, weights, shared=shared, batched=True)
+                # Duplicate routes accumulate atomically on CUDA: tolerance only.
+                torch.testing.assert_close(batched, per_token, rtol=2e-4, atol=1e-5)
+                batched_cases += 1
+        empty_per = cuda_packed_moe(hidden[:0], batched_bank, selected[:0], weights[:0], shared=batched_bank[0])
+        empty_bat = cuda_packed_moe(hidden[:0], batched_bank, selected[:0], weights[:0], shared=batched_bank[0], batched=True)
+        if empty_per.shape != (0, 32) or empty_bat.shape != (0, 32): raise AssertionError('empty batched result')
+        batched_cases += 1
+        report['batched_cases'] = batched_cases
         report['peak_reserved_bytes'] = torch.cuda.max_memory_reserved()
         report['passed'] = True
     except BaseException as error:
