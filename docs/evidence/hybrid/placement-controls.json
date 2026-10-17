@@ -1,0 +1,94 @@
+{
+  "columns": 11008,
+  "completed": true,
+  "controls": {
+    "cpu_packed": [
+      {
+        "batch": 1,
+        "best_seconds": 1.5311808749102056,
+        "columns": 11008,
+        "format": "q4_0_f16",
+        "packed_bytes": 25362432,
+        "reps": 5,
+        "rows": 4096
+      },
+      {
+        "batch": 4,
+        "best_seconds": 1.4082273170351982,
+        "columns": 11008,
+        "format": "q4_0_f16",
+        "packed_bytes": 25362432,
+        "reps": 5,
+        "rows": 4096
+      }
+    ],
+    "gpu_dense": [
+      {
+        "batch": 1,
+        "best_seconds": 0.0005652480125427246,
+        "columns": 11008,
+        "dtype": "float16",
+        "reps": 5,
+        "rows": 4096,
+        "weight_bytes": 90177536
+      },
+      {
+        "batch": 4,
+        "best_seconds": 0.0005877119898796082,
+        "columns": 11008,
+        "dtype": "float16",
+        "reps": 5,
+        "rows": 4096,
+        "weight_bytes": 90177536
+      }
+    ],
+    "transfers": [
+      {
+        "best_seconds": 0.010761280059814454,
+        "bytes": 67108864,
+        "bytes_per_second": 6236141390.8929615,
+        "direction": "h2d",
+        "reps": 5
+      },
+      {
+        "best_seconds": 0.010500320434570313,
+        "bytes": 67108864,
+        "bytes_per_second": 6391125339.285533,
+        "direction": "d2h",
+        "reps": 5
+      },
+      {
+        "best_seconds": 0.04303689575195312,
+        "bytes": 268435456,
+        "bytes_per_second": 6237333137.295753,
+        "direction": "h2d",
+        "reps": 5
+      },
+      {
+        "best_seconds": 0.04100175857543945,
+        "bytes": 268435456,
+        "bytes_per_second": 6546925432.627567,
+        "direction": "d2h",
+        "reps": 5
+      }
+    ]
+  },
+  "device": "NVIDIA A2",
+  "inventory": {
+    "cpu_count": 16,
+    "cpu_model": "Intel(R) Xeon(R) Platinum 8160 CPU @ 2.10GHz",
+    "cpu_threads_env": "1",
+    "cuda_visible": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+    "gpu_free_bytes": 15626403840,
+    "gpu_name": "NVIDIA A2",
+    "gpu_total_bytes": 15691415552,
+    "host_available_bytes": 115024740352,
+    "host_total_bytes": 134458195968
+  },
+  "rows": 4096,
+  "torch": "2.6.0+cu124",
+  "transfer_bytes": [
+    67108864,
+    268435456
+  ]
+}
