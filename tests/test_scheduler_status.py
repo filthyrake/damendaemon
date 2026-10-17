@@ -58,7 +58,8 @@ class SchedulerStatusTests(unittest.TestCase):
                     self.assertEqual(set(snapshot), {'closed', 'draining', 'drained', 'worker_busy', 'queue_capacity', 'queue_timeout_seconds', 'batch_capacity', 'client_decode_turns', 'client_prefill_turns',
                         'queued_generation_requests', 'worker_owned_generation_requests',
                         'queued_commands', 'worker_owned_commands', 'oldest_queued_seconds',
-                        'admission_outstanding', 'admitted_total', 'released_total'})
+                        'admission_outstanding', 'admitted_total', 'released_total',
+                        'admission_semaphore'})
                     self.assertEqual(snapshot['queue_capacity'], 4)
                     self.assertEqual(snapshot['batch_capacity'], 2)
                     self.assertEqual(snapshot['queued_generation_requests'], 1)
