@@ -126,7 +126,7 @@ def main():
         warmup = generate(PROMPTS[0], max_tokens=8)
         report['warmup_seconds'] = warmup['seconds']
         for batch in BATCHES:
-            prompts = PROMPTS[:batch]  # batch = distinct concurrent prompts
+            prompts = PROMPTS*batch
             rounds = []
             for attempt in range(2):
                 try:
