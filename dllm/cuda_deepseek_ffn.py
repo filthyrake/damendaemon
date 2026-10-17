@@ -18,6 +18,7 @@ class CudaPackedDeepSeekFeedForward:
     """
     def __init__(self,experts,*,router,shared,correction_bias=None,token_table=None,
                  top_k=6,route_scale=1.5,activation_limit=10.,device_routing=False,
+                 composition='per_token',
                  max_output_bytes=64*1024**2,workspace_bytes=64*1024**2):
         if not isinstance(experts,(tuple,list)) or not 2<=len(experts)<=4096:
             raise ValueError('DeepSeek requires a bounded prepared CUDA expert bank')
@@ -60,6 +61,13 @@ class CudaPackedDeepSeekFeedForward:
         self.required_workspace_bytes=scratch
         if type(device_routing) is not bool:raise ValueError('DeepSeek device routing must be boolean')
         self.device_routing=device_routing
+        if composition not in ('per_token','batched','fused'):
+            raise ValueError("DeepSeek composition must be 'per_token', 'batched' or 'fused'")
+        self.composition=composition
+
+    def _composition_kwargs(self):
+        """Packed-MoE kwargs for the selected composition."""
+        return dict(batched=self.composition=='batched',fused=self.composition=='fused')
 
     @torch.no_grad()
     def __call__(self,hidden,token_ids=None):
@@ -87,6 +95,7 @@ class CudaPackedDeepSeekFeedForward:
                     logits,self.top_k,scoring='sqrtsoftplus',renormalize=True,
                     scale=self.route_scale,correction_bias=self.correction_bias,selected_experts=routes)
                 finite(coefficients,'DeepSeek route coefficients')
-                value=cuda_packed_moe(source,self.experts,selected,coefficients,shared=self.shared)
+                value=cuda_packed_moe(source,self.experts,selected,coefficients,shared=self.shared,
+                                      **self._composition_kwargs())
                 output[batch,token:token+1]=finite(value,'DeepSeek FFN output')
         return output

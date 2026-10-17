@@ -45,13 +45,15 @@ class CudaDeepSeekBlock(FloatingBlock):
     def __init__(self,attention_weights,weights,frequencies,*,packed_experts,packed_shared,
                  groups,window,ratio=0,hc_mult=4,top_k=6,route_scale=1.5,index_top_k=512,
                  epsilon=1e-6,connection_epsilon=1e-6,iterations=20,activation_limit=10.,
+                 device_routing=False,composition='per_token',
                  workspace_bytes=128*1024**2,max_output_bytes=64*1024**2):
         if (not isinstance(weights,dict) or type(workspace_bytes) is not int or not 2<=workspace_bytes<=2**31
                 or type(max_output_bytes) is not int or not 1<=max_output_bytes<=2**31):
             raise ValueError('invalid CUDA DeepSeek block mapping/budgets')
         ffn=CudaPackedDeepSeekFeedForward(packed_experts,shared=packed_shared,router=weights.get('ffn.gate.weight'),
             correction_bias=weights.get('ffn.gate.bias'),token_table=weights.get('ffn.gate.tid2eid'),top_k=top_k,
-            route_scale=route_scale,activation_limit=activation_limit,workspace_bytes=workspace_bytes//2,
+            route_scale=route_scale,activation_limit=activation_limit,device_routing=device_routing,
+            composition=composition,workspace_bytes=workspace_bytes//2,
             max_output_bytes=workspace_bytes//2)
         if (not isinstance(attention_weights,dict) or not _CudaBackend.projection(attention_weights.get('wq_a.weight'))
                 or attention_weights['wq_a.weight'].shape[1]!=ffn.dim
