@@ -342,8 +342,31 @@
     "prompts_sha256": null,
     "eos_policy": null
    },
-   "implementation_commit": "54b71f02fd93723fdab0876463696ab577ce10e2",
-   "reason": "Device-resident expert routing matches the CPU selection semantics across softmax/sigmoid/sqrtsoftplus, grouping, bias, renormalization and scale, with a deterministic lower-ID device tie contract and no host readback in the routing call. Opt-in batched packed-MoE composition runs one multi-row forward per route group with CPU-exact equivalence. Shared-A2 fixtures match the CPU control (7 routing cases, 7 batched cases, 22 MiB peak) under allow-busy admission with the incumbent workload verified untouched. No automatic serving dispatch changed; official checkpoints, practical context and performance remain unqualified.",
+   "implementation_commit": "45bdd2681d93af004333e7d8d6b4a093b98b71b7",
+   "reason": "Device-resident routing matches CPU selection semantics across scoring modes with a deterministic device tie contract and no host readback. Opt-in packed-MoE composition now covers batched and fused execution without host synchronization: fused stacks banks, gathers per-route tiles and accumulates on device (5 fused A2 cases across FP32/FP16/BF16 at 22 MiB peak, documented one-ULP FP16 reduction-order tolerance), GLM/Flash gained post-down batched composition (exact CPU equivalence plus A2 coverage), placement entry points validate the options before any copy, and the CUDA reference serve command exposes --device-routing/--composition across GLM/Flash/DeepSeek. All evidence under the shared-A2 guard; official checkpoints, practical context and performance remain unqualified.",
+   "comparators": []
+  },
+  {
+   "id": "packed-kquant-same-device-precision",
+   "issue": "https://github.com/filthyrake/damendaemon/issues/45",
+   "availability": "implemented",
+   "identity": {
+    "model_repository": "meta-llama/Llama-3.2-1B-Instruct (pinned local import)",
+    "model_revision": null,
+    "checkpoint_sha256": "e593d886d3cbdfed7a7c3c650866a7506d29f2e7d16218409316773f47c91db7",
+    "tokenizer_sha256": null,
+    "precision": "Q5_K_M packed execution versus same-device CUDA FP16 eager reference",
+    "hardware": null,
+    "topology": null,
+    "context": 64,
+    "prompt_tokens": 48,
+    "output_tokens": 8,
+    "concurrency": null,
+    "prompts_sha256": null,
+    "eos_policy": null
+   },
+   "implementation_commit": "45bdd2681d93af004333e7d8d6b4a093b98b71b7",
+   "reason": "Original same-device oracle boundary for native mixed-format K-quant packed execution: an independently constructed CUDA FP16 eager HF reference with FP16-rounded gguf.quants coefficients ran on the A2 (accelerate.cpu_offload, isolated Accelerate 1.10.0, one BLAS thread, TF32 off, hooks verifying CUDA execution); the packed triton+mixed replay against it reached worst relative RMS 0.5171%, max absolute 0.0532, all eight greedy decisions exact \u2014 inside the unchanged <1% RMS / <0.5 absolute / exact-greedy gates. Both guard runs completed on the shared A2; the 4 MiB oracle payload stays host-side, hashed. The historical failing cell (1.0343% versus its in-run reference) is retained, not erased; it predates the residual/range kernel fixes. One pinned checkpoint, one 48-token trace, context 64; no performance claim; broader GGUF formats stay under #43.",
    "comparators": []
   }
  ]
