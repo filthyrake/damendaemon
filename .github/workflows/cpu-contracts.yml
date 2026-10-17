@@ -7,12 +7,9 @@ on:
       - 'scripts/**'
       - 'tests/**'
       - '.github/workflows/cpu-contracts.yml'
+  # No paths filter on pull_request: required status checks must always report,
+  # or a docs/workflow-only PR can never satisfy branch protection.
   pull_request:
-    paths:
-      - 'damendaemon/**'
-      - 'scripts/**'
-      - 'tests/**'
-      - '.github/workflows/cpu-contracts.yml'
 
 permissions:
   contents: read
