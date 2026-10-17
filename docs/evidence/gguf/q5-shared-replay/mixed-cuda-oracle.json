@@ -1,0 +1,85 @@
+{
+  "checkpoint_sha256": "e593d886d3cbdfed7a7c3c650866a7506d29f2e7d16218409316773f47c91db7",
+  "comparisons": {
+    "cuda_float16": {
+      "errors": [
+        {
+          "candidate_token": 19,
+          "max_absolute": 0.0390625,
+          "oracle_token": 19,
+          "relative_rms": 0.00293279738686932,
+          "step": 0,
+          "teacher_token": 19
+        },
+        {
+          "candidate_token": 128009,
+          "max_absolute": 0.0234375,
+          "oracle_token": 128009,
+          "relative_rms": 0.0017231111264054515,
+          "step": 1,
+          "teacher_token": 128009
+        },
+        {
+          "candidate_token": 128006,
+          "max_absolute": 0.04296875,
+          "oracle_token": 128006,
+          "relative_rms": 0.0021637829469077817,
+          "step": 2,
+          "teacher_token": 128006
+        },
+        {
+          "candidate_token": 78191,
+          "max_absolute": 0.046875,
+          "oracle_token": 78191,
+          "relative_rms": 0.0011074104045322316,
+          "step": 3,
+          "teacher_token": 78191
+        },
+        {
+          "candidate_token": 128007,
+          "max_absolute": 0.0546875,
+          "oracle_token": 128007,
+          "relative_rms": 0.0024666090198962325,
+          "step": 4,
+          "teacher_token": 128007
+        },
+        {
+          "candidate_token": 271,
+          "max_absolute": 0.05322265625,
+          "oracle_token": 271,
+          "relative_rms": 0.005170844021735728,
+          "step": 5,
+          "teacher_token": 271
+        },
+        {
+          "candidate_token": 3947,
+          "max_absolute": 0.0517578125,
+          "oracle_token": 3947,
+          "relative_rms": 0.00403301557248399,
+          "step": 6,
+          "teacher_token": 3947
+        },
+        {
+          "candidate_token": 374,
+          "max_absolute": 0.046875,
+          "oracle_token": 374,
+          "relative_rms": 0.0014788421312250325,
+          "step": 7,
+          "teacher_token": 374
+        }
+      ],
+      "passed": true
+    }
+  },
+  "completed": true,
+  "context": 64,
+  "device": "NVIDIA A2",
+  "historical_gpu_gate_replaced": false,
+  "kernel_backend": "triton+mixed",
+  "oracle_device": "cuda",
+  "oracle_manifest_sha256": "e618bc3763bd8b34fedbde0f2914fd2ee97b4d1eac8eefeb893a51f91c3b3537",
+  "peak_reserved_bytes": 1042284544,
+  "precision": "mixed",
+  "steps": 8,
+  "torch": "2.6.0+cu124"
+}

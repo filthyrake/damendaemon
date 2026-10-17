@@ -40,3 +40,34 @@ admission was changed. #219's bounded tooling/diagnosis is complete; #45 remains
 open for its original same-device oracle boundary. A full expanded GPU oracle
 would require a separately admitted larger allocation, not silently borrowing
 more VRAM from the running suite.
+
+## Same-device CUDA FP16 oracle boundary (#45, 2026-10-17)
+
+The missing same-device oracle is now exported and retained: an independently
+constructed HF eager Llama reference with FP16-rounded `gguf.quants`
+dequantized coefficients, running in FP16 on the A2 itself via
+`accelerate.cpu_offload` (isolated Accelerate 1.10.0), one BLAS thread, TF32
+disabled, with forward hooks verifying every watched Linear/Embedding/
+DecoderLayer executed on CUDA. Fixed 48-token arithmetic prompt, eight teacher
+tokens, context 64 — identical arithmetic to the earlier CPU oracles.
+`oracle-cuda.json` records `reference_device: cuda`, the `cuda_float16` payload
+SHA `72defd05c6308253...`, 93.5 seconds and 1056964608 bytes peak reserved under
+`guard-oracle-cuda.json`. The 4 MiB logits payload stays in the isolated host
+directory, hashed, matching the CPU-oracle handling.
+
+The packed `triton+mixed` replay then compared against this same-device oracle
+under `guard-mixed-cuda-oracle.json`: maximum relative RMS **0.5171%**, maximum
+absolute difference 0.05322265625 (step 5), and all eight greedy decisions
+exact — inside the unchanged <1% RMS / <0.5 absolute / exact-greedy gates
+(`mixed-cuda-oracle.json`). Peak reserved 1042284544 bytes.
+
+This establishes #45's original same-device oracle boundary on the pinned
+checkpoint: against a clean, independently constructed CUDA FP16 eager
+reference on the same device, the shipped mixed K-quant kernels stay within the
+gate on this workload. The historical failing cell
+(`llama32-q5-k-m-reference-cuda-initial-a2.json`, 1.0343% against its in-run
+reference) is retained and not erased; that comparison predates the residual
+and range kernel fixes and used its own in-run reference execution. This
+diagnostic does not attribute that cell step-by-step, claim other checkpoints,
+contexts or backends, or make any performance claim. The 4 MiB oracle payload
+is not committed, per the established evidence handling.
