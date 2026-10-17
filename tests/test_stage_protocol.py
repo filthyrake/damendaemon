@@ -1,5 +1,5 @@
 import unittest
-from damendaemon.stage_protocol import Command, StageState, decode, PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH, token_rows
+from damendaemon.stage_protocol import Command, StageState, decode, PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH, SWITCH, token_rows
 
 
 class StageProtocolTests(unittest.TestCase):
@@ -68,7 +68,7 @@ class StageProtocolTests(unittest.TestCase):
     def test_canonical_fixed_size_wire_and_stop(self):
         command = Command(1, 1, STOP, 0, ())
         self.assertEqual(decode(command.encode()), command)
-        for index, value in [(0, 0), (1, 99), (1, 1), (1, 2), (1, 3), (6, 5), (7, 0), (2, True), (3, 1 << 63)]:
+        for index, value in [(0, 0), (1, 99), (1, 1), (1, 2), (1, 3), (1, 4), (6, 5), (7, 0), (2, True), (3, 1 << 63)]:
             words = command.encode(); words[index] = value
             with self.subTest(index=index), self.assertRaises(ValueError):decode(words)
         with self.assertRaises(ValueError):decode(command.encode()[:-1])
@@ -146,3 +146,41 @@ class ChunkProtocolTests(unittest.TestCase):
         from damendaemon.stage_protocol import VERSION,PREFILL_CHUNK
         words=Command(1,1,PREFILL_CHUNK,2,((0,1,0),)).encode();words[1]=VERSION-1
         with self.assertRaisesRegex(ValueError,'protocol'):decode(words)
+
+
+class ModelSwitchProtocolTests(unittest.TestCase):
+    def test_switch_commits_new_epoch_only_after_release_and_peer_ack(self):
+        state=StageState(1,512,2,models=2)
+        prompt=Command(1,1,PREFILL,8,((0,1,0),))
+        state.commit(state.begin(prompt.encode()))
+        with self.assertRaises(ValueError):state.begin(Command(1,2,SWITCH,1,()).encode())
+        self.assertIsNone(state.pending)
+        release=Command(1,2,RELEASE,0,((0,1,8),))
+        state.commit(state.begin(release.encode()))
+        switch=Command(1,3,SWITCH,1,())
+        state.begin(switch.encode())
+        self.assertEqual((state.model_index,state.epoch,state.sequence),(0,1,3))
+        state.commit(switch)
+        self.assertEqual((state.model_index,state.epoch,state.sequence),(1,2,1))
+        self.assertEqual(state.generations,[0,0])
+        with self.assertRaises(ValueError):state.begin(prompt.encode())
+        with self.assertRaises(ValueError):state.begin(switch.encode())
+        back=Command(2,1,SWITCH,0,())
+        state.commit(state.begin(back.encode()))
+        self.assertEqual((state.model_index,state.epoch,state.sequence),(0,3,1))
+
+    def test_invalid_targets_fail_without_state_mutation(self):
+        for models,target,entries in ((1,1,()),(2,2,()),(2,0,()),(2,1,((0,1,0),))):
+            state=StageState(1,512,models=models)
+            with self.subTest(models=models,target=target),self.assertRaises(ValueError):
+                state.begin(Command(1,1,SWITCH,target,entries).encode())
+            self.assertEqual((state.model_index,state.epoch,state.sequence),(0,1,1))
+            self.assertIsNone(state.pending)
+
+    def test_failed_switch_does_not_publish_target(self):
+        state=StageState(1,512,models=2)
+        command=state.begin(Command(1,1,SWITCH,1,()).encode())
+        state.poison()
+        with self.assertRaises(RuntimeError):state.commit(command)
+        self.assertEqual((state.model_index,state.epoch),(0,1))
+        self.assertTrue(state.failed)

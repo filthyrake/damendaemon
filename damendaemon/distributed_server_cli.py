@@ -12,6 +12,7 @@ def main(argv=None):
     p.add_argument('--quantization',choices=('none','q8_0','q4_0'),default=os.environ.get('DAMENDAEMON_QUANTIZATION','none'))
     p.add_argument('--context',type=int,default=512)
     p.add_argument('--alias',default='model')
+    p.add_argument('--model',action='append',default=[],metavar='ALIAS=PATH',help='one additional compatible local model on each rank for resident switching')
     p.add_argument('--port',type=int,default=8000)
     p.add_argument('--batch-size',type=int,choices=range(1,5),default=1)
     p.add_argument('--queue-size',type=int,default=8)
@@ -23,11 +24,17 @@ def main(argv=None):
         p.error('invalid context, port or idle timeout')
     if not 1<=args.queue_size<=64 or not 0<args.queue_timeout<=300 or not 1<=len(args.alias)<=128:
         p.error('invalid queue bounds or model alias')
+    if len(args.model)>1 or any('=' not in entry for entry in args.model):
+        p.error('at most one additional ALIAS=PATH model is supported')
+    additional=[tuple(entry.split('=',1)) for entry in args.model]
+    if any(not alias or not path or alias==args.alias for alias,path in additional):
+        p.error('additional model needs a distinct alias and local path')
     os.environ['DAMENDAEMON_DEVICE']='cuda'
     from .distributed import StagePair
     from .distributed_serving import DistributedRuntime
     from .server import BoundedHTTPServer,handler_for
-    pair=StagePair(args.path,args.context,args.quantization,lambda model:[],session='distributed-serve',max_batch=args.batch_size)
+    pair=StagePair(args.path,args.context,args.quantization,lambda model:[],session='distributed-serve',max_batch=args.batch_size,
+                   model_alias=args.alias,additional_models=additional)
     runtime=server=thread=None
     previous=None;primary=None
     try:

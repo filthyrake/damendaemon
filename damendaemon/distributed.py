@@ -17,15 +17,25 @@ from .layer_stage import LayerStage
 from .partition_policy import validate, packed_prefill_enabled
 from .qwen2 import ModelWeights
 from .stage_identity import fingerprint
-from .stage_protocol import Command, StageState, PREFILL, DECODE, RELEASE, STOP, PING, VERSION, FAILED_TOKEN, PREFILL_BATCH, token_rows
+from .stage_protocol import Command, StageState, PREFILL, DECODE, RELEASE, STOP, PING, VERSION, FAILED_TOKEN, PREFILL_BATCH, SWITCH, token_rows
 from .stage_setup import StageSetup
 from .stage_transport import StageChannel
+from .stage_rebind import compatible_shard, copy_stage_weights, commit_stage_binding
 
 
 class StagePair:
-    def __init__(self, path, context, quantization, prepare_requests, session='distributed-run', max_batch=1):
+    def __init__(self, path, context, quantization, prepare_requests, session='distributed-run', max_batch=1,
+                 model_alias='model', additional_models=()):
         if type(max_batch) is not int or not 1 <= max_batch <= 4:
             raise ValueError('distributed batch capacity must be 1..4')
+        entries=[(model_alias,path),*additional_models]
+        if (not 1 <= len(entries) <= 2
+                or any(not isinstance(alias,str) or not 1 <= len(alias) <= 128 for alias,_ in entries)
+                or len({alias for alias,_ in entries}) != len(entries)):
+            raise ValueError('distributed model table requires one or two unique aliases')
+        self.models = {}
+        self.identities = {}
+        self.aliases = tuple(alias for alias,_ in entries)
         self.max_batch = max_batch
         self.owns_group = False
         if dist.is_initialized():raise ValueError('distributed-run requires ownership of its process group')
@@ -54,18 +64,26 @@ class StagePair:
         try:
             setup = StageSetup.from_torchrun(self.rank, session=session)
             setup.check_peer()
-            path = Path(path).expanduser().resolve()
-            if not path.is_dir():raise ValueError('distributed-run requires a local safetensors snapshot; use damendaemon pull first')
-            config = decoder_config(read_config(path/'config.json'))
-            validate(SimpleNamespace(config=config, max_context=context, quantization=quantization), 12, max_batch)
-            self.model = ModelWeights(path, context, quantization=quantization)
-            validate(self.model, 12, max_batch)
+            for alias,model_path in entries:
+                model_path = Path(model_path).expanduser().resolve()
+                if not model_path.is_dir():raise ValueError('distributed-run requires local safetensors snapshots; use damendaemon pull first')
+                config = decoder_config(read_config(model_path/'config.json'))
+                validate(SimpleNamespace(config=config, max_context=context, quantization=quantization),12,max_batch)
+                model = ModelWeights(model_path,context,quantization=quantization)
+                validate(model,12,max_batch)
+                if self.model is None:self.model=model
+                elif model.config != self.model.config:
+                    raise ValueError('distributed model switching requires identical decoder configurations')
+                self.models[alias]=model
+                self.identities[alias]=fingerprint(model)
+                setup.check_peer()
             self.requests = prepare_requests(self.model) if self.rank == 0 else None
-            setup.check_peer()
-            self.identity = fingerprint(self.model)
+            self.identity = self.identities[self.aliases[0]]
             self.stage = LayerStage(self.model, 0 if self.rank == 0 else 12,
                                    12 if self.rank == 0 else 24, max_batch=max_batch,
                                    stage_graphs=True, kernels='triton')
+            if any(compatible_shard(self.stage,model) is None for model in self.models.values()):
+                raise ValueError('distributed models require compatible resident stage layouts')
             self.q4_stage_adjacent = self.stage.q4_linear is not None
             if self.rank == 1:
                 self.failure_tokens = torch.full((max_batch,), FAILED_TOKEN, dtype=torch.int64, device='cuda')
@@ -73,13 +91,15 @@ class StagePair:
             self.owns_group = True
             dist.init_process_group('nccl', timeout=timedelta(seconds=30),
                                     device_id=torch.device('cuda', local_rank))
-            agreement = self.identity + struct.pack('<qqqqq', VERSION, context, max_batch, int(self.packed_prefill),
+            table=json.dumps([(alias,self.identities[alias].hex()) for alias in self.aliases],
+                             separators=(',',':'),ensure_ascii=True).encode()
+            agreement = table + struct.pack('<qqqqq', VERSION, context, max_batch, int(self.packed_prefill),
                                                      int(self.q4_stage_adjacent))
             identity = torch.tensor(list(hashlib.sha256(agreement).digest()), dtype=torch.uint8, device='cuda')
             peers = [torch.empty_like(identity) for _ in range(2)]
             dist.all_gather(peers, identity)
             if not torch.equal(peers[0], peers[1]):raise ValueError('distributed model or session bounds mismatch')
-            self.state = StageState(1, context, max_batch)
+            self.state = StageState(1, context, max_batch, models=len(self.models))
             self.channel = StageChannel(self.state, self.rank)
         except BaseException as error:
             if setup is not None and not ready:
@@ -138,6 +158,8 @@ class StagePair:
     @torch.inference_mode()
     def _exchange(self, request, tokens):
         command = self.channel.begin(request)
+        if command.operation == SWITCH:
+            return self._switch_weights(command)
         if command.operation in (RELEASE, STOP, PING):
             self.channel.finish(command)
             return None
@@ -164,6 +186,40 @@ class StagePair:
                 result = torch.empty(token_rows(command), dtype=torch.int64, device='cuda')
             self.channel.complete_tokens(command, result)
             return self._result_tokens(result) if self.rank == 0 else None
+        except BaseException:
+            self.state.poison()
+            raise
+
+    def switch_model(self, alias):
+        """Switch only an idle pair to a model agreed before serving opened."""
+        if self.rank != 0:raise ValueError('only coordinator selects a model')
+        if alias not in self.models:raise ValueError('unknown distributed model')
+        index=self.aliases.index(alias)
+        if self.state.failed or self.state.closed or self.state.pending is not None:
+            raise RuntimeError('distributed session is not ready for model switching')
+        if any(self.state.lengths):raise ValueError('model switch requires released request slots')
+        if index==self.state.model_index:return False
+        self._exchange(Command(self.state.epoch,self.state.sequence,SWITCH,index,()),None)
+        return True
+
+    def _switch_weights(self, command):
+        target=self.models[self.aliases[command.rows]]
+        error=None
+        try:
+            shard=compatible_shard(self.stage,target)
+            if shard is None:raise ValueError('distributed stage layout changed since admission')
+            torch.cuda.synchronize()
+            copy_stage_weights(self.stage,shard)
+        except Exception as failure:
+            error=failure
+        # Both peers participate even after a recoverable local copy failure.
+        # No peer may publish new identity unless both copies and fences succeed.
+        # Broken CUDA/transport still relies on the outer worker deadline.
+        try:
+            self.channel.finish(command,success=error is None)
+            commit_stage_binding(self.stage,shard,self.max_batch)
+            self.model=target
+            self.identity=self.identities[self.aliases[command.rows]]
         except BaseException:
             self.state.poison()
             raise
