@@ -60,7 +60,7 @@ def _tensors(source,*,stage=False):
     return tensors
 
 
-def _build(source,copied,*,cuda,stage=False):
+def _build(source,copied,*,cuda,stage=False,device_routing=False,composition='per_token'):
     projection_type=CudaPackedProjection if cuda else PackedProjection
     matrix_type=CudaPackedMatrix if cuda else PackedMatrix
     expert_type=CudaPackedExpert if cuda else PackedExpert
@@ -96,6 +96,7 @@ def _build(source,copied,*,cuda,stage=False):
             attention=sparse_type(weights,index,heads=a.heads,head_dim=a.head_dim,value_dim=a.value_dim,epsilon=a.epsilon,**limits(a))
         bank=tuple(expert(e) for e in f.experts)
         options=dict(activation_limit=f.activation_limit,max_output_bytes=f.max_output_bytes,workspace_bytes=f.workspace_bytes)
+        if cuda:options.update(device_routing=device_routing,composition=composition)
         if f.kind=='sparse':options.update(router=copied[id(f.router)],correction_bias=copied[id(f.correction_bias)],shared=expert(f.shared),top_k=f.top_k,route_scale=f.route_scale)
         feed=ffn_type(bank[0] if f.kind=='dense' else bank,**options)
         blocks.append(block_type(attention,feed,hyper(block.attention_hyper),hyper(block.ffn_hyper),copied[id(block.input_norm)],copied[id(block.post_norm)],epsilon=block.epsilon,**limits(block)))
@@ -114,18 +115,24 @@ def _build(source,copied,*,cuda,stage=False):
 
 
 @torch.no_grad()
-def place_cuda_flash(source,*,device,max_bytes):
+def place_cuda_flash(source,*,device,max_bytes,device_routing=False,composition='per_token'):
     """Validate all CPU metadata and payloads before copying. Sources stay immutable.
 
     Identical tensor objects share a compact copy; distinct views count separately.
     Raw payload excludes allocator rounding, outputs, caches and scratch, which
     callers must admit separately. No default dispatch or serving policy changes.
+    Composition and device routing are opt-in FFN dispatch options; the CPU
+    revalidation build always runs on defaults.
     """
     device=torch.device(device)
     if device.type!='cuda' or device.index is None or type(max_bytes) is not int or max_bytes<1:
         raise ValueError('Flash placement requires indexed CUDA device and positive byte budget')
+    if type(device_routing) is not bool:raise ValueError('CUDA Flash device routing must be boolean')
+    if composition not in ('per_token','batched'):
+        raise ValueError("CUDA Flash composition must be 'per_token' or 'batched'")
     tensors=_tensors(source);needed=sum(v.numel()*v.element_size() for v in tensors.values())
     if needed>max_bytes:raise ValueError('prepared Flash exceeds CUDA raw payload budget')
     _build(source,tensors,cuda=False)
     copied={key:_copy(value,device) for key,value in tensors.items()}
-    return PlacedCudaFlashModel(_build(source,copied,cuda=True),needed,device)
+    return PlacedCudaFlashModel(_build(source,copied,cuda=True,device_routing=device_routing,
+                                       composition=composition),needed,device)
