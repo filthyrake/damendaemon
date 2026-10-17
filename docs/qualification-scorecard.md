@@ -23,7 +23,7 @@ not continuous batching. Header-only placement accounts for declared storage,
 not measured peak memory. Weighted scheduling and durable quota accounting
 provide software controls; they do not establish GPU capacity or a user SLO.
 
-The snapshot contains fifteen explicit software cells: nine retained CPU/serving
+The snapshot contains sixteen explicit software cells: nine retained CPU/serving
 foundations and six explicit CUDA/model/host/storage scopes. Their pushed commit pins
 identify implementations, not experiment revisions. The source/test map below
 makes those scopes reviewable; local tests are CPU/loopback controls. Separately retained tiny shared-A2
@@ -44,6 +44,7 @@ from fixture dimensions or a test count.
 | Same-host rates and outstanding leases | [Shared reservations](shared-client-reservations.md) | `tests/test_shared_client_rates.py`, `tests/test_shared_reservation_http.py` |
 | Remote owner quota authority and HTTP | [Quota commands](quota-commands.md), [admission](remote-quota-admission.md) | `tests/test_remote_quota_admission.py`, `tests/test_quota_commands.py` |
 | Device-resident routing and batched expert composition | [Packed CUDA evidence](evidence/packed-cuda/README.md), [device routing](evidence/packed-cuda/cuda-device-routing.json) | `tests/test_cuda_expert_routing.py`, `tests/test_cuda_packed_moe.py` |
+| Packed K-quant same-device precision boundary | [Q5 shared replay](evidence/gguf/q5-shared-replay/README.md) | `tests/test_q5_cuda_oracle.py`, `tests/test_q5_precision_replay.py` |
 
 Explicit CUDA scopes retain unknown practical identity fields and do not attach
 synthetic qualification records to the software cells. The shared-A2 evidence
