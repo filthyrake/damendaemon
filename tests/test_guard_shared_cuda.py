@@ -117,6 +117,30 @@ class SharedCudaGuardTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 probe(startup=True)
 
+    def test_two_device_probe_gates_each_gpu(self):
+        with patch('scripts.experiments.guard_shared_cuda.host_available', return_value=32*1024**3), \
+             patch('scripts.experiments.guard_shared_cuda.subprocess.run') as smi:
+            outputs = ['GPU-a, 53, 4200', 'GPU-b, 54, 4300']
+            def telemetry(command, **kwargs):
+                result = subprocess.CompletedProcess(command, 0)
+                result.stdout = outputs[telemetry.call_count['n'] % 2]
+                telemetry.call_count['n'] += 1
+                return result
+            telemetry.call_count = {'n': 0}
+            smi.side_effect = telemetry
+            probe = Probe(['GPU-a', 'GPU-b'])
+            sample = probe(startup=True)
+            self.assertEqual(sample['temperature_c'], 54)
+            self.assertEqual(sample['gpu_free_mib'], 4200)
+            self.assertEqual([d['uuid'] for d in sample['devices']], ['GPU-a', 'GPU-b'])
+            # Either device failing its gates fails the whole probe.
+            smi.side_effect = None
+            smi.return_value.stdout = 'GPU-a, 53, 4200'
+            smi.side_effect = [subprocess.CompletedProcess('x', 0, stdout='GPU-a, 53, 4200'),
+                               subprocess.CompletedProcess('x', 0, stdout='GPU-b, 66, 4300')]
+            with self.assertRaises(RuntimeError):
+                probe(startup=True)
+
 
 if __name__ == '__main__':
     unittest.main()

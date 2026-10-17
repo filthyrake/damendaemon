@@ -42,8 +42,10 @@ def process_identity(pid):
 
 
 class Probe:
-    def __init__(self, uuid, service=None, incumbent=None, allow_busy=False):
-        self.uuid, self.service, self.incumbent = uuid, service, incumbent
+    def __init__(self, uuids, service=None, incumbent=None, allow_busy=False):
+        if isinstance(uuids, str):
+            uuids = [uuids]
+        self.uuids, self.service, self.incumbent = uuids, service, incumbent
         self.identity = process_identity(incumbent) if incumbent is not None else None
         self.allow_busy = allow_busy
 
@@ -53,21 +55,26 @@ class Probe:
                 raise RuntimeError('incumbent process changed')
             service = self.service
             check_service(read_json(service+'/health'), read_json(service+'/slots'), self.allow_busy)
-        output = subprocess.run([
-            'nvidia-smi', '--id='+self.uuid,
-            '--query-gpu=uuid,temperature.gpu,memory.free',
-            '--format=csv,noheader,nounits'], check=True, capture_output=True,
-            text=True, timeout=2).stdout
-        uuid, temperature, free = [part.strip() for part in output.strip().split(',')]
-        temperature, free = int(temperature), int(free)
-        if uuid != self.uuid or not 0 <= temperature < 65:
-            raise RuntimeError('GPU identity or temperature gate failed')
-        if free < (4096 if startup else 2560):
-            raise MemoryError('GPU reserve gate failed')
+        devices = []
+        for uuid in self.uuids:
+            output = subprocess.run([
+                'nvidia-smi', '--id='+uuid,
+                '--query-gpu=uuid,temperature.gpu,memory.free',
+                '--format=csv,noheader,nounits'], check=True, capture_output=True,
+                text=True, timeout=2).stdout
+            identity, temperature, free = [part.strip() for part in output.strip().split(',')]
+            temperature, free = int(temperature), int(free)
+            if identity != uuid or not 0 <= temperature < 65:
+                raise RuntimeError('GPU identity or temperature gate failed')
+            if free < (4096 if startup else 2560):
+                raise MemoryError('GPU reserve gate failed')
+            devices.append(dict(uuid=uuid, temperature_c=temperature, gpu_free_mib=free))
         available = host_available()
         if available < 16*1024**3:
             raise MemoryError('host reserve gate failed')
-        return dict(temperature_c=temperature, gpu_free_mib=free,
+        return dict(devices=devices,
+                    temperature_c=max(device['temperature_c'] for device in devices),
+                    gpu_free_mib=min(device['gpu_free_mib'] for device in devices),
                     host_available_bytes=available)
 
 
@@ -121,7 +128,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--allow-busy', action='store_true',
                         help='allow healthy active slots; may affect incumbent latency')
-    parser.add_argument('--gpu', required=True)
+    parser.add_argument('--gpu', action='append', required=True,
+                        help='explicit GPU UUID; repeat once for a two-device run')
     parser.add_argument('--service', default=None,
                         help='incumbent health/slots endpoint; omit when no incumbent runs')
     parser.add_argument('--incumbent-pid', type=int, default=None,
@@ -139,15 +147,16 @@ def main():
         parser.error('--incumbent-pid is required with --service')
     if args.incumbent_pid is not None and args.incumbent_pid <= 1:
         parser.error('positive incumbent PID required')
-    if not args.gpu.startswith('GPU-') or ',' in args.gpu:
-        parser.error('one explicit GPU UUID required')
+    if (len(args.gpu) not in (1, 2) or len(set(args.gpu)) != len(args.gpu)
+            or any(not uuid.startswith('GPU-') or ',' in uuid for uuid in args.gpu)):
+        parser.error('one or two distinct explicit GPU UUIDs required')
     # Reserve the evidence file before admitting a child; never overwrite a run.
     with args.report.open('x') as output:
-        report = dict(gpu_uuid=args.gpu, incumbent_pid=args.incumbent_pid,
+        report = dict(gpu_uuids=args.gpu, incumbent_pid=args.incumbent_pid,
                       incumbent_service=args.service,
                       timeout_seconds=args.timeout, isolation=False, allow_busy=args.allow_busy)
         env = {k: v for k, v in os.environ.items() if not k.startswith('DAMENDAEMON_')}
-        env.update(CUDA_VISIBLE_DEVICES=args.gpu, DAMENDAEMON_DEVICE='cuda',
+        env.update(CUDA_VISIBLE_DEVICES=','.join(args.gpu), DAMENDAEMON_DEVICE='cuda',
                    OMP_NUM_THREADS='1', MKL_NUM_THREADS='1', DAMENDAEMON_SHARED_CUDA_GUARD='1')
         try:
             passed = run(command, Probe(args.gpu, args.service, args.incumbent_pid, args.allow_busy),
