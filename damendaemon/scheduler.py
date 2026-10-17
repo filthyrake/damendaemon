@@ -73,6 +73,9 @@ class Pending:
 
 
 class BatchedRuntime:
+    admitted_count = 0
+    released_count = 0
+
     def __init__(self, models, batch_size=4, queue_size=8, queue_timeout=120, prefill_chunk_size=0, prefix_cache_tokens=0, batch_wait_ms=0, client_decode_turns=False, client_prefill_turns=False, **kwargs):
         if type(client_decode_turns) is not bool:raise ValueError("client decode turns must be boolean")
         if type(client_prefill_turns) is not bool:raise ValueError('client prefill turns must be boolean')
@@ -112,6 +115,8 @@ class BatchedRuntime:
         self.queue_timeout = queue_timeout
         self.queue_capacity = queue_size
         self.admission = threading.BoundedSemaphore(queue_size)
+        self.admitted_count = 0
+        self.released_count = 0
         self.condition = threading.Condition()
         self.pending = deque()
         self.fair_admission = FairAdmission()
@@ -152,6 +157,9 @@ class BatchedRuntime:
                 "queued_commands": sum(r.command is not None for r in queued),
                 "worker_owned_commands": sum(r.command is not None for r in owned),
                 "oldest_queued_seconds": max((max(0, now-r.start) for r in queued), default=0),
+                "admission_outstanding": self.admitted_count-self.released_count,
+                "admitted_total": self.admitted_count,
+                "released_total": self.released_count,
             }
 
     def drain(self):
@@ -194,6 +202,8 @@ class BatchedRuntime:
         request = Pending(options.get('model') or '', None, 0, command=options)
         if not self.admission.acquire(blocking=False):
             raise BusyError('request queue is full')
+        with self.condition:
+            self.admitted_count += 1
         try:
             with self.condition:
                 if self.closed or self.draining:
@@ -226,6 +236,7 @@ class BatchedRuntime:
                 except ValueError:
                     pass
                 self.requests.discard(request)
+                self.released_count += 1
                 self.condition.notify_all()
             self.admission.release()
 
@@ -312,6 +323,7 @@ class BatchedRuntime:
                 except ValueError:
                     pass
                 self.requests.discard(request)
+                self.released_count += 1
                 self.condition.notify_all()
             self.admission.release()
 
