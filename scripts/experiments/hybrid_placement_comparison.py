@@ -70,11 +70,14 @@ def scheduler_status():
 
 def batch_round(prompts):
     results = [None]*len(prompts)
+    snapshots = []
     started = time.monotonic()
     def drive(index):
         try:
             results[index] = generate(prompts[index])
-        except Exception as error:
+        except RuntimeError as error:
+            if '503' in str(error) and not snapshots:
+                snapshots.append(scheduler_status())
             results[index] = dict(error=str(error), tokens=0)
     threads = [threading.Thread(target=drive, args=(index,)) for index in range(len(prompts))]
     for thread in threads: thread.start()
@@ -82,7 +85,7 @@ def batch_round(prompts):
     seconds = time.monotonic()-started
     failed = [entry['error'] for entry in results if 'error' in entry]
     if failed:
-        raise RuntimeError(f'generation failures: {failed[:2]}')
+        raise RuntimeError(f'generation failures: {failed[:2]} | snapshot: {json.dumps(snapshots[0])[:300] if snapshots else "none"}')
     total = sum(entry['tokens'] for entry in results)
     return dict(prompts=prompts, results=results, wall_seconds=seconds,
                 completion_tokens=total, tokens_per_second=total/seconds)
