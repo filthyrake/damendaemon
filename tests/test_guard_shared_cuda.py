@@ -101,6 +101,22 @@ class SharedCudaGuardTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, 'changed'):
                     probe()
 
+    def test_no_incumbent_mode_skips_service_checks(self):
+        with patch('scripts.experiments.guard_shared_cuda.read_json') as telemetry, \
+             patch('scripts.experiments.guard_shared_cuda.host_available', return_value=32*1024**3), \
+             patch('scripts.experiments.guard_shared_cuda.subprocess.run') as smi:
+            smi.return_value.stdout = 'GPU-example, 53, 4289'
+            probe = Probe('GPU-example')
+            self.assertEqual(probe(startup=True)['gpu_free_mib'], 4289)
+            telemetry.assert_not_called()  # service never polled without an incumbent
+            # Temperature/identity/reserve gates still enforce.
+            smi.return_value.stdout = 'GPU-example, 65, 4289'
+            with self.assertRaises(RuntimeError):
+                probe(startup=True)
+            smi.return_value.stdout = 'GPU-other, 53, 4289'
+            with self.assertRaises(RuntimeError):
+                probe(startup=True)
+
 
 if __name__ == '__main__':
     unittest.main()

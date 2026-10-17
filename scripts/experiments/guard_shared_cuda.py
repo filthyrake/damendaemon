@@ -42,15 +42,16 @@ def process_identity(pid):
 
 
 class Probe:
-    def __init__(self, uuid, service, incumbent, allow_busy=False):
-        self.uuid, self.service, self.incumbent = uuid, service.rstrip('/'), incumbent
-        self.identity = process_identity(incumbent)
+    def __init__(self, uuid, service=None, incumbent=None, allow_busy=False):
+        self.uuid, self.service, self.incumbent = uuid, service, incumbent
+        self.identity = process_identity(incumbent) if incumbent is not None else None
         self.allow_busy = allow_busy
 
     def __call__(self, startup=False):
-        if process_identity(self.incumbent) != self.identity:
-            raise RuntimeError('incumbent process changed')
-        check_service(read_json(self.service+'/health'), read_json(self.service+'/slots'), self.allow_busy)
+        if self.incumbent is not None:
+            if process_identity(self.incumbent) != self.identity:
+                raise RuntimeError('incumbent process changed')
+            check_service(read_json(self.service+'/health'), read_json(self.service+'/slots'), self.allow_busy)
         output = subprocess.run([
             'nvidia-smi', '--id='+self.uuid,
             '--query-gpu=uuid,temperature.gpu,memory.free',
@@ -120,20 +121,29 @@ def main():
     parser.add_argument('--allow-busy', action='store_true',
                         help='allow healthy active slots; may affect incumbent latency')
     parser.add_argument('--gpu', required=True)
-    parser.add_argument('--service', required=True)
-    parser.add_argument('--incumbent-pid', type=int, required=True)
+    parser.add_argument('--service', default=None,
+                        help='incumbent health/slots endpoint; omit when no incumbent runs')
+    parser.add_argument('--incumbent-pid', type=int, default=None,
+                        help='incumbent PID to protect; omit when no incumbent runs')
     parser.add_argument('--timeout', type=int, default=60)
     parser.add_argument('--report', type=Path, required=True)
     parser.add_argument('command', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     command = args.command[1:] if args.command[:1] == ['--'] else args.command
-    if not command or not 1 <= args.timeout <= 120 or args.incumbent_pid <= 1:
-        parser.error('command, positive incumbent PID and timeout 1..120 required')
+    if not command or not 1 <= args.timeout <= 120:
+        parser.error('command and timeout 1..120 required')
+    if args.service is None and args.incumbent_pid is not None:
+        parser.error('--service is required with --incumbent-pid')
+    if args.service is not None and args.incumbent_pid is None:
+        parser.error('--incumbent-pid is required with --service')
+    if args.incumbent_pid is not None and args.incumbent_pid <= 1:
+        parser.error('positive incumbent PID required')
     if not args.gpu.startswith('GPU-') or ',' in args.gpu:
         parser.error('one explicit GPU UUID required')
     # Reserve the evidence file before admitting a child; never overwrite a run.
     with args.report.open('x') as output:
         report = dict(gpu_uuid=args.gpu, incumbent_pid=args.incumbent_pid,
+                      incumbent_service=args.service,
                       timeout_seconds=args.timeout, isolation=False, allow_busy=args.allow_busy)
         env = {k: v for k, v in os.environ.items() if not k.startswith('DAMENDAEMON_')}
         env.update(CUDA_VISIBLE_DEVICES=args.gpu, DAMENDAEMON_DEVICE='cuda',
