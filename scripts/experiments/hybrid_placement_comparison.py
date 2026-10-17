@@ -43,13 +43,13 @@ def health(timeout):
     return False
 
 
-def generate(prompt, max_tokens=32):
+def generate(prompt, max_tokens=32, timeout=600):
     body = json.dumps(dict(model='qwen38', prompt=prompt, max_tokens=max_tokens,
                            temperature=0, stream=False)).encode()
     request = urllib.request.Request(f'http://127.0.0.1:{PORT}/v1/completions', data=body,
                                      headers={'Content-Type': 'application/json'})
     started = time.monotonic()
-    with urllib.request.urlopen(request, timeout=240) as response:
+    with urllib.request.urlopen(request, timeout=timeout) as response:
         payload = json.loads(response.read())
     return dict(text=payload['choices'][0]['text'], tokens=payload['usage']['completion_tokens'],
                 seconds=time.monotonic()-started)
@@ -100,12 +100,15 @@ def main():
             [sys.executable, '-m', 'scripts.experiments.hybrid_q4_context_probe', 'serve',
              '--model-config', manifest_path, '--device', 'cuda', '--context', '512',
              '--no-graph', '--port', str(PORT), '--gpu-models', '1', '--host-models', '1',
-             '--host-gib', '40'],
+             '--host-gib', '40', '--queue-timeout', '600'],
             env=environment, stdout=open(args.output.with_suffix('.serve.log'), 'w'),
             stderr=subprocess.STDOUT)
         if not health(600):
             raise RuntimeError('serve did not become healthy within 600 seconds')
-        report['ready_seconds'] = None
+        # Activation (27B Q4 packing plus hybrid streaming setup) runs inside
+        # the first request; warm up before any measured round.
+        warmup = generate(PROMPTS[0], max_tokens=8)
+        report['warmup_seconds'] = warmup['seconds']
         for batch in BATCHES:
             prompts = PROMPTS*batch
             rounds = []

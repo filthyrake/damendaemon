@@ -131,8 +131,8 @@ def main():
     parser.add_argument('command', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     command = args.command[1:] if args.command[:1] == ['--'] else args.command
-    if not command or not 1 <= args.timeout <= 900:
-        parser.error('command and timeout 1..900 required')
+    if not command or not 1 <= args.timeout <= 1800:
+        parser.error('command and timeout 1..1800 required')
     if args.service is None and args.incumbent_pid is not None:
         parser.error('--service is required with --incumbent-pid')
     if args.service is not None and args.incumbent_pid is None:
