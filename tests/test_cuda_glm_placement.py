@@ -42,5 +42,35 @@ class CudaGlmPlacementTests(unittest.TestCase):
         for device in ('cpu','cuda'):
             with self.assertRaises(ValueError):place_cuda_glm(source,device=device,max_bytes=10**6)
 
+    def test_composition_options_rejected_before_copy(self):
+        source,_=model_pair();tensors=_tensors(source)
+        size=sum(t.numel()*t.element_size() for t in tensors.values())
+        for kwargs in ({'device_routing':'yes'},{'composition':'fused'},{'composition':'BATCHED'}):
+            with patch('damendaemon.cuda_glm_placement._copy',side_effect=AssertionError('copied')):
+                with self.assertRaises(ValueError):
+                    place_cuda_glm(source,device='cuda:0',max_bytes=size+100,**kwargs)
+                # _copy asserted not called by raising on first use above.
+
+    def test_composition_options_threaded_into_cuda_ffn(self):
+        source,_=model_pair();tensors=_tensors(source)
+        with patch('damendaemon.cuda_glm_placement.CudaCachedGlmAttention'), \
+             patch('damendaemon.cuda_glm_placement.CudaPackedExpert'), \
+             patch('damendaemon.cuda_glm_placement.CudaPackedMatrix'), \
+             patch('damendaemon.cuda_glm_placement.CudaPackedProjection'), \
+             patch('damendaemon.cuda_glm_placement.CudaGlmBlock'), \
+             patch('damendaemon.cuda_glm_placement.CudaGlmModel'), \
+             patch('damendaemon.cuda_glm_placement.CudaPackedGlmFeedForward') as ffn_type:
+            _build(source,tensors,cuda=True,device_routing=True,composition='batched')
+            kwargs=ffn_type.call_args.kwargs
+            self.assertEqual(kwargs['device_routing'],True)
+            self.assertEqual(kwargs['composition'],'batched')
+            cuda_calls=ffn_type.call_count
+            _build(source,tensors,cuda=False,device_routing=True,composition='batched')
+            # The CPU revalidation build uses the real CPU FFN class, not the
+            # CUDA mock, and receives no dispatch options.
+            self.assertEqual(ffn_type.call_count,cuda_calls)
+            rebuilt=_build(source,tensors,cuda=False)
+            self.assertEqual(rebuilt.blocks[0].feed_forward.__class__.__name__,'PackedGlmFeedForward')
+
 
 if __name__=='__main__':unittest.main()

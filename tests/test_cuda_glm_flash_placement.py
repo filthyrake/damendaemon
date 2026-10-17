@@ -46,3 +46,26 @@ class CudaFlashPlacementTests(unittest.TestCase):
         _,state=source.prefill(torch.tensor([[1]]),capacity=1);state.close()
         for device in ('cpu','cuda'):
             with self.assertRaises(ValueError):place_cuda_flash(source,device=device,max_bytes=10**6)
+
+    def test_composition_options_threaded_into_cuda_ffn(self):
+        source=fixture()
+        tensors=_tensors(source)
+        with patch('damendaemon.cuda_glm_flash_placement.CudaFlashLinearAttention'), \
+             patch('damendaemon.cuda_glm_flash_placement.CudaFlashSparseAttention'), \
+             patch('damendaemon.cuda_glm_flash_placement.CudaFlashIndexer'), \
+             patch('damendaemon.cuda_glm_flash_placement.CudaFlashHyperConnection'), \
+             patch('damendaemon.cuda_glm_flash_placement.CudaPackedExpert'), \
+             patch('damendaemon.cuda_glm_flash_placement.CudaPackedMatrix'), \
+             patch('damendaemon.cuda_glm_flash_placement.CudaPackedProjection'), \
+             patch('damendaemon.cuda_glm_flash_placement.CudaFlashBlock'), \
+             patch('damendaemon.cuda_glm_flash_placement.CudaFlashModel'), \
+             patch('damendaemon.cuda_glm_flash_placement.CudaPackedFlashFeedForward') as ffn_type:
+            _build(source,tensors,cuda=True,device_routing=True,composition='batched')
+            kwargs=ffn_type.call_args.kwargs
+            self.assertEqual(kwargs['device_routing'],True)
+            self.assertEqual(kwargs['composition'],'batched')
+            cuda_calls=ffn_type.call_count
+            _build(source,tensors,cuda=False,device_routing=True,composition='batched')
+            # The CPU revalidation build uses the real CPU FFN class, not the
+            # CUDA mock, and receives no dispatch options.
+            self.assertEqual(ffn_type.call_count,cuda_calls)

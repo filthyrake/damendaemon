@@ -50,7 +50,7 @@ def _tensors(source,*,stage=False):
     return tensors
 
 
-def _build(source,copied,*,cuda,stage=False):
+def _build(source,copied,*,cuda,stage=False,device_routing=False,composition='per_token'):
     """Revalidate the full CPU composition before using the same recipe on CUDA."""
     projection_type=CudaPackedProjection if cuda else PackedProjection
     matrix_type=CudaPackedMatrix if cuda else PackedMatrix
@@ -79,6 +79,7 @@ def _build(source,copied,*,cuda,stage=False):
             rope_base=a.rope_base,epsilon=a.epsilon,**a.budgets)
         bank=tuple(expert(e) for e in f.experts)
         options=dict(activation_limit=f.activation_limit,max_output_bytes=f.max_output_bytes,workspace_bytes=f.workspace_bytes)
+        if cuda:options.update(device_routing=device_routing,composition=composition)
         if f.kind=='sparse':options.update(router=copied[id(f.router)],correction_bias=copied[id(f.correction_bias)],shared=expert(f.shared),top_k=f.top_k,route_scale=f.route_scale)
         feed_forward=ffn_type(bank[0] if f.kind=='dense' else bank,**options)
         blocks.append(block_type(attention,feed_forward,copied[id(block.input_norm)],copied[id(block.post_norm)],epsilon=block.epsilon))
@@ -98,20 +99,26 @@ def _build(source,copied,*,cuda,stage=False):
 
 
 @torch.no_grad()
-def place_cuda_glm(source,*,device,max_bytes):
+def place_cuda_glm(source,*,device,max_bytes,device_routing=False,composition='per_token'):
     """Admit all raw payloads and CPU metadata before copying any tensor.
 
     Sources must remain immutable during placement. Identical tensor objects
     share one compact CUDA copy; distinct views count separately. The byte cap
     excludes allocator rounding, scratch, caches and outputs; callers separately
     admit those resources. No cache is allocated or serving policy changed.
+    Composition and device routing are opt-in FFN dispatch options; the CPU
+    revalidation build always runs on defaults.
     """
     device=torch.device(device)
     if device.type!='cuda' or device.index is None or type(max_bytes) is not int or max_bytes<1:
         raise ValueError('GLM placement requires indexed CUDA device and positive byte budget')
+    if type(device_routing) is not bool:raise ValueError('CUDA GLM device routing must be boolean')
+    if composition not in ('per_token','batched'):
+        raise ValueError("CUDA GLM composition must be 'per_token' or 'batched'")
     tensors=_tensors(source)
     needed=sum(t.numel()*t.element_size() for t in tensors.values())
     if needed>max_bytes:raise ValueError('prepared GLM exceeds CUDA raw payload budget')
     _build(source,tensors,cuda=False)
     copied={key:_copy(value,device) for key,value in tensors.items()}
-    return PlacedCudaGlmModel(_build(source,copied,cuda=True),needed,device)
+    return PlacedCudaGlmModel(_build(source,copied,cuda=True,device_routing=device_routing,
+                                     composition=composition),needed,device)
