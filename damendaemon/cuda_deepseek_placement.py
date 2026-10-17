@@ -81,7 +81,8 @@ def _policy(source,workspace_bytes,max_output_bytes,*,stage=False):
         raise ValueError('explicit DeepSeek CUDA placement requires FP32 prepared tensors/projections')
 
 
-def _build(source,copied,*,cuda,workspace_bytes,max_output_bytes,stage=False):
+def _build(source,copied,*,cuda,workspace_bytes,max_output_bytes,stage=False,
+           device_routing=False,composition='per_token'):
     projection_type=CudaPackedProjection if cuda else PackedProjection
     matrix_type=CudaPackedMatrix if cuda else PackedMatrix
     expert_type=CudaPackedExpert if cuda else PackedExpert
@@ -103,7 +104,8 @@ def _build(source,copied,*,cuda,workspace_bytes,max_output_bytes,stage=False):
     for block in source.blocks:
         options={name:getattr(block,name) for name in ('groups','window','ratio','hc_mult','top_k','route_scale','index_top_k',
                   'epsilon','connection_epsilon','iterations','activation_limit','workspace_bytes')}
-        if cuda:options.update(workspace_bytes=workspace_bytes//2,max_output_bytes=workspace_bytes//2)
+        if cuda:options.update(workspace_bytes=workspace_bytes//2,max_output_bytes=workspace_bytes//2,
+                               device_routing=device_routing,composition=composition)
         blocks.append(block_type({k:projection(v) for k,v in block.attention_weights.items()},
             {k:copied[id(v)] for k,v in block.weights.items()},copied[id(block.frequencies)],
             packed_experts=tuple(expert(e) for e in block.packed_experts),packed_shared=expert(block.packed_shared),**options))
@@ -124,20 +126,28 @@ def _build(source,copied,*,cuda,workspace_bytes,max_output_bytes,stage=False):
 
 
 @torch.no_grad()
-def place_cuda_deepseek(source,*,device,max_bytes,workspace_bytes=256*1024**2,max_output_bytes=64*1024**2):
+def place_cuda_deepseek(source,*,device,max_bytes,workspace_bytes=256*1024**2,max_output_bytes=64*1024**2,
+                        device_routing=False,composition='per_token'):
     """Copy unique tensor objects; preserve expert aliases and packed row views.
 
     Validate CPU composition and CUDA metadata/policies before the first copy.
     Raw bytes exclude allocator rounding, caches, outputs and scratch. Prepared
     sources must stay immutable. Payload numerical validity is checked by the
     execution primitives; placement alone is not a numerical qualification.
+    Composition and device routing are opt-in FFN dispatch options; the CPU
+    revalidation build always runs on defaults.
     """
     device=torch.device(device)
     if device.type!='cuda' or device.index is None or type(max_bytes) is not int or max_bytes<1:
         raise ValueError('DeepSeek placement requires indexed CUDA device and positive payload budget')
+    if type(device_routing) is not bool:raise ValueError('DeepSeek device routing must be boolean')
+    if composition not in ('per_token','batched','fused'):
+        raise ValueError("DeepSeek composition must be 'per_token', 'batched' or 'fused'")
     tensors=_tensors(source);needed=sum(v.numel()*v.element_size() for v in tensors.values())
     if needed>max_bytes:raise ValueError('prepared DeepSeek exceeds CUDA raw payload budget')
     _policy(source,workspace_bytes,max_output_bytes)
     _build(source,tensors,cuda=False,workspace_bytes=workspace_bytes,max_output_bytes=max_output_bytes)
     copied={key:_copy(value,device) for key,value in tensors.items()}
-    return PlacedCudaDeepSeekModel(_build(source,copied,cuda=True,workspace_bytes=workspace_bytes,max_output_bytes=max_output_bytes),needed,device)
+    return PlacedCudaDeepSeekModel(_build(source,copied,cuda=True,workspace_bytes=workspace_bytes,
+                                          max_output_bytes=max_output_bytes,device_routing=device_routing,
+                                          composition=composition),needed,device)

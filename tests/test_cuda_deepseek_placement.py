@@ -47,3 +47,34 @@ class DeepSeekPlacementTests(unittest.TestCase):
             block.workspace_bytes=max(e.workspace_bytes for e in (*block.packed_experts,block.packed_shared))
             self.assertGreater(_inner_workspace(block),block.workspace_bytes)
         _policy(source,256*1024**2,64*1024**2)
+
+    def test_composition_options_threaded_into_cuda_blocks(self):
+        source,_,_=fixture()
+        tensors=_tensors(source)
+        with patch('damendaemon.cuda_deepseek_placement.CudaPackedProjection'), \
+             patch('damendaemon.cuda_deepseek_placement.CudaPackedMatrix'), \
+             patch('damendaemon.cuda_deepseek_placement.CudaPackedExpert'), \
+             patch('damendaemon.cuda_deepseek_placement.CudaDeepSeekBlock') as block_type, \
+             patch('damendaemon.cuda_deepseek_placement.CudaDeepSeekModel'):
+            _build(source,tensors,cuda=True,workspace_bytes=256*1024**2,max_output_bytes=64*1024**2,
+                   device_routing=True,composition='fused')
+            kwargs=block_type.call_args.kwargs
+            self.assertEqual(kwargs['device_routing'],True)
+            self.assertEqual(kwargs['composition'],'fused')
+            cuda_calls=block_type.call_count
+            _build(source,tensors,cuda=False,workspace_bytes=256*1024**2,max_output_bytes=64*1024**2,
+                   device_routing=True,composition='fused')
+            # The CPU revalidation build uses the real FloatingBlock and gets no options.
+            self.assertEqual(block_type.call_count,cuda_calls)
+
+    def test_composition_options_rejected_before_copy(self):
+        source,_,_=fixture();tensors=_tensors(source)
+        size=sum(t.numel()*t.element_size() for t in tensors.values())
+        for kwargs in ({'device_routing':'yes'},{'composition':'threads'},{'composition':'BATCHED'}):
+            with patch('damendaemon.cuda_deepseek_placement._copy',side_effect=AssertionError('copied')):
+                with self.assertRaises(ValueError):
+                    place_cuda_deepseek(source,device='cuda:0',max_bytes=size+100,
+                                        workspace_bytes=256*1024**2,max_output_bytes=64*1024**2,**kwargs)
+
+
+if __name__=='__main__':unittest.main()
