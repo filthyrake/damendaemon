@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/tmp/damendaemon-45/scripts/experiments/hybrid_placement_comparison.py", line 136, in <module>
+    main()
+  File "/tmp/damendaemon-45/scripts/experiments/hybrid_placement_comparison.py", line 116, in main
+    rounds.append(batch_round(prompts))
+                  ^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-45/scripts/experiments/hybrid_placement_comparison.py", line 72, in batch_round
+    raise RuntimeError(f'generation failures: {failed[:2]}')
+RuntimeError: generation failures: ['HTTP Error 503: Service Unavailable', 'HTTP Error 503: Service Unavailable']
+shared CUDA gate refused or stopped run; see report

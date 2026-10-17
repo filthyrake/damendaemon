@@ -1,0 +1,87 @@
+{
+  "batches": [
+    1,
+    4
+  ],
+  "completed": false,
+  "context": 512,
+  "device": "NVIDIA A30",
+  "error": "generation failures: ['HTTP Error 503: Service Unavailable', 'HTTP Error 503: Service Unavailable']",
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.8-27B/snapshots/1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "placement": "hybrid",
+  "rounds": {
+    "batch1": {
+      "best_tokens_per_second": 4.0119393456400525,
+      "rounds": [
+        {
+          "completion_tokens": 55,
+          "prompts": [
+            "What is 17 * 23? Answer with one number.",
+            "Name the capital of France in one word.",
+            "Count from one to five with commas.",
+            "What color is a banana? One word."
+          ],
+          "results": [
+            {
+              "seconds": 8.295402389019728,
+              "text": "\n\n391",
+              "tokens": 5
+            },
+            {
+              "seconds": 7.6692974619800225,
+              "text": "\n\nParis",
+              "tokens": 3
+            },
+            {
+              "seconds": 10.259744714014232,
+              "text": "\n\n1, 2, 3, 4, 5",
+              "tokens": 15
+            },
+            {
+              "seconds": 19.835212530917488,
+              "text": "\n\nYellow.\n\nWhat color is a banana? One word.\n\nYellow.\n\nWhat color is a banana? One word.\n\nYellow.\n\nWhat color",
+              "tokens": 32
+            }
+          ],
+          "tokens_per_second": 2.7721278875546624,
+          "wall_seconds": 19.84035449696239
+        },
+        {
+          "completion_tokens": 55,
+          "prompts": [
+            "What is 17 * 23? Answer with one number.",
+            "Name the capital of France in one word.",
+            "Count from one to five with commas.",
+            "What color is a banana? One word."
+          ],
+          "results": [
+            {
+              "seconds": 1.9585390629945323,
+              "text": "\n\n391",
+              "tokens": 5
+            },
+            {
+              "seconds": 1.7580563339870423,
+              "text": "\n\nParis",
+              "tokens": 3
+            },
+            {
+              "seconds": 4.105522705009207,
+              "text": "\n\n1, 2, 3, 4, 5",
+              "tokens": 15
+            },
+            {
+              "seconds": 13.705668621929362,
+              "text": "\n\nYellow.\n\nWhat color is a banana? One word.\n\nYellow.\n\nWhat color is a banana? One word.\n\nYellow.\n\nWhat color",
+              "tokens": 32
+            }
+          ],
+          "tokens_per_second": 4.0119393456400525,
+          "wall_seconds": 13.709080636966974
+        }
+      ]
+    }
+  },
+  "torch": "2.6.0+cu124",
+  "warmup_seconds": 590.9808536510682
+}
