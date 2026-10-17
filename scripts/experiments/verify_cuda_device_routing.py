@@ -72,7 +72,7 @@ def main():
         controls = [expert('e2m1'), expert('e4m3fn'), expert('e2m1'), expert('e4m3fn'),
                     expert('e2m1'), expert('e4m3fn'), expert('e2m1'), expert('e4m3fn')]
         bank = []
-        for original, _ in controls:
+        for original, _ in controls[:8]:
             matrices = [CudaPackedMatrix(m.weight.cuda(), m.scales.cuda(), m.format)
                         for m in (original.gate, original.up, original.down)]
             bank.append(CudaPackedExpert(*matrices, row_chunk=13, column_chunk=17, activation_limit=2))
@@ -107,6 +107,46 @@ def main():
         if empty_per.shape != (0, 32) or empty_bat.shape != (0, 32): raise AssertionError('empty batched result')
         batched_cases += 1
         report['batched_cases'] = batched_cases
+        # Prepared FFN dispatch switch-over: device_routing vs host routing.
+        from dllm.cuda_glm_ffn import CudaPackedGlmFeedForward
+        from dllm.cuda_deepseek_ffn import CudaPackedDeepSeekFeedForward
+        ffn_cases = 0
+        glm_bank = []
+        for index in range(4):
+            matrices = []
+            for rows, columns in ((64, 32), (64, 32), (32, 64)):
+                raw = (torch.rand(rows, columns, generator=rng)*120).to(torch.uint8)
+                scales = torch.full(((rows+127)//128, (columns+127)//128), .125)
+                matrices.append(CudaPackedMatrix(raw.cuda(), scales.cuda(), 'e4m3fn_f32'))
+            glm_bank.append(CudaPackedExpert(*matrices, row_chunk=13, column_chunk=17, activation_limit=2))
+        router = (torch.randn(4, 32, generator=rng)*.1).cuda()
+        bias = (torch.randn(4, generator=rng)*.1).cuda()
+        hidden3 = (torch.randn(1, 3, 32, generator=rng)*.2).cuda()
+        host_ffn = CudaPackedGlmFeedForward(glm_bank, router=router, correction_bias=bias,
+                                            shared=glm_bank[0], top_k=2, device_routing=False,
+                                            activation_limit=2)
+        device_ffn = CudaPackedGlmFeedForward(glm_bank, router=router, correction_bias=bias,
+                                              shared=glm_bank[0], top_k=2, device_routing=True,
+                                              activation_limit=2)
+        torch.testing.assert_close(device_ffn(hidden3), host_ffn(hidden3), rtol=2e-4, atol=1e-5)
+        ffn_cases += 1
+        ds_bank = []
+        for original, _ in controls[4:8]:
+            matrices = [CudaPackedMatrix(m.weight.cuda(), m.scales.cuda(), m.format)
+                        for m in (original.gate, original.up, original.down)]
+            ds_bank.append(CudaPackedExpert(*matrices, row_chunk=13, column_chunk=17, activation_limit=2))
+        ds_router = (torch.randn(4, 32, generator=rng)*.1).cuda()
+        ds_bias = (torch.randn(4, generator=rng)*.1).cuda()
+        ds_hidden = (torch.randn(1, 2, 32, generator=rng)*.2).cuda()
+        ds_host = CudaPackedDeepSeekFeedForward(ds_bank, router=ds_router, shared=ds_bank[0],
+                                                correction_bias=ds_bias, top_k=2, device_routing=False,
+                                                activation_limit=2)
+        ds_device = CudaPackedDeepSeekFeedForward(ds_bank, router=ds_router, shared=ds_bank[0],
+                                                  correction_bias=ds_bias, top_k=2, device_routing=True,
+                                                  activation_limit=2)
+        torch.testing.assert_close(ds_device(ds_hidden), ds_host(ds_hidden), rtol=2e-4, atol=1e-5)
+        ffn_cases += 1
+        report['ffn_device_routing_cases'] = ffn_cases
         report['peak_reserved_bytes'] = torch.cuda.max_memory_reserved()
         report['passed'] = True
     except BaseException as error:

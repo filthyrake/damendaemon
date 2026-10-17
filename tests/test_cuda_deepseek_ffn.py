@@ -14,6 +14,25 @@ class CudaDeepSeekFfnAdmissionTests(unittest.TestCase):
         ffn.dim=8;ffn.device=torch.device('cuda:0')
         with self.assertRaises(ValueError):ffn(torch.zeros(1,2,8))
 
+    def test_device_routing_flag_is_bounded_boolean(self):
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        from torch._subclasses.fake_tensor import FakeTensorMode
+        from dllm.cuda_packed_expert import CudaPackedExpert
+        expert=object.__new__(CudaPackedExpert)
+        expert.device=torch.device('cuda:0');expert.width=8
+        expert.workspace_bytes=65536;expert.activation_limit=10.
+        expert.gate=expert.up=expert.down=SimpleNamespace(format='e4m3fn')
+        with FakeTensorMode(), patch('dllm.cuda_deepseek_ffn.finite',side_effect=lambda value,*args,**kwargs:value):
+            router=torch.empty(3,8,device='cuda')
+            for flag in (True,False):
+                ffn=CudaPackedDeepSeekFeedForward([expert]*3,router=router,correction_bias=torch.empty(3,device='cuda'),
+                    shared=expert,top_k=2,device_routing=flag)
+                self.assertIs(ffn.device_routing,flag)
+            with self.assertRaises(ValueError):
+                CudaPackedDeepSeekFeedForward([expert]*3,router=router,correction_bias=torch.empty(3,device='cuda'),
+                    shared=expert,top_k=2,device_routing='yes')
+
     def test_preparation_budget_and_policy_precede_value_scans(self):
         from types import SimpleNamespace
         from unittest.mock import patch

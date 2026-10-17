@@ -18,6 +18,15 @@ class CudaGlmTests(unittest.TestCase):
         self.assertEqual(actual[0].sum().item(),0)
         self.assertLess(actual[1].sum().item(),2.5)
 
+    def test_device_routing_select_matches_host_path_exactly(self):
+        logits=torch.tensor([[-1000.,-1000.,-1000.],[-46.,-47.,-48.],[1.,1.,1.],[2.,2.,1.]])
+        bias=torch.tensor([1.,0.,0.])
+        host_weights,host_ids=_select(logits,bias,2,2.5)
+        device_weights,device_ids=_select(logits,bias,2,2.5,device_routing=True)
+        torch.testing.assert_close(device_weights,host_weights,rtol=0,atol=0)
+        self.assertTrue(torch.equal(device_ids,host_ids))
+        self.assertEqual(device_weights.device,logits.device)
+
     def test_coefficients_applied_after_completed_expert(self):
         experts=[SimpleNamespace(forward=Mock(side_effect=lambda x:x*3+1)),
                  SimpleNamespace(forward=Mock(side_effect=lambda x:x*5+2))]

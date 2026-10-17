@@ -7,8 +7,12 @@ from .expert_routes import grouped_routes
 from .glm_attention import _budgets
 
 
-def _select(logits,bias,top_k,scale):
-    weights,ids=select_experts(logits,top_k,scoring='sigmoid',correction_bias=bias,renormalize=False)
+def _select(logits,bias,top_k,scale,device_routing=False):
+    if device_routing:
+        from .cuda_expert_routing import select_experts_device
+        weights,ids=select_experts_device(logits,top_k,scoring='sigmoid',correction_bias=bias)
+    else:
+        weights,ids=select_experts(logits,top_k,scoring='sigmoid',correction_bias=bias,renormalize=False)
     return weights/(weights.sum(-1,keepdim=True)+1e-20)*scale,ids
 
 
@@ -33,8 +37,8 @@ class CudaPackedGlmFeedForward:
     are separate. Host count scheduling is explicit; this is not a fused kernel.
     """
     def __init__(self,experts,*,router=None,correction_bias=None,shared=None,top_k=8,
-                 route_scale=2.5,activation_limit=None,max_output_bytes=64*1024**2,
-                 workspace_bytes=64*1024**2):
+                 route_scale=2.5,activation_limit=None,device_routing=False,
+                 max_output_bytes=64*1024**2,workspace_bytes=64*1024**2):
         dense=isinstance(experts,CudaPackedExpert)
         if dense:
             if any(v is not None for v in (router,correction_bias,shared)):
@@ -68,6 +72,8 @@ class CudaPackedGlmFeedForward:
         self.experts,self.shared=bank,shared
         self.router,self.correction_bias=router,correction_bias
         self.top_k,self.route_scale=top_k,route_scale
+        if type(device_routing) is not bool:raise ValueError('CUDA GLM device routing must be boolean')
+        self.device_routing=device_routing
         self.max_output_bytes,self.workspace_bytes=max_output_bytes,workspace_bytes
         self.required_workspace_bytes=scratch
 
@@ -86,7 +92,7 @@ class CudaPackedGlmFeedForward:
                 else:
                     logits=F.linear(source,self.router)
                     if not torch.isfinite(logits).all():raise ValueError('CUDA GLM routing logits must be finite')
-                    coefficients,ids=_select(logits,self.correction_bias,self.top_k,self.route_scale)
+                    coefficients,ids=_select(logits,self.correction_bias,self.top_k,self.route_scale,self.device_routing)
                     value=_routed(source,self.experts,ids,coefficients,self.shared)
                 if not torch.isfinite(value).all():raise ValueError('nonfinite CUDA GLM FFN output')
                 output[batch,token:token+1]=value

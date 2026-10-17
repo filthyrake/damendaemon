@@ -69,6 +69,22 @@ class DeviceRoutingEquivalenceTests(unittest.TestCase):
         # Tied columns 1 and 4: lower ID first wherever both fit in top-k.
         self.assertLess(selected[:, 1].min(), 4)
 
+    def test_preselected_routes_match_cpu_reference_and_keep_order(self):
+        logits = fixture()
+        routes = torch.tensor([[7, 0], [3, 3], [5, 2], [1, 6], [0, 7], [2, 4]])
+        for scoring in ('softmax', 'sigmoid', 'sqrtsoftplus'):
+            with self.subTest(scoring=scoring):
+                expected_w, expected_s = select_experts(logits, 2, scoring=scoring,
+                                                        renormalize=True, selected_experts=routes)
+                actual_w, actual_s = select_experts_device(logits, 2, scoring=scoring,
+                                                           renormalize=True, selected_experts=routes)
+                torch.testing.assert_close(actual_w, expected_w)
+                self.assertTrue(torch.equal(actual_s, expected_s))
+        with self.assertRaisesRegex(ValueError, 'without grouping or bias'):
+            select_experts_device(logits, 2, selected_experts=routes, group_count=2)
+        with self.assertRaisesRegex(ValueError, 'without grouping or bias'):
+            select_experts_device(logits, 2, selected_experts=routes, correction_bias=torch.zeros(8))
+
     def test_no_host_readback_inside_the_call(self):
         logits = fixture()
         with patch('torch.Tensor.item', side_effect=AssertionError('host readback')), \
