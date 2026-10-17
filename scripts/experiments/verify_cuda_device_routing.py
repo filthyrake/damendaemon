@@ -147,6 +147,33 @@ def main():
         torch.testing.assert_close(ds_device(ds_hidden), ds_host(ds_hidden), rtol=2e-4, atol=1e-5)
         ffn_cases += 1
         report['ffn_device_routing_cases'] = ffn_cases
+        # Fused composition: no host sync, uniform-format bank, same route semantics.
+        fused_bank = bank[1::2]  # four e4m3fn experts; routes map to 0..3
+        fused_selected = selected % len(fused_bank)
+        fused_cases = 0
+        for dtype in (torch.float32, torch.float16, torch.bfloat16):
+            cast_hidden = hidden.to(dtype)
+            control = cuda_packed_moe(cast_hidden, fused_bank, fused_selected, weights,
+                                      shared=fused_bank[0], batched=True)
+            with patch('torch.Tensor.item', side_effect=AssertionError('host readback')), \
+                    patch('torch.Tensor.cpu', side_effect=AssertionError('host readback')), \
+                    patch('torch.Tensor.tolist', side_effect=AssertionError('host readback')):
+                fused = cuda_packed_moe(cast_hidden, fused_bank, fused_selected, weights,
+                                        shared=fused_bank[0], fused=True)
+            torch.testing.assert_close(fused, control, rtol=2e-4, atol=1e-5)
+            fused_cases += 1
+        with patch('torch.Tensor.item', side_effect=AssertionError('host readback')), \
+                patch('torch.Tensor.cpu', side_effect=AssertionError('host readback')):
+            fused_empty = cuda_packed_moe(hidden[:0], fused_bank, fused_selected[:0], weights[:0],
+                                          shared=fused_bank[0], fused=True)
+        if fused_empty.shape != (0, 32): raise AssertionError('empty fused result')
+        fused_cases += 1
+        try:
+            cuda_packed_moe(hidden, fused_bank, fused_selected, weights, fused=True, max_gather_bytes=1)
+        except ValueError: pass
+        else: raise AssertionError('oversized gather admitted')
+        fused_cases += 1
+        report['fused_cases'] = fused_cases
         report['peak_reserved_bytes'] = torch.cuda.max_memory_reserved()
         report['passed'] = True
     except BaseException as error:

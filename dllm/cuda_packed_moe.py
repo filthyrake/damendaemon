@@ -3,6 +3,8 @@ import torch
 
 from .cuda_packed_expert import CudaPackedExpert
 from .expert_routes import grouped_routes
+from .expert_ffn import activate_expert
+from .packed_tiles import _decode_tile
 
 
 def _validate(hidden, experts, selected, coefficients, shared):
@@ -28,7 +30,8 @@ def _validate(hidden, experts, selected, coefficients, shared):
 
 
 @torch.no_grad()
-def cuda_packed_moe(hidden, experts, selected, coefficients, *, shared=None, batched=False):
+def cuda_packed_moe(hidden, experts, selected, coefficients, *, shared=None, batched=False,
+                    fused=False, fused_route_chunk=64, max_gather_bytes=32*1024**2):
     """Add routed contributions in stable expert order, with optional shared FFN.
 
     IDs/coefficients/gathers remain on CUDA. Range validation synchronizes one
@@ -54,6 +57,9 @@ def cuda_packed_moe(hidden, experts, selected, coefficients, *, shared=None, bat
         if any(not hasattr(entry,'forward_batched') for entry in participants):
             raise ValueError('batched composition requires experts with forward_batched')
         return _accumulate_batched(hidden,experts,selected,coefficients,shared)
+    if fused:
+        return _accumulate_fused(hidden,experts,selected,coefficients,shared,
+                                 route_chunk=fused_route_chunk,max_gather_bytes=max_gather_bytes)
     return _accumulate(hidden,experts,selected,coefficients,shared)
 
 
@@ -75,6 +81,86 @@ def _accumulate_batched(hidden,experts,selected,coefficients,shared):
             result = experts[expert_id].forward_batched(source,route_weights=coefficient)
             output.index_add_(0,token_ids[rows],result.float())
             start += count
+    if shared is not None and hidden.shape[0]:
+        output.add_(shared.forward_batched(hidden).float())
+    return output.to(hidden.dtype)
+
+
+def _stacked(experts, kind):
+    """Stack one packed projection layer across the bank; one format required."""
+    formats = {getattr(e, kind).format for e in experts}
+    if len(formats) != 1:
+        raise ValueError('fused composition requires one packed format across the bank')
+    weights = torch.stack([getattr(e, kind).weight for e in experts])
+    scales = torch.stack([getattr(e, kind).scales for e in experts])
+    return weights, scales, formats.pop()
+
+
+def _fused_project(hidden_rows, stacked, route_expert, *, rows, columns, row_chunk,
+                   column_chunk, route_chunk, max_gather_bytes):
+    """Per-route gathered weight tiles with batched bmm; no host readback.
+
+    hidden_rows [c, features] FP32; returns [c, rows]. Tile bounds and route
+    chunks are static; the gathered tile [c, tile_rows, tile_cols] is checked
+    against an explicit byte budget before allocation.
+    """
+    weights, scales, format = stacked
+    experts_count = weights.shape[0]
+    gathered_bytes = route_chunk*min(row_chunk, rows)*min(column_chunk, columns)*4
+    if type(max_gather_bytes) is not int or not 1 <= max_gather_bytes <= 2**31 or gathered_bytes > max_gather_bytes:
+        raise ValueError('fused gathered-tile workspace budget exceeded')
+    output = torch.zeros(hidden_rows.shape[0], rows, dtype=torch.float32, device=hidden_rows.device)
+    for row in range(0, rows, row_chunk):
+        end_row = min(rows, row+row_chunk)
+        for column in range(0, columns, column_chunk):
+            end_column = min(columns, column+column_chunk)
+            tiles = torch.stack([_decode_tile(weights[e], scales[e], format=format, row_start=row,
+                                             row_stop=end_row, column_start=column, column_stop=end_column)
+                                 for e in range(experts_count)])
+            route_tiles = tiles.index_select(0, route_expert)
+            partial = torch.bmm(hidden_rows[:, None, column:end_column], route_tiles.transpose(1, 2))[:, 0, :]
+            output[:, row:end_row].add_(partial)
+    return output
+
+
+def _accumulate_fused(hidden, experts, selected, coefficients, shared, *,
+                      route_chunk=64, max_gather_bytes=32*1024**2):
+    """No host readback: stacked banks, per-route gathered tiles, device accumulation.
+
+    Route order (token-major) differs from the grouped paths' expert-major order,
+    so duplicate-route accumulation rounding differs; compare with tolerances.
+    """
+    gate_stack = _stacked(experts, 'gate'); up_stack = _stacked(experts, 'up'); down_stack = _stacked(experts, 'down')
+    gate_rows = gate_stack[0].shape[1]
+    hidden_float = hidden.float()
+    token_ids = torch.arange(hidden.shape[0], device=hidden.device).repeat_interleave(selected.shape[1])
+    route_expert = selected.reshape(-1)
+    routes = route_expert.shape[0]
+    options = dict(route_chunk=route_chunk, max_gather_bytes=max_gather_bytes)
+    limit = experts[0].activation_limit
+    gate_columns = gate_stack[0].shape[2]*2 if gate_stack[2] in ('e2m1', 'q4_0_f16') else gate_stack[0].shape[2]
+    if hidden_float.shape[1] != gate_columns:
+        raise ValueError('fused projection input width disagrees with the stacked bank')
+    output = torch.zeros_like(hidden, dtype=torch.float32)
+    if routes:
+        flat_coefficients = coefficients.reshape(-1)
+        route_hidden = hidden_float.index_select(0, token_ids)
+        for start in range(0, routes, route_chunk):
+            stop = min(routes, start+route_chunk)
+            chunk_expert = route_expert[start:stop]
+            chunk_rows = route_hidden[start:stop]
+            coefficient = flat_coefficients[start:stop].reshape(-1, 1)
+            gate = _fused_project(chunk_rows, gate_stack, chunk_expert, rows=gate_stack[0].shape[1],
+                                  columns=gate_columns, row_chunk=64, column_chunk=256, **options)
+            gate = gate.to(hidden.dtype).float()
+            up = _fused_project(chunk_rows, up_stack, chunk_expert, rows=up_stack[0].shape[1],
+                                columns=gate_columns, row_chunk=64, column_chunk=256, **options)
+            up = up.to(hidden.dtype).float()
+            activated = activate_expert(gate, up, coefficient, limit).to(hidden.dtype)
+            down_columns = down_stack[0].shape[2]*2 if down_stack[2] in ('e2m1', 'q4_0_f16') else down_stack[0].shape[2]
+            result = _fused_project(activated.float(), down_stack, chunk_expert, rows=down_stack[0].shape[1],
+                                    columns=down_columns, row_chunk=64, column_chunk=256, **options)
+            output.index_add_(0, token_ids[start:stop], result.float())
     if shared is not None and hidden.shape[0]:
         output.add_(shared.forward_batched(hidden).float())
     return output.to(hidden.dtype)
