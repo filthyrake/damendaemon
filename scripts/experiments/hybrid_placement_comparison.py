@@ -92,7 +92,7 @@ def main():
             [sys.executable, '-m', 'scripts.experiments.hybrid_q4_context_probe', 'serve',
              '--model', f'qwen38={MODEL}', '--device', 'cuda', '--context', '512',
              '--no-graph', '--port', str(PORT), '--gpu-models', '1', '--host-models', '1',
-             '--host-gib', '24'],
+             '--host-gib', '40'],
             env=environment, stdout=open(args.output.with_suffix('.serve.log'), 'w'),
             stderr=subprocess.STDOUT)
         if not health(600):
