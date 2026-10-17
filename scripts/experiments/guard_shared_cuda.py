@@ -51,7 +51,8 @@ class Probe:
         if self.incumbent is not None:
             if process_identity(self.incumbent) != self.identity:
                 raise RuntimeError('incumbent process changed')
-            check_service(read_json(self.service+'/health'), read_json(self.service+'/slots'), self.allow_busy)
+            service = self.service
+            check_service(read_json(service+'/health'), read_json(service+'/slots'), self.allow_busy)
         output = subprocess.run([
             'nvidia-smi', '--id='+self.uuid,
             '--query-gpu=uuid,temperature.gpu,memory.free',
@@ -130,8 +131,8 @@ def main():
     parser.add_argument('command', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     command = args.command[1:] if args.command[:1] == ['--'] else args.command
-    if not command or not 1 <= args.timeout <= 120:
-        parser.error('command and timeout 1..120 required')
+    if not command or not 1 <= args.timeout <= 300:
+        parser.error('command and timeout 1..300 required')
     if args.service is None and args.incumbent_pid is not None:
         parser.error('--service is required with --incumbent-pid')
     if args.service is not None and args.incumbent_pid is None:
