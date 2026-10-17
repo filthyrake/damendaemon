@@ -13,6 +13,7 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -49,10 +50,22 @@ def generate(prompt, max_tokens=32, timeout=600):
     request = urllib.request.Request(f'http://127.0.0.1:{PORT}/v1/completions', data=body,
                                      headers={'Content-Type': 'application/json'})
     started = time.monotonic()
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        payload = json.loads(response.read())
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            payload = json.loads(response.read())
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode(errors='replace')[:200]
+        raise RuntimeError(f'HTTP {error.code}: {detail}') from None
     return dict(text=payload['choices'][0]['text'], tokens=payload['usage']['completion_tokens'],
                 seconds=time.monotonic()-started)
+
+
+def scheduler_status():
+    try:
+        with urllib.request.urlopen(f'http://127.0.0.1:{PORT}/v1/scheduler/status', timeout=10) as response:
+            return json.loads(response.read())
+    except Exception as error:
+        return dict(error=str(error))
 
 
 def batch_round(prompts):
@@ -112,8 +125,17 @@ def main():
         for batch in BATCHES:
             prompts = PROMPTS*batch
             rounds = []
-            for _ in range(2):
-                rounds.append(batch_round(prompts))
+            for attempt in range(2):
+                try:
+                    rounds.append(batch_round(prompts))
+                except RuntimeError:
+                    report['rounds'][f'batch{batch}'] = dict(
+                        rounds=rounds, failed_attempt=attempt,
+                        scheduler=scheduler_status())
+                    save(args.output, report)
+                    if attempt == 1 or batch == 4:
+                        raise
+                    time.sleep(15)
             best = max(rounds, key=lambda round_: round_['tokens_per_second'])
             report['rounds'][f'batch{batch}'] = dict(rounds=rounds,
                                                      best_tokens_per_second=best['tokens_per_second'])
