@@ -85,7 +85,12 @@ class Runtime:
         if selected_device() == 'xpu':
             from .xpu_policy import validate_environment, validate_limits
             validate_environment()
-            validate_limits(context, 1 if batch_size is None else batch_size)
+            from .management import quantization_mode
+            default_policy = quantization_mode()
+            policies = dict(quantizations or {})
+            for alias in models or ('__default__',):
+                validate_limits(context, 1 if batch_size is None else batch_size,
+                                policies.get(alias, default_policy))
         from .admission import validate_queue_limits
         validate_queue_limits(queue_size, queue_timeout)
         from .chat_template import validate_override

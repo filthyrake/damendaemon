@@ -201,10 +201,21 @@ def main():
         else:
             os.environ.pop('DAMENDAEMON_KV_CACHE_TOKENS',None)
     if args.device == 'xpu':
-        from .xpu_policy import validate_environment, validate_limits
+        from .xpu_policy import validate_environment, validate_limits, context_limit
         try:
             validate_environment()
-            validate_limits(args.context, getattr(args, 'batch_size', 1))
+            from .management import quantization_mode
+            if manifest is not None:
+                _, manifest_policies, _ = manifest
+                policies = {alias: quantization_mode(policy)
+                            for alias, policy in (manifest_policies or {}).items()}
+            else:
+                policies = {'model': quantization_mode()}
+            # Strictest limit across the served policies; Runtime revalidates
+            # per model with the same helper before any device transfer.
+            limit = min(context_limit(policy) for policy in policies.values()) if policies else 2048
+            validate_limits(args.context, getattr(args, 'batch_size', 1),
+                            'q8_0' if limit > 2048 else 'none')
         except ValueError as error:
             parser.error(str(error))
     from .runtime import Runtime
