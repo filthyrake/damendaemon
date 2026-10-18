@@ -1,0 +1,138 @@
+{
+  "batch": 4,
+  "completed": true,
+  "context": 2048,
+  "display_headroom": {
+    "cuda_allocated_bytes": null,
+    "cuda_peak_allocated_bytes": null,
+    "display_reserve_bytes": 2147483648
+  },
+  "gate": "serve lifecycle + display headroom",
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+  "quantization": "none",
+  "rounds": {
+    "concurrent_batch4": [
+      {
+        "prompt": "Name the capital of Fran",
+        "seconds": 0.6740099400049075,
+        "text": "\n\n<think>\n\n</think>\n\nParis",
+        "tokens": 7
+      },
+      {
+        "prompt": "What color is a banana? ",
+        "seconds": 0.6736643540207297,
+        "text": "\n\n<think>\n\n</think>\n\nYellow",
+        "tokens": 7
+      },
+      {
+        "prompt": "What is 17 * 23? Answer ",
+        "seconds": 1.37590647500474,
+        "text": "\n\n17 * 23 = 391.\n\nWhat is 17 * 23?",
+        "tokens": 24
+      },
+      {
+        "prompt": "Count from one to five w",
+        "seconds": 1.409417588962242,
+        "text": "\nCount from one to five with commas.\nCount from one to five ",
+        "tokens": 24
+      }
+    ],
+    "warmup": {
+      "prompt": "What is 17 * 23? Answer ",
+      "seconds": 2.368615243001841,
+      "text": "\n\n17 * 23 =",
+      "tokens": 8
+    }
+  },
+  "statuses": {
+    "after": {
+      "closed": false,
+      "closing": false,
+      "context": 2048,
+      "cuda_allocated_bytes": null,
+      "cuda_devices": null,
+      "cuda_peak_allocated_bytes": null,
+      "device": "xpu",
+      "gpu_model_limit": 1,
+      "hip_allocated_bytes": null,
+      "host_budget_bytes": 42949672960,
+      "host_cached_bytes": 1504898304,
+      "host_model_limit": 1,
+      "models": [
+        {
+          "chat_template": {
+            "sha256": null,
+            "source": "checkpoint"
+          },
+          "executor_failed": false,
+          "gpu_packed_layout_overhead_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "host_weight_bytes": 1504898304,
+          "id": "qwen35",
+          "output_head_workspace_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "pipeline": null,
+          "q4_marlin_abi": null,
+          "quantization": "none",
+          "residency": "gpu",
+          "vision_gpu_weight_bytes": 0,
+          "vision_host_weight_bytes": 0,
+          "weight_streaming": null
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "pending_executor_cleanup": 0,
+      "pending_pipeline_cleanup": 0,
+      "rocm_aotriton_experimental": null,
+      "xpu_allocated_bytes": 3294555136,
+      "xpu_peak_allocated_bytes": 3332986880,
+      "xpu_reserved_bytes": 3351248896
+    },
+    "before": {
+      "closed": false,
+      "closing": false,
+      "context": 2048,
+      "cuda_allocated_bytes": null,
+      "cuda_devices": null,
+      "cuda_peak_allocated_bytes": null,
+      "device": "xpu",
+      "gpu_model_limit": 1,
+      "hip_allocated_bytes": null,
+      "host_budget_bytes": 42949672960,
+      "host_cached_bytes": 0,
+      "host_model_limit": 1,
+      "models": [
+        {
+          "chat_template": {
+            "sha256": null,
+            "source": "checkpoint"
+          },
+          "executor_failed": false,
+          "gpu_packed_layout_overhead_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "host_weight_bytes": null,
+          "id": "qwen35",
+          "output_head_workspace_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "pipeline": null,
+          "q4_marlin_abi": null,
+          "quantization": "none",
+          "residency": "disk",
+          "vision_gpu_weight_bytes": 0,
+          "vision_host_weight_bytes": 0,
+          "weight_streaming": null
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "pending_executor_cleanup": 0,
+      "pending_pipeline_cleanup": 0,
+      "rocm_aotriton_experimental": null,
+      "xpu_allocated_bytes": 0,
+      "xpu_peak_allocated_bytes": 0,
+      "xpu_reserved_bytes": 0
+    }
+  },
+  "torch": "2.10.0+xpu"
+}

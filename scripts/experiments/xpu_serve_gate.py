@@ -79,7 +79,11 @@ def main():
     save(args.output, report)
     environment = dict(os.environ)
     environment.update(DAMENDAEMON_DEVICE='xpu', DAMENDAEMON_EXPERIMENTAL_XPU='1',
-                       ONEAPI_DEVICE_SELECTOR='level_zero:gpu')
+                       ONEAPI_DEVICE_SELECTOR='level_zero:gpu',
+                       # The fixed upstream Level Zero loader is required for every
+                       # XPU process; see docs/evidence/intel/b580-bringup-63/.
+                       LD_LIBRARY_PATH='/home/damen/b580-dev/ze-loader/lib64:'
+                                       + os.environ.get('LD_LIBRARY_PATH', ''))
     server = None
     try:
         server = subprocess.Popen(
@@ -87,7 +91,7 @@ def main():
              '--device', 'xpu', '--context', str(CONTEXT), '--batch-size', '4',
              '--no-graph', '--port', str(PORT), '--gpu-models', '1', '--host-models', '1',
              '--host-gib', '40', '--queue-timeout', '300'],
-            stdout=open(args.output.with_suffix('.serve.log'), 'w'), stderr=subprocess.STDOUT)
+            env=environment, stdout=open(args.output.with_suffix('.serve.log'), 'w'), stderr=subprocess.STDOUT)
         if not health(time.monotonic() + 900):
             raise RuntimeError('serve did not become healthy within 900 seconds')
         report['statuses']['before'] = status()
