@@ -6,6 +6,7 @@ bounded batched command path; the HTTP scheduler lives in distributed_serving.
 """
 from datetime import timedelta
 import hashlib
+import json
 import os
 import struct
 from pathlib import Path
