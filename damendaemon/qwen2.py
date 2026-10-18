@@ -181,6 +181,8 @@ class ModelWeights:
             else:
                 from .hybrid import load_weights
             self.finalize_weights(load_weights(state, c))
+            if cache is not None:
+                self.weight_cache_status = 'stored' if cache.save(self.weights, self.scales) else 'write-failed'
             return
         from .dense_checkpoint import validate as validate_dense_checkpoint
         validate_dense_checkpoint(state,c)

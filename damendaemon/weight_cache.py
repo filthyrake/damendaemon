@@ -50,7 +50,7 @@ def tensor_schema(config, quantization):
 
 
 class PreparedCache:
-    def __init__(self, root, model_path, config, quantization, files):
+    def __init__(self, root, model_path, config, quantization, files, schema=None):
         self.root = Path(root)
         self.config = config
         self.files = [Path(model_path) / 'config.json', *files]
@@ -63,7 +63,11 @@ class PreparedCache:
         self.manifest = json.dumps(manifest, sort_keys=True, separators=(',', ':'))
         self.key = hashlib.sha256(self.manifest.encode()).hexdigest()
         self.path = self.root / (self.key + '.safetensors')
-        self.schema = tensor_schema(config, quantization)
+        # schema=None records the prepared tensor inventory in the cache entry
+        # itself (hybrid checkpoints: per-layer tensor sets follow layer_types,
+        # so there is no single derivation). Dense keeps the explicit schema.
+        self.schema = schema
+        self.recorded = schema is None
 
     def snapshot(self):
         result = []
@@ -80,12 +84,22 @@ class PreparedCache:
     def load(self):
         try:
             with safe_open(str(self.path), framework='pt', device='cpu') as reader:
-                if reader.metadata() != {'manifest': self.manifest}:
-                    return None
-                if set(reader.keys()) != set(self.schema):
+                metadata = reader.metadata()
+                if self.recorded:
+                    if not metadata or metadata.get('manifest') != self.manifest:
+                        return None
+                    schema = self.parse_recorded(metadata.get('schema'))
+                    if schema is None:
+                        return None
+                else:
+                    if metadata != {'manifest': self.manifest}:
+                        return None
+                    schema = self.schema
+                assert schema is not None
+                if set(reader.keys()) != set(schema):
                     return None
                 tensors = {}
-                for name, (shape, dtype) in self.schema.items():
+                for name, (shape, dtype) in schema.items():
                     value = reader.get_tensor(name)
                     if tuple(value.shape) != shape or value.dtype != dtype:
                         return None
@@ -96,20 +110,72 @@ class PreparedCache:
         return ({k[2:]: v for k, v in tensors.items() if k.startswith('w.')},
                 {k[2:]: v for k, v in tensors.items() if k.startswith('s.')})
 
+    @staticmethod
+    def parse_recorded(encoded):
+        if not encoded:
+            return None
+        try:
+            recorded = json.loads(encoded)
+            return {name: (tuple(shape), getattr(torch, dtype))
+                    for name, (shape, dtype) in recorded.items()}
+        except (ValueError, AttributeError, TypeError):
+            return None
+
+    def recorded_schema(self):
+        try:
+            with safe_open(str(self.path), framework='pt', device='cpu') as reader:
+                metadata = reader.metadata()
+            if not metadata or metadata.get('manifest') != self.manifest:
+                return None
+            return self.parse_recorded(metadata.get('schema'))
+        except (OSError, SafetensorError):
+            return None
+
+    @staticmethod
+    def matches(tensors, schema):
+        return (set(tensors) == set(schema) and all(
+            tuple(tensors[k].shape) == shape and tensors[k].dtype == dtype
+            for k, (shape, dtype) in schema.items()))
+
+    @staticmethod
+    def encode_recorded(weights, scales):
+        inventory = {}
+        for prefix, group in (('w.', weights), ('s.', scales)):
+            for name, tensor in group.items():
+                inventory[prefix + name] = [list(tensor.shape),
+                                            str(tensor.dtype).replace('torch.', '', 1)]
+        return json.dumps(inventory, sort_keys=True, separators=(',', ':'))
+
     def save(self, weights, scales):
         self.check_source()
         tensors = {'w.' + k: v.contiguous() for k, v in weights.items()}
         tensors.update({'s.' + k: v.contiguous() for k, v in scales.items()})
-        if set(tensors) != set(self.schema) or any(
+        metadata = {'manifest': self.manifest}
+        if self.recorded:
+            # The first save records the prepared inventory; later saves for
+            # the same checkpoint identity must match it, or a silently
+            # different preparation would replace the entry.
+            if self.path.exists():
+                recorded = self.recorded_schema()
+                if recorded is None or not self.matches(tensors, recorded):
+                    raise ValueError('prepared weights do not match the recorded cache schema')
+                schema = recorded
+            else:
+                metadata['schema'] = self.encode_recorded(weights, scales)
+                schema = self.parse_recorded(metadata['schema'])
+        else:
+            schema = self.schema
+        assert schema is not None
+        if set(tensors) != set(schema) or any(
                 tuple(tensors[k].shape) != shape or tensors[k].dtype != dtype
-                for k, (shape, dtype) in self.schema.items()):
+                for k, (shape, dtype) in schema.items()):
             raise ValueError('prepared weights do not match cache schema')
         temporary = None
         try:
             self.root.mkdir(parents=True, exist_ok=True)
             fd, temporary = tempfile.mkstemp(prefix='.damendaemon-weights-', dir=self.root)
             os.close(fd)
-            save_file(tensors, temporary, metadata={'manifest': self.manifest})
+            save_file(tensors, temporary, metadata=metadata)
             self.check_source()
             os.replace(temporary, self.path)
         except (OSError, SafetensorError) as error:
@@ -123,12 +189,15 @@ class PreparedCache:
 
 def configured_cache(model_path, config, quantization, files):
     root = os.environ.get('DAMENDAEMON_WEIGHT_CACHE')
-    if not root or quantization not in ('q4_0', 'q8_0') or config['model_type'] not in DENSE:
+    hybrid = (quantization == 'q4_0' and config.get('model_type') == 'qwen3_5_text')
+    if (not root or quantization not in ('q4_0', 'q8_0')
+            or (config['model_type'] not in DENSE and not hybrid)):
         return None
     # Revalidate configuration after acquiring the source identity so a config
     # edit between the caller's parse and fingerprint cannot seed the wrong key.
     from .config import decoder_config
-    cache = PreparedCache(root, model_path, config, quantization, files)
+    schema = None if hybrid else tensor_schema(config, quantization)
+    cache = PreparedCache(root, model_path, config, quantization, files, schema=schema)
     if decoder_config(read_config(Path(model_path) / 'config.json')) != config:
         raise RuntimeError('checkpoint configuration changed while loading')
     from .qwen2 import weight_files
