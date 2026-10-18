@@ -29,8 +29,11 @@ def main():
     p.add_argument('--format',choices=('q8_0','q4_0'),default='q4_0')
     p.add_argument('--weight-dtype',choices=('float16','float32'),default='float16')
     p.add_argument('--device',choices=('cpu','cuda'),default='cpu')
+    p.add_argument('--threads',type=int,default=4)
+    p.add_argument('--arithmetic',choices=('float32','float16'),default='float32',
+                   help='cpu arithmetic; --device cuda always uses float16')
     args=p.parse_args()
-    torch.set_num_threads(4)
+    torch.set_num_threads(args.threads)
     tokenizer=AutoTokenizer.from_pretrained(args.model,local_files_only=True,trust_remote_code=False)
     inputs=[torch.tensor([tokenizer.encode(text,add_special_tokens=True)]) for text in TEXTS]
     baseline=[];reports=[]
@@ -42,12 +45,16 @@ def main():
         # Bounded-device mode: FP16 weights with device_map auto; arithmetic
         # stays FP16 (declared in the report). The CPU default keeps FP32.
         load_kwargs.update(device_map='auto',torch_dtype=torch.float16)
+        arithmetic='float16'
     else:
         load_kwargs.update(torch_dtype=getattr(torch,args.weight_dtype))
+        arithmetic=args.arithmetic
+        if arithmetic=='float16' and args.weight_dtype!='float16':
+            raise ValueError('float16 cpu arithmetic requires --weight-dtype float16')
     for quantization in ('none',args.format):
         load_kwargs['reference_quantization']=quantization
         model=load_reference(args.model,**load_kwargs)
-        if args.device=='cpu':model=model.float()
+        if arithmetic=='float32':model=model.float()
         model.eval()
         nll=0.;tokens=0;matches=0;relative=[]
         for index,ids in enumerate(inputs):
@@ -64,8 +71,8 @@ def main():
             'per_text_relative_logit_rms':relative})
         del model;gc.collect()
     print(json.dumps({'model':args.model,'device':args.device,
-        'arithmetic':'float32' if args.device=='cpu' else 'float16','weight_conversion_dtype':args.weight_dtype,
-        'texts':TEXTS,
+        'arithmetic':arithmetic,'weight_conversion_dtype':args.weight_dtype,
+        'threads':args.threads,'texts':TEXTS,
         'scope':'small authored corpus; measures quantization drift, not broad task quality or GPU performance',
         'results':reports},indent=2))
 
