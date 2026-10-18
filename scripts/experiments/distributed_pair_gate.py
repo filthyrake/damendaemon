@@ -66,7 +66,7 @@ def main():
     server = None
     try:
         server = subprocess.Popen(
-            [sys.executable, '-m', 'torchrun', '--nproc-per-node', '2', '--master-port', '29500',
+            [sys.executable, '-m', 'torch.distributed.run', '--nproc-per-node', '2', '--master-port', '29500',
              '-m', 'damendaemon', 'distributed-serve', SNAPSHOT,
              '--quantization', 'q4_0', '--context', '512', '--port', str(PORT),
              '--batch-size', '4', '--queue-timeout', '300', '--idle-timeout', '600'],
