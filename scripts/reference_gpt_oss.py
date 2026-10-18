@@ -21,7 +21,9 @@ def main():
     if any(n<1 for n in args.prefix_lengths):raise ValueError('prefix lengths must be positive')
     device=args.device
     if device=='cuda':
-        if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':raise RuntimeError('CUDA reference restricted to A2')
+        if os.environ.get('CUDA_VISIBLE_DEVICES') not in (
+                'GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283', 'GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a'):
+            raise RuntimeError('CUDA reference restricted to the authorized A2/A30')
         torch.set_float32_matmul_precision('highest')
     torch.set_num_threads(4);torch.set_grad_enabled(False)
     source=json.loads((root/'damendaemon-source.json').read_text());catalog=source['tensors']

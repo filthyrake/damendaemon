@@ -15,8 +15,9 @@ def main():
     parser.add_argument('--output',required=True);parser.add_argument('--no-graph',action='store_true')
     parser.add_argument('--scalar',action='store_true',help='exercise direct single-request decode in slot zero')
     args=parser.parse_args()
-    if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
-        raise RuntimeError('restricted to the authorized A2')
+    if os.environ.get('CUDA_VISIBLE_DEVICES') not in (
+            'GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283', 'GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a'):
+        raise RuntimeError('restricted to the authorized A2/A30')
     torch.set_num_threads(4);torch.set_grad_enabled(False)
     reference=torch.load(args.reference,map_location='cpu',weights_only=False)
     maximum=max(len(case['ids']) for case in reference['cases'])

@@ -13,7 +13,9 @@ from damendaemon.gpt_oss import GptOssExecutor
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('reference');p.add_argument('--output',required=True);args=p.parse_args()
-    if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':raise RuntimeError('restricted to A2')
+    if os.environ.get('CUDA_VISIBLE_DEVICES') not in (
+            'GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283', 'GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a'):
+        raise RuntimeError('restricted to the authorized A2/A30')
     torch.set_num_threads(4);torch.set_grad_enabled(False)
     reference=torch.load(args.reference,map_location='cpu',weights_only=False)
     context=1<<max(reference['positions']).bit_length();model=ModelWeights(args.model,context)
