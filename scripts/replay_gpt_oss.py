@@ -30,8 +30,17 @@ def main():
         rms=float(error.square().mean().sqrt()/expected.square().mean().sqrt().clamp_min(1e-9))
         maximum=float(error.abs().max())
         greedy=bool(torch.equal(actual.argmax(-1),expected.argmax(-1))) if kind!='layer' else None
-        passed=bool(torch.isfinite(actual).all()) and rms<.01 and maximum<.5 and greedy is not False
+        # Internal-state checks scale the absolute bound with the reference
+        # layer magnitude: GPT-OSS hidden states reach |values| of 65-200 with
+        # tails above 13k, where a fixed 0.5 absolute bound is ~380x tighter
+        # than the measured 2e-5 relative error implies (see
+        # docs/evidence/gpt-oss/context-4k-a30/). Output-level checks keep the
+        # fixed 0.5 bound: logits are compared against softmax-scale values.
+        scale=float(expected.abs().mean())
+        absolute_gate=.5 if kind!='layer' else max(.5, scale*.001)
+        passed=bool(torch.isfinite(actual).all()) and rms<.01 and maximum<absolute_gate and greedy is not False
         checks.append({'kind':kind,**metadata,'relative_rms':rms,'max_absolute_error':maximum,
+            'absolute_gate':absolute_gate,
             'greedy_match':greedy,'passed':passed})
         if not passed:print(json.dumps(checks[-1]),flush=True)
     with torch.inference_mode():
