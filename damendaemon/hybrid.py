@@ -267,10 +267,22 @@ class HybridExecutor:
             self.linear = Linear(self.w, model.scales, self.device, F.linear,
                                  q8_projection=projection, q4_projection=projection_q4)
         self.kv, self.conv, self.state = {}, {}, {}
+        # Q8_0 KV storage halves the FP32 cache bytes (plus 1/32-scale FP16
+        # overhead); values are dequantized to compute dtype on read. Opt-in
+        # via DAMENDAEMON_HYBRID_KV=q8_0.
+        self.kv_quant = os.environ.get('DAMENDAEMON_HYBRID_KV', 'none')
+        if self.kv_quant not in ('none', 'q8_0'):
+            raise ValueError('DAMENDAEMON_HYBRID_KV must be none or q8_0')
+        if self.kv_quant == 'q8_0' and self.fused is not None:
+            raise ValueError('quantized KV requires eager torch attention (the fused decode kernel reads the FP32 cache layout)')
         for i in range(self.layer_start, self.layer_end):
             kind = c['layer_types'][i]
             if kind == 'full_attention':
-                self.kv[i] = torch.zeros((2, max_batch, self.kh, self.context, self.dim), dtype=self.compute_dtype, device=self.device)
+                if self.kv_quant == 'q8_0':
+                    from .kv_quant import allocate_kv
+                    self.kv[i] = allocate_kv(max_batch, self.kh, self.context, self.dim, self.device)
+                else:
+                    self.kv[i] = torch.zeros((2, max_batch, self.kh, self.context, self.dim), dtype=self.compute_dtype, device=self.device)
             else:
                 self.conv[i] = torch.zeros((max_batch, self.conv_width, c['linear_conv_kernel_dim']), dtype=self.compute_dtype, device=self.device)
                 self.state[i] = torch.zeros((max_batch, self.lv, self.dk, self.dv), dtype=torch.float32, device=self.device)
@@ -315,8 +327,44 @@ class HybridExecutor:
                     next_ids = logits.argmax(-1)
                 self.batch_graphs[size] = (metadata, staging, values, copied, graph, logits, next_ids)
         # Capturing recurrent updates changes state. No captured warmup is user history.
-        for tensor in (*self.conv.values(), *self.state.values(), *self.kv.values()):
-            tensor.zero_()
+        for group in (*self.conv.values(), *self.state.values(), *self.kv.values()):
+            for tensor in (group if isinstance(group, tuple) else (group,)):
+                tensor.zero_()
+
+    def snapshot_prefix(self, slot, count):
+        """Snapshot the KV prefix [0:count] of one slot for the prefix cache."""
+        snapshots = []
+        for layer in self.kv.values():
+            if isinstance(layer, tuple):
+                data, scales = layer
+                snapshots.append((data[:, slot, :, :count, :].clone(),
+                                  scales[:, slot, :, :count, :].clone()))
+            else:
+                snapshots.append(layer[:, slot, :, :count, :].clone())
+        return snapshots
+
+    def restore_prefix(self, slot, reused, cache):
+        """Restore a KV prefix snapshot captured by snapshot_prefix."""
+        for layer, saved in zip(self.kv.values(), cache):
+            if isinstance(layer, tuple):
+                data, scales = layer
+                saved_data, saved_scales = saved
+                data[:, slot, :, :reused, :].copy_(saved_data[:, :, :, :reused, :])
+                scales[:, slot, :, :reused, :].copy_(saved_scales[:, :, :, :reused, :])
+            else:
+                layer[:, slot, :, :reused, :].copy_(saved[:, :, :, :reused, :])
+
+    def prefix_state_bytes(self, count):
+        """Resident bytes a one-slot KV prefix of count tokens occupies."""
+        total = 0
+        for layer in self.kv.values():
+            if isinstance(layer, tuple):
+                data, scales = layer
+                total += 2*data.shape[2]*data.shape[-1]*count*data.element_size()
+                total += 2*scales.shape[2]*scales.shape[-1]*count*scales.element_size()
+            else:
+                total += 2*layer.shape[2]*layer.shape[-1]*count*layer.element_size()
+        return total
 
     @property
     def failed(self):
@@ -413,13 +461,47 @@ class HybridExecutor:
         k, v = [a.view(n, length, self.kh, self.dim) for a in (k, v)]
         q = self.rotate(self.norm(q, w[f'{i}.q_norm'], torch.float32), positions)
         k = self.rotate(self.norm(k, w[f'{i}.k_norm'], torch.float32), positions)
-        ck, cv = self.kv[i].unbind(0)
-        ck[slots[:, None], :, positions, :] = k
-        cv[slots[:, None], :, positions, :] = v
+        if self.kv_quant == 'q8_0':
+            from .kv_quant import store_kv, read_kv
+            # store/read use (batch, heads, tokens, dim) and per-row (batch,
+            # tokens) positions — the cache's own layout. Decode positions are
+            # already (batch, 1) from forward_batch.
+            store_kv(self.kv[i], slots, positions, k.transpose(1, 2), v.transpose(1, 2))
+            # Decode reads each slot's full history (absolute positions); the
+            # attention mask excludes unfilled positions of shorter slots.
+            end = prefix_length + length if prefill else int(positions.max()) + 1
+            # read_kv returns slot-indexed (slots, kv_heads, end, dim) FP32 —
+            # the same outer-slot layout the FP32 cache paths produce.
+            ck, cv = read_kv(self.kv[i], slots, end)
+        else:
+            ck, cv = self.kv[i].unbind(0)
+            ck[slots[:, None], :, positions, :] = k
+            cv[slots[:, None], :, positions, :] = v
         from .grouped_attention import use_grouped_prefill
         from .device import selected_accelerator
         end = prefix_length + length
-        if use_grouped_prefill(selected_accelerator(), self.hybrid_precision, prefill, length, end):
+        if self.kv_quant == 'q8_0':
+            # Slot-indexed FP32 views of the populated prefix. The quantized
+            # path feeds the eager attention branches only; the fused decode
+            # kernel reads the FP32 layout and is rejected at construction.
+            if use_grouped_prefill(selected_accelerator(), self.hybrid_precision, prefill, length, end):
+                from .grouped_attention import attention as grouped_attention
+                out = grouped_attention(q.transpose(1, 2), ck, cv)
+            elif prefill and prefix_length:
+                from torch.nn.attention.bias import causal_lower_right
+                mask = (self.arange[:end][None, :] <= positions[0, :, None]
+                        if selected_accelerator() == 'xpu' or self.offload is not None
+                        else causal_lower_right(length, end))
+                out = scaled_attention(q.transpose(1, 2), ck, cv,
+                    attn_mask=mask, enable_gqa=True)
+            elif prefill:
+                out = scaled_attention(q.transpose(1, 2), k.transpose(1, 2), v.transpose(1, 2),
+                                                             is_causal=True, enable_gqa=True)
+            else:
+                mask = self.arange.view(1, 1, 1, -1)[:, :, :, :end] <= positions.view(n, 1, 1, 1)
+                out = scaled_attention(q.transpose(1, 2), ck, cv,
+                                                             attn_mask=mask, enable_gqa=True)
+        elif use_grouped_prefill(selected_accelerator(), self.hybrid_precision, prefill, length, end):
             from .grouped_attention import attention as grouped_attention
             out = grouped_attention(q.transpose(1, 2),
                 ck[:, :, :end].index_select(0, slots), cv[:, :, :end].index_select(0, slots))

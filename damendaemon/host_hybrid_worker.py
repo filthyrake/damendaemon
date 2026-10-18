@@ -189,7 +189,9 @@ class HostHybridWorker:
 
     def _clear_slots(self,command):
         for slot,_,_ in command.entries:
-            for tensor in self.stage.kv.values():tensor[:,slot].zero_()
+            for tensor in self.stage.kv.values():
+                members = tensor if isinstance(tensor, tuple) else (tensor,)
+                for member in members:member[:,slot].zero_()
             for group in (self.stage.conv,self.stage.state):
                 for tensor in group.values():tensor[slot].zero_()
 
