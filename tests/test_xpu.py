@@ -90,9 +90,19 @@ class XpuTests(unittest.TestCase):
     def test_model_rejection_precedes_tensor_and_tokenizer_loading(self):
         config = test_config.ConfigTests().config()
         xpu_policy.validate_model(config, 'none', 512, 4)
+        xpu_policy.validate_model(config, 'q8_0', 512, 4)
+        hybrid = test_config.ConfigTests().config(hidden_size=1024, num_hidden_layers=24,
+            num_attention_heads=16, num_key_value_heads=8, head_dim=128,
+            intermediate_size=3072, vocab_size=151936, model_type='qwen3_5_text',
+            linear_key_head_dim=128, linear_value_head_dim=128,
+            linear_num_key_heads=16, linear_num_value_heads=16, max_position_embeddings=40960)
+        xpu_policy.validate_model(hybrid, 'q8_0', 1024, 4)
         for changes, mode, context, batch in (({'model_type':'qwen3_moe'}, 'none', 512, 1),
-                ({}, 'q8_0', 512, 1), ({}, 'q4_0', 512, 1), ({}, 'none', 4096, 1),
-                ({}, 'none', 512, 5), ({'rope_scaling': {'rope_type': 'yarn'}}, 'none', 512, 1)):
+                ({'model_type':'qwen3_5_text'}, 'q8_0', 2048, 1),
+                ({'model_type':'qwen3_5_text'}, 'q8_0', 1024, 5),
+                ({}, 'q4_0', 512, 1), ({'rope_scaling': {'rope_type': 'yarn'}}, 'q8_0', 512, 1),
+                ({}, 'none', 4096, 1), ({}, 'none', 512, 5),
+                ({'rope_scaling': {'rope_type': 'yarn'}}, 'none', 512, 1)):
             with self.assertRaises(ValueError):
                 xpu_policy.validate_model({**config, **changes}, mode, context, batch)
         with TemporaryDirectory() as directory:
@@ -103,7 +113,7 @@ class XpuTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'Intel'):
                     call()
             from damendaemon.qwen2 import Executor
-            model = SimpleNamespace(config=config, quantization='q8_0', max_context=512)
+            model = SimpleNamespace(config=config, quantization='q4_0', max_context=512)
             with self.assertRaisesRegex(ValueError, 'Intel'):
                 Executor(model)
 
@@ -136,6 +146,62 @@ class XpuTests(unittest.TestCase):
             self.assertEqual(executor.required_memory_bytes, expected)
             self.assertEqual(executor.compute_dtype, torch.float32)
             self.assertIsNone(executor.kernels)
+
+    def test_executor_budgets_q8_packed_storage_and_dequant_workspace(self):
+        import torch
+        from damendaemon.config import decoder_config
+        from damendaemon.qwen2 import Executor
+        config = decoder_config(test_config.ConfigTests().config(hidden_size=32,
+            intermediate_size=64, num_hidden_layers=1, num_attention_heads=2,
+            num_key_value_heads=1, head_dim=16, vocab_size=64))
+        up = torch.zeros(64, 64, dtype=torch.int8)
+        model = SimpleNamespace(config=config, quantization='q8_0', max_context=32,
+                                weights={'embed': torch.zeros(64, 32, dtype=torch.float16),
+                                         '0.up': up},
+                                scales={'0.up': torch.zeros(64, 2, dtype=torch.float16)})
+        expected = (64*32*4          # embed promotes to FP32 on device
+                    + 64*64          # packed int8 stays packed on device
+                    + 64*2*2         # FP16 scales
+                    + 2*1*32*1*16*4  # FP32 KV cache
+                    + 64*2*32*4      # largest transient dequantized FP32 matrix
+                    + 512*1024**2)
+        with patch('damendaemon.qwen2.empty_cache'), patch('damendaemon.qwen2.available_memory', return_value=expected-1), \
+                patch('torch.cuda.get_device_name', side_effect=AssertionError('CUDA touched')):
+            executor = Executor.__new__(Executor)
+            with self.assertRaises(MemoryError):
+                executor.__init__(model)
+            self.assertEqual(executor.required_memory_bytes, expected)
+            self.assertEqual(executor.packed_workspace_bytes, 64*2*32*4)
+
+    def test_eager_q8_linear_matches_dequantized_reference(self):
+        import torch
+        from damendaemon.quantization import dequantize, quantize
+        from damendaemon.quantized_torch import linear
+        generator = torch.Generator().manual_seed(63)
+        weight = torch.randn(48, 64, generator=generator)
+        data, scales = quantize(weight)
+        x = torch.randn(5, 3, 64, generator=generator)
+        expected = torch.nn.functional.linear(x, dequantize(data, scales, x.dtype))
+        result = linear(x, data, scales)
+        self.assertEqual(result.dtype, x.dtype)
+        self.assertTrue(torch.equal(result, expected))
+
+    def test_quant_linear_dispatches_xpu_to_eager_path(self):
+        import torch
+        from unittest.mock import PropertyMock
+        from damendaemon.quantization import Linear
+        weight = torch.zeros(16, 32, dtype=torch.int8)
+        scales = torch.zeros(16, 1, dtype=torch.float16)
+        x = torch.zeros(2, 32)
+        fallback = Mock(side_effect=AssertionError('fallback used'))
+        linear = Linear({'w': weight}, {'w': scales}, 'cpu', fallback)
+        with patch('torch.Tensor.device', new_callable=PropertyMock,
+                   return_value=torch.device('xpu')), \
+                patch('damendaemon.quantized_torch.linear', return_value=torch.ones(2, 16)) as eager:
+            result = linear(x, weight, None)
+        eager.assert_called_once_with(x, weight, scales, None)
+        fallback.assert_not_called()
+        self.assertTrue(torch.equal(result, torch.ones(2, 16)))
 
     def test_invalid_runtime_capacity_rejects_before_device_initialization(self):
         for options in ({'context': 2049}, {'batch_size': 5}, {'batch_size': True}):

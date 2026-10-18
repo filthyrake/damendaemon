@@ -174,6 +174,9 @@ class Linear:
         if x.device.type=='mps':
             from .quantized_metal import linear
             return linear(x,weight,self.scales[id(weight)],bias)
+        if x.device.type=='xpu':
+            from .quantized_torch import linear
+            return linear(x,weight,self.scales[id(weight)],bias)
         from .quantized_kernels import linear
         return linear(x, weight, self.scales[id(weight)], bias)
 

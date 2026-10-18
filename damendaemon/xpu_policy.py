@@ -38,7 +38,13 @@ def validate_limits(context, batch=1):
 
 def validate_model(config, quantization, context=None, batch=1):
     validate_environment()
-    if (config.get('model_type') not in ('qwen3', 'qwen3_5_text') or quantization != 'none'
+    model_type = config.get('model_type')
+    if quantization == 'q8_0':
+        from .hybrid_metal import eligible as hybrid_eligible
+        supported = model_type == 'qwen3' or hybrid_eligible(config, 1 if context is None else context, batch)
+        if not supported:
+            raise ValueError('Intel XPU Q8 supports dense Qwen3 and the qualified Qwen3.5-0.8B hybrid geometry only')
+    if (model_type not in ('qwen3', 'qwen3_5_text') or quantization not in ('none', 'q8_0')
             or config.get('weight_format') or config.get('quantization_config')
             or config.get('rope_scaling')):
         raise ValueError('Intel bring-up requires Qwen3 dense or Qwen3.5-family hybrid text safetensors without quantization or scaled RoPE')

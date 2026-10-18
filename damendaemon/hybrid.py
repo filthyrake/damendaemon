@@ -187,7 +187,8 @@ class HybridExecutor:
             self.metal_scan=scan
             self.kernel_backend+='+metal-scan'
         if model.scales and self.fused is None and self.metal_scan is None:
-            raise ValueError('hybrid packed weights require native GPU or qualified Apple Metal kernels')
+            if self.device != 'xpu':
+                raise ValueError('hybrid packed weights require native GPU or qualified Apple Metal kernels')
         self.chunk_scan = None
         prefill_backend = os.environ.get('DAMENDAEMON_HYBRID_PREFILL', 'scan')
         if prefill_backend not in ('scan', 'fla'):
@@ -209,9 +210,14 @@ class HybridExecutor:
         free = available_memory()
         # Intel eager projections store FP32 matrices; host byte counts are
         # insufficient because the source mapping retains FP16 matrices.
-        device_weight_bytes = (sum(t.numel()*4 for t in
-            {id(t): t for t in model.weights.values()}.values())
-            if self.device == 'xpu' else model.bytes)
+        # Q8 weights keep their packed int8 storage with FP16 scales on device.
+        if self.device == 'xpu':
+            device_weight_bytes = sum(t.numel() * (1 if t.dtype == torch.int8 else 4)
+                                      for t in {id(t): t for t in model.weights.values()}.values())
+            device_weight_bytes += sum(t.numel() * t.element_size()
+                                       for t in {id(t): t for t in model.scales.values()}.values())
+        else:
+            device_weight_bytes = model.bytes
         layout = None
         if streaming:
             from .layer_stream import plan
@@ -222,8 +228,14 @@ class HybridExecutor:
         self.output_head_workspace_bytes = (model.weights['head'].numel()*4
             if streaming and model.weights['head'].dtype != torch.float32 else 0)
         self.stage_activation_workspace_bytes = 0
+        # Eager XPU Q8 dequantizes one projection at a time; budget the largest
+        # transient FP32 matrix instead of a resident dequantized copy.
+        packed_workspace_bytes = 0
+        if self.device == 'xpu' and model.scales:
+            packed_workspace_bytes = max(t.numel() for t in model.scales.values()) * 32 * 4
         self.required_memory_bytes = (device_weight_bytes + state_bytes + 512*1024**2
-                                      + self.output_head_workspace_bytes + self.stage_activation_workspace_bytes)
+                                      + self.output_head_workspace_bytes + self.stage_activation_workspace_bytes
+                                      + packed_workspace_bytes)
         if _layer_range is not None:
             from .hybrid_layout import stage_budget
             budget = stage_budget(model.weights, c, self.context, max_batch, cache_element_bytes,
@@ -244,7 +256,7 @@ class HybridExecutor:
             for key, value in model.weights.items():
                 if id(value) not in copies:
                     copies[id(value)] = value.to(device=self.device,
-                        dtype=torch.float32 if self.device == 'xpu' else value.dtype)
+                        dtype=torch.float32 if self.device == 'xpu' and value.dtype != torch.int8 else value.dtype)
                 self.w[key] = copies[id(value)]
         self.linear = F.linear
         if model.scales:

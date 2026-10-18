@@ -409,7 +409,8 @@ class Executor:
         if packed_formats and (self.device != 'cuda' or not self.fuse_projections):
             raise ValueError('native packed layouts require fused CUDA execution')
         if (model.scales or packed_formats) and self.kernels is None:
-            raise ValueError('quantized weights require native CUDA kernels')
+            if not (self.device == 'xpu' and model.quantization == 'q8_0' and not packed_formats):
+                raise ValueError('quantized weights require native CUDA kernels')
         self.linear = self.kernels.linear if self.device == 'mps' and self.kernels else F.linear
         half_metal_weights = False
         if self.device == 'mps':
@@ -462,6 +463,11 @@ class Executor:
             for name,(width,spec) in packed_formats.items() if name!='embed'),default=0)
         self.packed_workspace_bytes = max(self.packed_workspace_bytes,
                                          max((m.inputs*m.outputs*2 for m in awq_matrices.values()), default=0))
+        if self.device == 'xpu' and model.scales:
+            # Eager XPU Q8 dequantizes one projection at a time; budget the
+            # largest transient FP32 matrix instead of a resident copy.
+            self.packed_workspace_bytes = max(self.packed_workspace_bytes,
+                max(t.numel() for t in model.scales.values()) * 32 * 4)
         native_awq = None
         if awq_matrices:
             from .native_awq import select as select_awq, workspace_bytes as awq_workspace_bytes
