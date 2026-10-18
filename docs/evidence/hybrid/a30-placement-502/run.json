@@ -1,0 +1,121 @@
+{
+  "batches": [
+    1,
+    4
+  ],
+  "completed": true,
+  "context": 512,
+  "device": "NVIDIA A30",
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.8-27B/snapshots/1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "placement": "hybrid",
+  "rounds": {
+    "batch1": {
+      "best_tokens_per_second": 2.0466232985263004,
+      "rounds": [
+        {
+          "completion_tokens": 5,
+          "prompts": [
+            "What is 17 * 23? Answer with one number."
+          ],
+          "results": [
+            {
+              "seconds": 2.442012403975241,
+              "text": "\n\n391",
+              "tokens": 5
+            }
+          ],
+          "tokens_per_second": 2.0466232985263004,
+          "wall_seconds": 2.4430485100019723
+        },
+        {
+          "completion_tokens": 5,
+          "prompts": [
+            "What is 17 * 23? Answer with one number."
+          ],
+          "results": [
+            {
+              "seconds": 2.4455633889883757,
+              "text": "\n\n391",
+              "tokens": 5
+            }
+          ],
+          "tokens_per_second": 2.043869985102492,
+          "wall_seconds": 2.446339559974149
+        }
+      ]
+    },
+    "batch4": {
+      "best_tokens_per_second": 4.017125823058073,
+      "rounds": [
+        {
+          "completion_tokens": 55,
+          "prompts": [
+            "What is 17 * 23? Answer with one number.",
+            "Name the capital of France in one word.",
+            "Count from one to five with commas.",
+            "What color is a banana? One word."
+          ],
+          "results": [
+            {
+              "seconds": 2.2326691490598023,
+              "text": "\n\n391",
+              "tokens": 5
+            },
+            {
+              "seconds": 1.6206286399392411,
+              "text": "\n\nParis",
+              "tokens": 3
+            },
+            {
+              "seconds": 4.186335776001215,
+              "text": "\n\n1, 2, 3, 4, 5",
+              "tokens": 15
+            },
+            {
+              "seconds": 13.743442551000044,
+              "text": "\n\nYellow.\n\nWhat color is a banana? One word.\n\nYellow.\n\nWhat color is a banana? One word.\n\nYellow.\n\nWhat color",
+              "tokens": 32
+            }
+          ],
+          "tokens_per_second": 4.0008182822931735,
+          "wall_seconds": 13.747187729924917
+        },
+        {
+          "completion_tokens": 55,
+          "prompts": [
+            "What is 17 * 23? Answer with one number.",
+            "Name the capital of France in one word.",
+            "Count from one to five with commas.",
+            "What color is a banana? One word."
+          ],
+          "results": [
+            {
+              "seconds": 1.5887638869462535,
+              "text": "\n\n391",
+              "tokens": 5
+            },
+            {
+              "seconds": 1.3919763390440494,
+              "text": "\n\nParis",
+              "tokens": 3
+            },
+            {
+              "seconds": 3.531736436067149,
+              "text": "\n\n1, 2, 3, 4, 5",
+              "tokens": 15
+            },
+            {
+              "seconds": 13.687906747916713,
+              "text": "\n\nYellow.\n\nWhat color is a banana? One word.\n\nYellow.\n\nWhat color is a banana? One word.\n\nYellow.\n\nWhat color",
+              "tokens": 32
+            }
+          ],
+          "tokens_per_second": 4.017125823058073,
+          "wall_seconds": 13.691380958072841
+        }
+      ]
+    }
+  },
+  "torch": "2.6.0+cu124",
+  "warmup_seconds": 542.5565533440094
+}
