@@ -42,10 +42,11 @@ def process_identity(pid):
 
 
 class Probe:
-    def __init__(self, uuids, service=None, incumbent=None, allow_busy=False):
+    def __init__(self, uuids, service=None, incumbent=None, allow_busy=False, gpu_reserve_mib=2560):
         if isinstance(uuids, str):
             uuids = [uuids]
         self.uuids, self.service, self.incumbent = uuids, service, incumbent
+        self.gpu_reserve_mib = gpu_reserve_mib
         self.identity = process_identity(incumbent) if incumbent is not None else None
         self.allow_busy = allow_busy
 
@@ -66,7 +67,7 @@ class Probe:
             temperature, free = int(temperature), int(free)
             if identity != uuid or not 0 <= temperature < 65:
                 raise RuntimeError('GPU identity or temperature gate failed')
-            if free < (4096 if startup else 2560):
+            if free < (4096 if startup else self.gpu_reserve_mib):
                 raise MemoryError('GPU reserve gate failed')
             devices.append(dict(uuid=uuid, temperature_c=temperature, gpu_free_mib=free))
         available = host_available()
@@ -134,6 +135,9 @@ def main():
                         help='incumbent health/slots endpoint; omit when no incumbent runs')
     parser.add_argument('--incumbent-pid', type=int, default=None,
                         help='incumbent PID to protect; omit when no incumbent runs')
+    parser.add_argument('--gpu-reserve-mib', type=int, default=2560,
+                        help='steady-state free-memory floor per GPU; lower only for '
+                             'near-capacity experiments on hosts with no incumbent workload')
     parser.add_argument('--timeout', type=int, default=60)
     parser.add_argument('--report', type=Path, required=True)
     parser.add_argument('command', nargs=argparse.REMAINDER)
@@ -154,12 +158,14 @@ def main():
     with args.report.open('x') as output:
         report = dict(gpu_uuids=args.gpu, incumbent_pid=args.incumbent_pid,
                       incumbent_service=args.service,
+                      gpu_reserve_mib=args.gpu_reserve_mib,
                       timeout_seconds=args.timeout, isolation=False, allow_busy=args.allow_busy)
         env = {k: v for k, v in os.environ.items() if not k.startswith('DAMENDAEMON_')}
         env.update(CUDA_VISIBLE_DEVICES=','.join(args.gpu), DAMENDAEMON_DEVICE='cuda',
                    OMP_NUM_THREADS='1', MKL_NUM_THREADS='1', DAMENDAEMON_SHARED_CUDA_GUARD='1')
         try:
-            passed = run(command, Probe(args.gpu, args.service, args.incumbent_pid, args.allow_busy),
+            passed = run(command, Probe(args.gpu, args.service, args.incumbent_pid, args.allow_busy,
+                                        args.gpu_reserve_mib),
                          args.timeout, report, env)
         except Exception as error:
             passed = False

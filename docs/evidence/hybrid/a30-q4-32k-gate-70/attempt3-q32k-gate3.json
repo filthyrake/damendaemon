@@ -1,0 +1,77 @@
+{
+  "batch": 1,
+  "chunk": 127,
+  "completed": false,
+  "context": 32768,
+  "device": "GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+  "gate": "32K C1 capacity",
+  "graphs": false,
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.8-27B/snapshots/1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "output_limit": 512,
+  "precision": "compensated",
+  "prompt_digest": "31836e963e26cd642684d7bce9c778132376800375c2b09917612a5d398be727",
+  "prompt_tokens": 32256,
+  "quantization": "q4_0",
+  "rounds": {
+    "warmup": {
+      "error": null,
+      "first_output_seconds": 633.7223476750078,
+      "max_tokens": 1,
+      "output_chars": 4,
+      "output_preview": " the",
+      "total_seconds": 633.723147584009,
+      "usage": {
+        "completion_tokens": 1,
+        "prompt_tokens": 512,
+        "total_tokens": 513
+      }
+    }
+  },
+  "statuses": {
+    "after_warmup": {
+      "closed": false,
+      "closing": false,
+      "context": 32768,
+      "cuda_allocated_bytes": 21709877248,
+      "cuda_devices": null,
+      "cuda_peak_allocated_bytes": 21808049152,
+      "device": "cuda",
+      "gpu_model_limit": 1,
+      "hip_allocated_bytes": null,
+      "host_budget_bytes": 42949672960,
+      "host_cached_bytes": 16961796096,
+      "host_model_limit": 1,
+      "models": [
+        {
+          "chat_template": {
+            "sha256": null,
+            "source": "checkpoint"
+          },
+          "executor_failed": false,
+          "gpu_packed_layout_overhead_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "host_weight_bytes": 16961796096,
+          "id": "qwen38",
+          "output_head_workspace_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "pipeline": null,
+          "q4_marlin_abi": null,
+          "quantization": "q4_0",
+          "residency": "gpu",
+          "vision_gpu_weight_bytes": 0,
+          "vision_host_weight_bytes": 0,
+          "weight_streaming": null
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "pending_executor_cleanup": 0,
+      "pending_pipeline_cleanup": 0,
+      "rocm_aotriton_experimental": null,
+      "xpu_allocated_bytes": null,
+      "xpu_peak_allocated_bytes": null,
+      "xpu_reserved_bytes": null
+    }
+  },
+  "torch": "2.6.0+cu124"
+}
