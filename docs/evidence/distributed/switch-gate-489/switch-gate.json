@@ -1,0 +1,179 @@
+{
+  "completed": true,
+  "context": 512,
+  "deterministic": true,
+  "devices": [
+    "GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+    "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283"
+  ],
+  "generations": [
+    {
+      "alias": "model",
+      "seconds": 0.09993816097266972,
+      "text": " To find the product of 17 and 23, we can simply",
+      "tokens": 16
+    },
+    {
+      "alias": "alt",
+      "seconds": 0.19311888504307717,
+      "text": " To find the product of 19 and 21, we simply multiply",
+      "tokens": 16
+    },
+    {
+      "alias": "model",
+      "seconds": 0.191939600976184,
+      "text": " To find the product of 17 and 23, we can simply",
+      "tokens": 16
+    }
+  ],
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "quantization": "q4_0",
+  "second": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "statuses": [
+    {
+      "phase": "A1",
+      "status": {
+        "active": false,
+        "client_admission_turns": true,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "completed": 4,
+        "context": 512,
+        "current_model": "model",
+        "device": "distributed-cuda",
+        "distributed": true,
+        "failed": false,
+        "heartbeats": 0,
+        "interleaved_prefill": false,
+        "max_batch_size": 4,
+        "model_switches": 2,
+        "models": [
+          {
+            "id": "model",
+            "model_sha256": "79a3965ce0a7e5a6b1ffed0195b661f6ef1112464e764e96ca059014753286a9",
+            "quantization": "q4_0",
+            "residency": "gpu"
+          },
+          {
+            "id": "alt",
+            "model_sha256": "79a3965ce0a7e5a6b1ffed0195b661f6ef1112464e764e96ca059014753286a9",
+            "quantization": "q4_0",
+            "residency": "host"
+          }
+        ],
+        "packed_prefill": true,
+        "queued": 0,
+        "stage_layers": [
+          [
+            0,
+            12
+          ],
+          [
+            12,
+            24
+          ]
+        ],
+        "stream_buffer_events": 8,
+        "weight_layout": "q4-adjacent-body"
+      }
+    },
+    {
+      "phase": "B",
+      "status": {
+        "active": false,
+        "client_admission_turns": true,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "completed": 5,
+        "context": 512,
+        "current_model": "alt",
+        "device": "distributed-cuda",
+        "distributed": true,
+        "failed": false,
+        "heartbeats": 0,
+        "interleaved_prefill": false,
+        "max_batch_size": 4,
+        "model_switches": 3,
+        "models": [
+          {
+            "id": "model",
+            "model_sha256": "79a3965ce0a7e5a6b1ffed0195b661f6ef1112464e764e96ca059014753286a9",
+            "quantization": "q4_0",
+            "residency": "host"
+          },
+          {
+            "id": "alt",
+            "model_sha256": "79a3965ce0a7e5a6b1ffed0195b661f6ef1112464e764e96ca059014753286a9",
+            "quantization": "q4_0",
+            "residency": "gpu"
+          }
+        ],
+        "packed_prefill": true,
+        "queued": 0,
+        "stage_layers": [
+          [
+            0,
+            12
+          ],
+          [
+            12,
+            24
+          ]
+        ],
+        "stream_buffer_events": 8,
+        "weight_layout": "q4-adjacent-body"
+      }
+    },
+    {
+      "phase": "A2",
+      "status": {
+        "active": false,
+        "client_admission_turns": true,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "completed": 6,
+        "context": 512,
+        "current_model": "model",
+        "device": "distributed-cuda",
+        "distributed": true,
+        "failed": false,
+        "heartbeats": 0,
+        "interleaved_prefill": false,
+        "max_batch_size": 4,
+        "model_switches": 4,
+        "models": [
+          {
+            "id": "model",
+            "model_sha256": "79a3965ce0a7e5a6b1ffed0195b661f6ef1112464e764e96ca059014753286a9",
+            "quantization": "q4_0",
+            "residency": "gpu"
+          },
+          {
+            "id": "alt",
+            "model_sha256": "79a3965ce0a7e5a6b1ffed0195b661f6ef1112464e764e96ca059014753286a9",
+            "quantization": "q4_0",
+            "residency": "host"
+          }
+        ],
+        "packed_prefill": true,
+        "queued": 0,
+        "stage_layers": [
+          [
+            0,
+            12
+          ],
+          [
+            12,
+            24
+          ]
+        ],
+        "stream_buffer_events": 8,
+        "weight_layout": "q4-adjacent-body"
+      }
+    }
+  ],
+  "torch": "2.6.0+cu124"
+}
