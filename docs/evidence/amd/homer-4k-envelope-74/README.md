@@ -54,7 +54,30 @@ max_context). Golden targets:
   matching the original #68 contract ("stop at GPU ≥85, below reported 90°C
   max operating").
 
-## Remaining gate decision (user input needed on one axis)
+## Remaining gate decision (update 2026-10-18, after the cache fix)
+
+The pack-once cache landed (PR #523): a guarded pack-only run completed in
+53.1 s at **33.25°C** max Tctl and stored the prepared 15.8 GiB entry —
+confirming the packing burst is eliminated for all future runs.
+
+But the integrated replay then hit **91.0°C at 35.5 s** even with the cache
+hit (executor construction + first GPU compute: 15.8 GiB device upload, hybrid
+state, MIOpen work). Two 32-thread/1-thread pack variants and the cached-load
+replay all drive the package past 90 — the sustained GPU compute phase itself
+heats the shared APU die (GPU `edge` sensor stays ~33°C; k10temp Tctl spikes).
+This matches the October thermal-crash pattern and suggests the machine's
+cooling has degraded since the October 6 runs completed.
+
+Per the issue's own rule this is a **blocked gate, not a failed run**: the
+evidence-supported safe operating envelope for the integrated 4K replay does
+not exist on this machine today (90°C exceeded at max fans), the guard
+performed correctly, and no cutoff above 90 was attempted. Sheena services,
+fan daemon and fan curve were restored and health-verified after every stop.
+Deciding whether to raise the envelope (93°C is 2°C below TjMax — thin),
+physically service the cooling, or keep the gate blocked is the owner's call;
+no unguarded load was run.
+
+## Original remaining-gate decision record (before the cache fix)
 
 The GPU die stays cool; the CPU/APU package transient is the wall. Options:
 (a) user accepts a higher Tctl cutoff (e.g. 90) for the ~10 s packing burst —
