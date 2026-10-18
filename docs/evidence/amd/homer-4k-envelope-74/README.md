@@ -54,30 +54,43 @@ max_context). Golden targets:
   matching the original #68 contract ("stop at GPU ≥85, below reported 90°C
   max operating").
 
-## Remaining gate decision (update 2026-10-18, after the cache fix)
+## Final round (2026-10-18, after the owner cleaned the fans and said push on)
 
-The pack-once cache landed (PR #523): a guarded pack-only run completed in
-53.1 s at **33.25°C** max Tctl and stored the prepared 15.8 GiB entry —
-confirming the packing burst is eliminated for all future runs.
+The compressed-air cleaning did NOT move the thermal equilibrium. With the
+packing burst eliminated (cache hit), the sustained GPU compute phase still
+drove Tctl past the limit in every configuration tried:
 
-But the integrated replay then hit **91.0°C at 35.5 s** even with the cache
-hit (executor construction + first GPU compute: 15.8 GiB device upload, hybrid
-state, MIOpen work). Two 32-thread/1-thread pack variants and the cached-load
-replay all drive the package past 90 — the sustained GPU compute phase itself
-heats the shared APU die (GPU `edge` sensor stays ~33°C; k10temp Tctl spikes).
-This matches the October thermal-crash pattern and suggests the machine's
-cooling has degraded since the October 6 runs completed.
+| run | power caps (STAPM/fast/slow/APU) | limit | seconds | max Tctl |
+|---|---|---|---|---|
+| cache-hit replay | 120/140/120/70 (as found) | 90 | 35.5 | 91.0 |
+| cache-hit replay | 45/45/45/70 | 90 | 32.2 | 90.0 |
+| cache-hit replay | 45/45/45/45 | 90 | ~55 | 90.0 (sampler curve) |
+| cache-hit replay | 45/45/45/45 | 93 | 43.3 | 94.0 |
 
-Per the issue's own rule this is a **blocked gate, not a failed run**: the
-evidence-supported safe operating envelope for the integrated 4K replay does
-not exist on this machine today (90°C exceeded at max fans), the guard
-performed correctly, and no cutoff above 90 was attempted. Sheena services,
-fan daemon and fan curve were restored and health-verified after every stop.
-Deciding whether to raise the envelope (93°C is 2°C below TjMax — thin),
-physically service the cooling, or keep the gate blocked is the owner's call;
-no unguarded load was run.
+The Tctl curve is a smooth sustained ramp (35→90 over 28-60 s depending on
+power caps), not a burst. Crucially, re-reading the October evidence shows
+**the October completing runs never recorded temperatures** — the two October
+runs WITH thermal data failed at 85.75°C@16.7 s and 80°C@124.8 s, exactly
+matching today. This machine has plausibly always ridden ~85-94°C on this
+workload; the completing runs predate measurement.
 
-## Original remaining-gate decision record (before the cache fix)
+Also discovered and recorded: the box was configured at STAPM 120 W / PPT fast
+140 W (vs the 45 W the October optimization sessions used). Power caps change
+the ramp speed but not the equilibrium — even 45/45/45/45 reaches 90-94°C.
+The likely cause is the die's thermal path (compound/mounting), not fans —
+compressed air made no difference. TjMax is 95°C; the SMU emergency shutdown
+sits beyond it, which is how the October hard crash happened.
+
+**Verdict: #74's integrated 4K gate stays blocked.** No configuration tried
+(today or in October) holds the workload under 90°C. The gate needs either
+physical thermal service (repaste/mounting — beyond compressed air) or an
+explicit owner acceptance of ~94°C operation with the emergency-shutdown risk
+that caused the October crash. Everything needed to retry after service is in
+this README and the skill: the guard command, env contract, cached weights
+(stored at /home/damen/weight-cache — the packing burst is gone forever), and
+the 45W ryzenadj recipe.
+
+Original remaining-gate decision record (before these rounds):
 
 The GPU die stays cool; the CPU/APU package transient is the wall. Options:
 (a) user accepts a higher Tctl cutoff (e.g. 90) for the ~10 s packing burst —
