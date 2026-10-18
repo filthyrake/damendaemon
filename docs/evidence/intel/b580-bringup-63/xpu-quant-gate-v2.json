@@ -1,0 +1,317 @@
+{
+  "batch": 4,
+  "completed": true,
+  "concurrent_ok": true,
+  "context": 1024,
+  "gate": "quantized execution on XPU (Q8_0 vs FP32 greedy)",
+  "greedy_agreement": {
+    "Briefly explain why the ": {
+      "fp32": "\n\n<think>\n\n</think>\n\nThe sky appears blue because the Sun's light is scattered b",
+      "match": true,
+      "q8_0": "\n\n<think>\n\n</think>\n\nThe sky appears blue because the Sun's light is scattered b"
+    },
+    "Count from one to five w": {
+      "fp32": "\nCount from one to five with commas.\nCount from one to five with commas.\nCount f",
+      "match": true,
+      "q8_0": "\nCount from one to five with commas.\nCount from one to five with commas.\nCount f"
+    },
+    "Name the capital of Fran": {
+      "fp32": "\n\n<think>\n\n</think>\n\nParis",
+      "match": true,
+      "q8_0": "\n\n<think>\n\n</think>\n\nParis"
+    },
+    "What color is a banana? ": {
+      "fp32": "\n\n<think>\n\n</think>\n\nYellow",
+      "match": true,
+      "q8_0": "\n\n<think>\n\n</think>\n\nYellow"
+    },
+    "What is 17 * 23? Answer ": {
+      "fp32": "\n\n17 * 23 = 391.\n\nWhat is 17 * 23? Answer with one number.\n\n17",
+      "match": true,
+      "q8_0": "\n\n17 * 23 = 391.\n\nWhat is 17 * 23? Answer with one number.\n\n17"
+    }
+  },
+  "greedy_matches": 5,
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+  "rounds": {
+    "none": {
+      "after": {
+        "closed": false,
+        "closing": false,
+        "context": 1024,
+        "cuda_allocated_bytes": null,
+        "cuda_devices": null,
+        "cuda_peak_allocated_bytes": null,
+        "device": "xpu",
+        "gpu_model_limit": 1,
+        "hip_allocated_bytes": null,
+        "host_budget_bytes": 42949672960,
+        "host_cached_bytes": 1504898304,
+        "host_model_limit": 1,
+        "models": [
+          {
+            "chat_template": {
+              "sha256": null,
+              "source": "checkpoint"
+            },
+            "executor_failed": false,
+            "gpu_packed_layout_overhead_bytes": 0,
+            "gpu_projection_cache_bytes": 0,
+            "host_weight_bytes": 1504898304,
+            "id": "qwen35",
+            "output_head_workspace_bytes": 0,
+            "partition": null,
+            "partition_rebind_count": null,
+            "pipeline": null,
+            "q4_marlin_abi": null,
+            "quantization": "none",
+            "residency": "gpu",
+            "vision_gpu_weight_bytes": 0,
+            "vision_host_weight_bytes": 0,
+            "weight_streaming": null
+          }
+        ],
+        "mps_allocated_bytes": null,
+        "pending_executor_cleanup": 0,
+        "pending_pipeline_cleanup": 0,
+        "rocm_aotriton_experimental": null,
+        "xpu_allocated_bytes": 3193359360,
+        "xpu_peak_allocated_bytes": 3214862336,
+        "xpu_reserved_bytes": 3233808384
+      },
+      "before": {
+        "closed": false,
+        "closing": false,
+        "context": 1024,
+        "cuda_allocated_bytes": null,
+        "cuda_devices": null,
+        "cuda_peak_allocated_bytes": null,
+        "device": "xpu",
+        "gpu_model_limit": 1,
+        "hip_allocated_bytes": null,
+        "host_budget_bytes": 42949672960,
+        "host_cached_bytes": 0,
+        "host_model_limit": 1,
+        "models": [
+          {
+            "chat_template": {
+              "sha256": null,
+              "source": "checkpoint"
+            },
+            "executor_failed": false,
+            "gpu_packed_layout_overhead_bytes": 0,
+            "gpu_projection_cache_bytes": 0,
+            "host_weight_bytes": null,
+            "id": "qwen35",
+            "output_head_workspace_bytes": 0,
+            "partition": null,
+            "partition_rebind_count": null,
+            "pipeline": null,
+            "q4_marlin_abi": null,
+            "quantization": "none",
+            "residency": "disk",
+            "vision_gpu_weight_bytes": 0,
+            "vision_host_weight_bytes": 0,
+            "weight_streaming": null
+          }
+        ],
+        "mps_allocated_bytes": null,
+        "pending_executor_cleanup": 0,
+        "pending_pipeline_cleanup": 0,
+        "rocm_aotriton_experimental": null,
+        "xpu_allocated_bytes": 0,
+        "xpu_peak_allocated_bytes": 0,
+        "xpu_reserved_bytes": 0
+      },
+      "concurrent": [
+        {
+          "seconds": 0.4653780141379684,
+          "text": "\n\n<think>\n\n</think>\n\nRed.",
+          "tokens": 8
+        },
+        {
+          "seconds": 0.5704432968050241,
+          "text": "\n\n<think>\n\n</think>\n\nHello!\n",
+          "tokens": 10
+        },
+        {
+          "seconds": 1.0450790920294821,
+          "text": "\nThe quick brown fox jumps over the \u2014 name the animal.\nThe quick brown fox jumps over the \u2014 name the",
+          "tokens": 24
+        },
+        {
+          "seconds": 1.0447672070004046,
+          "text": "\n\n12 + 13 = 25.\n\nWhat is 12 + 13? One",
+          "tokens": 24
+        }
+      ],
+      "outputs": {
+        "Briefly explain why the sky is blue in two sentences.": {
+          "seconds": 1.0858394938986748,
+          "text": "\n\n<think>\n\n</think>\n\nThe sky appears blue because the Sun's light is scattered by the Earth's atmosphere, with shorter wavelengths (blue) being scattered more effectively",
+          "tokens": 32
+        },
+        "Count from one to five with commas.": {
+          "seconds": 1.160979927983135,
+          "text": "\nCount from one to five with commas.\nCount from one to five with commas.\nCount from one to five with commas.\nCount from one to",
+          "tokens": 32
+        },
+        "Name the capital of France in one word.": {
+          "seconds": 0.27180051407776773,
+          "text": "\n\n<think>\n\n</think>\n\nParis",
+          "tokens": 7
+        },
+        "What color is a banana? One word.": {
+          "seconds": 0.26111942692659795,
+          "text": "\n\n<think>\n\n</think>\n\nYellow",
+          "tokens": 7
+        },
+        "What is 17 * 23? Answer with one number.": {
+          "seconds": 3.040491021005437,
+          "text": "\n\n17 * 23 = 391.\n\nWhat is 17 * 23? Answer with one number.\n\n17",
+          "tokens": 32
+        }
+      }
+    },
+    "q8_0": {
+      "after": {
+        "closed": false,
+        "closing": false,
+        "context": 1024,
+        "cuda_allocated_bytes": null,
+        "cuda_devices": null,
+        "cuda_peak_allocated_bytes": null,
+        "device": "xpu",
+        "gpu_model_limit": 1,
+        "hip_allocated_bytes": null,
+        "host_budget_bytes": 42949672960,
+        "host_cached_bytes": 1308556544,
+        "host_model_limit": 1,
+        "models": [
+          {
+            "chat_template": {
+              "sha256": null,
+              "source": "checkpoint"
+            },
+            "executor_failed": false,
+            "gpu_packed_layout_overhead_bytes": 0,
+            "gpu_projection_cache_bytes": 0,
+            "host_weight_bytes": 1308556544,
+            "id": "qwen35",
+            "output_head_workspace_bytes": 0,
+            "partition": null,
+            "partition_rebind_count": null,
+            "pipeline": null,
+            "q4_marlin_abi": null,
+            "quantization": "q8_0",
+            "residency": "gpu",
+            "vision_gpu_weight_bytes": 0,
+            "vision_host_weight_bytes": 0,
+            "weight_streaming": null
+          }
+        ],
+        "mps_allocated_bytes": null,
+        "pending_executor_cleanup": 0,
+        "pending_pipeline_cleanup": 0,
+        "rocm_aotriton_experimental": null,
+        "xpu_allocated_bytes": 2013158400,
+        "xpu_peak_allocated_bytes": 4083631104,
+        "xpu_reserved_bytes": 4232052736
+      },
+      "before": {
+        "closed": false,
+        "closing": false,
+        "context": 1024,
+        "cuda_allocated_bytes": null,
+        "cuda_devices": null,
+        "cuda_peak_allocated_bytes": null,
+        "device": "xpu",
+        "gpu_model_limit": 1,
+        "hip_allocated_bytes": null,
+        "host_budget_bytes": 42949672960,
+        "host_cached_bytes": 0,
+        "host_model_limit": 1,
+        "models": [
+          {
+            "chat_template": {
+              "sha256": null,
+              "source": "checkpoint"
+            },
+            "executor_failed": false,
+            "gpu_packed_layout_overhead_bytes": 0,
+            "gpu_projection_cache_bytes": 0,
+            "host_weight_bytes": null,
+            "id": "qwen35",
+            "output_head_workspace_bytes": 0,
+            "partition": null,
+            "partition_rebind_count": null,
+            "pipeline": null,
+            "q4_marlin_abi": null,
+            "quantization": "q8_0",
+            "residency": "disk",
+            "vision_gpu_weight_bytes": 0,
+            "vision_host_weight_bytes": 0,
+            "weight_streaming": null
+          }
+        ],
+        "mps_allocated_bytes": null,
+        "pending_executor_cleanup": 0,
+        "pending_pipeline_cleanup": 0,
+        "rocm_aotriton_experimental": null,
+        "xpu_allocated_bytes": 0,
+        "xpu_peak_allocated_bytes": 0,
+        "xpu_reserved_bytes": 0
+      },
+      "concurrent": [
+        {
+          "seconds": 0.8515375279821455,
+          "text": "\n\n<think>\n\n</think>\n\nRed.",
+          "tokens": 8
+        },
+        {
+          "seconds": 0.9795403240714222,
+          "text": "\n\n<think>\n\n</think>\n\nHello!\n",
+          "tokens": 10
+        },
+        {
+          "seconds": 1.8125934859272093,
+          "text": "\nThe quick brown fox jumps over the \u2014 name the animal.\nThe quick brown fox jumps over the \u2014 name the",
+          "tokens": 24
+        },
+        {
+          "seconds": 1.8122626319527626,
+          "text": "\n\n12 + 13 = 25.\n\nWhat is 12 + 13? One",
+          "tokens": 24
+        }
+      ],
+      "outputs": {
+        "Briefly explain why the sky is blue in two sentences.": {
+          "seconds": 2.006238848203793,
+          "text": "\n\n<think>\n\n</think>\n\nThe sky appears blue because the Sun's light is scattered by the Earth's atmosphere, with shorter wavelengths (blue) being scattered more effectively",
+          "tokens": 32
+        },
+        "Count from one to five with commas.": {
+          "seconds": 2.0421423478983343,
+          "text": "\nCount from one to five with commas.\nCount from one to five with commas.\nCount from one to five with commas.\nCount from one to",
+          "tokens": 32
+        },
+        "Name the capital of France in one word.": {
+          "seconds": 0.46708812681026757,
+          "text": "\n\n<think>\n\n</think>\n\nParis",
+          "tokens": 7
+        },
+        "What color is a banana? One word.": {
+          "seconds": 0.46648028097115457,
+          "text": "\n\n<think>\n\n</think>\n\nYellow",
+          "tokens": 7
+        },
+        "What is 17 * 23? Answer with one number.": {
+          "seconds": 5.880623962031677,
+          "text": "\n\n17 * 23 = 391.\n\nWhat is 17 * 23? Answer with one number.\n\n17",
+          "tokens": 32
+        }
+      }
+    }
+  },
+  "torch": "2.10.0+xpu"
+}
