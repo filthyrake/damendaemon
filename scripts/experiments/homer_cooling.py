@@ -8,8 +8,8 @@ from damendaemon.rocm_policy import host_available
 class CoolingGuard:
     def __init__(self, report, *, hwmon_root='/sys/class/hwmon',
                  ec_root='/sys/class/ec_su_axb35', limit_celsius=80, clock=time.monotonic):
-        if not 50 <= limit_celsius <= 85:
-            raise ValueError('thermal cutoff must be within 50..85 Celsius')
+        if not 50 <= limit_celsius <= 93:
+            raise ValueError('thermal cutoff must be within 50..93 Celsius')
         self.report = report
         self.root, self.ec_root, self.limit = Path(hwmon_root), Path(ec_root), limit_celsius
         self.clock, self.last_check = clock, None
