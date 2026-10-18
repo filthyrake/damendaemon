@@ -45,7 +45,8 @@ def main():
     else:
         load_kwargs.update(torch_dtype=getattr(torch,args.weight_dtype))
     for quantization in ('none',args.format):
-        model=load_reference(args.model,reference_quantization=quantization,**load_kwargs)
+        load_kwargs['reference_quantization']=quantization
+        model=load_reference(args.model,**load_kwargs)
         if args.device=='cpu':model=model.float()
         model.eval()
         nll=0.;tokens=0;matches=0;relative=[]
