@@ -22,7 +22,9 @@ class WeightCacheTests(unittest.TestCase):
         self.source.write_bytes(b'checkpoint identity fixture')
 
     def cache(self, mode='q4_0'):
-        return PreparedCache(self.root / 'cache', self.root, self.config, mode, [self.source])
+        from damendaemon.weight_cache import tensor_schema as schema_for
+        return PreparedCache(self.root / 'cache', self.root, self.config, mode, [self.source],
+                             schema=schema_for(self.config, mode))
 
     def values(self, cache):
         tensors = {k: torch.ones(shape, dtype=dtype) for k, (shape, dtype) in cache.schema.items()}
@@ -86,7 +88,43 @@ class WeightCacheTests(unittest.TestCase):
             config = dict(self.config, model_type=architecture)
             schema = tensor_schema(config, 'q4_0')
             self.assertEqual('w.0.qkv.bias' in schema, architecture == 'qwen2')
-            self.assertEqual('w.0.q_norm' in schema, architecture == 'qwen3')
+
+    def test_recorded_schema_roundtrip_for_hybrid(self):
+        # Hybrid checkpoints record their prepared inventory in the entry
+        # itself: layer_types drive per-layer tensor sets with no single
+        # derivation. Arbitrary prepared tensors round-trip exactly; a
+        # mismatched shape, dtype, key set or metadata is a miss.
+        cache = PreparedCache(self.root / 'cache', self.root,
+                              dict(self.config, model_type='qwen3_5_text'),
+                              'q4_0', [self.source], schema=None)
+        self.assertTrue(cache.recorded)
+        values = (dict(embed=torch.ones(4, 8, dtype=torch.float16),
+                       norm=torch.ones(8, dtype=torch.float32) + 1,
+                       **{'0.qkv': torch.ones(4, 8, dtype=torch.uint8),
+                          '0.conv': torch.ones(4, 1, 2, dtype=torch.float16)}),
+                  {'0.qkv': torch.ones(4, 8, dtype=torch.float16)})
+        self.assertTrue(cache.save(*values))
+        loaded_weights, loaded_scales = cache.load()
+        self.assertEqual(set(loaded_weights), set(values[0]))
+        self.assertEqual(set(loaded_scales), set(values[1]))
+        for name, tensor in values[0].items():
+            self.assertEqual(loaded_weights[name].dtype, tensor.dtype)
+            self.assertTrue(torch.equal(loaded_weights[name], tensor))
+        self.assertEqual(set(loaded_scales), set(values[1]))
+        mismatched = ({**values[0], '0.qkv': torch.ones(4, 8, dtype=torch.float16)}, values[1])
+        with self.assertRaises(ValueError):
+            cache.save(*mismatched)
+        # The rejected save leaves the original entry intact.
+        self.assertTrue(torch.equal(cache.load()[0]['0.qkv'], values[0]['0.qkv']))
+
+    def test_recorded_cache_requires_matching_manifest(self):
+        cache = PreparedCache(self.root / 'cache', self.root,
+                              dict(self.config, model_type='qwen3_5_text'),
+                              'q4_0', [self.source], schema=None)
+        cache.save({'embed': torch.ones(4, 8, dtype=torch.float16)}, {})
+        other = PreparedCache(self.root / 'cache', self.root, self.config,
+                              'q4_0', [self.source], schema=None)
+        self.assertIsNone(other.load())
 
 
 if __name__ == '__main__':
