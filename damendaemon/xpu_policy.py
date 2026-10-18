@@ -29,11 +29,20 @@ def validate_runtime(torch):
     xpu.set_device(0)
 
 
-def validate_limits(context, batch=1):
-    if type(context) is not int or not 1 <= context <= 2048:
-        raise ValueError('Intel bring-up context must be 1..2048')
+def validate_limits(context, batch=1, quantization='none'):
+    limit = context_limit(quantization)
+    if type(context) is not int or not 1 <= context <= limit:
+        raise ValueError(f'Intel bring-up context must be 1..{limit} for {quantization!r} weights')
     if type(batch) is not int or not 1 <= batch <= 4:
         raise ValueError('Intel bring-up batch capacity must be 1..4')
+
+
+def context_limit(quantization):
+    # Dense Q8 weights leave headroom for the FP32 KV cache: the 0.6B dense
+    # fixture needs ~0.22 MB/token, so 16K batch-1 fits beside the display
+    # reserve. FP32 weights keep the original 2048 bring-up limit; Q4 stays
+    # rejected entirely and hybrid Q8 is bounded by its geometry policy.
+    return 16384 if quantization == 'q8_0' else 2048
 
 
 def validate_model(config, quantization, context=None, batch=1):
@@ -48,7 +57,7 @@ def validate_model(config, quantization, context=None, batch=1):
             or config.get('weight_format') or config.get('quantization_config')
             or config.get('rope_scaling')):
         raise ValueError('Intel bring-up requires Qwen3 dense or Qwen3.5-family hybrid text safetensors without quantization or scaled RoPE')
-    validate_limits(1 if context is None else context, batch)
+    validate_limits(1 if context is None else context, batch, quantization)
     if context is not None and context > config['max_position_embeddings']:
         raise ValueError('Intel bring-up context exceeds model positions')
 

@@ -91,6 +91,7 @@ class XpuTests(unittest.TestCase):
         config = test_config.ConfigTests().config()
         xpu_policy.validate_model(config, 'none', 512, 4)
         xpu_policy.validate_model(config, 'q8_0', 512, 4)
+        xpu_policy.validate_model(config, 'q8_0', 16384, 1)
         hybrid = test_config.ConfigTests().config(hidden_size=1024, num_hidden_layers=24,
             num_attention_heads=16, num_key_value_heads=8, head_dim=128,
             intermediate_size=3072, vocab_size=151936, model_type='qwen3_5_text',
@@ -100,6 +101,7 @@ class XpuTests(unittest.TestCase):
         for changes, mode, context, batch in (({'model_type':'qwen3_moe'}, 'none', 512, 1),
                 ({'model_type':'qwen3_5_text'}, 'q8_0', 2048, 1),
                 ({'model_type':'qwen3_5_text'}, 'q8_0', 1024, 5),
+                ({}, 'q8_0', 16385, 1), ({'model_type':'qwen3_5_text'}, 'q8_0', 2048, 1),
                 ({}, 'q4_0', 512, 1), ({'rope_scaling': {'rope_type': 'yarn'}}, 'q8_0', 512, 1),
                 ({}, 'none', 4096, 1), ({}, 'none', 512, 5),
                 ({'rope_scaling': {'rope_type': 'yarn'}}, 'none', 512, 1)):
@@ -116,6 +118,17 @@ class XpuTests(unittest.TestCase):
             model = SimpleNamespace(config=config, quantization='q4_0', max_context=512)
             with self.assertRaisesRegex(ValueError, 'Intel'):
                 Executor(model)
+
+    def test_context_limits_are_quantization_bounded(self):
+        self.assertEqual(xpu_policy.context_limit('none'), 2048)
+        self.assertEqual(xpu_policy.context_limit('q8_0'), 16384)
+        self.assertEqual(xpu_policy.context_limit('q4_0'), 2048)
+        xpu_policy.validate_limits(2048, 4, 'none')
+        xpu_policy.validate_limits(16384, 1, 'q8_0')
+        for mode, context, batch in (('none', 2049, 1), ('q8_0', 16385, 1), ('q8_0', 8192, 5),
+                                     ('none', 2048, 5), ('q8_0', True, 1)):
+            with self.subTest(mode=mode, context=context, batch=batch), self.assertRaises(ValueError):
+                xpu_policy.validate_limits(context, batch, mode)
 
     def test_cli_rejects_missing_opt_in_before_download(self):
         errors = io.StringIO()
