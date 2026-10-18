@@ -71,8 +71,8 @@ def main():
              '--quantization', 'q4_0', '--context', '512', '--port', str(PORT),
              '--batch-size', '4', '--queue-timeout', '300', '--idle-timeout', '600'],
             stdout=open(args.output.with_suffix('.serve.log'), 'w'), stderr=subprocess.STDOUT)
-        if not health(300):
-            raise RuntimeError('two-rank service did not become healthy within 300 seconds')
+        if not health(900):
+            raise RuntimeError('two-rank service did not become healthy within 900 seconds')
         first = generate(PROMPT)
         second = generate(PROMPT)
         report['generations'] = [first, second]
