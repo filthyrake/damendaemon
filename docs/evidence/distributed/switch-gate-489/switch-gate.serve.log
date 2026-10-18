@@ -1,0 +1,37 @@
+damendaemon distributed listening on http://127.0.0.1:8125
+W1017 18:57:33.878000 3969114 torch/distributed/elastic/agent/server/api.py:719] Received 15 death signal, shutting down workers
+W1017 18:57:33.879000 3969114 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 3969204 closing signal SIGTERM
+W1017 18:57:33.880000 3969114 torch/distributed/elastic/multiprocessing/api.py:897] Sending process 3969205 closing signal SIGTERM
+[rank0]:[E1017 18:58:04.352151748 ProcessGroupNCCL.cpp:629] [Rank 0] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=225, OpType=ALLREDUCE, NumelIn=1, NumelOut=1, Timeout(ms)=30000) ran for 30070 milliseconds before timing out.
+[rank0]:[E1017 18:58:04.352965159 ProcessGroupNCCL.cpp:2168] [PG ID 0 PG GUID 0(default_pg) Rank 0]  failure detected by watchdog at work sequence id: 225 PG status: last enqueued work: 225, last completed work: 224
+[rank0]:[E1017 18:58:04.353104510 ProcessGroupNCCL.cpp:667] Stack trace of the failed collective not found, potentially because FlightRecorder is disabled. You can enable it by setting TORCH_NCCL_TRACE_BUFFER_SIZE to a non-zero value.
+[rank0]:[E1017 18:58:05.184873369 ProcessGroupNCCL.cpp:681] [Rank 0] Some NCCL operations have failed or timed out. Due to the asynchronous nature of CUDA kernels, subsequent GPU operations might run on corrupted/incomplete data.
+[rank0]:[E1017 18:58:05.184915187 ProcessGroupNCCL.cpp:695] [Rank 0] To avoid data inconsistency, we are taking the entire process down.
+[rank0]:[E1017 18:58:05.186816060 ProcessGroupNCCL.cpp:1895] [PG ID 0 PG GUID 0(default_pg) Rank 0] Process group watchdog thread terminated with exception: [Rank 0] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=225, OpType=ALLREDUCE, NumelIn=1, NumelOut=1, Timeout(ms)=30000) ran for 30070 milliseconds before timing out.
+Exception raised from checkTimeout at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:632 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7fadfd16c1b6 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #1: c10d::ProcessGroupNCCL::WorkNCCL::checkTimeout(std::optional<std::chrono::duration<long, std::ratio<1l, 1000l> > >) + 0x2b4 (0x7fadab1fec74 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #2: c10d::ProcessGroupNCCL::watchdogHandler() + 0x890 (0x7fadab2007d0 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #3: c10d::ProcessGroupNCCL::ncclCommWatchdog() + 0x14d (0x7fadab2016ed in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #4: <unknown function> + 0x145c0 (0x7fadfd6885c0 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch.so)
+frame #5: <unknown function> + 0x8b2ea (0x7fadfe48b2ea in /lib64/libc.so.6)
+frame #6: <unknown function> + 0x1103d0 (0x7fadfe5103d0 in /lib64/libc.so.6)
+
+terminate called after throwing an instance of 'c10::DistBackendError'
+  what():  [PG ID 0 PG GUID 0(default_pg) Rank 0] Process group watchdog thread terminated with exception: [Rank 0] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=225, OpType=ALLREDUCE, NumelIn=1, NumelOut=1, Timeout(ms)=30000) ran for 30070 milliseconds before timing out.
+Exception raised from checkTimeout at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:632 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7fadfd16c1b6 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #1: c10d::ProcessGroupNCCL::WorkNCCL::checkTimeout(std::optional<std::chrono::duration<long, std::ratio<1l, 1000l> > >) + 0x2b4 (0x7fadab1fec74 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #2: c10d::ProcessGroupNCCL::watchdogHandler() + 0x890 (0x7fadab2007d0 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #3: c10d::ProcessGroupNCCL::ncclCommWatchdog() + 0x14d (0x7fadab2016ed in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #4: <unknown function> + 0x145c0 (0x7fadfd6885c0 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch.so)
+frame #5: <unknown function> + 0x8b2ea (0x7fadfe48b2ea in /lib64/libc.so.6)
+frame #6: <unknown function> + 0x1103d0 (0x7fadfe5103d0 in /lib64/libc.so.6)
+
+Exception raised from ncclCommWatchdog at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:1901 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7fadfd16c1b6 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #1: <unknown function> + 0xe5c6fc (0x7fadaae5c6fc in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #2: <unknown function> + 0x145c0 (0x7fadfd6885c0 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch.so)
+frame #3: <unknown function> + 0x8b2ea (0x7fadfe48b2ea in /lib64/libc.so.6)
+frame #4: <unknown function> + 0x1103d0 (0x7fadfe5103d0 in /lib64/libc.so.6)
+
