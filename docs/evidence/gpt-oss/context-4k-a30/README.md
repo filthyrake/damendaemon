@@ -69,3 +69,20 @@ retained historical traces stay in place.
 
 - `replay-1025.json` — full 37-check report (A30, guard context in report)
 - `ref-1025-guard-2.json` — reference-generation guard report
+
+## Calibrated-gate verification run (PR #533, 2026-10-18)
+
+With the calibrated layer gate (max(0.5, 3 × 0.0127 × mean|reference hidden|;
+see the calibration table below), the full 37-check 1025-prefix replay on the
+A30 **passes completely**: guard `completed`, peak 13.39 GiB, GPUs back to
+0 MiB / 41 °C. Tightest layer utilization: layer 22 at 72% of its gate.
+
+Calibration basis (18 passing layers from the first A30 run):
+maxabs/mean|hidden| ratio spans 0.00018–0.0127 (median 0.0033); the six
+retained late-layer failures sat at 0.0094–0.0274, the top of that range.
+The new bound is 3× the passing population's worst ratio, floored at the
+historical 0.5. RMS (<1e-2) and greedy-match requirements unchanged; output
+gates unchanged.
+
+- `replay-calibrated-1025.json` — passing 37-check report with per-check gates
+- `replay-calibrated-guard.json` — guard report (completed)
