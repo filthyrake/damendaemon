@@ -28,31 +28,43 @@ def main():
     p.add_argument('model')
     p.add_argument('--format',choices=('q8_0','q4_0'),default='q4_0')
     p.add_argument('--weight-dtype',choices=('float16','float32'),default='float16')
+    p.add_argument('--device',choices=('cpu','cuda'),default='cpu')
     args=p.parse_args()
     torch.set_num_threads(4)
     tokenizer=AutoTokenizer.from_pretrained(args.model,local_files_only=True,trust_remote_code=False)
     inputs=[torch.tensor([tokenizer.encode(text,add_special_tokens=True)]) for text in TEXTS]
     baseline=[];reports=[]
     kind=json.loads((Path(args.model)/'config.json').read_text())['model_type']
+    load_kwargs: dict = dict(reference_quantization='none',local_files_only=True,
+        trust_remote_code=False,attn_implementation='eager',
+        **({'chunk_size':16} if kind=='mamba2' else {}))
+    if args.device=='cuda':
+        # Bounded-device mode: FP16 weights with device_map auto; arithmetic
+        # stays FP16 (declared in the report). The CPU default keeps FP32.
+        load_kwargs.update(device_map='auto',torch_dtype=torch.float16)
+    else:
+        load_kwargs.update(torch_dtype=getattr(torch,args.weight_dtype))
     for quantization in ('none',args.format):
-        model=load_reference(args.model,reference_quantization=quantization,local_files_only=True,
-            trust_remote_code=False,torch_dtype=getattr(torch,args.weight_dtype),attn_implementation='eager',
-            **({'chunk_size':16} if kind=='mamba2' else {})).float().eval()
+        model=load_reference(args.model,reference_quantization=quantization,**load_kwargs)
+        if args.device=='cpu':model=model.float()
+        model.eval()
         nll=0.;tokens=0;matches=0;relative=[]
         for index,ids in enumerate(inputs):
             logits=model(ids,use_cache=False).logits[:,:-1].float()
             nll+=torch.nn.functional.cross_entropy(logits.flatten(0,1),ids[:,1:].flatten(),reduction='sum').item()
             tokens+=ids.numel()-1
-            if quantization=='none':baseline.append(logits.clone())
+            if quantization=='none':baseline.append(logits.cpu().clone())
             else:
                 expected=baseline[index]
-                matches+=(logits.argmax(-1)==expected.argmax(-1)).sum().item()
-                relative.append(((logits-expected).square().mean()/expected.square().mean()).sqrt().item())
+                matches+=(logits.cpu().argmax(-1)==expected.argmax(-1)).sum().item()
+                relative.append(((logits.cpu()-expected).square().mean()/expected.square().mean()).sqrt().item())
         reports.append({'weight_quantization':quantization,'tokens':tokens,'mean_nll':nll/tokens,
             'perplexity':math.exp(nll/tokens),'teacher_forced_top1_agreement':matches/tokens if quantization!='none' else None,
             'per_text_relative_logit_rms':relative})
         del model;gc.collect()
-    print(json.dumps({'model':args.model,'device':'cpu','arithmetic':'float32','weight_conversion_dtype':args.weight_dtype,'texts':TEXTS,
+    print(json.dumps({'model':args.model,'device':args.device,
+        'arithmetic':'float32' if args.device=='cpu' else 'float16','weight_conversion_dtype':args.weight_dtype,
+        'texts':TEXTS,
         'scope':'small authored corpus; measures quantization drift, not broad task quality or GPU performance',
         'results':reports},indent=2))
 
