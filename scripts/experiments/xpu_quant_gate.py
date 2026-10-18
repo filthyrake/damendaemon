@@ -2,10 +2,10 @@
 
 Serves the Qwen3.5-0.8B hybrid dev fixture twice at the hybrid-geometry bring-up
 limits (context 1024, batch 4) — first FP32, then Q8_0 packed weights — and
-drives the same greedy prompts through both servers. Records per-prompt greedy
-agreement, XPU allocator counters against the 2 GiB display reserve, and the
-concurrent batch-4 round on the Q8 server. Capability only: no performance
-claims (shared desktop).
+drives the same greedy prompts plus a concurrent batch of four distinct prompts
+through both servers. Records per-prompt greedy agreement, XPU allocator
+counters against the 2 GiB display reserve, and the concurrent rounds.
+Capability only: no performance claims (shared desktop).
 """
 import argparse
 import json
@@ -28,6 +28,10 @@ PROMPTS = ['What is 17 * 23? Answer with one number.',
            'Count from one to five with commas.',
            'What color is a banana? One word.',
            'Briefly explain why the sky is blue in two sentences.']
+CONCURRENT_PROMPTS = ['The quick brown fox jumps over the — name the animal.',
+                      'What is 12 + 13? One number.',
+                      'Name a primary color in one word.',
+                      'Say hello in one word.']
 QUANTIZATIONS = ('none', 'q8_0')
 
 
@@ -91,8 +95,21 @@ def serve_round(quantization, log_path):
             raise RuntimeError(f'{quantization} serve did not become healthy within 900 seconds')
         before = status()
         outputs = {prompt: generate(prompt) for prompt in PROMPTS}
+        concurrent = []
+        errors = []
+        import threading
+        def worker(prompt):
+            try:
+                concurrent.append(generate(prompt, max_tokens=24))
+            except Exception as failure:
+                errors.append(str(failure))
+        threads = [threading.Thread(target=worker, args=(prompt,)) for prompt in CONCURRENT_PROMPTS]
+        for thread in threads: thread.start()
+        for thread in threads: thread.join()
+        if errors:
+            raise RuntimeError(f'{quantization} concurrent generation failures: {errors}')
         after = status()
-        return dict(before=before, after=after, outputs=outputs)
+        return dict(before=before, after=after, outputs=outputs, concurrent=concurrent)
     finally:
         server.terminate()
         try:
@@ -124,7 +141,11 @@ def main():
                      for prompt in PROMPTS}
         report['greedy_agreement'] = agreement
         report['greedy_matches'] = sum(entry['match'] for entry in agreement.values())
-        report['completed'] = report['greedy_matches'] == len(PROMPTS)
+        concurrent_ok = all(len(report['rounds'][mode].get('concurrent', [])) == len(CONCURRENT_PROMPTS)
+                            and all(entry.get('tokens') for entry in report['rounds'][mode]['concurrent'])
+                            for mode in QUANTIZATIONS)
+        report['concurrent_ok'] = concurrent_ok
+        report['completed'] = report['greedy_matches'] == len(PROMPTS) and concurrent_ok
         save(args.output, report)
     except BaseException as error:
         report.update(completed=False, error=str(error))
