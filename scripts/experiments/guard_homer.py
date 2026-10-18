@@ -21,6 +21,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--report', type=Path, required=True)
     parser.add_argument('--timeout', type=int, default=900)
+    parser.add_argument('--limit-celsius', type=int, default=80,
+                        help='thermal cutoff for all sensors; the user set 85 for HOMER '
+                             'qualification runs (still below the reported 90C maximum)')
     parser.add_argument('command', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     command = args.command[1:] if args.command[:1] == ['--'] else args.command
@@ -52,7 +55,7 @@ def main():
     signal.signal(signal.SIGTERM, interrupted)
     signal.signal(signal.SIGINT, interrupted)
     try:
-        cooling = CoolingGuard(report['cooling'])
+        cooling = CoolingGuard(report['cooling'], limit_celsius=args.limit_celsius)
         cooling.check(startup=True)
         report['host_available_before'] = host_available()
         if report['host_available_before'] < 80*1024**3:
