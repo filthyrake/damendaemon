@@ -267,9 +267,9 @@ class HybridExecutor:
             self.linear = Linear(self.w, model.scales, self.device, F.linear,
                                  q8_projection=projection, q4_projection=projection_q4)
         self.kv, self.conv, self.state = {}, {}, {}
-        # Q8_0 KV storage halves the FP32 cache bytes (plus 1/32-scale FP16
-        # overhead); values are dequantized to compute dtype on read. Opt-in
-        # via DAMENDAEMON_HYBRID_KV=q8_0.
+        # Q8_0 KV storage cuts the FP32 cache to roughly a quarter of its bytes
+        # (plus 1/32-scale FP16 overhead); values are dequantized to compute
+        # dtype on read. Opt-in via DAMENDAEMON_HYBRID_KV=q8_0.
         self.kv_quant = os.environ.get('DAMENDAEMON_HYBRID_KV', 'none')
         if self.kv_quant not in ('none', 'q8_0'):
             raise ValueError('DAMENDAEMON_HYBRID_KV must be none or q8_0')

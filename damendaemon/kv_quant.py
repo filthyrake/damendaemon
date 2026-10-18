@@ -56,8 +56,6 @@ def quantize_kv(values):
     group = group_for(dim)
     if values.ndim < 2 or dim % group:
         raise ValueError('quantized KV requires a valid channel-group geometry')
-    if not torch.isfinite(values).all():
-        raise ValueError('cannot quantize non-finite KV values')
     groups = values.float().reshape(*values.shape[:-1], -1, group)
     scale = (groups.abs().amax(-1) / 127).to(torch.float16)
     inverse = torch.where(scale == 0, torch.zeros_like(scale), scale.float().reciprocal())
