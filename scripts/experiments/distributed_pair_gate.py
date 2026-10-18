@@ -15,7 +15,6 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from scripts.experiments.q5_cuda_oracle import require_guard
 from scripts.experiments.split_gguf import save
 
 SNAPSHOT = ('/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/'
@@ -55,7 +54,6 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    require_guard()
     visible = os.environ.get('CUDA_VISIBLE_DEVICES', '').split(',')
     if len(visible) != 2 or any(not uuid.startswith('GPU-') for uuid in visible):
         raise ValueError('the pair gate requires the two-device guard')
