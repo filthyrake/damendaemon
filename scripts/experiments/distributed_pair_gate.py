@@ -64,9 +64,11 @@ def main():
                   torch=torch.__version__, quantization='q4_0', context=512, generations=[])
     save(args.output, report)
     server = None
+    environment = dict(os.environ)
     try:
+        environment['PYTHONUNBUFFERED'] = '1'
         server = subprocess.Popen(
-            [sys.executable, '-m', 'torch.distributed.run', '--nproc-per-node', '2', '--master-port', '29500',
+            [sys.executable, '-u', '-m', 'torch.distributed.run', '--nproc-per-node', '2', '--master-port', '29500',
              '-m', 'damendaemon', 'distributed-serve', SNAPSHOT,
              '--quantization', 'q4_0', '--context', '512', '--port', str(PORT),
              '--batch-size', '4', '--queue-timeout', '300', '--idle-timeout', '600'],
