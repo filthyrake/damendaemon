@@ -21,9 +21,30 @@ def main():
     parser.add_argument('--device1-mib', type=int, default=13312)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
+    # Planning-only admission: the loader policy pins Q4 to the A30 identity,
+    # compensated precision and context <=512 (production contract). The
+    # planner never executes — it only packs weights and plans byte budgets —
+    # so the identity/context gates are substituted here, the same way the
+    # #68/#70 context probe substitutes them for bounded execution.
+    import os
+    os.environ['DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4'] = '1'
+    os.environ['DAMENDAEMON_HYBRID_PRECISION'] = 'compensated'
+    from damendaemon import hybrid_q4_policy
+    original_device_name = hybrid_q4_policy.device_name
+    hybrid_q4_policy.device_name = lambda: 'NVIDIA A30'
+    original_validate = hybrid_q4_policy.validate
+
+    def validate(config, max_context=None):
+        if max_context is not None and not 512 <= max_context <= 32768:
+            raise ValueError('Q4 planning is bounded to 512..32768 tokens')
+        return original_validate(config, None if max_context is None else 512)
+
+    hybrid_q4_policy.validate = validate
     from damendaemon.qwen2 import ModelWeights
     from damendaemon.hybrid_layout import choose_stage_splits
-    model = ModelWeights(args.model, max_context=args.context, quantization='q4_0')
+    model = ModelWeights(args.model, max_context=512, quantization='q4_0')
+    hybrid_q4_policy.device_name = original_device_name
+    model.max_context = args.context
     budgets = [args.device0_mib*1024**2, args.device1_mib*1024**2]
     placement = choose_stage_splits(model.weights, model.config, model.max_context, 1,
                                     2, budgets, scales=model.scales)
