@@ -34,6 +34,14 @@ tokens) under `guard_shared_cuda` with the A30+A2 pair:
 | 3 | chunk 127, reserve 0 | 692 s, thermal | A2 64 C, A30 free 4782 MiB |
 | 4 | chunk 127, reserve 0 | 710 s, thermal | A2 64 C, A30 free 4782 MiB |
 | 5 | chunk 127, reserve 0 | 680 s, thermal | A2 63 C, A30 free 4340 MiB |
+| 6 | chunk 127, reserve 0, **`DAMENDAEMON_PIPELINE_EMPTY_CACHE=1`** | 707 s, thermal | A2 62→≥65 C, A2 free 897 MiB, A30 free 2642 MiB |
+
+Attempt 6 (PR #549) ran the new opt-in `torch.cuda.empty_cache()` after every
+final prefill chunk. The allocator footprint did not drop below the
+prior-attempt band and the run still hit the thermal gate — empty-cache
+release does not buy enough thermal headroom on its own; the A2 ramp profile
+is compute-bound, not allocator-bound. `dd536-8k-c1-guard.json` /
+`dd536-8k-c1.json` / `dd536-8k-c1.serve.log` are retained (attempt 6).
 
 `dd536-8k-guard.json` (attempt 5) and `dd536-8k.json` are retained.
 
