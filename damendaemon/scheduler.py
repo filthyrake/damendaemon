@@ -7,6 +7,7 @@ admission to the current group, avoiding starvation and active-model eviction.
 from collections import deque
 import copy
 import math
+import os
 import traceback
 from dataclasses import dataclass, field
 import queue
@@ -510,6 +511,16 @@ class BatchedRuntime:
         return self.prefill_turns.choose([(slot,request,min(chunk_size,len(tokens)-start))
             for slot,(request,tokens,start) in partial.items()])[0]
 
+    @staticmethod
+    def _chunk_cooldown():
+        # Duty-cycled ramp (#536): bounded seconds to sleep between non-final
+        # prefill chunks, from DAMENDAEMON_PREFILL_CHUNK_COOLDOWN_S. Shared-GPU
+        # opt-in only; 0 (default) disables.
+        value = os.environ.get('DAMENDAEMON_PREFILL_CHUNK_COOLDOWN_S', '0')
+        if (not value.isascii() or not value.isdecimal()):
+            raise ValueError('DAMENDAEMON_PREFILL_CHUNK_COOLDOWN_S must be a nonnegative integer')
+        return int(value)
+
     def _chunked_group(self,first,executor,tier,activation):
         first.tier,first.activation=tier,activation
         active,partial={},{}
@@ -569,6 +580,13 @@ class BatchedRuntime:
                             # gets a turn before this prompt's next chunk.
                             del partial[slot]
                             partial[slot]=(request,tokens,end)
+                            cooldown=self._chunk_cooldown()
+                            if cooldown:
+                                # Duty-cycled ramp (#536): a bounded pause after
+                                # each non-final chunk keeps the two-device
+                                # pair under the guard's thermal gate; disabled
+                                # by default, shared-GPU opt-in only.
+                                time.sleep(cooldown)
                     except Exception as error:
                         self._finish(request,error)
                         del partial[slot]
