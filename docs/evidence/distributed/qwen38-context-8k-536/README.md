@@ -35,13 +35,21 @@ tokens) under `guard_shared_cuda` with the A30+A2 pair:
 | 4 | chunk 127, reserve 0 | 710 s, thermal | A2 64 C, A30 free 4782 MiB |
 | 5 | chunk 127, reserve 0 | 680 s, thermal | A2 63 C, A30 free 4340 MiB |
 | 6 | chunk 127, reserve 0, **`DAMENDAEMON_PIPELINE_EMPTY_CACHE=1`** | 707 s, thermal | A2 62→≥65 C, A2 free 897 MiB, A30 free 2642 MiB |
+| 7 | attempt 6 + `DAMENDAEMON_PREFILL_CHUNK_COOLDOWN_S=3` | 961 s, thermal | A2 61 C at last pass then ≥65, A2 free 9857 MiB |
+| 8 | attempt 6 + `DAMENDAEMON_PREFILL_CHUNK_COOLDOWN_S=6` | 1133 s, thermal | A2 62 C at last pass then ≥65, A2 free 9919 MiB |
 
-Attempt 6 (PR #549) ran the new opt-in `torch.cuda.empty_cache()` after every
-final prefill chunk. The allocator footprint did not drop below the
-prior-attempt band and the run still hit the thermal gate — empty-cache
-release does not buy enough thermal headroom on its own; the A2 ramp profile
-is compute-bound, not allocator-bound. `dd536-8k-c1-guard.json` /
-`dd536-8k-c1.json` / `dd536-8k-c1.serve.log` are retained (attempt 6).
+Attempts 7–8 (PR #550) added a duty-cycled pause between non-final chunks.
+Cooldown stretched the run (707 → 961 → 1133 s) and `empty_cache` held the
+allocator footprint near plan (A2 ~5–8.8 GiB resident during the ramp vs
+14.2 GiB without), but the A2 still crossed 65 C late in every ramp: the pair
+heats on **cumulative ramp energy**, not instantaneous power, so no cooldown
+inside the guard's 1800 s cap completes the 8K ramp. The 8K cell on the
+A30+A2 pair is thermally infeasible under the containment contract; per the
+issue's stopping condition the gate is re-scoped honestly: the qualified
+production cap remains the gate-2 2K cell, and 8K moves to the gate-4
+three-device topology (A30 + A2 + 3090) where the A2's stage tail can move
+off the thermally-limited device. Evidence retained: `dd536-8k-c2-*`
+(attempt 7), `dd536-8k-c3-*` (attempt 8).
 
 `dd536-8k-guard.json` (attempt 5) and `dd536-8k.json` are retained.
 
