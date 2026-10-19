@@ -273,8 +273,10 @@ class HybridExecutor:
         self.kv_quant = os.environ.get('DAMENDAEMON_HYBRID_KV', 'none')
         if self.kv_quant not in ('none', 'q8_0'):
             raise ValueError('DAMENDAEMON_HYBRID_KV must be none or q8_0')
-        if self.kv_quant == 'q8_0' and self.fused is not None:
-            raise ValueError('quantized KV requires eager torch attention (the fused decode kernel reads the FP32 cache layout)')
+        # Fused kernels and quantized KV coexist: only dense_fused.attention
+        # reads the KV cache, and the quantized attention branch below bypasses
+        # it in favor of eager scaled attention. Fused linear scan/conv and
+        # fused norms operate on conv/state/weights, never on kv.
         for i in range(self.layer_start, self.layer_end):
             kind = c['layer_types'][i]
             if kind == 'full_attention':
@@ -494,9 +496,10 @@ class HybridExecutor:
         from .device import selected_accelerator
         end = prefix_length + length
         if self.kv_quant == 'q8_0':
-            # Slot-indexed FP32 views of the populated prefix. The quantized
-            # path feeds the eager attention branches only; the fused decode
-            # kernel reads the FP32 layout and is rejected at construction.
+            # Slot-indexed views of the populated prefix in the compute dtype.
+            # The quantized path feeds eager attention only; the fused dense
+            # decode kernel reads the FP32 cache layout and is bypassed here
+            # (fused linear scan/conv and fused norms are KV-independent).
             if use_grouped_prefill(selected_accelerator(), self.hybrid_precision, prefill, length, end):
                 from .grouped_attention import attention as grouped_attention
                 out = grouped_attention(q.transpose(1, 2), ck, cv)
