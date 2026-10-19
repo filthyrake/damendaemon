@@ -105,16 +105,18 @@ def store_kv(cache, slots, positions, k, v):
         scales[1, slot][:, row_positions, :] = scale_v[row]
 
 
-def read_kv(cache, slots, end):
+def read_kv(cache, slots, end, dtype=torch.float32):
     """Dequantize the populated prefix [0:end] for the selected slots.
 
-    Returns (k, v) FP32 shaped (slots, kv_heads, end, dim) — slot-indexed,
-    matching the FP32 cache's outer slot dimension so the executor's attention
-    paths keep their existing shape contracts. Duplicate slots duplicate rows.
+    Returns (k, v) of dtype (default FP32) shaped (slots, kv_heads, end, dim) —
+    slot-indexed, matching the FP32 cache's outer slot dimension so the
+    executor's attention paths keep their existing shape contracts. Duplicate
+    slots duplicate rows. Pass the executor's compute dtype when the attention
+    inputs are FP16.
     """
     data, scales = cache
     selected_data = data.index_select(1, slots)[..., :end, :]
     selected_scales = scales.index_select(1, slots)[..., :end, :]
-    k = dequantize_kv(selected_data[0], selected_scales[0], torch.float32)
-    v = dequantize_kv(selected_data[1], selected_scales[1], torch.float32)
+    k = dequantize_kv(selected_data[0], selected_scales[0], dtype)
+    v = dequantize_kv(selected_data[1], selected_scales[1], dtype)
     return k, v

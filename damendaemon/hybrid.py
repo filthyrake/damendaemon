@@ -470,9 +470,10 @@ class HybridExecutor:
             # Decode reads each slot's full history (absolute positions); the
             # attention mask excludes unfilled positions of shorter slots.
             end = prefix_length + length if prefill else int(positions.max()) + 1
-            # read_kv returns slot-indexed (slots, kv_heads, end, dim) FP32 —
-            # the same outer-slot layout the FP32 cache paths produce.
-            ck, cv = read_kv(self.kv[i], slots, end)
+            # read_kv returns slot-indexed (slots, kv_heads, end, dim) in the
+            # compute dtype — the same outer-slot layout the FP32 cache paths
+            # produce.
+            ck, cv = read_kv(self.kv[i], slots, end, self.compute_dtype)
         else:
             ck, cv = self.kv[i].unbind(0)
             ck[slots[:, None], :, positions, :] = k
