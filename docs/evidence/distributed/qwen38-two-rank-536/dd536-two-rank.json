@@ -1,0 +1,158 @@
+{
+  "budgets_mib": [
+    22528,
+    13312
+  ],
+  "completed": false,
+  "context": 2048,
+  "devices": [
+    "GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+    "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283"
+  ],
+  "gate": "#536 gate 2 two-rank hybrid pipeline",
+  "graphs": false,
+  "greedy_tokens": 12,
+  "memory": {
+    "after_traces": {
+      "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283": 4830,
+      "GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a": 13555
+    },
+    "after_warmup": {
+      "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283": 4704,
+      "GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a": 12717
+    }
+  },
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.8-27B/snapshots/1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "precision": "compensated",
+  "quantization": "q4_0",
+  "single_rank": {},
+  "statuses": {
+    "two_rank": {
+      "closed": false,
+      "closing": false,
+      "context": 2048,
+      "cuda_allocated_bytes": 17677676544,
+      "cuda_devices": [
+        {
+          "allocated_bytes": 12900176384,
+          "index": 0,
+          "name": "NVIDIA A30",
+          "reserved_bytes": 13037993984,
+          "uuid": "GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a"
+        },
+        {
+          "allocated_bytes": 4777500160,
+          "index": 1,
+          "name": "NVIDIA A2",
+          "reserved_bytes": 4848615424,
+          "uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283"
+        }
+      ],
+      "cuda_peak_allocated_bytes": null,
+      "device": "cuda",
+      "gpu_model_limit": 1,
+      "hip_allocated_bytes": null,
+      "host_budget_bytes": 42949672960,
+      "host_cached_bytes": 16961796096,
+      "host_model_limit": 1,
+      "models": [
+        {
+          "chat_template": {
+            "sha256": null,
+            "source": "checkpoint"
+          },
+          "executor_failed": false,
+          "gpu_packed_layout_overhead_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "host_weight_bytes": 16961796096,
+          "id": "qwen38",
+          "kv_cache_bytes": null,
+          "kv_cache_mode": null,
+          "output_head_workspace_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "pipeline": {
+            "closed": false,
+            "failed": false,
+            "lengths": [
+              16
+            ],
+            "stages": [
+              {
+                "activation_workspace_bytes": 83886080,
+                "closed": false,
+                "layer_end": 46,
+                "layer_start": 0,
+                "output_head_workspace_bytes": 0,
+                "required_memory_bytes": 13316684416,
+                "resident_scale_bytes": 1094215680,
+                "resident_weight_bytes": 11301327488,
+                "state_bytes": 300384256
+              },
+              {
+                "activation_workspace_bytes": 83886080,
+                "closed": false,
+                "layer_end": 64,
+                "layer_start": 46,
+                "output_head_workspace_bytes": 2542796800,
+                "required_memory_bytes": 7856717184,
+                "resident_scale_bytes": 507156480,
+                "resident_weight_bytes": 4059096448,
+                "state_bytes": 126910464
+              }
+            ]
+          },
+          "q4_marlin_abi": null,
+          "quantization": "q4_0",
+          "residency": "gpu",
+          "vision_gpu_weight_bytes": 0,
+          "vision_host_weight_bytes": 0,
+          "weight_streaming": null
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "pending_executor_cleanup": 0,
+      "pending_pipeline_cleanup": 0,
+      "rocm_aotriton_experimental": null,
+      "xpu_allocated_bytes": null,
+      "xpu_peak_allocated_bytes": null,
+      "xpu_reserved_bytes": null
+    }
+  },
+  "torch": "2.6.0+cu124",
+  "trace_digest": "1c17dfea9b2d213e62b03fa473b81c6fb4975e6a1345e712e6fb1cc65492cdec",
+  "trace_tokens": 64,
+  "two_rank": {
+    "trace_first": {
+      "error": null,
+      "seconds": 17.720695639029145,
+      "text": " same quantized weights.\n\nThe two-rank gate repl",
+      "usage": {
+        "completion_tokens": 12,
+        "prompt_tokens": 64,
+        "total_tokens": 76
+      }
+    },
+    "trace_repeat": {
+      "error": null,
+      "seconds": 12.05073923082091,
+      "text": " same quantized weights.\n\nThe two-rank gate repl",
+      "usage": {
+        "completion_tokens": 12,
+        "prompt_tokens": 64,
+        "total_tokens": 76
+      }
+    },
+    "warmup": {
+      "error": null,
+      "seconds": 641.2198260419536,
+      "text": " can",
+      "usage": {
+        "completion_tokens": 1,
+        "prompt_tokens": 16,
+        "total_tokens": 17
+      }
+    }
+  },
+  "two_rank_completed": true
+}

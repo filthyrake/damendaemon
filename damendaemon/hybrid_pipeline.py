@@ -4,6 +4,7 @@ No remote transport, asynchronous overlap, or production multi-GPU admission.
 Cursors commit only after every stage and its device synchronization succeed.
 """
 import threading
+from contextlib import nullcontext
 
 import torch
 
@@ -75,8 +76,12 @@ class HybridPipeline:
                     hidden = stage.embedding(torch.tensor(rows, device=device))
                 else:
                     hidden = hidden.to(device=device, non_blocking=False)
-                hidden = stage.forward_layers(hidden, positions, slot_ids, prefill,
-                                              starts[0] if prefill else 0)
+                # Fused Triton (and other context-sensitive) launches run on the
+                # CURRENT CUDA device; a multi-stage pipeline must enter each
+                # stage's device or its kernels launch against device 0.
+                with torch.cuda.device(device) if device.type == 'cuda' else nullcontext():
+                    hidden = stage.forward_layers(hidden, positions, slot_ids, prefill,
+                                                  starts[0] if prefill else 0)
             logits = self.stages[-1].output_logits(hidden[:, -1]) if final else None
             next_ids = logits.argmax(-1) if not prefill else None
             for stage in self.stages:

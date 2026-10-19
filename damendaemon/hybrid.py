@@ -309,7 +309,13 @@ class HybridExecutor:
         angles = torch.cat((angles, angles), -1)
         self.cos, self.sin = angles.cos(), angles.sin()
         self.arange = torch.arange(self.context, device=self.device)
-        if self.fused:
+        if self.fused and _layer_range is None:
+            # A layer stage never runs the full backbone: its forward_embeddings
+            # is deliberately blocked (the pipeline coordinator owns layer
+            # execution and cursor commit), so the fused warmup probe below is
+            # a full-model-only step. Stage kernels warm on the pipeline's
+            # first forward_layers, and the toolchain-fallback branch here is
+            # an unquantized-FP16 full-model concern.
             from .cuda_warmup import warmup_stream
             probe = torch.zeros(1, dtype=torch.long, device=self.device)
             with warmup_stream(), torch.inference_mode():

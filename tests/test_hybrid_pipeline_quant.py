@@ -116,6 +116,40 @@ class QuantPipelinePolicyTests(unittest.TestCase):
                                        'DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB': '2048,2048'}, clear=True):
             policy_validate(self.config, 'q4_0', 1024, 1, False)
 
+    def q4_identity(self, env, current_device, primary_device):
+        """Run hybrid_q4_policy.validate with faked CUDA device identities."""
+        import damendaemon.hybrid_q4_policy as module
+        with patch.dict('os.environ', env, clear=True), \
+                patch.object(module, 'selected_accelerator', return_value='cuda'), \
+                patch.object(module, 'device_name', return_value=current_device), \
+                patch('torch.cuda.get_device_name', return_value=primary_device):
+            module.validate(self.config, 512)
+
+    def test_q4_stage_device_admitted_on_pipeline_pair(self):
+        # #536 gate 2: stage 1 builds under the A2, so the current-device name
+        # is not the A30; the explicit pipeline pair anchors identity on cuda:0.
+        self.q4_identity({'DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4': '1',
+                          'DAMENDAEMON_HYBRID_PRECISION': 'compensated',
+                          'DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE': '1',
+                          'DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE_QUANT': '1',
+                          'DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB': '22528,13312'},
+                         current_device='NVIDIA A2', primary_device='NVIDIA A30')
+
+    def test_q4_stage_device_rejected_without_pipeline_opt_in(self):
+        with self.assertRaisesRegex(ValueError, 'NVIDIA A30'):
+            self.q4_identity({'DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4': '1',
+                              'DAMENDAEMON_HYBRID_PRECISION': 'compensated'},
+                             current_device='NVIDIA A2', primary_device='NVIDIA A2')
+
+    def test_q4_stage_device_rejected_without_a30_primary(self):
+        with self.assertRaisesRegex(ValueError, 'NVIDIA A30'):
+            self.q4_identity({'DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4': '1',
+                              'DAMENDAEMON_HYBRID_PRECISION': 'compensated',
+                              'DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE': '1',
+                              'DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE_QUANT': '1',
+                              'DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB': '22528,13312'},
+                             current_device='NVIDIA A2', primary_device='NVIDIA A2')
+
 
 class PackedPipelineBuildTests(PipelineBuildTests):
     """End-to-end CPU build of a packed two-stage pipeline (no CUDA execution).
