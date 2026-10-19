@@ -51,15 +51,18 @@ GREEDY_TOKENS = 12
 HOST_FLOOR_BYTES = 100 * 1024**3
 
 
-def preflight():
+def preflight(*, pair_required=True):
     # q5_cuda_oracle.require_guard refuses the two-UUID pair this gate needs,
     # so the guard contract is checked here exactly as distributed_pair_gate
-    # does: guard ownership flag plus the ordered A30+A2 UUID pair.
+    # does: guard ownership flag plus the ordered UUID pair. The single-rank
+    # reference phase runs under the single-device A30 guard instead.
     if os.environ.get('DAMENDAEMON_SHARED_CUDA_GUARD') != '1':
         raise ValueError('requires execution under scripts.experiments.guard_shared_cuda')
     visible = os.environ.get('CUDA_VISIBLE_DEVICES', '').split(',')
-    if visible != [A30_UUID, A2_UUID]:
-        raise ValueError(f'two-rank gate requires the two-device guard with the A30 first, got {visible}')
+    expected = [A30_UUID, A2_UUID] if pair_required else [A30_UUID]
+    if visible != expected:
+        raise ValueError(f'two-rank gate requires the {"two-device" if pair_required else "single-A30"} '
+                         f'guard with the A30 first, got {visible}')
     query = subprocess.run(['nvidia-smi', '--query-gpu=uuid,memory.free', '--format=csv,noheader,nounits'],
                            capture_output=True, text=True, timeout=30).stdout
     free = {row.split(',')[0].strip(): int(row.split(',')[1]) for row in query.strip().splitlines()}
@@ -193,9 +196,9 @@ def main():
     parser.add_argument('--compare', type=Path,
                         help='single-rank phase: path to the two-rank phase report')
     args = parser.parse_args()
+    preflight(pair_required=args.phase != 'single-rank')
     if args.output.exists():
         raise ValueError('new output path required')
-    preflight()
     import torch
     trace_ids = build_trace_ids()
     digest = hashlib.sha256(json.dumps(trace_ids).encode()).hexdigest()
