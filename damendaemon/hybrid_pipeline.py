@@ -3,6 +3,7 @@
 No remote transport, asynchronous overlap, or production multi-GPU admission.
 Cursors commit only after every stage and its device synchronization succeed.
 """
+import os
 import threading
 from contextlib import nullcontext
 
@@ -109,7 +110,18 @@ class HybridPipeline:
                     or type(start) is not int or start < 0 or type(final) is not bool
                     or start+len(tokens) > self.context or (start and start != self.lengths[slot])):
                 raise ValueError('invalid pipeline prompt offset or slot')
-            return self._execute([list(tokens)], [slot], [start], True, final, cancelled)
+            result = self._execute([list(tokens)], [slot], [start], True, final, cancelled)
+            if final and os.environ.get('DAMENDAEMON_PIPELINE_EMPTY_CACHE', '0') == '1':
+                # Chunked-prefill allocator retention (#536): after the ramp the
+                # caching allocator holds per-chunk work buffers; one explicit
+                # release per device between ramp groups pulls the footprint
+                # back toward the planner's required-memory level.
+                for stage in self.stages:
+                    device = stage.actual_device
+                    if device.type == 'cuda':
+                        with torch.cuda.device(device):
+                            torch.cuda.empty_cache()
+            return result
 
     def prefill(self, tokens, slot=0, cancelled=None):
         return self.prefill_chunk(tokens, slot, cancelled=cancelled)
