@@ -44,24 +44,33 @@ def stage_weight_names(weights, layer_count, start, end):
     return tuple(selected)
 
 
-def stage_budget(weights, config, context, batch, cache_element_bytes, start, end, fp32_weights=False):
+def stage_budget(weights, config, context, batch, cache_element_bytes, start, end, fp32_weights=False,
+                 scales=None):
     names = stage_weight_names(weights, config['num_hidden_layers'], start, end)
     selected = {name: weights[name] for name in names}
     unique = {id(t):t for t in selected.values()}.values()
     weight_bytes = sum(t.numel()*(4 if fp32_weights else t.element_size()) for t in unique)
+    scale_bytes = 0
+    if scales:
+        selected_names = set(names)
+        scale_bytes = sum(t.numel()*(4 if fp32_weights else t.element_size())
+                          for name, t in scales.items() if name in selected_names)
     owned = {**config, 'num_hidden_layers': end-start, 'layer_types': config['layer_types'][start:end]}
     state_bytes = hybrid_state_bytes(owned, context, batch, cache_element_bytes)
     head = selected.get('head')
     head_workspace = head.numel()*4 if head is not None and not fp32_weights and head.element_size() != 4 else 0
-    result = dict(layer_start=start, layer_end=end, weight_bytes=weight_bytes, state_bytes=state_bytes,
+    result = dict(layer_start=start, layer_end=end, weight_bytes=weight_bytes, scale_bytes=scale_bytes,
+                  state_bytes=state_bytes,
                   activation_workspace_bytes=2*batch*context*config['hidden_size']*4,
                   output_head_workspace_bytes=head_workspace, workspace_floor_bytes=512*1024**2)
     result['required_memory_bytes'] = sum(result[name] for name in (
-        'weight_bytes', 'state_bytes', 'activation_workspace_bytes', 'output_head_workspace_bytes', 'workspace_floor_bytes'))
+        'weight_bytes', 'scale_bytes', 'state_bytes', 'activation_workspace_bytes',
+        'output_head_workspace_bytes', 'workspace_floor_bytes'))
     return result
 
 
-def choose_stage_splits(weights, config, context, batch, cache_element_bytes, budgets, fp32_weights=False):
+def choose_stage_splits(weights, config, context, batch, cache_element_bytes, budgets, fp32_weights=False,
+                        scales=None):
     """Minimize maximum estimated utilization across ordered device budgets.
 
     Contiguous, nonempty stages only. This balances storage, not transfer or
@@ -85,7 +94,7 @@ def choose_stage_splits(weights, config, context, batch, cache_element_bytes, bu
                 key = (start, end)
                 if key not in candidates:
                     candidates[key] = stage_budget(weights, config, context, batch, cache_element_bytes,
-                                                   start, end, fp32_weights)
+                                                   start, end, fp32_weights, scales)
                 required = candidates[key]['required_memory_bytes']
                 if required > limit:
                     continue

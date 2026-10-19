@@ -119,9 +119,11 @@ class HybridExecutor:
                     or any(type(i) is not int for i in _layer_range)
                     or not 0 <= _layer_range[0] < _layer_range[1] <= count):
                 raise ValueError('invalid hybrid stage range')
-            if (use_graph or kernels != 'torch' or model.quantization != 'none'
-                    or model.scales or offload_enabled()):
-                raise ValueError('hybrid stages require unquantized eager torch without graphs or offload')
+            if (use_graph or model.quantization not in ('none', 'q8_0', 'q4_0')
+                    or offload_enabled()):
+                raise ValueError('hybrid stages require unquantized or packed Q8/Q4 eager text without graphs or offload')
+            if model.quantization == 'q4_0' and kernels != 'triton':
+                raise ValueError('packed Q4 hybrid stages require Triton kernels (the qualified compensated numeric path)')
         self.layer_start, self.layer_end = _layer_range or (0, count)
         streaming = offload_enabled()
         if streaming:
@@ -239,7 +241,8 @@ class HybridExecutor:
         if _layer_range is not None:
             from .hybrid_layout import stage_budget
             budget = stage_budget(model.weights, c, self.context, max_batch, cache_element_bytes,
-                                  self.layer_start, self.layer_end, fp32_weights=self.device == 'xpu')
+                                  self.layer_start, self.layer_end, fp32_weights=self.device == 'xpu',
+                                  scales=model.scales)
             self.required_memory_bytes = budget['required_memory_bytes']
             self.output_head_workspace_bytes = budget['output_head_workspace_bytes']
             self.stage_activation_workspace_bytes = budget['activation_workspace_bytes']

@@ -33,21 +33,29 @@ class PipelineBuildError(RuntimeError):
 def build_cuda_pipeline(model, devices, budgets, max_batch=4):
     """Plan before allocation, using explicit byte caps plus live free memory.
 
-    Returns the internal coordinator. Only synchronous unquantized FP16 CUDA
-    text is admitted, with <=2048 context and <=4 slots. A build failure raises
-    PipelineBuildError; if its closed flag is false, the caller must retain it
-    and retry close once the device failure is resolved.
+    Returns the internal coordinator. Synchronous unquantized FP16 CUDA text is
+    admitted by default; packed Q8/Q4 hybrid weights require the explicit
+    DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE_QUANT opt-in (Q4 additionally
+    requires compensated precision and builds Triton stages per the qualified
+    A30 numeric path). A build failure raises PipelineBuildError; if its closed
+    flag is false, the caller must retain it and retry close once the device
+    failure is resolved.
     """
+    from .hybrid_pipeline_policy import quant_pipeline_enabled
     from .layer_stream import enabled as offload_enabled
+    quant_pipeline = quant_pipeline_enabled()
     if (os.environ.get('DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE') != '1'
             or os.environ.get('DAMENDAEMON_DEVICE', 'cuda') != 'cuda'
-            or os.environ.get('DAMENDAEMON_HYBRID_PRECISION', 'float16') != 'float16'
+            or os.environ.get('DAMENDAEMON_HYBRID_PRECISION', 'float16') not in (
+                ('float16',) if not quant_pipeline else ('float16', 'compensated'))
+            or (quant_pipeline and model.quantization == 'q4_0'
+                and os.environ.get('DAMENDAEMON_HYBRID_PRECISION') != 'compensated')
             or os.environ.get('DAMENDAEMON_HYBRID_PREFILL', 'scan') != 'scan'
             or os.environ.get('DAMENDAEMON_EXPERIMENTAL_LAYER_SPLIT') is not None
             or os.environ.get('DAMENDAEMON_EXPERIMENTAL_VISION', '0') != '0'
             or os.environ.get('DAMENDAEMON_KV_CACHE_TOKENS', '0') != '0'
             or offload_enabled() or getattr(torch.version, 'hip', None)):
-        raise ValueError('hybrid CUDA pipeline requires explicit opt-in, FP16 text without offload, legacy splitting or paged KV')
+        raise ValueError('hybrid CUDA pipeline requires explicit opt-in, FP16/compensated text without offload, legacy splitting or paged KV')
     if (type(max_batch) is not int or not 1 <= max_batch <= 4
             or type(model.max_context) is not int
             or not 1 <= model.max_context <= min(2048, model.config['max_position_embeddings'])):
@@ -60,7 +68,7 @@ def build_cuda_pipeline(model, devices, budgets, max_batch=4):
     # Validate ownership and CPU weights without changing or allocating them.
     shard_model(model, 0, model.config['num_hidden_layers'])
     placement = choose_stage_splits(model.weights, model.config, model.max_context,
-                                    max_batch, 2, budgets)
+                                    max_batch, 2, budgets, scales=model.scales)
     if not placement['storage_plan_found']:
         raise MemoryError(placement['reason'])
     if not torch.cuda.is_available() or max(devices) >= torch.cuda.device_count():
@@ -70,7 +78,7 @@ def build_cuda_pipeline(model, devices, budgets, max_batch=4):
     if any(limit <= 0 for limit in limits):
         raise MemoryError('no free memory on a pipeline device')
     placement = choose_stage_splits(model.weights, model.config, model.max_context,
-                                    max_batch, 2, limits)
+                                    max_batch, 2, limits, scales=model.scales)
     if not placement['storage_plan_found']:
         raise MemoryError(placement['reason'])
     stages, touched = [], []
@@ -84,7 +92,8 @@ def build_cuda_pipeline(model, devices, budgets, max_batch=4):
                 stage = HybridLayerStage.__new__(HybridLayerStage)
                 stages.append(stage)
                 touched.append(device)
-                stage.__init__(model, budget['layer_start'], budget['layer_end'], max_batch)
+                stage.__init__(model, budget['layer_start'], budget['layer_end'], max_batch,
+                               kernels='triton' if model.quantization != 'none' else 'torch')
         pipeline = HybridPipeline(stages)
         pipeline.model = model
         pipeline.placement = placement
