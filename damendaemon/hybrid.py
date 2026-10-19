@@ -286,6 +286,18 @@ class HybridExecutor:
             else:
                 self.conv[i] = torch.zeros((max_batch, self.conv_width, c['linear_conv_kernel_dim']), dtype=self.compute_dtype, device=self.device)
                 self.state[i] = torch.zeros((max_batch, self.lv, self.dk, self.dv), dtype=torch.float32, device=self.device)
+        # Gate-3 accounting (#535): resident KV bytes per mode, reported in
+        # /v1/models/status. The quantized pair counts int8 data plus FP16
+        # scales; the plain cache counts its compute-dtype bytes.
+        self.kv_mode = self.kv_quant
+        total = 0
+        for cache in self.kv.values():
+            if isinstance(cache, tuple):
+                data, scales = cache
+                total += data.numel() + scales.numel()*scales.element_size()
+            else:
+                total += cache.numel()*cache.element_size()
+        self.kv_cache_bytes = total
         dim = c['rotary_dim']
         inv = c['rope_theta'] ** (-torch.arange(0, dim, 2, device=self.device, dtype=torch.float32)/dim)
         angles = torch.outer(torch.arange(self.context, device=self.device), inv)
