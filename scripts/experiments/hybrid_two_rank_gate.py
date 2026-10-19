@@ -169,7 +169,6 @@ def main():
     parser.add_argument('--compare', type=Path,
                         help='single-rank phase: path to the two-rank phase report')
     args = parser.parse_args()
-    require_guard()
     if args.output.exists():
         raise ValueError('new output path required')
     preflight()
