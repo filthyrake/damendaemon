@@ -63,6 +63,8 @@ def preflight(*, pair_required=True, context):
 
 
 def build_trace_ids(context):
+    # prompt + greedy output must fit the context: prompt_tokens + max_tokens
+    # <= context is the scheduler's admission contract (validate_lengths).
     from tokenizers import Tokenizer
     tokenizer = Tokenizer.from_file(str(Path(SNAPSHOT) / 'tokenizer.json'))
     tokenizer.no_truncation()
@@ -71,12 +73,12 @@ def build_trace_ids(context):
     if not ids:
         raise ValueError('pinned trace seed tokenized to zero ids')
     copies = 1
-    while len(ids) < context - 16:
+    while len(ids) < context - GREEDY_TOKENS:
         copies *= 2
         ids = tokenizer.encode(TRACE_SEED * copies).ids
-    if len(ids) < context - 16:
+    if len(ids) < context - GREEDY_TOKENS:
         raise ValueError('pinned trace seed tokenized below the near-limit trace length')
-    return ids[:context - 16]
+    return ids[:context - GREEDY_TOKENS]
 
 
 def gpu_used_mib():
