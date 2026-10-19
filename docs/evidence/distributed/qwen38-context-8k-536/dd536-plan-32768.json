@@ -1,0 +1,51 @@
+{
+  "batch": 1,
+  "budgets_mib": [
+    22528,
+    13312
+  ],
+  "completed": true,
+  "context": 32768,
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.8-27B/snapshots/1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "model_packed_bytes": 16961796096,
+  "placement": {
+    "device_budget_bytes": [
+      23622320128,
+      13958643712
+    ],
+    "maximum_estimated_utilization": 0.6808335347609087,
+    "splits": [
+      47
+    ],
+    "stages": [
+      {
+        "activation_workspace_bytes": 1342177280,
+        "device_budget_bytes": 23622320128,
+        "layer_end": 47,
+        "layer_start": 0,
+        "output_head_workspace_bytes": 0,
+        "remaining_budget_bytes": 7539452416,
+        "required_memory_bytes": 16082867712,
+        "scale_bytes": 1118167040,
+        "state_bytes": 1592590336,
+        "weight_bytes": 11493062144,
+        "workspace_floor_bytes": 536870912
+      },
+      {
+        "activation_workspace_bytes": 1342177280,
+        "device_budget_bytes": 13958643712,
+        "layer_end": 64,
+        "layer_start": 47,
+        "output_head_workspace_bytes": 2542796800,
+        "remaining_budget_bytes": 4476411392,
+        "required_memory_bytes": 9482232320,
+        "scale_bytes": 483205120,
+        "state_bytes": 709820416,
+        "weight_bytes": 3867361792,
+        "workspace_floor_bytes": 536870912
+      }
+    ],
+    "storage_plan_found": true
+  },
+  "quantization": "q4_0"
+}
