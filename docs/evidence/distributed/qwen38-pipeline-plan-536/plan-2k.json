@@ -1,0 +1,51 @@
+{
+  "batch": 1,
+  "budgets_mib": [
+    22528,
+    13312
+  ],
+  "completed": true,
+  "context": 2048,
+  "model": "/home/damen/models/Qwen3.8-27B-1d4bf0f2",
+  "model_packed_bytes": 16961796096,
+  "placement": {
+    "device_budget_bytes": [
+      23622320128,
+      13958643712
+    ],
+    "maximum_estimated_utilization": 0.5597756734261146,
+    "splits": [
+      46
+    ],
+    "stages": [
+      {
+        "activation_workspace_bytes": 83886080,
+        "device_budget_bytes": 23622320128,
+        "layer_end": 46,
+        "layer_start": 0,
+        "output_head_workspace_bytes": 0,
+        "remaining_budget_bytes": 10400777600,
+        "required_memory_bytes": 13221542528,
+        "scale_bytes": 1094215680,
+        "state_bytes": 205242368,
+        "weight_bytes": 11301327488,
+        "workspace_floor_bytes": 536870912
+      },
+      {
+        "activation_workspace_bytes": 83886080,
+        "device_budget_bytes": 13958643712,
+        "layer_end": 64,
+        "layer_start": 46,
+        "output_head_workspace_bytes": 2542796800,
+        "remaining_budget_bytes": 6144934528,
+        "required_memory_bytes": 7813709184,
+        "scale_bytes": 507156480,
+        "state_bytes": 83902464,
+        "weight_bytes": 4059096448,
+        "workspace_floor_bytes": 536870912
+      }
+    ],
+    "storage_plan_found": true
+  },
+  "quantization": "q4_0"
+}

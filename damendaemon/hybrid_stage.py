@@ -13,24 +13,30 @@ from .hybrid import HybridExecutor
 
 def shard_model(model, start, end):
     c = model.config
-    if (c.get('model_type') != 'qwen3_5_text' or model.quantization != 'none'
-            or model.scales or getattr(model, 'vision_weights', None) is not None):
-        raise ValueError('hybrid stage ownership currently requires unquantized text weights')
+    if (c.get('model_type') != 'qwen3_5_text' or model.quantization not in ('none', 'q8_0', 'q4_0')
+            or getattr(model, 'vision_weights', None) is not None):
+        raise ValueError('hybrid stage ownership requires unquantized or packed Q8/Q4 text weights')
     from .hybrid_layout import stage_weight_names
     names = stage_weight_names(model.weights, c['num_hidden_layers'], start, end)
     selected = {name: model.weights[name] for name in names}
-    if any(t.device.type != 'cpu' or not t.is_floating_point() for t in selected.values()):
-        raise ValueError('hybrid stages require floating-point CPU source weights')
+    if any(t.device.type != 'cpu' for t in selected.values()):
+        raise ValueError('hybrid stages require CPU source weights')
+    if model.quantization == 'none' and any(not t.is_floating_point() for t in selected.values()):
+        raise ValueError('unquantized hybrid stages require floating-point source weights')
+    selected_scales = {name: model.scales[name] for name in names if name in model.scales}
+    if model.quantization != 'none' and not selected_scales:
+        raise ValueError('packed hybrid stages require dequantization scales')
     shard = copy.copy(model)
     shard.config = dict(c)  # Preserve global dimensions and layer numbering.
     shard.weights = selected
-    shard.scales = {}
-    shard.bytes = sum(t.numel()*t.element_size() for t in {id(t):t for t in selected.values()}.values())
+    shard.scales = selected_scales
+    shard.bytes = sum(t.numel()*t.element_size() for t in
+        {id(t):t for t in (*selected.values(), *selected_scales.values())}.values())
     return shard
 
 
 class HybridLayerStage(HybridExecutor):
-    def __init__(self, model, start, end, max_batch=4):
+    def __init__(self, model, start, end, max_batch=4, kernels='torch'):
         identity = getattr(model, '_hybrid_stage_identity', None)
         if identity is None:
             identity = model._hybrid_stage_identity = object()
@@ -39,7 +45,7 @@ class HybridLayerStage(HybridExecutor):
         self.first = start == 0
         self.last = end == model.config['num_hidden_layers']
         super().__init__(shard_model(model, start, end), use_graph=False,
-                         max_batch=max_batch, kernels='torch', _layer_range=(start, end))
+                         max_batch=max_batch, kernels=kernels, _layer_range=(start, end))
 
     @property
     def actual_device(self):
