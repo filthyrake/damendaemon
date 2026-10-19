@@ -160,7 +160,8 @@ def main():
                       incumbent_service=args.service,
                       gpu_reserve_mib=args.gpu_reserve_mib,
                       timeout_seconds=args.timeout, isolation=False, allow_busy=args.allow_busy)
-        env = {k: v for k, v in os.environ.items() if not k.startswith('DAMENDAEMON_')}
+        PASSTHROUGH = ('DAMENDAEMON_PIPELINE_EMPTY_CACHE',)
+        env = {k: v for k, v in os.environ.items() if not k.startswith('DAMENDAEMON_') or k in PASSTHROUGH}
         env.update(CUDA_VISIBLE_DEVICES=','.join(args.gpu), DAMENDAEMON_DEVICE='cuda',
                    OMP_NUM_THREADS='1', MKL_NUM_THREADS='1', DAMENDAEMON_SHARED_CUDA_GUARD='1')
         try:
