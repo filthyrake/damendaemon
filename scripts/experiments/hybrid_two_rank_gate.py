@@ -109,18 +109,34 @@ def status(port):
 
 
 def generate(port, prompt_ids, max_tokens, *, read_timeout=900):
+    # Request shape matches the qualified #70 gate SSE form exactly: raw token
+    # ids, temperature 0, streaming with usage. Token-id equality is asserted
+    # through the decoded text under the same deterministic decoder.
     body = json.dumps(dict(model='qwen38', prompt=prompt_ids, max_tokens=max_tokens,
-                           temperature=0, stream=False)).encode()
+                           temperature=0, stream=True,
+                           stream_options={'include_usage': True})).encode()
     request = urllib.request.Request(f'http://127.0.0.1:{port}/v1/completions', data=body,
                                      headers={'Content-Type': 'application/json'})
+    started = time.monotonic()
+    chunks = []
+    usage = None
     try:
         with urllib.request.urlopen(request, timeout=read_timeout) as response:
-            payload = json.loads(response.read())
+            for line in response:
+                if not line.startswith(b'data: '):
+                    continue
+                payload = line[6:].strip()
+                if payload == b'[DONE]':
+                    break
+                event = json.loads(payload)
+                if event.get('usage'):
+                    usage = event['usage']
+                choices = event.get('choices') or []
+                if choices and choices[0].get('text'):
+                    chunks.append(choices[0]['text'])
     except urllib.error.HTTPError as error:
         raise RuntimeError(f'HTTP {error.code}: {error.read().decode(errors="replace")[:200]}') from None
-    choice = payload['choices'][0]
-    return dict(text=choice['text'], tokens=choice.get('token_ids'),
-                usage=payload.get('usage'), error=None)
+    return dict(text=''.join(chunks), usage=usage, seconds=time.monotonic() - started, error=None)
 
 
 def wait_healthy(port, server, deadline_seconds=900):
@@ -227,12 +243,17 @@ def run_two_rank(args, report, trace_ids, manifest_path):
         stop(server)
     first = report['two_rank']['trace_first']
     repeat = report['two_rank']['trace_repeat']
-    split_tokens = first.get('tokens') or []
     report['two_rank_completed'] = bool(
-        split_tokens and len(split_tokens) == GREEDY_TOKENS
+        completion_tokens(first) == GREEDY_TOKENS
+        and completion_tokens(repeat) == GREEDY_TOKENS
         and not first.get('error') and not repeat.get('error')
-        and split_tokens == (repeat.get('tokens') or []))
+        and first.get('text') == repeat.get('text'))
     save(args.output, report)
+
+
+def completion_tokens(result):
+    usage = result.get('usage') or {}
+    return usage.get('completion_tokens') or 0
 
 
 def run_single_rank(args, report, trace_ids, manifest_path):
@@ -264,7 +285,6 @@ def run_single_rank(args, report, trace_ids, manifest_path):
         with args.compare.open() as source:
             two_rank_report = json.load(source)
         first = two_rank_report.get('two_rank', {}).get('trace_first') or {}
-        repeat = two_rank_report.get('two_rank', {}).get('trace_repeat') or {}
         report['two_rank_report'] = str(args.compare)
         report['two_rank'] = two_rank_report.get('two_rank', {})
         report['two_rank_completed'] = two_rank_report.get('two_rank_completed')
@@ -272,21 +292,20 @@ def run_single_rank(args, report, trace_ids, manifest_path):
         report['statuses']['two_rank'] = two_rank_report.get('statuses', {}).get('two_rank')
     else:
         first = report['two_rank']['trace_first']
-        repeat = report['two_rank']['trace_repeat']
-    split_tokens = first.get('tokens') or []
-    reference_tokens = reference.get('tokens') or []
+    split_text = first.get('text') or ''
+    reference_tokens = completion_tokens(reference)
     report['greedy_matches_single_rank'] = bool(
-        split_tokens and reference_tokens and split_tokens == reference_tokens)
+        split_text and reference_tokens == GREEDY_TOKENS and split_text == (reference.get('text') or ''))
     report['completed'] = bool(
         report.get('two_rank_completed')
-        and len(split_tokens) == GREEDY_TOKENS
+        and reference_tokens == GREEDY_TOKENS
         and not reference.get('error')
         and report['greedy_matches_single_rank'])
     save(args.output, report)
     print(json.dumps(dict(completed=report['completed'],
                           two_rank_completed=report.get('two_rank_completed'),
                           greedy_matches_single_rank=report['greedy_matches_single_rank'],
-                          tokens=split_tokens), indent=1))
+                          text=split_text[:80]), indent=1))
 
 
 if __name__ == '__main__':
