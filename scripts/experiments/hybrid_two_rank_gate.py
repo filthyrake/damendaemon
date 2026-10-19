@@ -33,7 +33,6 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from scripts.experiments.q5_cuda_oracle import require_guard
 from scripts.experiments.split_gguf import save
 
 SNAPSHOT = ('/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.8-27B/'
@@ -53,6 +52,11 @@ HOST_FLOOR_BYTES = 100 * 1024**3
 
 
 def preflight():
+    # q5_cuda_oracle.require_guard refuses the two-UUID pair this gate needs,
+    # so the guard contract is checked here exactly as distributed_pair_gate
+    # does: guard ownership flag plus the ordered A30+A2 UUID pair.
+    if os.environ.get('DAMENDAEMON_SHARED_CUDA_GUARD') != '1':
+        raise ValueError('requires execution under scripts.experiments.guard_shared_cuda')
     visible = os.environ.get('CUDA_VISIBLE_DEVICES', '').split(',')
     if visible != [A30_UUID, A2_UUID]:
         raise ValueError(f'two-rank gate requires the two-device guard with the A30 first, got {visible}')
