@@ -4,8 +4,13 @@ Runs the identical pinned checkpoint twice in one process — default KV cache
 (FP16 compute, FP16 cache) vs DAMENDAEMON_HYBRID_KV=q8_0 — over a fixed
 teacher-forced corpus, recording perplexity, next-token top-1 agreement,
 per-text relative logit RMS against the baseline run, and a 32-step greedy
-continuation per mode. The #23 drift-study pattern: capability evidence, not a
-quality benchmark; no performance claims.
+continuation per mode.
+
+Teacher forcing feeds one token per decode step after a single-token prefill:
+every position's logits then attend over the stored (quantized) cache, which a
+single full prefill would bypass by attending over raw pre-quantization K/V.
+The #23 drift-study pattern: capability evidence, not a quality benchmark; no
+performance claims.
 
 GPU execution requires the shared-CUDA guard wrapper (guard_shared_cuda).
 """
@@ -77,22 +82,24 @@ def run_mode(mode, model_path, context):
     executor = HybridExecutor(model, use_graph=False, max_batch=1, kernels='torch')
     rows = []
     for ids in corpus(model.tokenizer, context):
-        token_ids = torch.tensor([ids], device=executor.device)
-        positions = torch.arange(len(ids), device=executor.device)[None]
-        hidden = executor.forward_layers(executor.embedding(token_ids), positions,
-                                         torch.tensor([0], device=executor.device), True)
-        logits = executor.output_logits(hidden)[0].float().cpu()
-        # Teacher forcing: logits[t] predicts token t+1.
-        predictions, targets = logits[:-1], torch.tensor(ids[1:])
-        nll = torch.nn.functional.cross_entropy(predictions, targets, reduction='sum').item()
-        top1 = int((predictions.argmax(-1) == targets).sum().item())
+        # Teacher force one token per decode step: logits from feeding ids[t-1]
+        # predict ids[t] and attend over the stored cache at every position.
+        executor.prefill(ids[:1])
+        logits = []
+        for position in range(1, len(ids)):
+            step_logits, _ = executor.decode(ids[position - 1])
+            logits.append(step_logits[0].float().cpu())
+        logits = torch.stack(logits)
+        targets = torch.tensor(ids[1:])
+        nll = torch.nn.functional.cross_entropy(logits, targets, reduction='sum').item()
+        top1 = int((logits.argmax(-1) == targets).sum().item())
         rows.append(dict(tokens=len(ids), nll=nll, top1=top1, logits=logits))
     prompt_ids = model.tokenizer.encode(GREEDY_PROMPT).ids
     prompt_ids = list(prompt_ids)[:context - GREEDY_STEPS]
     continuation = list(prompt_ids)
     executor.prefill(continuation)
     for _ in range(GREEDY_STEPS):
-        logits, next_id = executor.decode(continuation[-1])
+        _, next_id = executor.decode(continuation[-1])
         continuation.append(int(next_id[0]))
     greedy = model.tokenizer.decode(continuation[len(prompt_ids):])
     executor.close()
