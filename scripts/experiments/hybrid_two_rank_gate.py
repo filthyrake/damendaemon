@@ -137,10 +137,10 @@ def wait_healthy(port, server, deadline_seconds=900):
     raise RuntimeError('serve did not become healthy within 900 seconds')
 
 
-def serve(environment, port, log_path):
+def serve(environment, port, log_path, manifest_path):
     process = subprocess.Popen(
         [sys.executable, '-u', '-m', 'scripts.experiments.hybrid_q4_context_probe', 'serve',
-         '--model-config', str(log_path.with_suffix('.manifest.json')), '--device', 'cuda',
+         '--model-config', str(manifest_path), '--device', 'cuda',
          '--context', str(CONTEXT), '--no-graph', '--batch-size', '1',
          '--port', str(port), '--gpu-models', '1', '--host-models', '1',
          '--host-gib', '40', '--queue-timeout', '600'],
@@ -194,12 +194,12 @@ def main():
     save(args.output, report)
 
     if args.phase in ('both', 'two-rank'):
-        run_two_rank(args, report, trace_ids)
+        run_two_rank(args, report, trace_ids, manifest_path)
     if args.phase in ('both', 'single-rank'):
-        run_single_rank(args, report, trace_ids)
+        run_single_rank(args, report, trace_ids, manifest_path)
 
 
-def run_two_rank(args, report, trace_ids):
+def run_two_rank(args, report, trace_ids, manifest_path):
     # Phase 1: two-rank pipeline serve (A30 stage 0, A2 stage 1).
     pipeline_env = dict(os.environ)
     pipeline_env['DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4'] = '1'
@@ -209,7 +209,7 @@ def run_two_rank(args, report, trace_ids):
     pipeline_env['DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB'] = ','.join(str(v) for v in BUDGETS_MIB)
     server = None
     try:
-        server = serve(pipeline_env, PORT_TWO_RANK, args.output.with_suffix('.serve.log'))
+        server = serve(pipeline_env, PORT_TWO_RANK, args.output.with_suffix('.serve.log'), manifest_path)
         report['two_rank']['warmup'] = generate(PORT_TWO_RANK, trace_ids[:16], 1)
         if report['two_rank']['warmup'].get('error'):
             raise RuntimeError(f"two-rank warmup failed: {report['two_rank']['warmup']['error']}")
@@ -235,7 +235,7 @@ def run_two_rank(args, report, trace_ids):
     save(args.output, report)
 
 
-def run_single_rank(args, report, trace_ids):
+def run_single_rank(args, report, trace_ids, manifest_path):
     # Phase 2: single-rank A30 reference serve (same quantized path, no split).
     reference_env = dict(os.environ)
     reference_env['DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4'] = '1'
@@ -246,7 +246,7 @@ def run_single_rank(args, report, trace_ids):
         reference_env.pop(key, None)
     server = None
     try:
-        server = serve(reference_env, PORT_SINGLE, args.output.with_suffix('.single.log'))
+        server = serve(reference_env, PORT_SINGLE, args.output.with_suffix('.single.log'), manifest_path)
         report['single_rank']['trace'] = generate(PORT_SINGLE, trace_ids, GREEDY_TOKENS)
         report['statuses']['single_rank'] = status(PORT_SINGLE)
         save(args.output, report)
