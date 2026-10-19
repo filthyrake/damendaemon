@@ -158,6 +158,12 @@ def stop(server):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--phase', choices=('both', 'two-rank', 'single-rank'), default='both',
+                        help='the guard caps a run at 1800 s, so each ~700 s activation '
+                             'runs as its own guarded invocation; single-rank takes '
+                             '--compare to finish the gate')
+    parser.add_argument('--compare', type=Path,
+                        help='single-rank phase: path to the two-rank phase report')
     args = parser.parse_args()
     require_guard()
     if args.output.exists():
@@ -176,6 +182,13 @@ def main():
                   two_rank={}, single_rank={}, statuses={}, memory={})
     save(args.output, report)
 
+    if args.phase in ('both', 'two-rank'):
+        run_two_rank(args, report, trace_ids)
+    if args.phase in ('both', 'single-rank'):
+        run_single_rank(args, report, trace_ids)
+
+
+def run_two_rank(args, report, trace_ids):
     # Phase 1: two-rank pipeline serve (A30 stage 0, A2 stage 1).
     pipeline_env = dict(os.environ)
     pipeline_env['DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4'] = '1'
@@ -201,7 +214,17 @@ def main():
         raise
     finally:
         stop(server)
+    first = report['two_rank']['trace_first']
+    repeat = report['two_rank']['trace_repeat']
+    split_tokens = first.get('tokens') or []
+    report['two_rank_completed'] = bool(
+        split_tokens and len(split_tokens) == GREEDY_TOKENS
+        and not first.get('error') and not repeat.get('error')
+        and split_tokens == (repeat.get('tokens') or []))
+    save(args.output, report)
 
+
+def run_single_rank(args, report, trace_ids):
     # Phase 2: single-rank A30 reference serve (same quantized path, no split).
     reference_env = dict(os.environ)
     reference_env['DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4'] = '1'
@@ -223,20 +246,34 @@ def main():
     finally:
         stop(server)
 
-    first = report['two_rank']['trace_first']
-    repeat = report['two_rank']['trace_repeat']
     reference = report['single_rank']['trace']
+    if args.phase == 'single-rank':
+        if not args.compare or not args.compare.exists():
+            raise ValueError('single-rank phase requires --compare pointing at the two-rank report')
+        with args.compare.open() as source:
+            two_rank_report = json.load(source)
+        first = two_rank_report.get('two_rank', {}).get('trace_first') or {}
+        repeat = two_rank_report.get('two_rank', {}).get('trace_repeat') or {}
+        report['two_rank_report'] = str(args.compare)
+        report['two_rank'] = two_rank_report.get('two_rank', {})
+        report['two_rank_completed'] = two_rank_report.get('two_rank_completed')
+        report['memory'] = two_rank_report.get('memory', {})
+        report['statuses']['two_rank'] = two_rank_report.get('statuses', {}).get('two_rank')
+    else:
+        first = report['two_rank']['trace_first']
+        repeat = report['two_rank']['trace_repeat']
     split_tokens = first.get('tokens') or []
-    report['deterministic'] = split_tokens == (repeat.get('tokens') or [])
-    report['greedy_matches_single_rank'] = split_tokens == (reference.get('tokens') or [])
+    reference_tokens = reference.get('tokens') or []
+    report['greedy_matches_single_rank'] = bool(
+        split_tokens and reference_tokens and split_tokens == reference_tokens)
     report['completed'] = bool(
-        split_tokens
+        report.get('two_rank_completed')
         and len(split_tokens) == GREEDY_TOKENS
-        and not first.get('error') and not repeat.get('error') and not reference.get('error')
-        and report['deterministic'])
+        and not reference.get('error')
+        and report['greedy_matches_single_rank'])
     save(args.output, report)
     print(json.dumps(dict(completed=report['completed'],
-                          deterministic=report['deterministic'],
+                          two_rank_completed=report.get('two_rank_completed'),
                           greedy_matches_single_rank=report['greedy_matches_single_rank'],
                           tokens=split_tokens), indent=1))
 
