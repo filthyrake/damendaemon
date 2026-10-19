@@ -55,7 +55,7 @@ def validate(config, quantization, context, batch=1, use_graph=False):
     if quant_pipeline and quantization == 'q4_0' and \
             os.environ.get('DAMENDAEMON_HYBRID_PRECISION', 'float16') != 'compensated':
         raise ValueError('Q4 pipeline stages require compensated precision (the qualified A30 Q4 numeric path)')
-    if (type(context) is not int or not 1 <= context <= min(2048, config['max_position_embeddings'])
+    if (type(context) is not int or not 1 <= context <= min(32768, config['max_position_embeddings'])
             or type(batch) is not int or not 1 <= batch <= 4
             or len(limits) > config['num_hidden_layers']):
-        raise ValueError('pipeline serving requires context <=2048, batch 1..4 and at least one layer per device')
+        raise ValueError('pipeline serving requires context <=32768, batch 1..4 and at least one layer per device')
