@@ -5,6 +5,7 @@ final norm/head, and each allocates only its KV/recurrent/convolution layers.
 A future coordinator must commit request cursors only after every stage succeeds.
 """
 import copy
+from contextlib import nullcontext
 
 import torch
 
@@ -111,7 +112,10 @@ class HybridLayerStage(HybridExecutor):
             raise RuntimeError('hybrid stage is closed')
         if not self.last:
             raise ValueError('only the last hybrid stage owns the output head')
-        return super().output_logits(hidden)
+        # The fused output head is a Triton launch: it must run on the stage's
+        # own CUDA device context, not the caller's current device.
+        with torch.cuda.device(self.actual_device) if self.actual_device.type == 'cuda' else nullcontext():
+            return super().output_logits(hidden)
 
     def forward_embeddings(self, *args, **kwargs):
         raise ValueError('hybrid stages require coordinator-owned layer execution and cursor commit')
