@@ -1,0 +1,39 @@
+{
+  "completed": true,
+  "context": 1024,
+  "device": "NVIDIA GeForce RTX 3090",
+  "greedy_identical": true,
+  "kv_bytes_note": "baseline cache is FP16 (compute dtype); q8_0 stores int8 plus per-group FP16 scales and dequantizes on read",
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+  "modes": {
+    "none": {
+      "greedy": " to be small.\nThe difference between the two caches appears to be small.\nThe difference between the two caches appears to be small.\nThe difference between",
+      "perplexity": 28.0061,
+      "tokens": 584,
+      "top1_agreement": 0.387
+    },
+    "q8_0": {
+      "greedy": " to be small.\nThe difference between the two caches appears to be small.\nThe difference between the two caches appears to be small.\nThe difference between",
+      "per_text_relative_logit_rms": [
+        0.006235,
+        0.006963,
+        0.005878,
+        0.005713,
+        0.00643,
+        0.007227,
+        0.004957,
+        0.004931,
+        0.006013,
+        0.007465,
+        0.006423,
+        0.006545,
+        0.006499,
+        0.006284
+      ],
+      "perplexity": 28.0219,
+      "tokens": 584,
+      "top1_agreement": 0.387
+    }
+  },
+  "torch": "2.13.0+cu130"
+}
