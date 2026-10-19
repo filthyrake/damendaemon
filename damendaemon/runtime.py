@@ -164,6 +164,8 @@ class Runtime:
                        'vision_host_weight_bytes': getattr(getattr(self.host.get(alias),'vision_weights',None),'bytes',0),
                        'vision_gpu_weight_bytes': getattr(getattr(self.gpu.get(alias),'vision',None),'bytes',0),
                        'gpu_projection_cache_bytes': getattr(self.gpu.get(alias), 'packed_cache_bytes', 0),
+                       'kv_cache_mode': getattr(self.gpu.get(alias), 'kv_mode', None),
+                       'kv_cache_bytes': getattr(self.gpu.get(alias), 'kv_cache_bytes', None),
                        'gpu_packed_layout_overhead_bytes': getattr(self.gpu.get(alias), 'packed_layout_overhead_bytes', 0),
                        'q4_marlin_abi': getattr(self.gpu.get(alias), 'q4_marlin_abi', None),
                        'partition': getattr(self.gpu.get(alias),'residency',None),
