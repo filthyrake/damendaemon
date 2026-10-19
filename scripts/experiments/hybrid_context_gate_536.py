@@ -32,6 +32,7 @@ A2_UUID = 'GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283'
 PORT_TWO_RANK = 8130
 PORT_SINGLE = 8131
 BUDGETS_MIB = [22528, 13312]
+PREFILL_CHUNK = 127
 TRACE_SEED = ('The two-rank context gate replays one pinned raw-token trace '
               'near the admitted context limit so the served cell exercises '
               'the KV extent and the greedy output must stay consistent.')
@@ -142,6 +143,9 @@ def serve(environment, port, log_path, manifest_path):
         [sys.executable, '-u', '-m', 'scripts.experiments.hybrid_q4_context_probe', 'serve',
          '--model-config', str(manifest_path), '--device', 'cuda',
          '--context', str(environment['_DD536_CONTEXT']), '--no-graph', '--batch-size', '1',
+         # The #70/#535 cells bound the prefill ramp at chunk 127; an unchunked
+         # 8K prefill drives the A2 against the guard's thermal gate.
+         '--prefill-chunk-size', str(PREFILL_CHUNK),
          '--port', str(port), '--gpu-models', '1', '--host-models', '1',
          '--host-gib', '40', '--queue-timeout', '600'],
         env=environment, stdout=open(log_path, 'w'), stderr=subprocess.STDOUT)
