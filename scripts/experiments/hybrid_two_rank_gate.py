@@ -81,6 +81,14 @@ def build_trace_ids():
     tokenizer.no_truncation()
     tokenizer.no_padding()
     ids = tokenizer.encode(TRACE_SEED).ids
+    if not ids:
+        raise ValueError('pinned trace seed tokenized to zero ids')
+    copies = 1
+    # BPE merges across repetition boundaries: never assume per-copy counts
+    # scale; measure the encoded length each round (the #70 gate pattern).
+    while len(ids) < TRACE_TOKENS:
+        copies *= 2
+        ids = tokenizer.encode(TRACE_SEED * copies).ids
     if len(ids) < TRACE_TOKENS:
         raise ValueError('pinned trace seed tokenized below the trace length')
     return ids[:TRACE_TOKENS]
