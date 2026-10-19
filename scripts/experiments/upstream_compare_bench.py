@@ -55,9 +55,12 @@ def main():
     parser.add_argument('--model', required=True)
     parser.add_argument('--label', required=True, help='stack label recorded in the report')
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--warmup', action='store_true', help='discard one untimed warmup request (triton compile)')
     args = parser.parse_args()
     if args.output.exists():
         raise ValueError('new output path required')
+    if args.warmup:
+        generate(args.port, args.model, PROMPTS[0])  # warm, not counted
     requests = []
     for round_index in range(ROUNDS):
         for prompt in PROMPTS:
