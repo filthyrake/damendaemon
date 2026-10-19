@@ -111,9 +111,9 @@ class Runtime:
         from .hybrid_pipeline_policy import budgets, validate as validate_pipeline, validate_environment
         if budgets() is not None:
             validate_environment(use_graph)
-            if (type(context) is not int or not 1 <= context <= 2048
+            if (type(context) is not int or not 1 <= context <= 32768
                     or (batch_size is not None and (type(batch_size) is not int or not 1 <= batch_size <= 4))):
-                raise ValueError('pipeline serving requires context <=2048 and batch 1..4')
+                raise ValueError('pipeline serving requires context <=32768 and batch 1..4')
             for alias, path in models.items():
                 from .models import config
                 validate_pipeline(config(path), policies.get(alias, quantization_mode()), context,

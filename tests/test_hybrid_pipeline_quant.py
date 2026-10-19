@@ -150,6 +150,22 @@ class QuantPipelinePolicyTests(unittest.TestCase):
                               'DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB': '22528,13312'},
                              current_device='NVIDIA A2', primary_device='NVIDIA A2')
 
+    def test_pipeline_context_cap_is_32768(self):
+        # #536 gate 3: the context cap moved from 2048 to 32768 (bounded by
+        # the #70-planner evidence, not device memory); the checkpoint's own
+        # max_position_embeddings still binds above that. One patched-env
+        # block covers all three calls: outside it the pipeline opt-in is
+        # unset and validate returns before the context check.
+        env = {'DAMENDAEMON_DEVICE': 'cuda',
+               'DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE': '1',
+               'DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE_QUANT': '1',
+               'DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB': '2048,2048',
+               'DAMENDAEMON_HYBRID_PRECISION': 'compensated'}
+        with patch.dict('os.environ', env, clear=True):
+            policy_validate(self.config, 'q4_0', 32768, 1, False)
+            with self.assertRaisesRegex(ValueError, 'context <=32768'):
+                policy_validate(self.config, 'q4_0', 32769, 1, False)
+
 
 class PackedPipelineBuildTests(PipelineBuildTests):
     """End-to-end CPU build of a packed two-stage pipeline (no CUDA execution).

@@ -58,8 +58,8 @@ def build_cuda_pipeline(model, devices, budgets, max_batch=4):
         raise ValueError('hybrid CUDA pipeline requires explicit opt-in, FP16/compensated text without offload, legacy splitting or paged KV')
     if (type(max_batch) is not int or not 1 <= max_batch <= 4
             or type(model.max_context) is not int
-            or not 1 <= model.max_context <= min(2048, model.config['max_position_embeddings'])):
-        raise ValueError('hybrid CUDA pipeline requires context <=2048 and batch 1..4')
+            or not 1 <= model.max_context <= min(32768, model.config['max_position_embeddings'])):
+        raise ValueError('hybrid CUDA pipeline requires context <=32768 and batch 1..4')
     if (not isinstance(devices, (list, tuple)) or not devices
             or any(type(d) is not int or d < 0 for d in devices)
             or len(set(devices)) != len(devices)
