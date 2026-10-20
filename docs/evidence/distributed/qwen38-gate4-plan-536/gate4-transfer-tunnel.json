@@ -1,0 +1,30 @@
+{
+  "mode": "live-transfer",
+  "host": "127.0.0.1",
+  "probes": [
+    {
+      "label": "decode-token",
+      "bytes": 10240,
+      "repeats": 30,
+      "median_seconds": 0.0421,
+      "max_seconds": 0.08348,
+      "effective_MBps_min_bound": 11.1
+    },
+    {
+      "label": "chunk127",
+      "bytes": 1300480,
+      "repeats": 30,
+      "median_seconds": 0.04516,
+      "max_seconds": 0.22682,
+      "effective_MBps_min_bound": 31.0
+    },
+    {
+      "label": "block-1mib",
+      "bytes": 1048576,
+      "repeats": 30,
+      "median_seconds": 0.04411,
+      "max_seconds": 0.04596,
+      "effective_MBps_min_bound": 24.9
+    }
+  ]
+}
