@@ -107,7 +107,6 @@ def main():
     device = torch.device('cuda', local_rank)
 
     stage, bounds = build_stage(args.checkpoint, rank, world, device)
-    hidden = None
     tokens = []
 
     # Broadcast-chain pattern, fixed global order on all ranks:
@@ -124,10 +123,14 @@ def main():
     token_bc = torch.zeros(1, dtype=torch.int64, device=device)
 
     def chain_step(token_value, position):
-        """One round: embed + layers0-7 (rank0) -> A -> layers8-15 (rank1) -> B.
+        """One round: embed + layers0-7 (rank0) -> A -> layers8-15 (rank1)
+        -> B -> layers16-23 + logits (rank2).
 
-        Identical global broadcast order on every rank; rank2 additionally
-        samples and broadcasts the token after boundary B.
+        Identical global broadcast order on every rank; the sampled token
+        crosses the chain at boundary C. Every broadcast is completed with
+        work.wait() before its payload is consumed (NCCL collectives run
+        on an internal stream; the current stream would otherwise race
+        the payload copy).
         """
         if rank == 0:
             hidden = stage.embedding(torch.tensor([[token_value]], device=device))
@@ -162,10 +165,6 @@ def main():
                                               torch.tensor([0], device=device), False, 0)
             hidden_buf.copy_(hidden.view(1, 1, hidden_width).to(torch.float32))
 
-    if rank == 2:
-        ws = sum(t.float().abs().sum().item() for t in stage.w.values())
-        print('NCCL rank2 weight absSum=%.6f' % ws, flush=True)
-        print('NCCL rank2 bounds', stage.layer_start, stage.layer_end, flush=True)
     with torch.inference_mode():
         # Prefill the seed token-by-token (positions 0..31) so every rank's
         # attention history matches the reference's packed prefill.
@@ -176,12 +175,7 @@ def main():
         for step in range(GREEDY_TOKENS):
             chain_step(token, len(SEED_TOKENS) + step)
             if rank == 2:
-                if step == 0:
-                    print('NCCL rank2 hidden absSum=%.6f' % hidden_buf.float().abs().sum().item(), flush=True)
                 logits = stage.output_logits(hidden_buf[:, -1])
-                if step < 2:
-                    top5 = torch.topk(logits[0], 5)
-                    print('NCCL rank2 step', step, [(int(i), round(float(v), 4)) for i, v in zip(top5.indices, top5.values)], flush=True)
                 token = int(logits.argmax(-1)[0])
                 token_bc.fill_(token)
             work = torch.distributed.broadcast(token_bc, 2)     # boundary C
