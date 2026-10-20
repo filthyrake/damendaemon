@@ -15,19 +15,20 @@ from .distributed_serving import DistributedRuntime, STREAM_BUFFER_EVENTS
 
 
 class ChainServingPair:
-    """Transfer a ready chain pipeline and matching model to HTTP.
+    """Transfer a ready chain pipeline and matching models to HTTP.
 
     The scheduler (DistributedRuntime) is the only inference owner; close may
-    interrupt it from another thread. No chunked prefill this cycle: the
-    chain runs whole-prompt PREFILL rounds (PREFILL_CHUNK stays with the
-    two-rank machinery).
+    interrupt it from another thread. The primary alias serves first;
+    `models` maps every admitted alias (identity + matching model surface),
+    and `switch_model` swaps the resident shard table when the scheduler
+    defers a request for a different alias.
     """
 
     rank = 0
     packed_prefill = False
 
     def __init__(self, pipeline, model, *, alias='model', identity, stage_layers,
-                 chunk_size=128):
+                 chunk_size=128, models=None, identities=None):
         if not isinstance(pipeline, ChainPipeline):
             raise ValueError('chain serving needs a ChainPipeline')
         if (pipeline.failed or pipeline.closed or any(pipeline.state.lengths)
@@ -44,18 +45,7 @@ class ChainServingPair:
                 or any(stage_layers[i][1] != stage_layers[i + 1][0]
                        for i in range(len(stage_layers) - 1))):
             raise ValueError('chain serving needs contiguous stage layer bounds')
-        for name in ('raw_tokens', 'chat_tokens'):
-            if not callable(getattr(model, name, None)):
-                raise ValueError(f'chain serving model needs {name}')
-        eos = getattr(model, 'eos', ())
-        if (not isinstance(eos, (list, tuple, set, frozenset)) or len(eos) > 256
-                or any(type(token) is not int or not 0 <= token < pipeline.vocab_size
-                       for token in eos)
-                or type(getattr(model, 'max_context', None)) is not int
-                or model.max_context > pipeline.context
-                or type(getattr(model, 'quantization', None)) is not str
-                or getattr(model, 'tokenizer', None) is None):
-            raise ValueError('incompatible chain serving model surface')
+        self._validate_model(pipeline, model)
         if (type(chunk_size) is not int
                 or not 1 <= chunk_size <= 4096
                 or chunk_size > pipeline.context):
@@ -69,8 +59,51 @@ class ChainServingPair:
         self.chunk_size = chunk_size
         self.models = {alias: model}
         self.identities = {alias: self.identity}
+        self.aliases = [alias]
+        if models is not None or identities is not None:
+            if (not isinstance(models, dict) or not isinstance(identities, dict)
+                    or alias not in models or alias not in identities
+                    or len(models) != len(identities)
+                    or len(models) != pipeline.state.models
+                    or any(name == alias or not isinstance(name, str)
+                           or not 1 <= len(name) <= 128 for name in models
+                           if name != alias and name in models)
+                    or set(models) != set(identities)):
+                raise ValueError('chain serving model table must match the chain table')
+            for name, extra in models.items():
+                if name != alias:
+                    self._validate_model(pipeline, extra)
+            self.models = dict(models)
+            self.identities = {name: bytes(value) for name, value in identities.items()}
+            self.aliases = [alias] + [name for name in models if name != alias]
         self.model = model
         pipeline._completion_owner = object()  # type: ignore[attr-defined]
+
+    def _validate_model(self, pipeline, model):
+        for name in ('raw_tokens', 'chat_tokens'):
+            if not callable(getattr(model, name, None)):
+                raise ValueError(f'chain serving model needs {name}')
+        eos = getattr(model, 'eos', ())
+        if (not isinstance(eos, (list, tuple, set, frozenset)) or len(eos) > 256
+                or any(type(token) is not int or not 0 <= token < pipeline.vocab_size
+                       for token in eos)
+                or type(getattr(model, 'max_context', None)) is not int
+                or model.max_context > pipeline.context
+                or type(getattr(model, 'quantization', None)) is not str
+                or getattr(model, 'tokenizer', None) is None):
+            raise ValueError('incompatible chain serving model surface')
+
+    def switch_model(self, alias):
+        """Swap the resident model; only the scheduler calls this while idle."""
+        if alias not in self.models:
+            raise ValueError('unknown chain model')
+        index = self.aliases.index(alias)
+        if self.pipeline.switch(index):
+            self.model = self.models[alias]
+            self.identity = self.identities[alias]
+            self.alias = alias
+            return True
+        return False
 
     def prefill(self, tokens, slot):
         # Scalar: the scheduler wraps per-item prefill results itself.
@@ -136,9 +169,10 @@ class ChainDistributedRuntime(DistributedRuntime):
         pair = self.pair
         return dict(device='distributed-cuda-chain',
                     context=pair.pipeline.context,
-                    models=[dict(id=self.current_alias, residency='gpu',
-                                 quantization=pair.model.quantization,
-                                 model_sha256=pair.identity.hex())],
+                    models=[dict(id=alias, residency='gpu' if alias == self.current_alias else 'host',
+                                 quantization=pair.models[alias].quantization,
+                                 model_sha256=pair.identities[alias].hex())
+                            for alias in pair.aliases],
                     current_model=self.current_alias, model_switches=self.switches,
                     distributed=True, stage_layers=[list(bounds) for bounds in pair.stage_layers],
                     max_batch_size=self.max_batch, packed_prefill=False,

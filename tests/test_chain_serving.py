@@ -38,17 +38,25 @@ class ChainServingTests(unittest.TestCase):
     runtime_options = {}
     pair_chunk_size = 32  # the fixture session context; production default is 128
 
+    def extend_pair(self):
+        """Subclass hook: extend the model table before the runtime claims."""
+
+    @staticmethod
+    def make_model():
+        return SimpleNamespace(max_context=32, quantization='none', eos=frozenset(),
+                               tokenizer=StubTokenizer(),
+                               raw_tokens=lambda prompt: list(PROMPT),
+                               chat_tokens=lambda messages, **options: list(PROMPT))
+
     def setUp(self):
-        self.harness = ChainHarness()
+        self.harness = ChainHarness(models=getattr(self, 'pair_models', 1))
         self.harness.start_workers()
-        model = SimpleNamespace(max_context=32, quantization='none', eos=frozenset(),
-                                tokenizer=StubTokenizer(),
-                                raw_tokens=lambda prompt: list(PROMPT),
-                                chat_tokens=lambda messages, **options: list(PROMPT))
+        model = self.make_model()
         self.pair = ChainServingPair(self.harness.pipeline, model,
                                      identity=hashlib.sha256(b'chain-fixture').digest(),
                                      stage_layers=[[0, 1], [1, 3], [3, 4]],
                                      chunk_size=self.pair_chunk_size)
+        self.extend_pair()
         self.runtime = ChainDistributedRuntime(self.pair, queue_timeout=5,
                                                **self.runtime_options)
         self.owner = None
@@ -261,6 +269,80 @@ class InterleavedChainServingTests(ChainServingTests):
             self.assertEqual(result['choices'][0]['text'], expected)
         self.assertTrue(wait_until(lambda: self.runtime.completed == 2))
         self.assertTrue(wait_until(lambda: not any(self.pair.state.lengths)))
+
+
+class SwitchingChainServingTests(ChainServingTests):
+    """Two resident models over one chain: an alias switch swaps every rank's
+    shard through the SWITCH round; a request for the other alias defers
+    until the chain is idle, switches, and generates from the new weights."""
+
+    pair_models = 2
+
+    def extend_pair(self):
+        # The alt model is structurally identical; identity differs. The
+        # harness's 2-entry shard table backs the resident swap.
+        self.pair.models['alt'] = self.make_model()
+        self.pair.identities['alt'] = hashlib.sha256(b'chain-alt').digest()
+        self.pair.aliases.append('alt')
+
+    @staticmethod
+    def alt_executor_tokens(count):
+        """The ALT model's reference; same PROMPT tokens, different weights."""
+        from tests.test_chain_pipeline import make_alt_model
+        from tests.test_chain_pipeline import ChainHarness as _H
+        with patch('damendaemon.hybrid.selected_device', return_value='cpu'), \
+                patch('damendaemon.hybrid.empty_cache'), \
+                patch('damendaemon.hybrid.available_memory', return_value=2**40):
+            reference = HybridExecutor(make_alt_model(_H(1).model),
+                                       use_graph=False, max_batch=2,
+                                       kernels='torch')
+            reference.prefill(PROMPT)
+            tokens = []
+            token = int(reference.decode(PROMPT[-1])[1][0])
+            tokens.append(token)
+            for _ in range(count - 1):
+                token = int(reference.decode(token)[1][0])
+                tokens.append(token)
+        return tokens
+
+    def test_switch_serves_alt_model_and_back(self):
+        self.start()
+        base = self.serve()
+        # First request: primary model.
+        body = {'model': 'model', 'prompt': 'hello chain', 'max_tokens': 2}
+        with self.post(base, body) as response:
+            first = json.load(response)
+        primary_text = ' '.join(f't{t}' for t in super().executor_tokens(2))
+        self.assertEqual(first['choices'][0]['text'], primary_text)
+        self.assertTrue(wait_until(lambda: not any(self.pair.state.lengths)))
+        # Second request: the ALT alias switches the resident shards.
+        with self.post(base, dict(body, model='alt')) as response:
+            second = json.load(response)
+        alt_text = ' '.join(f't{t}' for t in self.alt_executor_tokens(2))
+        self.assertEqual(second['choices'][0]['text'], alt_text)
+        self.assertNotEqual(first['choices'][0]['text'], second['choices'][0]['text'])
+        # Third request: back to the primary — the original weights replay.
+        with self.post(base, body) as response:
+            third = json.load(response)
+        self.assertEqual(third['choices'][0]['text'], primary_text)
+        with urlopen(base + '/v1/models/status') as response:
+            status = json.load(response)
+        self.assertEqual(status['model_switches'], 2)
+        by_id = {entry['id']: entry for entry in status['models']}
+        self.assertEqual(by_id['model']['residency'], 'gpu')
+        self.assertEqual(by_id['alt']['residency'], 'host')
+        self.assertEqual(by_id['alt']['model_sha256'],
+                         hashlib.sha256(b'chain-alt').hexdigest())
+        self.assertFalse(self.errors)
+
+    def test_unknown_alias_rejects_without_switching(self):
+        self.start()
+        base = self.serve()
+        before = self.pair.state.sequence
+        with self.assertRaises(HTTPError) as error:
+            self.post(base, {'model': 'missing', 'prompt': 'x', 'max_tokens': 1})
+        self.assertEqual(error.exception.code, 400)
+        self.assertEqual(self.pair.state.sequence, before)
 
 
 if __name__ == '__main__':

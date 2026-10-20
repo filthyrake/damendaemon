@@ -37,23 +37,57 @@ def make_stage(model, start, end):
         return HybridLayerStage(model, start, end, max_batch=2, kernels='torch')
 
 
+def make_alt_model(model):
+    """A second compatible model: same config, perturbed weights."""
+    import copy
+    from types import SimpleNamespace
+    weights = {}
+    for name, tensor in model.weights.items():
+        clone = tensor.clone()
+        # Deterministic per-name perturbation; tied weights stay tied.
+        clone += ((sum(ord(c) for c in name) % 7) + 1) * 0.01
+        weights[name] = clone
+    weights['head'] = weights['embed']
+    return SimpleNamespace(config=dict(model.config), max_context=model.max_context,
+                           weights=weights, scales={}, quantization='none',
+                           bytes=model.bytes)
+
+
 class ChainHarness:
     """Three-rank chain over real StageState + fixture hybrid shards."""
 
     BOUNDS = (0, 1, 3, 4)
 
-    def __init__(self):
+    def __init__(self, models=1):
         self._fixture = make_harness()
         self.model = self._fixture.fixture.model()
+        self.model_table = [self.model]
+        if models == 2:
+            self.alt_model = make_alt_model(self.model)
+            self.model_table.append(self.alt_model)
+        elif models != 1:
+            raise ValueError('the chain harness models 1 or 2 entries')
         self.bus = FakeBus(3)
-        self.states = [StageState(epoch=1, context=32, slots=2) for _ in range(3)]
+        self.states = [StageState(epoch=1, context=32, slots=2, models=models)
+                       for _ in range(3)]
         self.channels = [ChainChannel(ChainRole(rank, 3), FakeTransport(rank, self.bus),
                                       self.states[rank]) for rank in range(3)]
         self.stages = [make_stage(self.model, self.BOUNDS[rank], self.BOUNDS[rank + 1])
                        for rank in range(3)]
-        self.workers = {rank: ChainStageWorker(self.stages[rank], self.channels[rank])
+        # Shard table per rank: index -> {weight name -> CPU tensor}. Index 0
+        # is the initial model, so switching back restores exact weights.
+        # Entries are CLONES: on CPU the stage aliases model.weights, so a
+        # switch overwrites the source tensors in place (production GPU
+        # stages own separate device tensors and cannot alias).
+        self.shards = [{name: source.weights[name].clone() for name in stage.w}
+                       for stage in self.stages
+                       for source in self.model_table]
+        rank_shards = [self.shards[rank * models:(rank + 1) * models] for rank in range(3)]
+        self.workers = {rank: ChainStageWorker(self.stages[rank], self.channels[rank],
+                                               shards=rank_shards[rank])
                         for rank in (1, 2)}
-        self.pipeline = ChainPipeline(self.stages[0], self.channels[0])
+        self.pipeline = ChainPipeline(self.stages[0], self.channels[0],
+                                      shards=rank_shards[0])
         self.threads = []
 
     def start_workers(self):
@@ -161,6 +195,45 @@ class ChainPipelineTests(unittest.TestCase):
             # Ownership guards: continuing a mismatched cursor rejects.
             with self.assertRaises(ValueError):
                 harness.pipeline.prefill_chunk([9], slot=0, start=1)
+        finally:
+            harness.close()
+
+    def test_switch_model_swaps_resident_weights_and_epoch(self):
+        harness = ChainHarness(models=2)
+        harness.start_workers()
+        try:
+            prompt = [3, 1, 4, 1, 5]
+            a_first = harness.pipeline.prefill(prompt, slot=0)[0]
+            # Reference samples for both models under the same env policy.
+            with patch('damendaemon.hybrid.selected_device', return_value='cpu'), \
+                    patch('damendaemon.hybrid.empty_cache'), \
+                    patch('damendaemon.hybrid.available_memory', return_value=2**40):
+                ref_b = HybridExecutor(harness.alt_model, use_graph=False,
+                                       max_batch=2, kernels='torch')
+                ref_b.prefill(prompt)
+                b_first = int(ref_b.decode(prompt[-1])[1][0])
+            # Guards: switching with a live slot rejects; current index no-ops.
+            with self.assertRaises(ValueError):
+                harness.pipeline.switch(1)
+            self.assertFalse(harness.pipeline.switch(0))
+            harness.pipeline.release([0])
+            self.assertTrue(wait_until(lambda: not any(harness.pipeline.state.lengths)))
+            # Switch to model B: fresh epoch, model index 1 everywhere.
+            self.assertTrue(harness.pipeline.switch(1))
+            self.assertTrue(wait_until(lambda: all(state.model_index == 1
+                                                   for state in harness.states)))
+            self.assertEqual(harness.pipeline.state.epoch, 2)
+            self.assertEqual(harness.pipeline.state.sequence, 1)
+            # Model B's first sample matches its reference executor.
+            self.assertEqual(harness.pipeline.prefill(prompt, slot=0)[0], b_first)
+            harness.pipeline.release([0])
+            self.assertTrue(wait_until(lambda: not any(harness.pipeline.state.lengths)))
+            # Switch back to A: the original sample replays exactly.
+            self.assertTrue(harness.pipeline.switch(0))
+            self.assertTrue(wait_until(lambda: all(state.model_index == 0
+                                                   for state in harness.states)))
+            self.assertEqual(harness.pipeline.prefill(prompt, slot=0)[0], a_first)
+            self.assertNotEqual(a_first, b_first)
         finally:
             harness.close()
 
