@@ -46,7 +46,7 @@ class ChainStageWorker:
     run any geometry. Ranks > 0 run `run_forever` on their own thread.
     """
 
-    def __init__(self, stage, channel):
+    def __init__(self, stage, channel, *, device=None):
         if not isinstance(channel, ChainChannel):
             raise ValueError('chain worker needs a ChainChannel')
         state = channel.state
@@ -67,6 +67,7 @@ class ChainStageWorker:
         self.width = stage.c['hidden_size']
         self.vocab_size = stage.c['vocab_size']
         self.head = head
+        self.device = torch.device(device) if device is not None else torch.device('cpu')
         self.failed = False
         self.closed = False
         self.stopped = threading.Event()
@@ -77,25 +78,27 @@ class ChainStageWorker:
         stage = self.stage
         rows = command.rows
         if command.operation == DECODE:
-            slots = torch.tensor([entry[0] for entry in command.entries], dtype=torch.int64)
+            slots = torch.tensor([entry[0] for entry in command.entries],
+                                 dtype=torch.int64, device=self.device)
             positions = torch.tensor([[entry[2]] for entry in command.entries],
-                                     dtype=torch.int64)
+                                     dtype=torch.int64, device=self.device)
             prefill = False
         elif command.operation == PREFILL:
             slot, _, _ = command.entries[0]
-            slots = torch.tensor([slot], dtype=torch.int64)
-            positions = torch.arange(rows)[None]
+            slots = torch.tensor([slot], dtype=torch.int64, device=self.device)
+            positions = torch.arange(rows, device=self.device)[None]
             prefill = True
         else:
             raise ValueError('unsupported chain stage operation')
         if self.rank == 0:
-            values = torch.tensor(tokens, dtype=torch.int64)
+            values = torch.tensor(tokens, dtype=torch.int64, device=self.device)
             if command.operation == DECODE:
                 hidden = stage.embedding(values[:, None])
             else:
                 hidden = stage.embedding(values[None])
         else:
-            received = torch.zeros((rows, self.width), dtype=torch.float32)
+            received = torch.zeros((rows, self.width), dtype=torch.float32,
+                                   device=self.device)
             self.channel.receive_hidden(received)
             if not torch.isfinite(received).all():
                 raise ValueError('nonfinite chain received activation')
@@ -142,10 +145,12 @@ class ChainStageWorker:
             try:
                 if self.stage.last:
                     self.channel.return_tokens(
-                        torch.full((token_rows(command),), FAILED_TOKEN, dtype=torch.int64))
+                        torch.full((token_rows(command),), FAILED_TOKEN,
+                                   dtype=torch.int64, device=self.device))
                 elif not self.stage.first:
                     self.channel.forward_hidden(
-                        torch.zeros((command.rows, self.width), dtype=torch.float32))
+                        torch.zeros((command.rows, self.width), dtype=torch.float32,
+                                    device=self.device))
             except RuntimeError:
                 pass
         try:
@@ -190,7 +195,7 @@ class ChainPipeline:
     the cursors only advance when the whole chain acknowledged a round.
     """
 
-    def __init__(self, stage, channel):
+    def __init__(self, stage, channel, *, device=None):
         if not isinstance(channel, ChainChannel):
             raise ValueError('chain pipeline needs a ChainChannel')
         if not channel.role.is_coordinator:
@@ -205,7 +210,8 @@ class ChainPipeline:
         self.channel = channel
         self.state = state
         self.width = stage.c['hidden_size']
-        self._stage0_worker = ChainStageWorker(stage, channel)
+        self.device = torch.device(device) if device is not None else torch.device('cpu')
+        self._stage0_worker = ChainStageWorker(stage, channel, device=self.device)
         self.failed = False
         self.closed = False
 
@@ -223,7 +229,8 @@ class ChainPipeline:
         except BaseException as error:
             try:
                 self.channel.forward_hidden(
-                    torch.zeros((command.rows, self.width), dtype=torch.float32))
+                    torch.zeros((command.rows, self.width), dtype=torch.float32,
+                                device=self.device))
             except RuntimeError:
                 pass
             return None, error
@@ -271,7 +278,8 @@ class ChainPipeline:
             if error is not None:
                 raise RuntimeError('chain coordinator stage failed') from error
             self.channel.forward_hidden(hidden)
-            received = torch.full((token_rows(command),), FAILED_TOKEN, dtype=torch.int64)
+            received = torch.full((token_rows(command),), FAILED_TOKEN,
+                                  dtype=torch.int64, device=self.device)
             self.channel.receive_tokens(received)
             if any(token == FAILED_TOKEN for token in received.tolist()):
                 raise RuntimeError('chain head reported stage failure')
@@ -286,7 +294,8 @@ class ChainPipeline:
             if began and received is None:
                 try:
                     self.channel.receive_tokens(
-                        torch.full((token_rows(command),), FAILED_TOKEN, dtype=torch.int64))
+                        torch.full((token_rows(command),), FAILED_TOKEN,
+                                   dtype=torch.int64, device=self.device))
                 except RuntimeError:
                     pass
         try:
