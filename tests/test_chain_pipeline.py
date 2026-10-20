@@ -70,13 +70,20 @@ class ChainHarness:
     def close(self):
         joined = False
         try:
-            if not self.pipeline.closed:
+            workers_gone = all(worker.failed or worker.closed
+                               for worker in self.workers.values())
+            if not self.pipeline.closed and not workers_gone:
                 try:
                     self.pipeline.close()
                 except (ValueError, RuntimeError):
                     # A poisoned epoch cannot accept STOP; workers exit on
                     # their own once they see the poisoned state.
                     pass
+            if not self.pipeline.closed:
+                # Dead workers cannot accept STOP; mark the pipeline dead so
+                # close() stays idempotent without a doomed reduction wait.
+                self.pipeline.failed = True
+                self.pipeline.closed = True
             joined = self.join_workers()
         finally:
             self.bus = None
