@@ -81,23 +81,29 @@ class ChainRole:
 class ChainChannel:
     """Command broadcast + ack + forward/token transfer for a chain member."""
 
-    def __init__(self, role, transport, state):
+    def __init__(self, role, transport, state, *, device=None):
+        from .stage_protocol import HEADER_WORDS
         self.role = role
         self.transport = transport
         self.state = state
+        # The command header belongs to the channel, not the stage state:
+        # StageState owns only ownership/cursor bookkeeping. NCCL ranks pass
+        # the header's device so the broadcast lands on the rank's GPU.
+        self.header = torch.zeros(HEADER_WORDS, dtype=torch.int64, device=device)
 
     def begin(self, command_words=None):
         """Broadcast the coordinator's command; every rank validates and acks."""
         if command_words is not None and not self.role.is_coordinator:
             raise ValueError('only the coordinator originates commands')
-        header = self.state.header
+        header = self.header
         if self.role.is_coordinator:
             header.copy_(torch.tensor(command_words, dtype=header.dtype, device=header.device))
         self.transport.broadcast(header, 0)
+        words = command_words if self.role.is_coordinator else header.cpu().tolist()
         accepted = None
         error = None
         try:
-            accepted = self.state.begin(None if self.role.is_coordinator else header.cpu().tolist())
+            accepted = self.state.begin(words)
         except (ValueError, RuntimeError) as failure:
             error = failure
         self.transport.ack.fill_(int(error is None))
@@ -134,11 +140,22 @@ class ChainChannel:
         self.transport.synchronize()
 
     def finish(self, command, *, success=True):
-        if self.state.pending != command or self.state.failed:
+        """All-reduce the completion ack, then commit everywhere or poison.
+
+        The all-reduce happens BEFORE any local failure exit: a worker whose
+        execution failed must still participate, or the peers block in the
+        reduction until the watchdog kills the group (deadlock). On a failed
+        MIN ack no state commits and every rank poisons its epoch.
+        """
+        if self.state.pending != command:
             raise RuntimeError('stage completion does not own pending work')
         self.transport.synchronize()
         self.transport.ack.fill_(int(success))
         self.transport.all_reduce_min(self.transport.ack)
-        if self.transport.ack.item() != 1:
-            raise RuntimeError('stage completion acknowledgement failed')
-        self.state.commit(command)
+        acknowledged = self.transport.ack.item() == 1
+        if acknowledged:
+            self.state.commit(command)
+        else:
+            self.state.poison()
+        if not acknowledged:
+            raise RuntimeError('chain stage completion rejected; epoch poisoned')
