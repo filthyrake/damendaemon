@@ -26,7 +26,7 @@ import threading
 import torch
 
 from .distributed_chain import ChainChannel
-from .stage_protocol import (DECODE, FAILED_TOKEN, PREFILL, RELEASE, STOP,
+from .stage_protocol import (DECODE, FAILED_TOKEN, PING, PREFILL, RELEASE, STOP,
                              StageState, Command, token_rows)
 
 
@@ -200,11 +200,13 @@ class ChainStageWorker:
     def run_round(self, tokens=None):
         """Execute the channel's pending command via the broadcast chain."""
         command = self.channel.state.pending
-        if command.operation == STOP:
-            # Control-only record: no execution, no payload, no tokens.
+        if command.operation in (STOP, PING):
+            # Control-only records: no execution, no payload, no tokens.
+            # STOP closes the loop; PING (idle heartbeat) keeps it alive.
             self.channel.finish(command)
-            self.closed = True
-            self.stopped.set()
+            if command.operation == STOP:
+                self.closed = True
+                self.stopped.set()
             return
         if command.operation == RELEASE:
             # Control-only round: clear the released slots' KV/conv/recurrent
@@ -328,6 +330,19 @@ class ChainPipeline:
     @property
     def context(self):
         return self.state.context
+
+    def ping(self):
+        """Control-only heartbeat round; keeps idle workers in lockstep."""
+        if self.failed or self.closed:
+            raise RuntimeError('chain pipeline is not ready')
+        command = self._command(PING, 0, ())
+        try:
+            self.channel.begin(command.encode())
+            self.channel.finish(command)
+        except BaseException:
+            self.failed = True
+            raise
+        return True
 
     def release(self, slots):
         """Control-only round: free finished slots for the next prefill.
