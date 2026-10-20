@@ -46,6 +46,9 @@ def main():
     if len(sys.argv) > 1 and sys.argv[1] == "distributed-serve":
         from .distributed_server_cli import main as distributed_server_main
         return distributed_server_main(sys.argv[2:])
+    if len(sys.argv) > 1 and sys.argv[1] == "chain-serve":
+        from .chain_server_cli import main as chain_server_main
+        return chain_server_main(sys.argv[2:])
     if len(sys.argv) > 1 and sys.argv[1] == "distributed-run":
         from .distributed_cli import main as distributed_main
         return distributed_main(sys.argv[2:])
@@ -57,6 +60,7 @@ def main():
     commands.add_parser("bench", help="benchmark a streaming HTTP endpoint")
     commands.add_parser("distributed-run", help="experimental two-rank greedy generation under torchrun")
     commands.add_parser("distributed-serve", help="experimental resident two-rank greedy HTTP service")
+    commands.add_parser("chain-serve", help="experimental three-rank chain greedy HTTP service under torchrun")
     capacity = commands.add_parser('plan-hybrid', help='estimate hybrid text storage from local tensor headers without loading weights')
     capacity.add_argument('path', help='local safetensors snapshot directory; no download')
     capacity.add_argument('--contexts', type=int, nargs='+', default=[32768])

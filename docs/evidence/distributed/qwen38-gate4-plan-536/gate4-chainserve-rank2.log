@@ -1,0 +1,32 @@
+[rank2]:[E1020 12:46:10.913387385 ProcessGroupNCCL.cpp:645] [Rank 2] Collective WorkNCCL(SeqNum=412, OpType=ALLREDUCE, NumelIn=1, NumelOut=1, Timeout(ms)=120000) raised the following async exception: NCCL error: remote process exited or there was a network error, NCCL version 2.29.7
+ncclRemoteError: A call failed possibly due to a network error or a remote process exiting prematurely.
+Last error:
+socketProgress: Connection closed by remote peer api.fb.local<32830>
+Exception raised from checkForNCCLErrorsInternal at /__w/pytorch/pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:2843 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x7fbcac363bfd in /home/damen/3090-damendaemon/venv/lib64/python3.12/site-packages/torch/lib/libc10.so)
+frame #1: c10::DistError::DistError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7fbcac364bd2 in /home/damen/3090-damendaemon/venv/lib64/python3.12/site-packages/torch/lib/libc10.so)
+frame #2: c10::DistBackendError::DistBackendError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7fbcac364d02 in /home/damen/3090-damendaemon/venv/lib64/python3.12/site-packages/torch/lib/libc10.so)
+frame #3: c10d::ProcessGroupNCCL::checkForNCCLErrorsInternal(std::shared_ptr<c10d::NCCLComm>&) + 0x34e (0x7fbbf614be3e in /home/damen/3090-damendaemon/venv/lib64/python3.12/site-packages/torch/lib/libtorch_cuda.so)
+frame #4: c10d::ProcessGroupNCCL::WorkNCCL::checkAndSetException() + 0x80 (0x7fbbf61504b0 in /home/damen/3090-damendaemon/venv/lib64/python3.12/site-packages/torch/lib/libtorch_cuda.so)
+frame #5: c10d::ProcessGroupNCCL::Watchdog::runLoop() + 0xb34 (0x7fbbf615bf24 in /home/damen/3090-damendaemon/venv/lib64/python3.12/site-packages/torch/lib/libtorch_cuda.so)
+frame #6: c10d::ProcessGroupNCCL::Watchdog::run() + 0x157 (0x7fbbf615dd47 in /home/damen/3090-damendaemon/venv/lib64/python3.12/site-packages/torch/lib/libtorch_cuda.so)
+frame #7: <unknown function> + 0xee0e4 (0x7fbc7baee0e4 in /lib64/libstdc++.so.6)
+frame #8: <unknown function> + 0x958bf (0x7fbcbb6bc8bf in /lib64/libc.so.6)
+frame #9: <unknown function> + 0x10643c (0x7fbcbb72d43c in /lib64/libc.so.6)
+
+[rank2]:[E1020 12:46:10.913882879 ProcessGroupNCCL.cpp:2372] [PG ID 0 PG GUID 0(default_pg) Rank 2]  failure detected by watchdog at work sequence id: 412 PG status: last enqueued work: 414, last started work: -1 (), last completed work: 411
+[rank2]:[E1020 12:46:11.597816251 ProcessGroupNCCL.cpp:774] Stack trace of the failed collective: 
+#0 all_reduce from /home/damen/3090-damendaemon/venv/lib64/python3.12/site-packages/torch/distributed/distributed_c10d.py:3245
+#1 wrapper from /home/damen/3090-damendaemon/venv/lib64/python3.12/site-packages/torch/distributed/c10d_logger.py:83
+#2 all_reduce_min from /tmp/damendaemon-3090/damendaemon/distributed_chain.py:44
+#3 begin from /tmp/damendaemon-3090/damendaemon/distributed_chain.py:103
+#4 run_forever from /tmp/damendaemon-3090/damendaemon/chain_pipeline.py:235
+#5 main from /tmp/damendaemon-3090/damendaemon/chain_server_cli.py:107
+#6 main from /tmp/damendaemon-3090/damendaemon/cli.py:51
+#7 <module> from /tmp/damendaemon-3090/damendaemon/__main__.py:3
+#8 _run_code from <frozen runpy>:88
+#9 _run_module_as_main from <frozen runpy>:198
+
+[rank2]:[E1020 12:46:11.597889233 ProcessGroupNCCL.cpp:2714] [PG ID 0 PG GUID 0(default_pg) Rank 2] First PG on this rank to signal dumping.
+[rank2]:[E1020 12:46:11.659608441 ProcessGroupNCCL.cpp:1964] [PG ID 0 PG GUID 0(default_pg) Rank 2] Received a dump signal due to a collective timeout from this local rank and we will try our best to dump the debug info. Last enqueued NCCL work: 414, last completed NCCL work: 411.This is most likely caused by incorrect usages of collectives, e.g., wrong sizes used across ranks, the order of collectives is not same for all ranks or the scheduled collective, for some reason, didn't run. Additionally, this can be caused by GIL deadlock or other reasons such as network errors or bugs in the communications library (e.g. NCCL), etc. 
+[rank2]:[E1020 12:46:11.659728414 ProcessGroupNCCL.cpp:1677] [PG ID 0 PG GUID 0(default_pg) Rank 2] ProcessGroupNCCL preparing to dump debug info. Include stack trace: 1, only active collectives: 0
