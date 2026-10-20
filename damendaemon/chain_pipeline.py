@@ -26,8 +26,8 @@ import threading
 import torch
 
 from .distributed_chain import ChainChannel
-from .stage_protocol import (DECODE, FAILED_TOKEN, PREFILL, STOP, StageState,
-                             Command, token_rows)
+from .stage_protocol import (DECODE, FAILED_TOKEN, PREFILL, RELEASE, STOP,
+                             StageState, Command, token_rows)
 
 
 class _nullcontext:
@@ -186,6 +186,17 @@ class ChainStageWorker:
         return torch.zeros((command.rows, self.width), dtype=torch.float32,
                            device=self.device)
 
+    def _clear_slots(self, command):
+        """Zero a released slot's KV/conv/recurrent tensors (two-rank parity)."""
+        for slot, _, _ in command.entries:
+            for tensor in self.stage.kv.values():
+                members = tensor if isinstance(tensor, tuple) else (tensor,)
+                for member in members:
+                    member[:, slot].zero_()
+            for group in (self.stage.conv, self.stage.state):
+                for tensor in group.values():
+                    tensor[slot].zero_()
+
     def run_round(self, tokens=None):
         """Execute the channel's pending command via the broadcast chain."""
         command = self.channel.state.pending
@@ -194,6 +205,14 @@ class ChainStageWorker:
             self.channel.finish(command)
             self.closed = True
             self.stopped.set()
+            return
+        if command.operation == RELEASE:
+            # Control-only round: clear the released slots' KV/conv/recurrent
+            # state so the next prefill starts from a clean slot.
+            self._clear_slots(command)
+            self.channel.finish(command)
+            self.stage.lengths[:] = self.channel.state.lengths
+            self.stage.length = self.channel.state.lengths[0]
             return
         try:
             run_chain_round(self.channel, self, tokens)
@@ -301,6 +320,40 @@ class ChainPipeline:
             self.failed = True
             raise error
         return result
+
+    @property
+    def vocab_size(self):
+        return self._stage0_worker.vocab_size
+
+    @property
+    def context(self):
+        return self.state.context
+
+    def release(self, slots):
+        """Control-only round: free finished slots for the next prefill.
+
+        Validates on the coordinator (against the shared StageState content)
+        so a rejected release cannot strand the workers outside the ack.
+        """
+        if self.failed or self.closed:
+            raise RuntimeError('chain pipeline is not ready')
+        if (not isinstance(slots, (list, tuple)) or not slots
+                or len(set(slots)) != len(slots)
+                or any(type(s) is not int or not 0 <= s < self.state.slots
+                       for s in slots)
+                or any(not self.state.lengths[s] for s in slots)):
+            raise ValueError('invalid chain release slot selection')
+        command = self._command(RELEASE, 0,
+                                tuple((slot, self.state.generations[slot],
+                                       self.state.lengths[slot]) for slot in slots))
+        try:
+            self.channel.begin(command.encode())
+            self.channel.finish(command)
+        except BaseException:
+            self.failed = True
+            raise
+        self._stage0_worker.stage.lengths[:] = self.state.lengths
+        self._stage0_worker.stage.length = self.state.lengths[0]
 
     def close(self):
         """Issue STOP; workers close their stages and exit their loops."""

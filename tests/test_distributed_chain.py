@@ -82,7 +82,9 @@ class FakeBus:
         """All ranks block until everyone contributed; all read the min.
 
         Epoch-counted like the broadcast: the event from a previous
-        reduction must not release the next one early.
+        reduction must not release the next one early. A timeout raises:
+        returning a stale min would silently corrupt the ack (a release
+        would commit on some ranks but not others).
         """
         with self._reduce_cond:
             epoch = self._reduce_epoch
@@ -96,7 +98,8 @@ class FakeBus:
             def done():
                 return self._reduce_epoch > epoch
 
-            self._reduce_cond.wait_for(done, timeout=10)
+            if not self._reduce_cond.wait_for(done, timeout=30):
+                raise RuntimeError('fake bus reduction timed out')
             return self._reduce_result
 
 
