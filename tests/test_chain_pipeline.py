@@ -134,6 +134,36 @@ class ChainPipelineTests(unittest.TestCase):
         finally:
             self.assertTrue(harness.close())
 
+    def test_prefill_chunk_equals_whole_prompt_prefill(self):
+        """Chunk continuation exercises the conv/KV prefix path: the final
+        chunk's sample must equal the whole-prompt prefill's sample, and the
+        following decode must stay on the same trajectory."""
+        harness = ChainHarness()
+        harness.start_workers()
+        try:
+            prompt = [3, 1, 4, 1, 5]
+            whole = harness.pipeline.prefill(prompt, slot=0)[0]
+            # Chunk the same prompt into slot 1; intermediate samples are
+            # protocol-only, the FINAL chunk's sample must equal `whole`.
+            harness.pipeline.prefill_chunk(prompt[:2], slot=1, start=0)
+            final = harness.pipeline.prefill_chunk(prompt[2:], slot=1,
+                                                   start=len(prompt[:2]))[0]
+            self.assertEqual(final, whole)
+            # Workers commit after their MIN-ack contribution; assert the
+            # final effect (cycle-3 lesson).
+            self.assertTrue(wait_until(
+                lambda: all(state.lengths == [len(prompt)] * 2
+                            for state in harness.states)))
+            # Decode continues identically from both slots.
+            a = harness.pipeline.decode_batch([final], [0])[0]
+            b = harness.pipeline.decode_batch([final], [1])[0]
+            self.assertEqual(a, b)
+            # Ownership guards: continuing a mismatched cursor rejects.
+            with self.assertRaises(ValueError):
+                harness.pipeline.prefill_chunk([9], slot=0, start=1)
+        finally:
+            harness.close()
+
     def test_decode_batch_divergent_slots(self):
         harness = ChainHarness()
         harness.start_workers()

@@ -26,7 +26,8 @@ class ChainServingPair:
     rank = 0
     packed_prefill = False
 
-    def __init__(self, pipeline, model, *, alias='model', identity, stage_layers):
+    def __init__(self, pipeline, model, *, alias='model', identity, stage_layers,
+                 chunk_size=128):
         if not isinstance(pipeline, ChainPipeline):
             raise ValueError('chain serving needs a ChainPipeline')
         if (pipeline.failed or pipeline.closed or any(pipeline.state.lengths)
@@ -55,13 +56,17 @@ class ChainServingPair:
                 or type(getattr(model, 'quantization', None)) is not str
                 or getattr(model, 'tokenizer', None) is None):
             raise ValueError('incompatible chain serving model surface')
+        if (type(chunk_size) is not int
+                or not 1 <= chunk_size <= 4096
+                or chunk_size > pipeline.context):
+            raise ValueError('chain serving chunk size must fit the session context')
         self.pipeline = pipeline
         self.alias = alias
         self.identity = bytes(identity)
         self.stage_layers = [list(pair) for pair in stage_layers]
         self.state = pipeline.state
         self.max_batch = pipeline.state.slots
-        self.chunk_size = pipeline.context  # bounded by constructor rejection below
+        self.chunk_size = chunk_size
         self.models = {alias: model}
         self.identities = {alias: self.identity}
         self.model = model
@@ -70,6 +75,10 @@ class ChainServingPair:
     def prefill(self, tokens, slot):
         # Scalar: the scheduler wraps per-item prefill results itself.
         return self.pipeline.prefill(tokens, slot=slot)[0]
+
+    def prefill_chunk(self, tokens, slot, start):
+        # Scalar protocol sample; only the FINAL chunk's token is output.
+        return self.pipeline.prefill_chunk(tokens, slot, start)[0]
 
     def step(self, tokens):
         # Single-slot protocol used by the scheduler when max_batch is 1.
@@ -111,13 +120,12 @@ class ChainDistributedRuntime(DistributedRuntime):
                  client_prefill_turns=False):
         if not isinstance(pair, ChainServingPair):
             raise ValueError('chain HTTP requires its explicit pair adapter')
-        if interleaved_prefill or client_prefill_turns:
-            raise ValueError('the chain runs whole-prompt prefill; chunked turns are unsupported')
         if (pair.pipeline.failed or pair.pipeline.closed):
             raise ValueError('chain HTTP requires a ready chain pipeline')
         super().__init__(pair, alias, queue_size, queue_timeout,
                          client_decode_turns=client_decode_turns,
-                         interleaved_prefill=False, client_prefill_turns=False)
+                         interleaved_prefill=interleaved_prefill,
+                         client_prefill_turns=client_prefill_turns)
 
     def model_manifest(self):
         raise ValueError('chain sessions cannot be exported as GPU model manifests')
@@ -137,8 +145,9 @@ class ChainDistributedRuntime(DistributedRuntime):
                     active=self.active, queued=self.requests.qsize(), completed=self.completed,
                     heartbeats=self.heartbeats, stream_buffer_events=STREAM_BUFFER_EVENTS,
                     client_admission_turns=True, client_decode_turns=self.client_decode_turns,
-                    client_prefill_turns=False, interleaved_prefill=False,
-                    prefill_chunk_size=None,
+                    client_prefill_turns=self.client_prefill_turns,
+                    interleaved_prefill=self.interleaved_prefill,
+                    prefill_chunk_size=self.pair.chunk_size,
                     failed=self.failure is not None, closed=self.closed.is_set())
 
     def _execution_failed(self, primary):

@@ -26,8 +26,8 @@ import threading
 import torch
 
 from .distributed_chain import ChainChannel
-from .stage_protocol import (DECODE, FAILED_TOKEN, PING, PREFILL, RELEASE, STOP,
-                             StageState, Command, token_rows)
+from .stage_protocol import (DECODE, FAILED_TOKEN, PING, PREFILL, PREFILL_CHUNK,
+                             RELEASE, STOP, StageState, Command, token_rows)
 
 
 class _nullcontext:
@@ -143,11 +143,14 @@ class ChainStageWorker:
             positions = torch.tensor([[entry[2]] for entry in command.entries],
                                      dtype=torch.int64, device=self.device)
             prefill = False
-        elif command.operation == PREFILL:
-            slot, _, _ = command.entries[0]
+            prefix = 0
+        elif command.operation in (PREFILL, PREFILL_CHUNK):
+            slot, _, start = command.entries[0]
             slots = torch.tensor([slot], dtype=torch.int64, device=self.device)
-            positions = torch.arange(rows, device=self.device)[None]
+            positions = torch.arange(start, start + rows,
+                                     device=self.device)[None]
             prefill = True
+            prefix = start
         else:
             raise ValueError('unsupported chain stage operation')
         if self.rank == 0:
@@ -166,7 +169,8 @@ class ChainStageWorker:
             hidden = received[:, None, :] if command.operation == DECODE else received[None]
         device = self.stage.actual_device
         with torch.cuda.device(device) if device.type == 'cuda' else _nullcontext():
-            result = stage.forward_layers(hidden, positions, slots, prefill)
+            result = stage.forward_layers(hidden, positions, slots, prefill,
+                                          prefix)
         if self.stage.last:
             count = token_rows(command)
             logits = stage.output_logits(result.reshape(-1, self.width)[-count:])
@@ -294,6 +298,33 @@ class ChainPipeline:
             raise ValueError('invalid chain prefill prompt or slot')
         generation = self.state.generations[slot] + 1
         command = self._command(PREFILL, len(tokens), ((slot, generation, 0),))
+        return self._round(command, tokens)
+
+    def prefill_chunk(self, tokens, slot, start):
+        """Continue one slot's prompt at `start`; returns the head's argmax.
+
+        Mirrors HybridExecutor.prefill_chunk ownership: start==0 claims a
+        fresh generation; start>0 must equal the slot's committed cursor.
+        The returned token is a protocol sample — only the FINAL chunk's
+        token is an output candidate (same convention as the scheduler).
+        """
+        if self.failed or self.closed:
+            raise RuntimeError('chain pipeline is not ready')
+        if (not tokens or type(slot) is not int or not 0 <= slot < self.state.slots
+                or type(start) is not int or start < 0
+                or any(type(t) is not int for t in tokens)
+                or start + len(tokens) > self.state.context):
+            raise ValueError('invalid chain prefill chunk')
+        if start == 0:
+            if self.state.lengths[slot]:
+                raise ValueError('chain prefill chunk requires an empty slot')
+            generation = self.state.generations[slot] + 1
+        else:
+            if self.state.lengths[slot] != start:
+                raise ValueError('chain prefill chunk must continue the cursor')
+            generation = self.state.generations[slot]
+        command = self._command(PREFILL_CHUNK, len(tokens),
+                                ((slot, generation, start),))
         return self._round(command, tokens)
 
     def decode_batch(self, tokens, slots):

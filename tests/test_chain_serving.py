@@ -35,6 +35,9 @@ class StubTokenizer:
 
 
 class ChainServingTests(unittest.TestCase):
+    runtime_options = {}
+    pair_chunk_size = 32  # the fixture session context; production default is 128
+
     def setUp(self):
         self.harness = ChainHarness()
         self.harness.start_workers()
@@ -44,8 +47,10 @@ class ChainServingTests(unittest.TestCase):
                                 chat_tokens=lambda messages, **options: list(PROMPT))
         self.pair = ChainServingPair(self.harness.pipeline, model,
                                      identity=hashlib.sha256(b'chain-fixture').digest(),
-                                     stage_layers=[[0, 1], [1, 3], [3, 4]])
-        self.runtime = ChainDistributedRuntime(self.pair, queue_timeout=5)
+                                     stage_layers=[[0, 1], [1, 3], [3, 4]],
+                                     chunk_size=self.pair_chunk_size)
+        self.runtime = ChainDistributedRuntime(self.pair, queue_timeout=5,
+                                               **self.runtime_options)
         self.owner = None
         self.errors = []
         self.addCleanup(self.close)
@@ -216,6 +221,46 @@ class ChainServingTests(unittest.TestCase):
                                  stage_layers=[[0, 1], [1, 3], [3, 4]])
         finally:
             self.harness.pipeline._completion_owner = None
+
+
+class InterleavedChainServingTests(ChainServingTests):
+    """Same fixtures, chunked: prompts flow through the scheduler's
+    interleaved prefill path (PREFILL_CHUNK rounds) instead of whole-prompt
+    PREFILL; output must be byte-equal to the whole-prompt reference."""
+    runtime_options = {'interleaved_prefill': True}
+    pair_chunk_size = 2
+
+    def test_chunked_completion_matches_reference(self):
+        self.start()
+        base = self.serve()
+        expected = self.executor_tokens(3)
+        body = {'model': 'model', 'prompt': 'hello chain', 'max_tokens': 3}
+        with self.post(base, body) as response:
+            result = json.load(response)
+        self.assertEqual(result['choices'][0]['text'],
+                         ' '.join(f't{token}' for token in expected))
+        self.assertEqual(result['usage']['completion_tokens'], 3)
+        with urlopen(base + '/v1/models/status') as response:
+            status = json.load(response)
+        self.assertTrue(status['interleaved_prefill'])
+        self.assertEqual(status['prefill_chunk_size'], 2)
+        self.assertTrue(wait_until(lambda: not any(self.pair.state.lengths)))
+        self.assertFalse(self.errors)
+
+    def test_chunked_concurrent_requests_reuse_slots(self):
+        self.start()
+        base = self.serve()
+
+        def request():
+            with self.post(base, {'model': 'model', 'prompt': 'again',
+                                  'max_tokens': 3}) as response:
+                return json.load(response)
+        results = [request() for _ in range(2)]
+        expected = ' '.join(f't{token}' for token in self.executor_tokens(3))
+        for result in results:
+            self.assertEqual(result['choices'][0]['text'], expected)
+        self.assertTrue(wait_until(lambda: self.runtime.completed == 2))
+        self.assertTrue(wait_until(lambda: not any(self.pair.state.lengths)))
 
 
 if __name__ == '__main__':
