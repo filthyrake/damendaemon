@@ -10,6 +10,7 @@ import unittest
 import torch
 
 from damendaemon.distributed_chain import ChainChannel, ChainRole, ChainTransport
+from damendaemon.stage_protocol import HEADER_WORDS
 
 
 class FakeStageState:
@@ -34,50 +35,82 @@ class FakeStageState:
         self.committed.append(command)
         self.pending = None
 
+    def poison(self):
+        self.failed = True
+        self.pending = None
+
 
 class FakeBus:
     """Shared slot bus for broadcasts, P2P handoffs and MIN reductions."""
 
     def __init__(self, world_size):
         self.world_size = world_size
+        self._cond = threading.Condition()
         self._broadcast_slot = None
-        self._broadcast_event = threading.Event()
+        self._broadcast_epoch = 0
+        self._broadcast_reads = {}
         self._p2p = {}
         self._p2p_events = {}
-        self._reduce_lock = threading.Lock()
+        self._reduce_cond = threading.Condition()
         self._reduce_values = []
-        self._reduce_event = threading.Event()
+        self._reduce_epoch = 0
+        self._reduce_result = None
 
     # -- broadcast ---------------------------------------------------------
     def deliver_broadcast(self, tensor):
-        self._broadcast_slot = tensor.clone()
-        self._broadcast_event.set()
+        with self._cond:
+            self._broadcast_slot = tensor.clone()
+            self._broadcast_epoch += 1
+            self._cond.notify_all()
 
-    def take_broadcast(self, tensor):
-        self._broadcast_event.wait(timeout=5)
-        tensor.copy_(self._broadcast_slot)
+    def take_broadcast(self, tensor, reader):
+        """Wait for a broadcast this reader has not consumed yet.
+
+        The MIN-ack barrier inside begin()/finish() keeps at most one
+        broadcast epoch in flight, so a plain per-reader epoch counter is
+        sufficient for multi-round chains.
+        """
+        with self._cond:
+            def fresh():
+                return self._broadcast_epoch > self._broadcast_reads.get(reader, 0)
+            self._cond.wait_for(fresh, timeout=10)
+            tensor.copy_(self._broadcast_slot)
+            self._broadcast_reads[reader] = self._broadcast_epoch
 
     # -- point to point ----------------------------------------------------
     def send(self, source, peer, tensor):
-        self._p2p[(source, peer)] = tensor.clone()
-        self._p2p_events.setdefault((source, peer), threading.Event()).set()
+        key = (source, peer)
+        self._p2p[key] = tensor.clone()
+        self._p2p_events.setdefault(key, threading.Event()).set()
 
     def receive(self, receiver, peer, tensor):
-        event = self._p2p_events.setdefault((peer, receiver), threading.Event())
-        event.wait(timeout=5)
-        tensor.copy_(self._p2p.pop((peer, receiver)))
+        key = (peer, receiver)
+        event = self._p2p_events.setdefault(key, threading.Event())
+        event.wait(timeout=10)
+        tensor.copy_(self._p2p.pop(key))
+        event.clear()
 
     # -- min reduction -----------------------------------------------------
     def contribute_min(self, value):
-        """All ranks block until everyone contributed; all read the min."""
-        with self._reduce_lock:
+        """All ranks block until everyone contributed; all read the min.
+
+        Epoch-counted like the broadcast: the event from a previous
+        reduction must not release the next one early.
+        """
+        with self._reduce_cond:
+            epoch = self._reduce_epoch
             self._reduce_values.append(int(value))
             if len(self._reduce_values) == self.world_size:
                 self._reduce_result = min(self._reduce_values)
                 self._reduce_values.clear()
-                self._reduce_event.set()
-        self._reduce_event.wait(timeout=5)
-        return self._reduce_result
+                self._reduce_epoch += 1
+                self._reduce_cond.notify_all()
+
+            def done():
+                return self._reduce_epoch > epoch
+
+            self._reduce_cond.wait_for(done, timeout=10)
+            return self._reduce_result
 
 
 class FakeTransport(ChainTransport):
@@ -92,7 +125,7 @@ class FakeTransport(ChainTransport):
         if self.rank == source:
             self.bus.deliver_broadcast(tensor)
         else:
-            self.bus.take_broadcast(tensor)
+            self.bus.take_broadcast(tensor, self.rank)
 
     def all_reduce_min(self, tensor):
         tensor.fill_(self.bus.contribute_min(int(tensor.item())))
@@ -136,7 +169,7 @@ class TestChainRole(unittest.TestCase):
 class TestBegin(unittest.TestCase):
     def test_broadcast_reaches_all_and_commits_pending(self):
         _, states, channels = make_chain(3)
-        words = [1, 5, 9, 0, 0, 0, 0, 0]
+        words = [1, 5, 9] + [0] * (HEADER_WORDS - 3)
         worker_results = {}
 
         def worker(rank):
@@ -156,12 +189,12 @@ class TestBegin(unittest.TestCase):
     def test_worker_cannot_originate(self):
         _, _, channels = make_chain(3)
         with self.assertRaises(ValueError):
-            channels[1].begin([0] * 8)
+            channels[1].begin([0] * HEADER_WORDS)
 
     def test_rejection_surfaces_on_every_rank(self):
         _, states, channels = make_chain(3)
         states[2].fail_begin = True
-        words = [2, 0, 0, 0, 0, 0, 0, 0]
+        words = [2] + [0] * (HEADER_WORDS - 1)
         worker_errors = {}
 
         def worker(rank):
