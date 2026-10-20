@@ -38,6 +38,62 @@ class _nullcontext:
         return False
 
 
+def run_chain_round(channel, worker, tokens=None):
+    """One round of the broadcast chain; EVERY rank runs the identical
+    collective sequence — hidden broadcasts src=0..head in rank order, the
+    token broadcast src=head, then the MIN ack.
+
+    Cross-node P2P send/recv deadlocks the three-rank ring (gate-4 cycle 1),
+    so all transfers are broadcasts. A failing rank emits a fallback payload
+    (zeros hidden / FAILED_TOKEN tokens) instead of skipping its exchange,
+    then finish()'s MIN ack poisons every rank before any cursor advances.
+
+    Returns the head's token ids on the coordinator, None elsewhere.
+    Raises on the coordinator when the round failed or the epoch poisoned.
+    """
+    command = channel.state.pending
+    head_rank = channel.role.head_rank
+    received = None
+    failure = None
+    head_tokens = None
+    for source in range(head_rank + 1):
+        is_tokens = source == head_rank
+        payload = None
+        if source == worker.rank:
+            try:
+                payload = worker._stage_forward(command, tokens, received)
+            except BaseException as error:
+                failure = error
+                worker.failed = True
+                payload = worker._fallback(command, is_tokens)
+        if is_tokens:
+            if payload is None:
+                payload = torch.empty((token_rows(command),), dtype=torch.int64,
+                                      device=worker.device)
+            channel.exchange_tokens(payload, source)
+            if channel.role.is_coordinator:
+                head_tokens = payload
+        else:
+            if payload is None:
+                payload = torch.zeros((command.rows, worker.width),
+                                      dtype=torch.float32, device=worker.device)
+            channel.exchange_hidden(payload, source)
+            received = payload
+    try:
+        channel.finish(command, success=failure is None)
+    except RuntimeError:
+        worker.failed = True
+        raise
+    if failure is not None:
+        worker.failed = True
+        raise failure
+    if channel.role.is_coordinator:
+        if any(token == FAILED_TOKEN for token in head_tokens.tolist()):
+            raise RuntimeError('chain head reported stage failure')
+        return head_tokens.tolist()
+    return None
+
+
 class ChainStageWorker:
     """Worker-side execution of chain rounds (any rank; rank 0 optional).
 
@@ -73,8 +129,12 @@ class ChainStageWorker:
         self.stopped = threading.Event()
 
     @torch.inference_mode()
-    def _stage_forward(self, command, tokens=None):
-        """Execute this shard; returns the hidden state [rows, width] FP32."""
+    def _stage_forward(self, command, tokens=None, received=None):
+        """Execute this shard; returns this rank's round payload.
+
+        Ranks before the head return the hidden state [rows, width] FP32;
+        the head rank returns `token_rows(command)` int64 argmax ids.
+        """
         stage = self.stage
         rows = command.rows
         if command.operation == DECODE:
@@ -97,9 +157,8 @@ class ChainStageWorker:
             else:
                 hidden = stage.embedding(values[None])
         else:
-            received = torch.zeros((rows, self.width), dtype=torch.float32,
-                                   device=self.device)
-            self.channel.receive_hidden(received)
+            if received is None or received.shape != (rows, self.width):
+                raise ValueError('chain stage missing its broadcast hidden input')
             if not torch.isfinite(received).all():
                 raise ValueError('nonfinite chain received activation')
             # DECODE rows are batch slots: [rows, 1, width]. PREFILL rows are
@@ -108,20 +167,28 @@ class ChainStageWorker:
         device = self.stage.actual_device
         with torch.cuda.device(device) if device.type == 'cuda' else _nullcontext():
             result = stage.forward_layers(hidden, positions, slots, prefill)
+        if self.stage.last:
+            count = token_rows(command)
+            logits = stage.output_logits(result.reshape(-1, self.width)[-count:])
+            if logits.shape != (count, self.vocab_size):
+                raise ValueError('invalid chain output logits')
+            return logits.argmax(-1).to(torch.int64)
         hidden_out = result.reshape(-1, self.width)[-rows:].to(torch.float32).contiguous()
         if hidden_out.shape != (rows, self.width) or not torch.isfinite(hidden_out).all():
             raise ValueError('invalid chain stage activation')
         return hidden_out
 
-    def run_round(self, tokens=None):
-        """Execute the channel's pending command; the head returns argmax tokens.
+    def _fallback(self, command, is_tokens):
+        """Deadlock-free failure payload so every rank reaches the MIN ack."""
+        if is_tokens:
+            return torch.full((token_rows(command),), FAILED_TOKEN,
+                              dtype=torch.int64, device=self.device)
+        return torch.zeros((command.rows, self.width), dtype=torch.float32,
+                           device=self.device)
 
-        Any execution failure funnels through finish(success=False): the
-        worker still emits a fallback payload so the chain stays alive, and
-        the MIN ack poisons every rank before any cursor advances.
-        """
+    def run_round(self, tokens=None):
+        """Execute the channel's pending command via the broadcast chain."""
         command = self.channel.state.pending
-        success = True
         if command.operation == STOP:
             # Control-only record: no execution, no payload, no tokens.
             self.channel.finish(command)
@@ -129,35 +196,13 @@ class ChainStageWorker:
             self.stopped.set()
             return
         try:
-            hidden = self._stage_forward(command, tokens)
-            if self.stage.last:
-                rows = token_rows(command)
-                logits = self.stage.output_logits(hidden[-rows:])
-                if logits.shape != (rows, self.vocab_size):
-                    raise ValueError('invalid chain output logits')
-                self.channel.return_tokens(logits.argmax(-1).to(torch.int64))
-            if not self.stage.last:
-                self.channel.forward_hidden(hidden)
+            run_chain_round(self.channel, self, tokens)
         except BaseException:
-            success = False
+            # A poisoned epoch needs fresh workers; exit the loop quietly.
             self.failed = True
-            # Keep the chain alive so every rank reaches the MIN ack.
-            try:
-                if self.stage.last:
-                    self.channel.return_tokens(
-                        torch.full((token_rows(command),), FAILED_TOKEN,
-                                   dtype=torch.int64, device=self.device))
-                elif not self.stage.first:
-                    self.channel.forward_hidden(
-                        torch.zeros((command.rows, self.width), dtype=torch.float32,
-                                    device=self.device))
-            except RuntimeError:
-                pass
-        try:
-            self.channel.finish(command, success=success)
-        except BaseException:
-            self.failed = True
-            raise
+            self.closed = True
+            self.stopped.set()
+            return
         # Mirror the two-rank worker: keep the stage's cursor view in lockstep.
         self.stage.lengths[:] = self.channel.state.lengths
         self.stage.length = self.channel.state.lengths[0]
@@ -218,23 +263,6 @@ class ChainPipeline:
     def _command(self, operation, rows, entries):
         return Command(self.state.epoch, self.state.sequence, operation, rows, entries)
 
-    def _run_stage0(self, command, tokens):
-        """Execute stage 0; on failure send a fallback payload and report it.
-
-        The fallback keeps downstream ranks alive so the whole chain reaches
-        the MIN ack and poisons together instead of deadlocking.
-        """
-        try:
-            return self._stage0_worker._stage_forward(command, tokens), None
-        except BaseException as error:
-            try:
-                self.channel.forward_hidden(
-                    torch.zeros((command.rows, self.width), dtype=torch.float32,
-                                device=self.device))
-            except RuntimeError:
-                pass
-            return None, error
-
     def prefill(self, tokens, slot=0):
         """Prompt one slot; returns the head's argmax next-token id."""
         if self.failed or self.closed:
@@ -264,49 +292,14 @@ class ChainPipeline:
         return self._round(command, tokens)
 
     def _round(self, command, tokens):
-        success = True
-        result = None
-        failure = None
-        received = None
-        began = False
         try:
             accepted = self.channel.begin(command.encode())
-            began = True
             if accepted != command:
                 raise RuntimeError('chain stage accepted a different command')
-            hidden, error = self._run_stage0(command, tokens)
-            if error is not None:
-                raise RuntimeError('chain coordinator stage failed') from error
-            self.channel.forward_hidden(hidden)
-            received = torch.full((token_rows(command),), FAILED_TOKEN,
-                                  dtype=torch.int64, device=self.device)
-            self.channel.receive_tokens(received)
-            if any(token == FAILED_TOKEN for token in received.tolist()):
-                raise RuntimeError('chain head reported stage failure')
-            result = received.tolist()
+            result = run_chain_round(self.channel, self._stage0_worker, tokens)
         except BaseException as error:
-            success = False
-            failure = error
-            # Drain the token round the head still owes so every rank reaches
-            # the MIN ack; the round's result is discarded either way. If the
-            # tokens already arrived (head-side failure), or the round never
-            # began, there is nothing to drain.
-            if began and received is None:
-                try:
-                    self.channel.receive_tokens(
-                        torch.full((token_rows(command),), FAILED_TOKEN,
-                                   dtype=torch.int64, device=self.device))
-                except RuntimeError:
-                    pass
-        try:
-            self.channel.finish(command, success=success)
-        except RuntimeError:
             self.failed = True
-            raise
-        if not success:
-            self.failed = True
-            assert failure is not None
-            raise failure
+            raise error
         return result
 
     def close(self):

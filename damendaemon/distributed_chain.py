@@ -12,7 +12,7 @@ identity agreement and HTTP serving stay with the caller (the two-rank
 StagePair machinery remains the reference; this module does not replace it).
 
 A CPU test transport implements the same collective surface (broadcast,
-all_reduce MIN, batch P2P isend/irecv) so the command/ack/transfer ordering is
+all_reduce MIN, broadcast hops) so the command/ack/transfer ordering is
 testable without CUDA; the runtime transport is NCCL with the same calls.
 """
 from __future__ import annotations
@@ -25,8 +25,6 @@ class ChainTransport:
 
     def broadcast(self, tensor, source): raise NotImplementedError
     def all_reduce_min(self, tensor): raise NotImplementedError
-    def send(self, tensor, peer): raise NotImplementedError
-    def recv(self, tensor, peer): raise NotImplementedError
     def synchronize(self): raise NotImplementedError
 
 
@@ -44,14 +42,6 @@ class NcclChainTransport(ChainTransport):
 
     def all_reduce_min(self, tensor):
         self._dist.all_reduce(tensor, op=self._dist.ReduceOp.MIN)
-
-    def send(self, tensor, peer):
-        for work in self._dist.batch_isend_irecv([self._dist.P2POp(self._dist.isend, tensor, peer)]):
-            work.wait()
-
-    def recv(self, tensor, peer):
-        for work in self._dist.batch_isend_irecv([self._dist.P2POp(self._dist.irecv, tensor, peer)]):
-            work.wait()
 
     def synchronize(self):
         torch.cuda.synchronize()
@@ -115,31 +105,22 @@ class ChainChannel:
             raise ValueError('stage command rejected before activation transfer') from error
         return accepted
 
-    def forward_hidden(self, hidden):
-        """Send this rank's stage output to the next rank (blocking, synced)."""
-        peer = self.role.forward_peer()
-        self.transport.send(hidden, peer)
+    def exchange_hidden(self, tensor, source):
+        """Broadcast-chain hop: a stage's hidden output reaches every rank.
+
+        Cross-node P2P send/recv deadlocks this three-rank ring (gate-4
+        cycle 1 finding), so every hop is a broadcast that ALL ranks issue
+        in the same order. `tensor` holds the payload on the source rank
+        and is overwritten on every other rank.
+        """
+        self.transport.broadcast(tensor, source)
         self.transport.synchronize()
 
-    def receive_hidden(self, hidden):
-        """Receive the previous rank's stage output into this rank's buffer."""
-        if self.role.rank == 0:
-            raise ValueError('the coordinator receives no hidden state')
-        self.transport.recv(hidden, self.role.rank - 1)
-        self.transport.synchronize()
-
-    def return_tokens(self, tokens):
-        """Head rank sends sampled int64 tokens to the coordinator (fenced)."""
-        if not self.role.owns_head:
-            raise ValueError('only the head rank returns tokens')
-        self.transport.send(tokens, 0)
-        self.transport.synchronize()
-
-    def receive_tokens(self, tokens):
-        """Coordinator receives the head rank's tokens; also the completion fence."""
-        if not self.role.is_coordinator:
-            raise ValueError('only the coordinator receives tokens')
-        self.transport.recv(tokens, self.role.head_rank)
+    def exchange_tokens(self, tensor, source):
+        """Head rank's token payload broadcast to every rank (same order)."""
+        if source != self.role.head_rank:
+            raise ValueError('token exchange broadcasts from the head rank')
+        self.transport.broadcast(tensor, source)
         self.transport.synchronize()
 
     def finish(self, command, *, success=True):

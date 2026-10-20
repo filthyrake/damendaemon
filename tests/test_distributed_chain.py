@@ -46,49 +46,36 @@ class FakeBus:
     def __init__(self, world_size):
         self.world_size = world_size
         self._cond = threading.Condition()
-        self._broadcast_slot = None
         self._broadcast_epoch = 0
-        self._broadcast_reads = {}
-        self._p2p = {}
-        self._p2p_events = {}
+        self._broadcast_queues = {}  # reader rank -> FIFO of (epoch, tensor)
         self._reduce_cond = threading.Condition()
         self._reduce_values = []
         self._reduce_epoch = 0
         self._reduce_result = None
 
     # -- broadcast ---------------------------------------------------------
-    def deliver_broadcast(self, tensor):
+    def deliver_broadcast(self, tensor, source):
+        """Queue the payload for every reader rank; the source never reads."""
         with self._cond:
-            self._broadcast_slot = tensor.clone()
             self._broadcast_epoch += 1
+            for reader in range(self.world_size):
+                if reader != source:
+                    self._broadcast_queues.setdefault(reader, []).append(
+                        (self._broadcast_epoch, tensor.clone()))
             self._cond.notify_all()
 
     def take_broadcast(self, tensor, reader):
-        """Wait for a broadcast this reader has not consumed yet.
+        """Wait for this reader's oldest undelivered broadcast (FIFO).
 
-        The MIN-ack barrier inside begin()/finish() keeps at most one
-        broadcast epoch in flight, so a plain per-reader epoch counter is
-        sufficient for multi-round chains.
+        A round issues several broadcasts back-to-back (hidden hops, tokens)
+        with no reduction barrier between them, so each reader consumes its
+        own per-epoch FIFO instead of a shared slot.
         """
         with self._cond:
-            def fresh():
-                return self._broadcast_epoch > self._broadcast_reads.get(reader, 0)
-            self._cond.wait_for(fresh, timeout=10)
-            tensor.copy_(self._broadcast_slot)
-            self._broadcast_reads[reader] = self._broadcast_epoch
-
-    # -- point to point ----------------------------------------------------
-    def send(self, source, peer, tensor):
-        key = (source, peer)
-        self._p2p[key] = tensor.clone()
-        self._p2p_events.setdefault(key, threading.Event()).set()
-
-    def receive(self, receiver, peer, tensor):
-        key = (peer, receiver)
-        event = self._p2p_events.setdefault(key, threading.Event())
-        event.wait(timeout=10)
-        tensor.copy_(self._p2p.pop(key))
-        event.clear()
+            queue = self._broadcast_queues.setdefault(reader, [])
+            self._cond.wait_for(lambda: bool(queue), timeout=30)
+            _, data = queue.pop(0)
+            tensor.copy_(data)
 
     # -- min reduction -----------------------------------------------------
     def contribute_min(self, value):
@@ -123,18 +110,12 @@ class FakeTransport(ChainTransport):
 
     def broadcast(self, tensor, source):
         if self.rank == source:
-            self.bus.deliver_broadcast(tensor)
+            self.bus.deliver_broadcast(tensor, source)
         else:
             self.bus.take_broadcast(tensor, self.rank)
 
     def all_reduce_min(self, tensor):
         tensor.fill_(self.bus.contribute_min(int(tensor.item())))
-
-    def send(self, tensor, peer):
-        self.bus.send(self.rank, peer, tensor)
-
-    def recv(self, tensor, peer):
-        self.bus.receive(self.rank, peer, tensor)
 
     def synchronize(self):
         pass
@@ -216,34 +197,49 @@ class TestBegin(unittest.TestCase):
 
 
 class TestTransfer(unittest.TestCase):
-    def test_hidden_forward_chain(self):
-        bus, _, _ = make_chain(3)
-        hidden = torch.arange(6, dtype=torch.float32).reshape(2, 3)
-        role0, role1, role2 = ChainRole(0, 3), ChainRole(1, 3), ChainRole(2, 3)
-        transport0 = FakeTransport(0, bus)
-        transport1 = FakeTransport(1, bus)
-        thread = threading.Thread(target=lambda: transport0.send(hidden, role0.forward_peer()))
-        thread.start()
-        received = torch.zeros_like(hidden)
-        transport1.recv(received, role1.rank - 1)
-        thread.join(timeout=5)
-        self.assertTrue(torch.equal(received, hidden))
+    """The broadcast-chain exchanges: every rank issues the same hop order."""
 
-    def test_token_return_is_head_to_coordinator(self):
-        bus, _, _ = make_chain(3)
+    def test_hidden_exchange_reaches_every_rank(self):
+        bus, _, channels = make_chain(3)
+        hidden = torch.arange(6, dtype=torch.float32).reshape(2, 3)
+        received = {}
+
+        def other(rank):
+            buffer_ = torch.zeros(2, 3, dtype=torch.float32)
+            channels[rank].exchange_hidden(buffer_, 0)
+            received[rank] = buffer_
+
+        threads = [threading.Thread(target=other, args=(r,)) for r in (1, 2)]
+        for thread in threads:
+            thread.start()
+        channels[0].exchange_hidden(hidden, 0)
+        for thread in threads:
+            thread.join(timeout=5)
+        self.assertTrue(torch.equal(received[1], hidden))
+        self.assertTrue(torch.equal(received[2], hidden))
+
+    def test_token_exchange_is_head_only(self):
+        _, _, channels = make_chain(3)
         tokens = torch.tensor([7, 8], dtype=torch.int64)
-        role2, transport2 = ChainRole(2, 3), FakeTransport(2, bus)
-        thread = threading.Thread(target=lambda: transport2.send(tokens, 0))
-        thread.start()
-        buffer_ = torch.zeros(2, dtype=torch.int64)
-        FakeTransport(0, bus).recv(buffer_, 2)
-        thread.join(timeout=5)
-        self.assertTrue(torch.equal(buffer_, tokens))
-        middle = ChainChannel(ChainRole(1, 3), FakeTransport(1, bus), FakeStageState())
         with self.assertRaises(ValueError):
-            middle.return_tokens(tokens)
+            channels[0].exchange_tokens(tokens, 0)  # not the head rank
         with self.assertRaises(ValueError):
-            middle.receive_tokens(tokens)
+            channels[2].exchange_tokens(tokens, 0)  # head cannot receive its own hop
+        received = {}
+
+        def other(rank):
+            buffer_ = torch.zeros(2, dtype=torch.int64)
+            channels[rank].exchange_tokens(buffer_, 2)
+            received[rank] = buffer_
+
+        threads = [threading.Thread(target=other, args=(r,)) for r in (0, 1)]
+        for thread in threads:
+            thread.start()
+        channels[2].exchange_tokens(tokens, 2)
+        for thread in threads:
+            thread.join(timeout=5)
+        self.assertTrue(torch.equal(received[0], tokens))
+        self.assertTrue(torch.equal(received[1], tokens))
 
 
 class TestFinish(unittest.TestCase):
