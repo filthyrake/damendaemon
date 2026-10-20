@@ -1,0 +1,21 @@
+  "mode": "three-rank-nccl-chain",
+  "world_size": 3,
+  "steps_timed": 50,
+  "payloads": {
+    "decode_token_bytes": 10240,
+    "chunk127_bytes": 1300480
+  },
+  "median_seconds": {
+    "broadcast": 0.012959,
+    "forward": 0.000187,
+    "return": 0.000144,
+    "round": 0.013281
+  },
+  "max_seconds": {
+    "broadcast": 0.013962,
+    "forward": 0.000307,
+    "return": 0.000269,
+    "round": 0.014287
+  },
+  "token_received": 42,
+  "note": "synthetic stages; timings include stage-compute zeros \u2014 forward median IS the boundary transfer. No model/weights/serving claim."
