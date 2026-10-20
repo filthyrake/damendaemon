@@ -54,6 +54,12 @@ def main(argv=None):
     p.add_argument('--queue-timeout', type=float, default=120)
     p.add_argument('--idle-timeout', type=float, default=0,
                    help='optional rank-0 shutdown after idle seconds; zero disables')
+    p.add_argument('--chunk-size', type=int, default=128,
+                   help='chain prefill chunk rows for interleaved prefill')
+    p.add_argument('--interleaved-prefill', action='store_true',
+                   help='chunk long prompts across decode rounds instead of whole-prompt prefill')
+    p.add_argument('--client-prefill-turns', action='store_true',
+                   help='weighted per-client prefill chunk shares (requires --interleaved-prefill)')
     p.add_argument('--bind', default='127.0.0.1')
     args = p.parse_args(argv)
     quantization = None if args.quantization == 'none' else args.quantization
@@ -65,6 +71,10 @@ def main(argv=None):
         p.error('invalid queue timeout or model alias')
     if args.batch_size > context_slots(args.context):
         p.error('batch size exceeds the context-sized slot table')
+    if not 1 <= args.chunk_size <= 4096 or args.chunk_size > args.context:
+        p.error('chunk size must be 1..4096 and fit the context')
+    if args.client_prefill_turns and not args.interleaved_prefill:
+        p.error('client prefill turns require --interleaved-prefill')
 
     rank = int(os.environ['RANK'])
     world = int(os.environ['WORLD_SIZE'])
@@ -115,9 +125,12 @@ def main(argv=None):
     from damendaemon.server import BoundedHTTPServer
     pipeline = ChainPipeline(stage, channel, device=device)
     pair = ChainServingPair(pipeline, model, alias=args.alias,
-                            identity=identity, stage_layers=layer_bounds)
+                            identity=identity, stage_layers=layer_bounds,
+                            chunk_size=args.chunk_size)
     runtime = ChainDistributedRuntime(pair, args.alias, args.queue_size,
-                                      args.queue_timeout)
+                                      args.queue_timeout,
+                                      interleaved_prefill=args.interleaved_prefill,
+                                      client_prefill_turns=args.client_prefill_turns)
     base = handler_for_chain(runtime)
 
     class Handler(base):
