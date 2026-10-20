@@ -50,6 +50,8 @@ def main(argv=None):
     p.add_argument('--alias', default='model')
     p.add_argument('--port', type=int, default=8017)
     p.add_argument('--batch-size', type=int, choices=range(1, 5), default=2)
+    p.add_argument('--model', action='append', default=[], metavar='ALIAS=PATH',
+                   help='one additional compatible local model on every rank for resident switching (unquantized only)')
     p.add_argument('--queue-size', type=int, default=8)
     p.add_argument('--queue-timeout', type=float, default=120)
     p.add_argument('--idle-timeout', type=float, default=0,
@@ -75,6 +77,13 @@ def main(argv=None):
         p.error('chunk size must be 1..4096 and fit the context')
     if args.client_prefill_turns and not args.interleaved_prefill:
         p.error('client prefill turns require --interleaved-prefill')
+    if len(args.model) > 1 or any('=' not in entry for entry in args.model):
+        p.error('at most one additional ALIAS=PATH model is supported')
+    additional = [tuple(entry.split('=', 1)) for entry in args.model]
+    if any(not alias or not path or alias == args.alias for alias, path in additional):
+        p.error('additional model needs a distinct alias and local path')
+    if additional and quantization is not None:
+        p.error('resident chain switching currently requires unquantized models')
 
     rank = int(os.environ['RANK'])
     world = int(os.environ['WORLD_SIZE'])
@@ -96,25 +105,49 @@ def main(argv=None):
     model, stage, layer_bounds = build_stage(args.path, rank, world, device,
                                              args.context, quantization,
                                              slots=args.batch_size)
+    # Additional resident models: same decoder config, distinct identity.
+    from damendaemon.models import load as load_model
+    extra_models = []
+    for alias, path in additional:
+        extra = load_model(path, args.context, quantization)
+        if extra.config != model.config:
+            raise SystemExit(f'chain model {alias} has an incompatible decoder config')
+        extra_models.append((alias, extra))
     # Fingerprint BEFORE moving weights: identity requires prepared CPU
     # tensors, and every rank must agree before rank 0 serves.
-    identity = fingerprint(model)
     transport = NcclChainTransport()
-    digest = torch.tensor(list(identity), dtype=torch.uint8, device=device)
-    local = digest.clone()
-    transport.broadcast(digest, 0)  # rank 0 publishes; every rank receives
-    ack = torch.tensor([int(torch.equal(local, digest))], dtype=torch.int64,
-                       device=device)
-    transport.all_reduce_min(ack)
-    if not ack.item():
-        raise SystemExit('chain model identity disagreement; aborting before serving')
 
-    state = StageState(epoch=1, context=args.context, slots=args.batch_size)
+    def agree(alias, fingerprinted):
+        digest = torch.tensor(list(fingerprinted), dtype=torch.uint8, device=device)
+        local = digest.clone()
+        transport.broadcast(digest, 0)  # rank 0 publishes; every rank receives
+        ack = torch.tensor([int(torch.equal(local, digest))], dtype=torch.int64,
+                           device=device)
+        transport.all_reduce_min(ack)
+        if not ack.item():
+            raise SystemExit(f'chain model identity disagreement on {alias}; '
+                             'aborting before serving')
+
+    identity = fingerprint(model)
+    agree(args.alias, identity)
+    extra_identities = []
+    for alias, extra in extra_models:
+        extra_identity = fingerprint(extra)
+        agree(alias, extra_identity)
+        extra_identities.append((alias, extra_identity))
+
+    # Per-rank shard table: index 0 is the resident (initial) model; each
+    # entry is the rank's layer-range weight dict of CPU tensors.
+    shards = [{name: source[name] for name in stage.w}
+              for source in (model.weights, *(extra.weights for _, extra in extra_models))]
+
+    state = StageState(epoch=1, context=args.context, slots=args.batch_size,
+                       models=1 + len(extra_models))
     channel = ChainChannel(ChainRole(rank, world), transport, state, device=device)
 
     if rank != 0:
         from damendaemon.chain_pipeline import ChainStageWorker
-        ChainStageWorker(stage, channel, device=device).run_forever()
+        ChainStageWorker(stage, channel, device=device, shards=shards).run_forever()
         torch.distributed.barrier()
         torch.distributed.destroy_process_group()
         return 0
@@ -123,10 +156,17 @@ def main(argv=None):
     from damendaemon.chain_serving import (ChainDistributedRuntime, ChainServingPair,
                                            handler_for_chain)
     from damendaemon.server import BoundedHTTPServer
-    pipeline = ChainPipeline(stage, channel, device=device)
+    pipeline = ChainPipeline(stage, channel, device=device, shards=shards)
+    models = {args.alias: model}
+    identities = {args.alias: identity}
+    for alias, extra in extra_models:
+        models[alias] = extra
+    for (alias, extra_identity) in extra_identities:
+        identities[alias] = extra_identity
     pair = ChainServingPair(pipeline, model, alias=args.alias,
                             identity=identity, stage_layers=layer_bounds,
-                            chunk_size=args.chunk_size)
+                            chunk_size=args.chunk_size,
+                            models=models, identities=identities)
     runtime = ChainDistributedRuntime(pair, args.alias, args.queue_size,
                                       args.queue_timeout,
                                       interleaved_prefill=args.interleaved_prefill,

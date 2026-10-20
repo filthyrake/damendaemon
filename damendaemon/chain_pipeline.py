@@ -27,7 +27,8 @@ import torch
 
 from .distributed_chain import ChainChannel
 from .stage_protocol import (DECODE, FAILED_TOKEN, PING, PREFILL, PREFILL_CHUNK,
-                             RELEASE, STOP, StageState, Command, token_rows)
+                             RELEASE, STOP, SWITCH, StageState, Command,
+                             token_rows)
 
 
 class _nullcontext:
@@ -102,10 +103,16 @@ class ChainStageWorker:
     run any geometry. Ranks > 0 run `run_forever` on their own thread.
     """
 
-    def __init__(self, stage, channel, *, device=None):
+    def __init__(self, stage, channel, *, device=None, shards=None):
         if not isinstance(channel, ChainChannel):
             raise ValueError('chain worker needs a ChainChannel')
         state = channel.state
+        if shards is not None:
+            if (not isinstance(shards, list) or len(shards) != state.models
+                    or any(not isinstance(shard, dict)
+                            or any(type(name) is not str for name in shard)
+                            for shard in shards)):
+                raise ValueError('chain worker shards must match the model table')
         if (not isinstance(state, StageState) or stage.closed
                 or stage.context != state.context or stage.max_batch != state.slots
                 or stage.c['hidden_size'] <= 0):
@@ -124,6 +131,7 @@ class ChainStageWorker:
         self.vocab_size = stage.c['vocab_size']
         self.head = head
         self.device = torch.device(device) if device is not None else torch.device('cpu')
+        self.shards = shards
         self.failed = False
         self.closed = False
         self.stopped = threading.Event()
@@ -201,6 +209,28 @@ class ChainStageWorker:
                 for tensor in group.values():
                     tensor[slot].zero_()
 
+    def _apply_shard(self, index):
+        """Copy a pre-agreed model's shard weights into the resident stage.
+
+        Unquantized only: packed Q8/Q4 scales are bound to weight tensor ids
+        inside the quantized Linear (the two-rank stage_rebind machinery
+        owns that path). Same geometry is validated BEFORE any copy so a
+        rejection cannot leave a half-overwritten stage.
+        """
+        if self.shards is None:
+            raise ValueError('this chain has no alternate model table')
+        if type(index) is not int or not 0 <= index < len(self.shards):
+            raise ValueError('invalid chain shard index')
+        shard = self.shards[index]
+        if set(shard) != set(self.stage.w):
+            raise ValueError('chain shard does not cover the stage weights')
+        for name, target in self.stage.w.items():
+            source = shard[name]
+            if source.shape != target.shape or source.dtype != target.dtype:
+                raise ValueError(f'chain shard {name} geometry mismatch')
+        for name, target in self.stage.w.items():
+            target.copy_(shard[name])
+
     def run_round(self, tokens=None):
         """Execute the channel's pending command via the broadcast chain."""
         command = self.channel.state.pending
@@ -219,6 +249,23 @@ class ChainStageWorker:
             self.channel.finish(command)
             self.stage.lengths[:] = self.channel.state.lengths
             self.stage.length = self.channel.state.lengths[0]
+            return
+        if command.operation == SWITCH:
+            # Resident model swap: copy the pre-agreed shard in place (all
+            # slots must be empty — StageState.begin validated that), then
+            # the MIN ack commits model_index/epoch/generations everywhere
+            # or poisons the epoch on any failure.
+            success = True
+            try:
+                self._apply_shard(command.rows)
+            except BaseException:
+                success = False
+                self.failed = True
+            self.channel.finish(command, success=success)
+            self.stage.lengths[:] = self.channel.state.lengths
+            self.stage.length = self.channel.state.lengths[0]
+            if not success:
+                raise RuntimeError('chain stage model switch failed')
             return
         try:
             run_chain_round(self.channel, self, tokens)
@@ -265,7 +312,7 @@ class ChainPipeline:
     the cursors only advance when the whole chain acknowledged a round.
     """
 
-    def __init__(self, stage, channel, *, device=None):
+    def __init__(self, stage, channel, *, device=None, shards=None):
         if not isinstance(channel, ChainChannel):
             raise ValueError('chain pipeline needs a ChainChannel')
         if not channel.role.is_coordinator:
@@ -281,7 +328,8 @@ class ChainPipeline:
         self.state = state
         self.width = stage.c['hidden_size']
         self.device = torch.device(device) if device is not None else torch.device('cpu')
-        self._stage0_worker = ChainStageWorker(stage, channel, device=self.device)
+        self._stage0_worker = ChainStageWorker(stage, channel, device=self.device,
+                                              shards=shards)
         self.failed = False
         self.closed = False
 
@@ -373,6 +421,41 @@ class ChainPipeline:
         except BaseException:
             self.failed = True
             raise
+        return True
+
+    def switch(self, index):
+        """Swap the resident model to a pre-agreed table index.
+
+        Requires every slot released; the SWITCH round copies each rank's
+        shard in place and the MIN ack commits model_index + a fresh epoch
+        (generations reset) everywhere, or poisons on any failure. Returns
+        False when already current (two-rank switch_model semantics).
+        """
+        if self.failed or self.closed:
+            raise RuntimeError('chain pipeline is not ready')
+        if type(index) is not int or not 0 <= index < self.state.models:
+            raise ValueError('invalid chain model index')
+        if index == self.state.model_index:
+            return False
+        if any(self.state.lengths):
+            raise ValueError('model switch requires released request slots')
+        command = self._command(SWITCH, index, ())
+        success = True
+        try:
+            self.channel.begin(command.encode())
+            self._stage0_worker._apply_shard(index)
+        except BaseException:
+            success = False
+        try:
+            self.channel.finish(command, success=success)
+        except BaseException:
+            self.failed = True
+            raise
+        self._stage0_worker.stage.lengths[:] = self.state.lengths
+        self._stage0_worker.stage.length = self.state.lengths[0]
+        if not success:
+            self.failed = True
+            raise RuntimeError('chain model switch failed')
         return True
 
     def release(self, slots):
