@@ -90,6 +90,9 @@ class ChainChannel:
         # StageState owns only ownership/cursor bookkeeping. NCCL ranks pass
         # the header's device so the broadcast lands on the rank's GPU.
         self.header = torch.zeros(HEADER_WORDS, dtype=torch.int64, device=device)
+        # The MIN-ack buffer belongs to the channel; NCCL ranks keep it on
+        # the rank's device next to the header.
+        self.ack = torch.zeros(1, dtype=torch.int64, device=device)
 
     def begin(self, command_words=None):
         """Broadcast the coordinator's command; every rank validates and acks."""
@@ -106,9 +109,9 @@ class ChainChannel:
             accepted = self.state.begin(words)
         except (ValueError, RuntimeError) as failure:
             error = failure
-        self.transport.ack.fill_(int(error is None))
-        self.transport.all_reduce_min(self.transport.ack)
-        if not self.transport.ack.item():
+        self.ack.fill_(int(error is None))
+        self.transport.all_reduce_min(self.ack)
+        if not self.ack.item():
             raise ValueError('stage command rejected before activation transfer') from error
         return accepted
 
@@ -150,9 +153,9 @@ class ChainChannel:
         if self.state.pending != command:
             raise RuntimeError('stage completion does not own pending work')
         self.transport.synchronize()
-        self.transport.ack.fill_(int(success))
-        self.transport.all_reduce_min(self.transport.ack)
-        acknowledged = self.transport.ack.item() == 1
+        self.ack.fill_(int(success))
+        self.transport.all_reduce_min(self.ack)
+        acknowledged = self.ack.item() == 1
         if acknowledged:
             self.state.commit(command)
         else:
