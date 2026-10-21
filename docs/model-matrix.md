@@ -43,7 +43,7 @@ the Qwen3 name does not imply support for Qwen3.5, MoE, vision, or quantization.
 | --- | --- | --- |
 | Qwen/Qwen3-1.7B | `70d244cc86ccca08cf5af4e1e306ecf908b1ad5e` | Single, batched, and 2,048-context gates passed against FP32 reference |
 | HuggingFaceTB/SmolLM2-360M-Instruct | `a10cc1512eabd3dde888204e902eca88bddb4951` | Single, batched, and 2,048-context gates passed against FP16 reference |
-| Qwen/Qwen3-0.6B | `c1899de289a04d12100db370d81485cdf75e47ca` | Single and batched gates passed against FP32; long-context qualification remains provisional |
+| Qwen/Qwen3-0.6B | `c1899de289a04d12100db370d81485cdf75e47ca` | All 84 long-context checks pass on the CUDA default (FP32-arithmetic path, #2); the fp16 `standard` opt-out retains its documented two-position failure |
 
 The original Qwen2.5 models remain in the regression suite. Configuration support
 is broader than this small verified set; untested models are not automatically
@@ -81,6 +81,14 @@ but two positions exceeded the relative-error gate: 1.1941% and 1.4159%, with
 maximum absolute errors 0.1489 and 0.1731. Its report has `passed: false`; its
 performance data must not be presented as evidence that this numerical issue
 is resolved. No tolerance was relaxed to make those positions pass.
+
+**Update (#2, 2026-10-21): resolved by default change.** The CUDA default for
+unpacked Qwen3 checkpoints is now the qualified FP32-arithmetic path
+(`qwen3_default_precision` in `damendaemon/qwen2.py`); the fp16 `standard`
+path remains available as an explicit `DAMENDAEMON_QWEN3_PRECISION=standard`
+opt-out and reproduces these two failures exactly (1.1932%/1.4148% on a fresh
+independent trace). The default path passes 84/84 against an independent FP32
+reference — see `evidence/models/qwen3-fp32-default-2/`.
 
 Final numerical evidence:
 

@@ -800,8 +800,12 @@ only Q/K/V arithmetic precision did not clear the gate.
 `DAMENDAEMON_QWEN3_PRECISION=float32` now enables FP32 matrix/activation/KV arithmetic
 while retaining FP16 matrix storage. The pinned BF16 checkpoint's values are
 exactly representable in this storage. All 84 checks pass against the independent
-FP32 reference, worst relative RMS 0.002080%. The default `standard` path is
-unchanged and retains its previously documented small-model qualification gap.
+FP32 reference, worst relative RMS 0.002080%. Since #2's resolution (2026-10-21)
+this path is the CUDA DEFAULT for unpacked Qwen3 checkpoints
+(`qwen3_default_precision`); quantized weights keep the `standard` fp16 default
+their own gates qualified, and `DAMENDAEMON_QWEN3_PRECISION=standard` remains
+an explicit opt-out that reproduces the historical two-position failure
+(1.19%/1.41%) on a fresh trace.
 
 Initial A2 HTTP medians for the accurate path at concurrency 1/2/4 are
 108.33 / 172.96 / 214.32 tokens/sec, TTFT 49.0 / 76.7 / 140.3 ms. Four-request
