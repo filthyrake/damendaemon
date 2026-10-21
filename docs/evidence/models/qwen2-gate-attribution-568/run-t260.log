@@ -1,0 +1,128 @@
+`torch_dtype` is deprecated! Use `dtype` instead!
+{
+  "model_path": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B/snapshots/060db6499f32faf8b98477b0a26969ef7d8b9987",
+  "reference_dtype": "float32",
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "context": 256,
+  "correctness": [
+    {
+      "graph": false,
+      "graph_requested": false,
+      "prompt": "What is 2 + 2? Answer with one number.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.10588741302490234,
+      "max_relative_rms_error": 0.007549038622528315,
+      "max_mean_logit_error": 0.018366703763604164,
+      "text": "2 + 2 = 4\n\u6225user\nThat's correct! "
+    },
+    {
+      "graph": false,
+      "graph_requested": false,
+      "prompt": "Explain why the sky looks blue in one sentence.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.07917630672454834,
+      "max_relative_rms_error": 0.006597976200282574,
+      "max_mean_logit_error": 0.013423051685094833,
+      "text": "The sky looks blue because it is made up of water vapor, which absorbs and"
+    },
+    {
+      "graph": false,
+      "graph_requested": false,
+      "prompt": "Reply in French: Hello, how are you?",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.15100765228271484,
+      "max_relative_rms_error": 0.013923883438110352,
+      "max_mean_logit_error": 0.029460079967975616,
+      "text": "Bonjour, je suis un assistant.\u6d9e\u0103\n\u0450\n\u6d9e\u0103\n\u6d9e"
+    },
+    {
+      "graph": true,
+      "graph_requested": true,
+      "prompt": "What is 2 + 2? Answer with one number.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.10588741302490234,
+      "max_relative_rms_error": 0.007549038622528315,
+      "max_mean_logit_error": 0.018366703763604164,
+      "text": "2 + 2 = 4\n\u6225user\nThat's correct! "
+    },
+    {
+      "graph": true,
+      "graph_requested": true,
+      "prompt": "Explain why the sky looks blue in one sentence.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.07917630672454834,
+      "max_relative_rms_error": 0.006597976200282574,
+      "max_mean_logit_error": 0.013423051685094833,
+      "text": "The sky looks blue because it is made up of water vapor, which absorbs and"
+    },
+    {
+      "graph": true,
+      "graph_requested": true,
+      "prompt": "Reply in French: Hello, how are you?",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.15100765228271484,
+      "max_relative_rms_error": 0.013923883438110352,
+      "max_mean_logit_error": 0.029460079967975616,
+      "text": "Bonjour, je suis un assistant.\u6d9e\u0103\n\u0450\n\u6d9e\u0103\n\u6d9e"
+    }
+  ],
+  "timings": [
+    {
+      "graph": false,
+      "graph_requested": false,
+      "trial": 0,
+      "first_token_seconds": 0.21239943895488977,
+      "decode_tokens_per_second": 49.90059409099035
+    },
+    {
+      "graph": false,
+      "graph_requested": false,
+      "trial": 1,
+      "first_token_seconds": 0.020363816060125828,
+      "decode_tokens_per_second": 46.87111569806904
+    },
+    {
+      "graph": false,
+      "graph_requested": false,
+      "trial": 2,
+      "first_token_seconds": 0.02163718710653484,
+      "decode_tokens_per_second": 45.969072945814474
+    },
+    {
+      "graph": true,
+      "graph_requested": true,
+      "trial": 0,
+      "first_token_seconds": 0.02011770918034017,
+      "decode_tokens_per_second": 147.96604884202964
+    },
+    {
+      "graph": true,
+      "graph_requested": true,
+      "trial": 1,
+      "first_token_seconds": 0.020828966982662678,
+      "decode_tokens_per_second": 147.794129667728
+    },
+    {
+      "graph": true,
+      "graph_requested": true,
+      "trial": 2,
+      "first_token_seconds": 0.02218698593787849,
+      "decode_tokens_per_second": 146.4330413475166
+    }
+  ]
+}
+Traceback (most recent call last):
+  File "/tmp/damendaemon-568/scripts/verify_qwen2.py", line 113, in <module>
+    main()
+  File "/tmp/damendaemon-568/scripts/verify_qwen2.py", line 108, in main
+    assert all(not c["greedy_mismatch_steps"] and c["max_relative_rms_error"] < 0.01
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: GPU correctness gate failed
+shared CUDA gate refused or stopped run; see report

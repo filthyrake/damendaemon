@@ -20,7 +20,7 @@ All GPU runs guarded (`guard_shared_cuda`, A2 `GPU-1b29c7c8`), snapshot
 | Batching (`verify_batch`) | batched prefill passed, 48/48 matched batched steps, slot reuse passed, max relative RMS 4.6e-06 (`batch.json`) |
 | Model switching (`verify_model_service`, qwen2 + qwen3 + llama matrix, capacity 1 and 3) | passed; `residual_dtype: float32` visible in served timing metadata — the new default live through hot-swap (`model-service.json`) |
 | Performance A/B (`compare_a2`, thinking off, 64 max tokens, medians) | see below |
-| Qwen2 regression (`verify_qwen2`, Qwen2.5-0.5B) | **pre-existing failure on this torch, NOT this change** — see attribution below |
+| Qwen2.5-0.5B float32-reference cell (`verify_qwen2`) | 1.392% vs the 1% gate — **an unqualified configuration with no historical baseline, NOT a regression** (torch and code both exonerated; see corrected attribution below) |
 
 ## Performance tradeoff (recorded, unchanged decision boundary)
 
@@ -36,17 +36,18 @@ failing 2/84 deterministically. Consistent with the historical compensated
 Tensor Core measurements (107.23/170.68/271.50 vs standard 325.7 at c4).
 Shared-GPU HTTP timings; not an SLO claim.
 
-## Qwen2 regression — pre-existing torch drift (attribution evidence)
+## Qwen2.5-0.5B float32-reference measurement — attribution CORRECTED (2026-10-21)
 
-`verify_qwen2` (Qwen2.5-0.5B, FP32 reference) fails its RMS gate on the
-current venv at prompt 2: max relative RMS 1.392% (>1% gate; greedy still
-16/16). Rerun on PRISTINE code (stash/checkout, byte-identical run
-environment): identical values (0.755%/0.660%/1.392% per prompt) — the
-failure is torch-environment drift, not this change. The historical
-passing evidence (`qwen3-small-precise-verify_qwen2.json`) was recorded on
-torch 2.6.0+cu124; the current venv is 2.13.0+cu130. Filed as its own
-issue; this change touches only qwen3-gated code paths (both hunks sit
-inside `model_type == 'qwen3'` branches).
+This section's original claim ("pre-existing torch 2.6-to-2.13 drift") is
+**disproven** — see `../qwen2-gate-attribution-568/`. The bisect pinned torch
+2.6.0+cu124 in an isolated venv and reproduced the 1.392% failure bit-for-bit
+on the identical model/reference/code, while the historically-qualified
+configuration (Qwen2.5-0.5B-Instruct + float16 reference, `regression-a.json`)
+passes on the current torch (0.535/0.198/0.400% vs historical
+0.598/0.187/0.508%). The 1.392% figure is a genuine measurement of an
+unqualified configuration (base model vs a float32 reference) with no
+historical baseline — not a regression from any code or environment change.
+Greedy remains 16/16 on all three prompts in every run.
 
 ## Files
 
