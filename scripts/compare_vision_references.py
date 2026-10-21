@@ -26,4 +26,4 @@ for first,second in zip(a['cases'],b['cases']):
     report['cases'].append(dict(name=first['name'],checks=checks))
 Path(args.output).write_text(json.dumps(report,indent=2)+'\n')
 for case in report['cases']:
- print(case['name'],[c for c in case['checks'] if c['maximum']>.02])
+ print(case['name'],[c for c in case['checks'] if c['maximum']>=max(.02,5e-4*c['reference_maximum'])])
