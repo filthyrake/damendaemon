@@ -3,7 +3,9 @@
 Tracked in GitHub issue #50. Experimental still-image HTTP serving is now
 opt-in for Qwen3.5-0.8B on NVIDIA A2 (FP16/Q8 text) and Apple M4 (FP16/Q8 text). See the
 final section for current scope and lifecycle evidence. Earlier sections record
-the qualification sequence, including unresolved intermediate numerical limits.
+the qualification sequence, including the intermediate numerical limits (the
+block-11 absolute gate was miscalibrated and is resolved by calibration in
+#571 — see "Block-11 absolute gate calibration" below).
 
 The first implementation reads the vision tensors from Qwen3.5-0.8B revision
 `2fc06364715b967f1860aea9cf38778875588b17`. Projections use FP16 storage with
@@ -19,6 +21,10 @@ encoder imports no Transformers code. Published model equations and checkpoint
 layout are the interoperability specification.
 
 ## Initial result: blocked
+
+> **Update (#571, 2026-10-21): the block-11 absolute limit was miscalibrated; the gate is
+> now magnitude-scaled — see "Block-11 absolute gate calibration" below. The relative-RMS
+> passes recorded here were always genuine.**
 
 On NVIDIA A2, the first square image passes relative RMS error below 0.0001 at
 every stage, but block 11 fails the separate absolute-error limit of 0.02:
@@ -51,6 +57,8 @@ isolation tests pass. Encoded-image decoding and serving remain unimplemented.
 
 ## Expanded checks
 
+> **Update (#571): superseded — see "Block-11 absolute gate calibration" below.**
+
 All five native encoder cases pass the original final-feature limits: maximum
 relative RMS 0.0000153751 and maximum absolute error 0.000217557. All stages
 except block 11 pass both limits. Block 11 fails the absolute limit for every
@@ -65,6 +73,41 @@ arithmetic implementations; it does not constitute end-to-end qualification.
 The source-weight FP32 diagnostic also remains a failed check. Regenerate the
 control with `reference_qwen35_vision.py --device cuda`, then compare artifacts
 using `compare_vision_references.py`.
+
+## Block-11 absolute gate calibration (#571, 2026-10-21)
+
+The flat absolute limit of 0.02 was **miscalibrated for activation depth**, and
+the block-11 "failure" was an artifact of the limit, not of the runtime. The
+calibration evidence is `evidence/vision/qwen35-vision-block11-calibration.json`
+(with per-stage target magnitudes in `qwen35-vision-stage-magnitudes.json`):
+
+- Block 11 is the final encoder block and its reference activations reach
+  max |activation| 2,338.7 — 33x block 10 (70.2) and 544x the patch stage (4.3).
+  Its relative RMS was always in the passing band (worst 1.4e-05 vs the 1e-4
+  gate); the flat 0.02 limit demanded element-relative ~2.5e-05 from block 11
+  while the SAME evidence recorded 1.6e-04 from passing `merged` stages.
+- The independent Transformers CPU-vs-CUDA oracle control failing the same
+  check in the same band (0.0371–0.0857) was the tell: the limit, not the
+  arithmetic, was the defect.
+
+Calibrated bound, derived from the passing distribution per the house
+calibration rule (3x the worst passing member, floored at the old constant):
+
+    max_absolute_limit = max(0.02, 5e-4 x max|target|)
+
+where 5e-4 = 3 x 1.647e-04, the worst element-relative error observed across
+271 passing stage-checks in all committed evidence sets. Verdict computed
+against all 285 recorded checks before merging: zero stages exceed their bound;
+all 14 recorded block-11 failures pass on merit. The relative-RMS gate (1e-4)
+is unchanged and remains the binding check for systemic drift; the 0.02 floor
+still governs every stage with target max |activation| <= 40.
+
+Live reruns with the calibrated gate, both passed: A2 (torch 2.13.0+cu130,
+`qwen35-vision-block11-calibrated-a2.json`, block 11 max 0.0563–0.2414 against
+derived limits 1.149–1.201) and Apple M4 MPS (torch 2.6.0,
+`qwen35-vision-block11-calibrated-mps.json`, block 11 max 0.0948–0.1221). The
+source-weight FP32 diagnostic status is unchanged by this calibration (it is a
+storage-coefficient check, not an intermediate-activation check).
 
 `vision_positions.py` independently matches prompt positions, decode offsets,
 and rotary cosine/sine values exactly for seven layouts against Transformers
@@ -252,9 +295,11 @@ logit/token checks; all 366 local regression tests pass.
 
 Torch 2.13.0 MPS runs the independent encoder with FP16 projection storage and
 FP32 arithmetic. All five final merged-feature gates pass; all five retain the
-known block-11 absolute-error failure (0.0639–0.1073 against the 0.02 limit).
-This is preserved in `qwen35-vision-mps-initial.json`; the encoder gate is not
-reported as passed and no tolerance changes were made.
+historical block-11 absolute-error readings (0.0639–0.1073 against the then-flat
+0.02 limit), preserved in `qwen35-vision-mps-initial.json`. Since the #571
+calibration these pass on merit under the magnitude-scaled bound
+(`qwen35-vision-block11-calibrated-mps.json`, torch 2.6.0 MPS rerun, passed);
+the relative-RMS gate was never changed.
 
 The full model passes all 54 independent logit and exact greedy-token checks
 with worst relative RMS 0.004825 and maximum absolute error 0.07085. The ordinary

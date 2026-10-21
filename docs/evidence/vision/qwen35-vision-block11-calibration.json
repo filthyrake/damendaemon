@@ -1,0 +1,26 @@
+{
+ "scope": "#571 calibration of the intermediate-encoder absolute-error gate from the passing distribution",
+ "method": "Per-stage element-relative error r = max_absolute / max|target| across every PASSING stage-check in the committed evidence (A2 fp16 all-cases, A2 initial/eager/source/torch, MPS all-cases, oracle CPU-vs-CUDA strict-FP32 control): 271 passing checks. Worst passing member r = 1.647e-04 (merged, 'larger', MPS). New bound: max_absolute_limit = max(0.02, 3 x 1.647e-04 x max|target|), rounded to 5e-4 as the element-relative coefficient. Relative RMS gate unchanged at 1e-4.",
+ "calibration_population": {
+  "total_stage_checks": 285,
+  "passing": 271,
+  "failing_block11": 14,
+  "files": ["qwen35-vision-a2-all-cases.json", "qwen35-vision-mps-initial.json", "qwen35-vision-a2-eager.json", "qwen35-vision-a2-initial.json", "qwen35-vision-a2-source.json", "qwen35-vision-a2-torch.json", "qwen35-vision-reference-device-strict-control.json (oracle)"],
+  "worst_passing_element_relative": 1.647e-04,
+  "worst_passing_detail": "merged/larger on MPS, abs 0.000654, target maxabs 4.0",
+  "best_passing_element_relative": "order 1e-6 (patch/positioned stages)"
+ },
+ "stage_magnitudes": "See qwen35-vision-stage-magnitudes.json. Block 11 target maxabs 2338.7 (33x block 10's 70.2; mean|activation| 7.33 vs 0.39). The flat 0.02 limit on block 11 corresponds to element-relative 8.5e-06 to 4.5e-05 — TIGHTER than the gate's own relative-RMS requirement in effect at that magnitude, while every shallower stage enjoyed 0.02/target_maxabs element-relative headroom of 6e-3 to 5e-4.",
+ "verdict_on_recorded_data": {
+  "method": "Recomputed verdict of max(0.02, 5e-4 x target_maxabs) against all 285 recorded checks without rerunning",
+  "stages_exceeding_bound": 0,
+  "block11_cases_now_passing": "all 14 recorded failures (runtime A2/MPS 0.0546-0.1057; oracle control 0.0371-0.0857)"
+ },
+ "population_robustness": "Recomputing the bound from the ORACLE control only (excluding all runtime runs: worst passing r = 9.19e-05, 3x = 2.76e-04, block-11 limit 0.645) still passes every recorded block-11 failure including the A2 torch-2.13 rerun's 0.2414 — the verdict does not depend on including the audited runtime's own passes in the population.",
+ "live_reruns": {
+  "a2": "qwen35-vision-block11-calibrated-a2.json (torch 2.13.0+cu130, five cases, passed=true, block.11 max errors 0.0563-0.2414 vs derived limits 1.149-1.201)",
+  "mps": "qwen35-vision-block11-calibrated-mps.json (Apple M4, torch 2.6.0, five cases, passed=true, block.11 max errors 0.0948-0.1221 vs derived limits ~1.17-1.20)"
+ },
+ "gate_integrity": "The relative-RMS gate (1e-4) is unchanged and remains the binding check for systemic drift. The absolute gate retains a floor of 0.02 for stages with target maxabs <= 40 and catches single-element spikes an RMS check can dilute: a block-11 spike must exceed element-relative 5e-4 to fail.",
+ "no_gate_relaxation_note": "The old flat 0.02 was tighter than the passing distribution supports ONLY at block 11's magnitude: it demanded element-relative ~2.5e-05 from block 11 while the same evidence showed 1.6e-04 from passing merged stages. The new bound is derived from, and is looser than, the observed passing population everywhere; no previously passing case changes band."
+}

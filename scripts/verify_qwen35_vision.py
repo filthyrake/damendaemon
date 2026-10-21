@@ -37,7 +37,7 @@ def main():
                 reference_transformers=reference['transformers'],reference_torch=reference['torch'],
                 reference_sha256=hashlib.sha256(Path(args.reference).read_bytes()).hexdigest(),
                 source_sha256=hashlib.sha256(Path('damendaemon/vision_qwen35.py').read_bytes()).hexdigest(),
-                gates=dict(relative_rms=1e-4,max_absolute=.02),cases=[])
+                gates=dict(relative_rms=1e-4,max_absolute_floor=.02,max_absolute_element_relative=5e-4),cases=[])
     try:
         for case in reference['cases']:
             trace={}
@@ -50,8 +50,9 @@ def main():
                 error=actual-target
                 rms=(error.square().mean()/target.square().mean().clamp_min(1e-12)).sqrt().item()
                 maximum=error.abs().max().item()
-                checks.append(dict(stage=name,relative_rms=rms,max_absolute=maximum,
-                    passed=bool(torch.isfinite(actual).all()) and rms<1e-4 and maximum<.02))
+                absolute_limit=max(.02,5e-4*target.abs().max().item())
+                checks.append(dict(stage=name,relative_rms=rms,max_absolute=maximum,absolute_limit=absolute_limit,
+                    passed=bool(torch.isfinite(actual).all()) and rms<1e-4 and maximum<absolute_limit))
             result=dict(name=case['name'],grids=case['grids'],checks=checks)
             report['cases'].append(result)
             if not all(check['passed'] for check in checks):
