@@ -150,6 +150,75 @@ class QuantPipelinePolicyTests(unittest.TestCase):
                               'DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB': '22528,13312'},
                              current_device='NVIDIA A2', primary_device='NVIDIA A2')
 
+    CHAIN_ENV = {'DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4': '1',
+                 'DAMENDAEMON_HYBRID_PRECISION': 'compensated',
+                 'DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE': '1',
+                 'DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE_QUANT': '1',
+                 'DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB': '22528',
+                 'DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CHAIN': '1'}
+
+    def test_q4_chain_admits_remote_tail_rank_at_qualified_context(self):
+        # #536 gate 4: a single-GPU remote tail rank (no A30 primary) is the
+        # qualified three-device chain topology; the explicit chain opt-in
+        # admits it up to the qualified 2048 context cell.
+        self.q4_identity(self.CHAIN_ENV,
+                         current_device='NVIDIA GeForce RTX 3090',
+                         primary_device='NVIDIA GeForce RTX 3090')
+
+    def test_q4_chain_rejected_without_chain_opt_in(self):
+        with self.assertRaisesRegex(ValueError, 'NVIDIA A30'):
+            self.q4_identity({key: value for key, value in self.CHAIN_ENV.items()
+                              if key != 'DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CHAIN'},
+                             current_device='NVIDIA GeForce RTX 3090',
+                             primary_device='NVIDIA GeForce RTX 3090')
+
+    def test_q4_chain_context_bound_is_the_qualified_cell(self):
+        import damendaemon.hybrid_q4_policy as module
+        env = dict(self.CHAIN_ENV, DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB='22528')
+        with patch.dict('os.environ', env, clear=True), \
+                patch.object(module, 'selected_accelerator', return_value='cuda'), \
+                patch.object(module, 'device_name', return_value='NVIDIA GeForce RTX 3090'):
+            module.validate(self.config, 2048)
+            with self.assertRaisesRegex(ValueError, 'context <=2048'):
+                module.validate(self.config, 2049)
+        without_chain = {key: value for key, value in env.items()
+                         if key != 'DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CHAIN'}
+        with patch.dict('os.environ', without_chain, clear=True), \
+                patch.object(module, 'selected_accelerator', return_value='cuda'), \
+                patch.object(module, 'device_name', return_value='NVIDIA A30'):
+            with self.assertRaisesRegex(ValueError, 'context <=512'):
+                module.validate(self.config, 513)
+
+    def test_q4_chain_keeps_standard_guards(self):
+        # The chain opt-in lifts only the A30-primary anchor and the context
+        # bound; precision (and every other standard guard) still applies.
+        for dropped in ('DAMENDAEMON_HYBRID_PRECISION',
+                        'DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4',
+                        'DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE_QUANT'):
+            env = {key: value for key, value in self.CHAIN_ENV.items() if key != dropped}
+            env['DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB'] = '22528'
+            with self.assertRaisesRegex(ValueError, 'opt-in|compensated'):
+                self.q4_identity(env, current_device='NVIDIA GeForce RTX 3090',
+                                primary_device='NVIDIA GeForce RTX 3090')
+
+    def test_q4_chain_admits_compensated_select_at_qualified_context(self):
+        # hybrid_precision.select carried its own context<=512 pin; under the
+        # chain opt-in the qualified 2048 cell is admitted for Q4.
+        from types import SimpleNamespace
+        from damendaemon.hybrid_precision import select
+        model = SimpleNamespace(quantization='q4_0', config=self.config,
+                                max_context=2048, vision_weights=None)
+        env = dict(self.CHAIN_ENV, DAMENDAEMON_DEVICE='cuda')
+        with patch.dict('os.environ', env, clear=True), \
+                patch('damendaemon.hybrid_precision.selected_accelerator', return_value='cuda'):
+            self.assertEqual(select(model, False, 1, 'triton'), 'compensated')
+        beyond = SimpleNamespace(quantization='q4_0', config=self.config,
+                                  max_context=2049, vision_weights=None)
+        with patch.dict('os.environ', env, clear=True), \
+                patch('damendaemon.hybrid_precision.selected_accelerator', return_value='cuda'):
+            with self.assertRaisesRegex(ValueError, 'context <=2048'):
+                select(beyond, False, 1, 'triton')
+
     def test_pipeline_context_cap_is_32768(self):
         # #536 gate 3: the context cap moved from 2048 to 32768 (bounded by
         # the #70-planner evidence, not device memory); the checkpoint's own

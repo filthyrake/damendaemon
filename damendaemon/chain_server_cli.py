@@ -5,6 +5,16 @@ through the proven DistributedRuntime scheduler over ChainServingPair.
 Model identity is fingerprinted on EVERY rank and agreed via the chain
 transport before serving — a mismatched checkpoint aborts startup.
 
+Quantized chain serving (--quantization q4_0, #536 gate 4): every rank sets
+the explicit experimental pipeline/Q4 opt-ins plus the distributed-chain
+Q4 opt-in (DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CHAIN=1), builds Triton
+stages, and derives its layer bounds from the same choose_stage_splits
+storage planner as the gate-2 pair, evaluated with the per-rank budgets
+(--rank-budgets-mib, one entry per rank, identical on every rank). The
+admission budgets env each rank process declares is its NODE-LOCAL slice:
+empty_cache() walks one CUDA ordinal per entry, so a rank may only declare
+the devices its process can see.
+
 Run: torchrun --nnodes=2 --node_rank={0|1} --nproc_per_node={2|1} \
         --rdzv_backend=static --master_addr=<rank0 host> --master_port=29500 \
         -m damendaemon chain-serve <checkpoint> --port 8017
@@ -18,14 +28,35 @@ from datetime import timedelta
 import torch
 
 
-def build_stage(checkpoint, rank, world, device, context, quantization, *, slots):
+def build_stage(checkpoint, rank, world, device, context, quantization, *, slots,
+                rank_budgets=None):
     from damendaemon.models import load as load_model
     from damendaemon.hybrid_stage import HybridLayerStage
     model = load_model(checkpoint, context, quantization)
     layers = model.config['num_hidden_layers']
-    bounds = [round(i * layers / world) for i in range(world + 1)]
+    if rank_budgets is None:
+        bounds = [round(i * layers / world) for i in range(world + 1)]
+        kernels = 'torch'
+    else:
+        # Same deterministic storage planner as the gate-2 pair, evaluated
+        # with the per-rank budgets; every rank derives the identical split.
+        from damendaemon.hybrid_layout import choose_stage_splits
+        placement = choose_stage_splits(model.weights, model.config,
+                                         model.max_context, slots, 2,
+                                         [mib * 1024**2 for mib in rank_budgets],
+                                         scales=getattr(model, 'scales', None))
+        if not placement['storage_plan_found']:
+            raise SystemExit('chain storage plan not found for the given '
+                             'rank budgets: ' + str(placement['reason']))
+        bounds = [0]
+        for budget in placement['stages']:
+            bounds.append(budget['layer_end'])
+        if len(bounds) != world + 1 or bounds[-1] != layers:
+            raise SystemExit(f'planner split {bounds} does not cover {world} '
+                             f'ranks/{layers} layers')
+        kernels = 'triton'
     stage = HybridLayerStage(model, bounds[rank], bounds[rank + 1],
-                             max_batch=slots, kernels='torch')
+                             max_batch=slots, kernels=kernels)
     for group in ('w', 'kv', 'conv', 'state'):
         for key, tensor in list(getattr(stage, group).items()):
             getattr(stage, group)[key] = tensor.to(device)
@@ -34,6 +65,21 @@ def build_stage(checkpoint, rank, world, device, context, quantization, *, slots
         stage.sin = stage.sin.to(device)
         stage.arange = stage.arange.to(device)
     return model, stage, [[bounds[i], bounds[i + 1]] for i in range(world)]
+
+
+def node_local_budgets(rank, local_rank, local_size, rank_budgets):
+    """The budgets entries a rank's PROCESS may declare (admission env).
+
+    empty_cache() walks one CUDA ordinal per DAMENDAEMON_HYBRID_PIPELINE_
+    BUDGETS_MIB entry, so a rank process may only declare the devices it
+    can see — its node's slice of the per-rank budget list. The full list
+    still drives the layer-split planner (passed explicitly, not via env).
+    """
+    start = rank - local_rank
+    if (type(local_size) is not int or local_size < 1
+            or start < 0 or start + local_size > len(rank_budgets)):
+        raise ValueError('node-local budget slice is outside the rank budgets')
+    return rank_budgets[start:start + local_size]
 
 
 def context_slots(context):
@@ -62,11 +108,28 @@ def main(argv=None):
                    help='chunk long prompts across decode rounds instead of whole-prompt prefill')
     p.add_argument('--client-prefill-turns', action='store_true',
                    help='weighted per-client prefill chunk shares (requires --interleaved-prefill)')
+    p.add_argument('--rank-budgets-mib', metavar='MIB,...',
+                   help='per-rank storage budgets in MiB, one entry per rank, identical on '
+                        'every rank (required for --quantization q4_0; drives the layer split)')
     p.add_argument('--bind', default='127.0.0.1')
     args = p.parse_args(argv)
     quantization = None if args.quantization == 'none' else args.quantization
-    if not 1 <= args.context <= 512 or not 0 <= args.port <= 65535:
-        p.error('invalid context or port')
+    rank_budgets = None
+    if args.rank_budgets_mib is not None:
+        entries = args.rank_budgets_mib.split(',')
+        if not entries or any(not entry.isascii() or not entry.isdecimal()
+                              or int(entry) <= 0 for entry in entries):
+            p.error('rank budgets are comma-separated positive MiB integers')
+        rank_budgets = [int(entry) for entry in entries]
+    context_bound = 2048 if quantization == 'q4_0' else 512
+    if not 1 <= args.context <= context_bound or not 0 <= args.port <= 65535:
+        p.error(f'invalid context or port (context 1..{context_bound} for '
+                f'--quantization {args.quantization})')
+    if quantization == 'q8_0':
+        p.error('quantized chain serving currently supports q4_0 only '
+                '(the #536 gate-4 qualified path)')
+    if quantization == 'q4_0' and rank_budgets is None:
+        p.error('--quantization q4_0 requires --rank-budgets-mib (one entry per rank)')
     if not 0 <= args.idle_timeout <= 86400 or not 1 <= args.queue_size <= 64:
         p.error('invalid idle timeout or queue size')
     if not 0 < args.queue_timeout <= 300 or not 1 <= len(args.alias) <= 128:
@@ -89,13 +152,33 @@ def main(argv=None):
     world = int(os.environ['WORLD_SIZE'])
     if not 2 <= world <= 16:
         raise SystemExit('chain serving requires 2..16 ranks')
+    if rank_budgets is not None and len(rank_budgets) != world:
+        raise SystemExit(f'--rank-budgets-mib needs exactly {world} entries '
+                         f'(got {len(rank_budgets)})')
     os.environ.setdefault('MASTER_ADDR', '10.30.100.3')
     os.environ.setdefault('MASTER_PORT', '29500')
     os.environ['DAMENDAEMON_DEVICE'] = 'cuda'
+    if quantization == 'q4_0':
+        # The explicit experimental chain-Q4 admission (#536 gate 4): the
+        # opt-ins mirror the qualified runner; every guard except the
+        # A30-primary anchor and the 512 context bound still applies.
+        local_size = int(os.environ['LOCAL_WORLD_SIZE'])
+        local = node_local_budgets(rank, int(os.environ.get('LOCAL_RANK', 0)),
+                                    local_size, rank_budgets)
+        if torch.cuda.device_count() < len(local):
+            raise SystemExit(f'rank {rank} sees {torch.cuda.device_count()} CUDA '
+                             f'devices but its node-local budgets declare {len(local)}')
+        os.environ['DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE'] = '1'
+        os.environ['DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE_QUANT'] = '1'
+        os.environ['DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4'] = '1'
+        os.environ['DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CHAIN'] = '1'
+        os.environ['DAMENDAEMON_HYBRID_PRECISION'] = 'compensated'
+        os.environ['DAMENDAEMON_HYBRID_PREFILL'] = 'scan'
+        os.environ['DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB'] = ','.join(str(m) for m in local)
     local_rank = int(os.environ.get('LOCAL_RANK', 0))
     torch.cuda.set_device(local_rank)
     torch.distributed.init_process_group('nccl', rank=rank, world_size=world,
-                                         timeout=timedelta(seconds=120))
+                                         timeout=timedelta(seconds=1800))
     device = torch.device('cuda', local_rank)
 
     from damendaemon.distributed_chain import ChainChannel, ChainRole, NcclChainTransport
@@ -104,7 +187,8 @@ def main(argv=None):
 
     model, stage, layer_bounds = build_stage(args.path, rank, world, device,
                                              args.context, quantization,
-                                             slots=args.batch_size)
+                                             slots=args.batch_size,
+                                             rank_budgets=rank_budgets)
     # Additional resident models: same decoder config, distinct identity.
     from damendaemon.models import load as load_model
     extra_models = []
@@ -137,12 +221,17 @@ def main(argv=None):
         extra_identities.append((alias, extra_identity))
 
     # Per-rank shard table: index 0 is the resident (initial) model; each
-    # entry is the rank's layer-range weight dict of CPU tensors.
-    shards = [{name: source[name] for name in stage.w}
-              for source in (model.weights, *(extra.weights for _, extra in extra_models))]
+    # entry is the rank's layer-range weight dict of CPU tensors. Quantized
+    # chain serving keeps a single resident model (no SWITCH support), so no
+    # shard table is staged.
+    if quantization is None:
+        shards = [{name: source[name] for name in stage.w}
+                  for source in (model.weights, *(extra.weights for _, extra in extra_models))]
+    else:
+        shards = None
 
     state = StageState(epoch=1, context=args.context, slots=args.batch_size,
-                       models=1 + len(extra_models))
+                       models=1 + len(extra_models), context_limit=args.context)
     channel = ChainChannel(ChainRole(rank, world), transport, state, device=device)
 
     if rank != 0:
@@ -189,8 +278,7 @@ def main(argv=None):
     thread.start()
     previous = signal.signal(signal.SIGTERM,
                               lambda number, frame: runtime.close())
-    print(f'damendaemon chain listening on http://{args.bind}:{server.server_port}',
-          flush=True)
+    print(f'damendaemon chain listening on http://{args.bind}:{server.server_port}', flush=True)
     try:
         runtime.run(idle_timeout=args.idle_timeout)
     except KeyboardInterrupt:
