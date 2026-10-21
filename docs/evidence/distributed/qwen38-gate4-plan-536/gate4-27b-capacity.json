@@ -1,0 +1,78 @@
+{
+  "checkpoint": "/tmp/q3827b",
+  "quantization": "q4_0",
+  "batch": 1,
+  "budgets_mib": [
+    22528,
+    13312,
+    22528
+  ],
+  "contexts": {
+    "2048": {
+      "storage_plan_found": true,
+      "reason": null,
+      "stages": [
+        {
+          "layer_start": 0,
+          "layer_end": 24,
+          "required_gib": 7.83
+        },
+        {
+          "layer_start": 24,
+          "layer_end": 44,
+          "required_gib": 4.65
+        },
+        {
+          "layer_start": 44,
+          "layer_end": 64,
+          "required_gib": 7.68
+        }
+      ],
+      "total_required_gib": 20.16
+    },
+    "4096": {
+      "storage_plan_found": true,
+      "reason": null,
+      "stages": [
+        {
+          "layer_start": 0,
+          "layer_end": 24,
+          "required_gib": 7.96
+        },
+        {
+          "layer_start": 24,
+          "layer_end": 43,
+          "required_gib": 4.56
+        },
+        {
+          "layer_start": 43,
+          "layer_end": 64,
+          "required_gib": 8.01
+        }
+      ],
+      "total_required_gib": 20.53
+    },
+    "8192": {
+      "storage_plan_found": true,
+      "reason": null,
+      "stages": [
+        {
+          "layer_start": 0,
+          "layer_end": 24,
+          "required_gib": 8.21
+        },
+        {
+          "layer_start": 24,
+          "layer_end": 43,
+          "required_gib": 4.78
+        },
+        {
+          "layer_start": 43,
+          "layer_end": 64,
+          "required_gib": 8.26
+        }
+      ],
+      "total_required_gib": 21.25
+    }
+  }
+}
