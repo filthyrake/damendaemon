@@ -16,6 +16,15 @@ reference of the SAME quantized path (the gate-2 convention; an FP32 CPU
 reference does not fit the bounded window — recorded honestly). Timings are
 warmup-inclusive and are not serving claims.
 
+Protocol note (cycle 8): this runner decodes with prompt[-1] re-fed at the
+prefill cursor (the cycle-2b..7 convention); the serving contracts
+(HostCompletion/ChainCompletion, and the qualified 27B chain-serve path)
+decode with the generated token — the standard autoregressive stream. The
+0.8B ladder masked the difference (both conventions produced the same
+greedy there); the 27B does not. Future chain runners should use the
+standard protocol; see
+docs/evidence/distributed/qwen38-gate4-plan-536/gate4-27b-chainserve-qualified.md.
+
 Run under torchrun --nnodes=2 --node_rank={0|1} --nproc_per_node={2|1}
 --rdzv_backend=static --master_addr=10.30.100.3 --master_port=29500.
 """

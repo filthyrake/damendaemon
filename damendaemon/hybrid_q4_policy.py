@@ -25,15 +25,47 @@ def _pipeline_pair_anchor():
     return torch.cuda.get_device_name(0) == 'NVIDIA A30'
 
 
+CHAIN_CONTEXT_LIMIT = 2048
+
+
+def chain_anchor():
+    """True when an explicitly opted-in distributed chain rank requests Q4.
+
+    #536 gate 4: the three-device chain (A30 + A2 + a remote tail rank, e.g.
+    the desktop RTX 3090) is Q4-qualified end to end — 12/12 greedy tokens
+    byte-equal the A30+A2 in-process reference of the same quantized path at
+    context 2048, batch 1 (docs/evidence/distributed/qwen38-gate4-plan-536/
+    gate4-27b-three-device-qualified.md). The served path over the same
+    topology is qualified by the chain-serve evidence in the same directory.
+
+    The chain opt-in admits exactly that qualified shape: a non-A30 tail
+    rank (the A30-primary pair anchor cannot hold on a single-GPU remote
+    host) and the chain context window (up to CHAIN_CONTEXT_LIMIT, the
+    qualified cell). Every other guard — explicit Q4 opt-in, accelerator,
+    qwen3_5_text architecture, compensated precision, no vision — still
+    applies, and single-device production admission is unchanged.
+    """
+    if os.environ.get('DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CHAIN', '0') != '1':
+        return False
+    if selected_accelerator() not in ('cuda', 'rocm'):
+        return False
+    from .hybrid_pipeline_policy import budgets, quant_pipeline_enabled
+    return budgets() is not None and quant_pipeline_enabled()
+
+
 def validate(config, max_context=None):
     accelerator = selected_accelerator()
+    chain = chain_anchor()
+    context_limit = CHAIN_CONTEXT_LIMIT if chain else 512
     if (os.environ.get('DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4', '0') != '1'
             or accelerator not in ('rocm', 'cuda')
             or config.get('model_type') != 'qwen3_5_text'
             or os.environ.get('DAMENDAEMON_HYBRID_PRECISION') != 'compensated'
-            or (max_context is not None and not 1 <= max_context <= 512)
+            or (max_context is not None and not 1 <= max_context <= context_limit)
             or vision_enabled()
-            or (accelerator == 'cuda' and device_name() != 'NVIDIA A30'
+            or (accelerator == 'cuda' and not chain
+                and device_name() != 'NVIDIA A30'
                 and not _pipeline_pair_anchor())):
-        raise ValueError('experimental hybrid Q4 requires explicit opt-in, ROCm or NVIDIA A30, '
-                         'compensated text execution and context <=512')
+        raise ValueError('experimental hybrid Q4 requires explicit opt-in, ROCm or NVIDIA A30 '
+                         '(or the explicit distributed-chain opt-in), compensated text execution '
+                         f'and context <={context_limit}')
