@@ -16,6 +16,7 @@
   "stages_exceeding_bound": 0,
   "block11_cases_now_passing": "all 14 recorded failures (runtime A2/MPS 0.0546-0.1057; oracle control 0.0371-0.0857)"
  },
+ "population_robustness": "Recomputing the bound from the ORACLE control only (excluding all runtime runs: worst passing r = 9.19e-05, 3x = 2.76e-04, block-11 limit 0.645) still passes every recorded block-11 failure including the A2 torch-2.13 rerun's 0.2414 — the verdict does not depend on including the audited runtime's own passes in the population.",
  "live_reruns": {
   "a2": "qwen35-vision-block11-calibrated-a2.json (torch 2.13.0+cu130, five cases, passed=true, block.11 max errors 0.0563-0.2414 vs derived limits 1.149-1.201)",
   "mps": "qwen35-vision-block11-calibrated-mps.json (Apple M4, torch 2.6.0, five cases, passed=true, block.11 max errors 0.0948-0.1221 vs derived limits ~1.17-1.20)"
