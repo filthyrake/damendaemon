@@ -3,19 +3,18 @@
 The cycle-2..6 machinery (ChainPipeline/ChainStageWorker over NCCL) with the
 gate-2-qualified 27B path: Q4 packed, compensated precision, Triton stages,
 context 2048. Three ranks across two hosts:
-  rank 0: coordinator + layers 0..k0   — labnode3 A30 (22528 MiB budget)
-  rank 1: layers k0..k1                — labnode3 A2  (13312 MiB budget)
-  rank 2: layers k1..end + output head — desktop 3090 (22528 MiB budget)
+  rank 0: coordinator + layers 0..24  — labnode3 A30 (22528 MiB budget)
+  rank 1: layers 24..44               — labnode3 A2  (13312 MiB budget)
+  rank 2: layers 44..64 + output head — desktop 3090 (22528 MiB budget)
 
-Layer bounds come from the pipeline planner shape at context 2048 recorded
-in gate 1/2 (46-layer split at 2K: A30 12.6 GiB, tail 7.5 GiB); with three
-devices the planner's proportionality is recomputed at launch from
-budgets (proportional split) — the same choose_stage_splits storage math
-the two-rank gate used, evaluated per rank.
+Layer bounds come from the same choose_stage_splits storage planner the
+gate-2 pair used, evaluated with the three per-rank budgets — deterministic,
+so every rank derives the identical split [0, 24, 44, 64] (64 layers).
 
-Success gate: greedy-exactness vs the single-rank A30 reference of the SAME
-quantized path (the gate-2 convention; an FP32 CPU reference does not fit
-the bounded window — recorded honestly).
+Success gate: 12/12 greedy tokens equal the A30+A2 two-stage in-process
+reference of the SAME quantized path (the gate-2 convention; an FP32 CPU
+reference does not fit the bounded window — recorded honestly). Timings are
+warmup-inclusive and are not serving claims.
 
 Run under torchrun --nnodes=2 --node_rank={0|1} --nproc_per_node={2|1}
 --rdzv_backend=static --master_addr=10.30.100.3 --master_port=29500.
@@ -29,8 +28,6 @@ from pathlib import Path
 import torch
 
 SNAPSHOT = '/tmp/q3827b'
-LAB_SNAPSHOT = ('/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.8-27B/'
-                'snapshots/1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0')
 SEED = list(range(16, 48))
 
 
