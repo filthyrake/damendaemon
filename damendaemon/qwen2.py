@@ -317,6 +317,28 @@ class ModelWeights:
         return ids
 
 
+def qwen3_default_precision(model):
+    """Default CUDA Qwen3 precision (#2): the qualified FP32-arithmetic path.
+
+    The fp16 `standard` path fails the long-context logit gate
+    deterministically (decode events at 1.1941%/1.4159% —
+    docs/evidence/models/qwen3-standard-gate-repro-2/), while the promoted
+    `float32` path (FP32 matrix/activation/KV arithmetic with FP16 matrix
+    storage and compensated Tensor Core GEMV) passes 84/84 against the
+    independent FP32 reference on the same trace. The qualified path is the
+    DEFAULT for unpacked checkpoints.
+
+    Quantized weights keep the `standard` default their own gates qualified:
+    the packed residual/kquant decode kernels and the AWQ FP16-rounding path
+    require FP16 compute inputs, and `DAMENDAEMON_QWEN3_PRECISION=float32`
+    remains an explicit (rejected-for-AWQ, unqualified-for-packed) opt-in.
+    """
+    quantized = bool(getattr(model, 'scales', None)
+                     or getattr(model, 'packed_formats', {})
+                     or getattr(model, 'awq_fp16_rounding', False))
+    return 'standard' if quantized else 'float32'
+
+
 class Executor:
     def __init__(self, model, use_graph=True, fuse_projections=True, kernels=None, max_batch=1):
         self.device = selected_device()
@@ -345,7 +367,8 @@ class Executor:
             self.compute_dtype = torch.float32
         self.qwen3_precision = 'standard'
         if self.device == 'cuda' and c['model_type'] == 'qwen3':
-            self.qwen3_precision = os.environ.get('DAMENDAEMON_QWEN3_PRECISION', 'standard')
+            self.qwen3_precision = os.environ.get('DAMENDAEMON_QWEN3_PRECISION',
+                                                  qwen3_default_precision(model))
             if self.qwen3_precision not in ('standard', 'float32'):
                 raise ValueError('DAMENDAEMON_QWEN3_PRECISION must be standard or float32')
             if self.qwen3_precision != 'standard':
