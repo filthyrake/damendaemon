@@ -1,0 +1,79 @@
+{
+  "mode": "transfer-cost-decomposition",
+  "topology": {
+    "rank0": "labnode3 A30",
+    "rank1": "labnode3 A2",
+    "rank2": "desktop 3090 (cross-host 10GbE)"
+  },
+  "bounds": [
+    0,
+    24,
+    44,
+    64
+  ],
+  "layers": 64,
+  "microbench": {
+    "rank": 0,
+    "width": 5120,
+    "broadcast_us": {
+      "decode_hidden_1xW_fp32": {
+        "origin_rank0_intra_host": 191.6,
+        "origin_rank2_cross_host": 92.5
+      },
+      "chunk_hidden_512xW_fp32": {
+        "origin_rank0_intra_host": 35745.4,
+        "origin_rank2_cross_host": 35641.8
+      },
+      "token_row_int64": {
+        "origin_rank0_intra_host": 64.1,
+        "origin_rank2_cross_host": 69.2
+      }
+    },
+    "all_reduce_min_us": 286.4
+  },
+  "real_decode": {
+    "context": 2048,
+    "steps_total": 14,
+    "warmup_steps": 4,
+    "all_steps_ms": [
+      336.97,
+      137.57,
+      140.02,
+      138.67,
+      138.03,
+      137.87,
+      137.71,
+      137.65,
+      137.83,
+      137.22,
+      137.42,
+      136.62,
+      137.62,
+      137.49
+    ],
+    "steady_step_ms": 137.55,
+    "decode_round_exchange_waits": {
+      "exchange_hidden": {
+        "calls_per_step": 2,
+        "mean_us": 45924.8,
+        "min_us": 375.3,
+        "max_us": 132112.8
+      },
+      "exchange_tokens": {
+        "calls_per_step": 1,
+        "mean_us": 19036.9,
+        "min_us": 17108.8,
+        "max_us": 40687.3
+      },
+      "finish": {
+        "calls_per_step": 1,
+        "mean_us": 944.5,
+        "min_us": 740.1,
+        "max_us": 1193.0
+      }
+    },
+    "per_step_exchange_wall_us": 111831.0,
+    "per_step_exchange_wall_ms": 111.83,
+    "note": "decode-round means only (the prefill round is excluded). An exchange wall time includes waiting for the SOURCE rank compute (broadcasts are sync points) \u2014 it is an upper bound on transfer, not pure transfer; the microbench isolates pure collective cost. Warmup-inclusive except steady_step_ms (first 4 steps excluded)"
+  }
+}
