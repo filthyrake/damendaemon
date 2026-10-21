@@ -29,15 +29,27 @@ def _eager_attention(query, key, values, dim):
 
 
 def read_vision_config(path):
-    """Validate pinned vision geometry before either text or vision tensors load."""
+    """Validate pinned vision geometry before either text or vision tensors load.
+
+    Two geometries are enumerated (the qualified 0.8B and the qualified 2B);
+    anything else is rejected before tensors load.
+    """
     config = read_config(Path(path)/'config.json')
     c = config.get('vision_config')
-    expected = dict(depth=12,hidden_size=768,intermediate_size=3072,num_heads=12,
-                    out_hidden_size=1024,patch_size=16,spatial_merge_size=2,
-                    temporal_patch_size=2,in_channels=3,num_position_embeddings=2304,
-                    hidden_act='gelu_pytorch_tanh')
+    base = dict(patch_size=16,spatial_merge_size=2,
+                temporal_patch_size=2,in_channels=3,num_position_embeddings=2304,
+                hidden_act='gelu_pytorch_tanh')
+    geometries = (
+        # Qwen3.5-0.8B: the originally qualified encoder.
+        dict(depth=12,hidden_size=768,intermediate_size=3072,num_heads=12,
+             out_hidden_size=1024,**base),
+        # Qwen3.5-2B: deeper encoder, same head dimension (64).
+        dict(depth=24,hidden_size=1024,intermediate_size=4096,num_heads=16,
+             out_hidden_size=2048,**base),
+    )
     if (config.get('model_type')!='qwen3_5' or not isinstance(c,dict)
-            or any(type(c.get(k)) is not type(v) or c[k]!=v for k,v in expected.items())
+            or not any(all(type(c.get(k)) is type(v) and c[k]==v for k,v in g.items())
+                       for g in geometries)
             or c.get('deepstack_visual_indexes')):
         raise ValueError('unsupported Qwen3.5 vision geometry')
     rope = c.get('rope_parameters')
