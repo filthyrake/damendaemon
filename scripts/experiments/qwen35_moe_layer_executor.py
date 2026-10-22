@@ -122,6 +122,8 @@ def upstream_block(t, text_config, hidden):
     )
     block = Qwen3_5MoeSparseMoeBlock(config)
     with torch.no_grad():
+        # Borrow the real FP32 tensors as Parameters without copying, so our
+        # FFN and the upstream reference compute over identical bytes.
         block.gate.weight = torch.nn.Parameter(t['mlp.gate.weight'], requires_grad=False)
         block.experts.gate_up_proj = torch.nn.Parameter(t['mlp.experts.gate_up_proj'], requires_grad=False)
         block.experts.down_proj = torch.nn.Parameter(t['mlp.experts.down_proj'], requires_grad=False)
