@@ -118,7 +118,7 @@ def ours_linear(w, root, x, c):
     return F.linear(out.reshape(b, t, lv * dv), w[root + 'linear_attn.out_proj.weight'])
 
 
-def ours_full(w, root, x, positions, cos, sin, c):
+def ours_full(w, root, x, cos, sin, c):
     b, t, _ = x.shape
     heads, kh, dim, rd = c['num_attention_heads'], c['num_key_value_heads'], c['head_dim'], c['rotary_dim']
     q = F.linear(x, w[root + 'self_attn.q_proj.weight']).view(b, t, heads, 2 * dim)
@@ -278,7 +278,7 @@ def main():
             eps = c['rms_norm_eps']
             # ours
             normed = rms(ours, w[root + 'input_layernorm.weight'], eps)
-            mixer = (ours_full(w, root, normed, position_ids, cos, sin, c) if kind == 'full_attention'
+            mixer = (ours_full(w, root, normed, cos, sin, c) if kind == 'full_attention'
                      else ours_linear(w, root, normed, c))
             ours = ours + mixer
             ours = ours + ours_ffn(w, root, c).forward(rms(ours, w[root + 'post_attention_layernorm.weight'], eps))
