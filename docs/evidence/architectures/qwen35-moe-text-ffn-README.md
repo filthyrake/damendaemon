@@ -78,3 +78,38 @@ Next ordered cell: multi-layer/full-text execution path (attention + MoE FFN
 against the qualified dense-hybrid machinery), then quantization/placement
 decisions for GPU residency.
 
+## Text-path executor: layers 0-3 end to end on real weights
+
+`scripts/experiments/qwen35_moe_text_executor.py` runs the first four
+consecutive text layers of the real snapshot end to end — embedding lookup,
+three gated-deltanet linear-attention layers, one full-attention layer
+(partial rotary 64/256 at theta 1e7, qk-norm, q_proj-packed output gate,
+GQA 16/2), our MoE FFN per layer, final norm — against the eager upstream
+`Qwen3_5MoeDecoderLayer` stack (Transformers 5.20.2) over the same real
+tensors. Ours is the qualified dense-hybrid math (`damendaemon/hybrid.py`
+attention and linear-attention methods) ported to the qwen3_5_moe tensor
+names, including the two norm conventions the upstream module actually uses:
+zero-centered `(1.0 + w)` for layernorms/qk-norms, plain `w` for the
+linear-attention gated norm. Bounded slice reads, BF16->FP32, ~19 GiB peak on
+a 32 GB host, no staging copy, read-only NAS untouched.
+
+Fixed-seed synthetic random-ID probe [1, 32, 2048] (not real text); evidence
+`qwen35-moe-text-executor-layers0-3.json` (71 tensor digests):
+
+- linear layers 0-2 (ours sequential recurrence vs upstream chunked kernel):
+  max_abs 2.1e-07 / 2.7e-07 / 7.2e-07, rms_rel up to 1.7e-03
+- full-attention layer 3 (op-for-op eager port): max_abs 6.6e-07
+- final hidden after the model norm: max_abs 1.7e-05, rms_rel 2.5e-04
+
+The divergence class is exactly sequential-vs-chunked accumulation plus
+residual-stream carry-through — no semantic mismatch signature. Claim: our
+full text-path implementation matches the upstream eager reference on real
+checkpoint weights for these four layers and this probe, at float tolerance.
+Not claimed: bitwise equality for the mixer layers, real-activation
+behavior, full 40-layer run, GPU, performance, quality.
+
+Next ordered cell: extend to the full 40-layer text path on labnode3 host
+memory (bounded per-layer slice streaming), then quantization/placement for
+GPU residency.
+
+

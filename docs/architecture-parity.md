@@ -2160,3 +2160,21 @@ are recorded in `qwen35-moe-executor-layer3.json` under
 `evidence/architectures`. Claimed: implementation semantics on real FFN
 weights for this layer/probe. Not claimed: full-model execution,
 real activations, GPU, performance or quality.
+
+The four-layer text-path executor (`scripts/experiments/qwen35_moe_text_executor.py`)
+extends the FFN cell to the full per-layer structure on real weights:
+embedding, three gated-deltanet linear-attention layers, one full-attention
+layer (partial rotary 64/256, qk-norm, q_proj-packed output gate, GQA 16/2),
+the MoE FFN per layer, and the final norm, run by our port of the qualified
+dense-hybrid math against the eager upstream `Qwen3_5MoeDecoderLayer` stack
+(Transformers 5.20.2) over the same tensors — including both upstream norm
+conventions (zero-centered `(1.0 + w)` layernorms/qk-norms, plain-weight
+gated norm). Fixed-seed synthetic probe [1, 32, 2048]: linear layers
+max_abs 2.1e-07..7.2e-07 (our sequential recurrence vs the upstream chunked
+kernel), full-attention layer 6.6e-07, final hidden 1.7e-05 / rms_rel
+2.5e-04 — sequential-vs-chunked accumulation divergence, no semantic
+mismatch signature. Evidence `qwen35-moe-text-executor-layers0-3.json`
+(71 tensor digests). Claimed: our text-path implementation matches the
+upstream eager reference on real checkpoint weights for these layers and
+this probe at float tolerance. Not claimed: mixer bitwise equality,
+real activations, the full 40-layer run, GPU, performance, quality.
