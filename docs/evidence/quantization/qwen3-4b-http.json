@@ -1,0 +1,192 @@
+{
+  "passed": true,
+  "model_sha256": "3605803b982cb64aead44f6c1b2ae36e3acdb41d8e46c8a94c6533bc4c67e597",
+  "workload_sha256": "9162bbebeb8551f3d1cbd3c0c41b180d416ce302406d940261945269ef33d8d7",
+  "cases": [
+    {
+      "prompt_tokens": 16,
+      "expected": ".\n\n### Problem Statement\nGiven a sorted array `arr` and a target value",
+      "expected_usage": {
+        "prompt_tokens": 16,
+        "completion_tokens": 16,
+        "total_tokens": 32
+      },
+      "timing": {
+        "source_tier": "disk",
+        "activation_seconds": 26.714310477000254,
+        "queue_seconds": 0.0002789249992929399,
+        "token_observation": {
+          "scope": "server_sample_observation",
+          "sampled_tokens": 16,
+          "first_sample_seconds": 27.184526216999075,
+          "last_sample_seconds": 27.447003382998446,
+          "sequential_token_timing": true,
+          "mean_gap_seconds": 0.017498477733291416,
+          "max_gap_seconds": 0.018154747000153293,
+          "interval_tokens_per_second": 57.14782824208005
+        },
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+mixed",
+        "weight_quantization": "gguf_mixed",
+        "max_batch_size": 1,
+        "residual_dtype": "float32",
+        "first_token_seconds": 27.184526216999075,
+        "total_seconds": 27.44717992099868,
+        "decode_tokens_per_second": 57.10941734909868
+      },
+      "nonstream": {
+        "text": ".\n\n### Problem Statement\nGiven a sorted array `arr` and a target value",
+        "equal": true,
+        "usage": {
+          "prompt_tokens": 16,
+          "completion_tokens": 16,
+          "total_tokens": 32
+        }
+      },
+      "stream": {
+        "text": ".\n\n### Problem Statement\nGiven a sorted array `arr` and a target value",
+        "equal": true,
+        "usage": {
+          "prompt_tokens": 16,
+          "completion_tokens": 16,
+          "total_tokens": 32
+        }
+      },
+      "llama_reference_equal": false
+    },
+    {
+      "prompt_tokens": 129,
+      "expected": " halves a sorted range to locate an element. A detailed explanation follows.  Binary",
+      "expected_usage": {
+        "prompt_tokens": 129,
+        "completion_tokens": 16,
+        "total_tokens": 145
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 1.0587000360828824e-05,
+        "queue_seconds": 0.00020786300046893302,
+        "token_observation": {
+          "scope": "server_sample_observation",
+          "sampled_tokens": 16,
+          "first_sample_seconds": 0.07014472700029728,
+          "last_sample_seconds": 0.34712695499911206,
+          "sequential_token_timing": true,
+          "mean_gap_seconds": 0.01846548186658765,
+          "max_gap_seconds": 0.020615268000256037,
+          "interval_tokens_per_second": 54.15509907756315
+        },
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+mixed",
+        "weight_quantization": "gguf_mixed",
+        "max_batch_size": 1,
+        "residual_dtype": "float32",
+        "first_token_seconds": 0.07014472700029728,
+        "total_seconds": 0.34730501100057154,
+        "decode_tokens_per_second": 54.12030823285329
+      },
+      "nonstream": {
+        "text": " halves a sorted range to locate an element. A detailed explanation follows.  Binary",
+        "equal": true,
+        "usage": {
+          "prompt_tokens": 129,
+          "completion_tokens": 16,
+          "total_tokens": 145
+        }
+      },
+      "stream": {
+        "text": " halves a sorted range to locate an element. A detailed explanation follows.  Binary",
+        "equal": true,
+        "usage": {
+          "prompt_tokens": 129,
+          "completion_tokens": 16,
+          "total_tokens": 145
+        }
+      },
+      "llama_reference_equal": true
+    },
+    {
+      "prompt_tokens": 400,
+      "expected": " a sorted range to locate an element. A detailed explanation follows. Binary search",
+      "expected_usage": {
+        "prompt_tokens": 400,
+        "completion_tokens": 16,
+        "total_tokens": 416
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 9.225001122104004e-06,
+        "queue_seconds": 0.00023245400006999262,
+        "token_observation": {
+          "scope": "server_sample_observation",
+          "sampled_tokens": 16,
+          "first_sample_seconds": 0.09314745099982247,
+          "last_sample_seconds": 0.3732542130001093,
+          "sequential_token_timing": true,
+          "mean_gap_seconds": 0.018673784133352456,
+          "max_gap_seconds": 0.024601330998848425,
+          "interval_tokens_per_second": 53.551009953785545
+        },
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+mixed",
+        "weight_quantization": "gguf_mixed",
+        "max_batch_size": 1,
+        "residual_dtype": "float32",
+        "first_token_seconds": 0.09314745099982247,
+        "total_seconds": 0.3734162099990499,
+        "decode_tokens_per_second": 53.52005715357432
+      },
+      "nonstream": {
+        "text": " a sorted range to locate an element. A detailed explanation follows. Binary search",
+        "equal": true,
+        "usage": {
+          "prompt_tokens": 400,
+          "completion_tokens": 16,
+          "total_tokens": 416
+        }
+      },
+      "stream": {
+        "text": " a sorted range to locate an element. A detailed explanation follows. Binary search",
+        "equal": true,
+        "usage": {
+          "prompt_tokens": 400,
+          "completion_tokens": 16,
+          "total_tokens": 416
+        }
+      },
+      "llama_reference_equal": true
+    }
+  ],
+  "reference": "/tmp/dd585-ladder/4b-teacher.json",
+  "benchmark": "/tmp/dd585-ladder/4b-bench-a30b.json",
+  "scope": "normal HTTP continuation decoding against independently qualified token traces",
+  "command": [
+    "/home/damen/dllm-dev/venv/bin/python",
+    "-m",
+    "damendaemon",
+    "serve",
+    "--model",
+    "a=/home/damen/models/qwen3-4b-2507/Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+    "--port",
+    "43085",
+    "--context",
+    "512",
+    "--batch-size",
+    "4",
+    "--kv-cache-tokens",
+    "0",
+    "--prefill-chunk-size",
+    "0",
+    "--prefix-cache-tokens",
+    "0"
+  ]
+}
