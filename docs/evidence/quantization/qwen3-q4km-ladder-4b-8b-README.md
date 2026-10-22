@@ -93,10 +93,14 @@ retained as the comparator measurement record with that finding stated.
 
 - **Qwen3-4B-2507 Q4_K_M: ladder qualified** at context 512 (gates 1-4: 0.365%
   FP32 reference, 128/128 layouts, 38/38 tokenizer, HTTP byte-exact vs the
-  FP32 teacher with streaming; lifecycle exercised inside the ABBA comparator —
-  host restore, disk reload, cancellation recovery and 4B↔8B model swapping all
-  passed there before the text-equality assert fired on the cross-engine
-  16-token difference, which is not a ladder criterion).
+  FP32 teacher with streaming). Note: the ABBA comparator's lifecycle
+  extension (host restore, disk reload, cancellation recovery, model swap)
+  did **not** execute in the retained runs — the cross-engine text-equality
+  assert fires before the lifecycle block writes its checks. The ladder
+  gate-4 pass rests on `verify_gguf_generated_http` (which exercises stream,
+  non-stream and usage identity against the teacher), not on the ABBA
+  lifecycle; a lifecycle-complete comparator pass is open follow-up once the
+  benchmark invariant is reconciled with cross-engine text differences.
 - **Qwen3-8B Q4_K_M: gates 1 and 3 pass; gate 2 fails on chunked prefill**
   (defect #585, localized: multi-chunk 128-boundary continuation,
   qwen3-8B-specific; single-chunk exact; llama31-8B at the same width passes).
