@@ -734,7 +734,34 @@ An additional FP64 normalization control, retaining FP32 output and other
 arithmetic, reproduces the same single failure (4.232% RMS). It is diagnostic
 only and is not promoted. [Replay](evidence/architectures/olmoe-q4-fp64-norm-a2.json)
 and [control identity](evidence/architectures/olmoe-q4-fp64-norm-dispatch.json)
-preserve this negative result. Q4 OLMoE qualification remains open in issue #23.
+preserve this negative result. Issue #23's open question is resolved by the
+router-boundary diagnosis (#577) below.
+
+### Q4 OLMoE router-boundary diagnosis (#577)
+
+The near-tie flip mechanism is now bounded by two measurements. The
+[boundary-frequency study](evidence/architectures/olmoe-q4-router-boundary-study.json)
+(CPU reference, all 27,760 layer/position rows of the 512-token trace) finds
+the top-9 cutoff probability gap below 1e-6 for only 11 rows (396.25 per
+million rows), minimum 5.588e-9, median 1.09e-3: the observed flip is a rare
+boundary crossing, not one of many near-misses. The
+[origin localization](evidence/architectures/olmoe-q4-origin-localization-a2.json)
+(A2, guarded, layer-0 stage capture on the 496-token prompt) shows the
+divergence originates in the QKV projection — the first stage above 1e-7
+(5.906e-7 relative RMS) — and stays near 1e-6 through attention into the
+router input (9.179e-7, matching the aligned diagnostic) before the route
+flip amplifies it to 5.067e-3 at the layer-0 MLP output. Embedding is exact
+and the native attention path is internally exact; no stage diverges beyond
+fp32 reduction-order noise between the CUDA and CPU arithmetic stacks.
+
+Verdict and router-boundary policy: the Q4 path is numerically sound; the
+retained 4.232% failure is a genuine fp32-amplified near-tie, not a defect.
+Q4 OLMoE stays disabled in normal registration. MoE route boundaries carry no
+tolerance across independent arithmetic stacks: a sub-ppm relative difference
+in router input can flip an expert selection wherever the cutoff gap is
+comparable, so greedy single-token agreement is not a qualification gate for
+paths with near-tie routers. See the
+[router-boundary README](evidence/architectures/olmoe-q4-router-boundary-README.md).
 
 
 ## Q8 short-prefill latency
