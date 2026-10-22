@@ -151,7 +151,8 @@ Qwen3.5 has a separate hybrid executor with FP32 recurrent state, causal
 convolution, gated attention, partial RoPE, and FP32 vocabulary accumulation.
 Q8 text projections are supported on the qualified CUDA path. Hybrid MoE and
 dynamic rotary scaling remain unsupported. Still-image serving is experimental
-and opt-in for the qualified Qwen3.5-0.8B geometry on NVIDIA A2 and Apple M4:
+and opt-in for the qualified Qwen3.5 geometries (0.8B and 2B) on NVIDIA A2,
+NVIDIA A30 and Apple M4:
 
 ```sh
 python -m pip install -e '.[runtime,vision]'

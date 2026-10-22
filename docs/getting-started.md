@@ -15,7 +15,7 @@ headers for its CUDA driver helper:
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cu124
+python -m pip install torch==2.13.0 --index-url https://download.pytorch.org/whl/cu130
 python -m pip install -e '.[runtime]'
 
 export CUDA_VISIBLE_DEVICES=GPU-your-device-uuid

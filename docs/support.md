@@ -17,14 +17,14 @@ tuning and qualification are deferred. The current acceptance gates live in
 |---|---|---|---|
 | Qwen2 / Llama-style dense | Qwen2.5, SmolLM2 | NVIDIA A2, Apple M4 | Exact tested sizes/revisions in the evidence |
 | Qwen3 dense | 0.6B, 1.7B | NVIDIA A2, Apple M4 | CUDA accurate FP32 arithmetic policy is required for the stricter long-context proof |
-| Qwen3.5 hybrid | 0.8B, 2B text backbone; experimental 0.8B still images | NVIDIA A2, Apple M4 | Image HTTP is opt-in, context <=1024, at most four slots; Apple images support FP16/Q8 text; no hybrid MoE |
+| Qwen3.5 hybrid | 0.8B, 2B text backbone; experimental 0.8B and 2B still images | NVIDIA A2, NVIDIA A30, Apple M4 | Image HTTP is opt-in, context <=1024, at most four slots; A30 qualified for both image geometries (#579); Apple images support FP16/Q8 text; no hybrid MoE |
 | Llama / SentencePiece GGUF | Published TinyLlama 1.1B Chat Q4_K_M | NVIDIA A2 | Model/layout/serving and model swapping through 2048 context |
 | Llama 3.2 | 1B Instruct mirror | NVIDIA A2, Apple M4 | Scaled RoPE; tested contexts differ by device |
 | Gemma 3 text | 270M IT mirror | NVIDIA A2, Apple M4 | Text architecture only; separate precision policy |
 | Phi-3 | Mini 4K | NVIDIA A2; limited Apple slot proof | No LongRoPE or interleaved prefill |
 | Mistral | 7B Instruct v0.1 | NVIDIA A2 | Sliding-window boundaries; Q8 and Q4 proof |
 | StarCoder2 | 3B | NVIDIA A2, Apple M4 | FP32 path; Q8 separately qualified on CUDA |
-| OLMoE | 1B-7B 0924 Instruct | NVIDIA A2 | Q8; bounded short expert/packed prefill, opt-in chunks and copied prefix reuse through context 2048 / capacity 4; long-prefill performance remains limited |
+| OLMoE | 1B-7B 0924 Instruct | NVIDIA A2 | Q8; bounded short expert/packed prefill, opt-in chunks and copied prefix reuse through context 2048 / capacity 4; long-prefill performance remains limited; Q4 diagnosed as a genuine fp32 near-tie router flip and stays disabled (#577/#578) |
 | GPT-OSS | 20B, native MXFP4 | NVIDIA A2 | Text Harmony chat + raw completions; auto/none function calls and results at 1024 context/two slots; forced tools, 120B and long contexts pending |
 | GPT-2 | Original GPT-2 | NVIDIA A2, Apple M4 | Learned positions; FP32, raw completions |
 | GPT-NeoX | Pythia-160M | NVIDIA A2, Apple M4 | Partial rotary / parallel residual; FP32 |
@@ -92,7 +92,9 @@ Published TinyLlama Q4_K_M passes independent model and fixed/paged/batched/chun
 checks through 2048, with normal HTTP and model swapping also qualified at 2048. The optional
 FP16 residual-int8 backend permits Q4/Q6 single-request decode through context
 2048 for the qualified TinyLlama topology, while other models retain the 512
-limit. Q5_K_M and longer Llama 3.2 contexts retain documented mixed/FP16 numerical gaps.
+limit. Longer Llama 3.2 contexts retain documented mixed/FP16 numerical gaps;
+Q5_K_M's historical gap is resolved at the same-device CUDA FP16 oracle boundary
+(#45/#494 — worst RMS 0.5171%, exact greedy; the original failing cell retained).
 The explicit Llama FP32 mode passes independent Q4_K_M/Q5_K_M model checks at
 2048 context. Its separate optional FP32 residual CUDA backend accelerates
 one through four rows. Separate opt-in compensated FP32 prefill targets prompts
