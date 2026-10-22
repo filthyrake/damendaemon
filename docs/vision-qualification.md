@@ -1,7 +1,9 @@
 # Qwen3.5 still-image qualification
 
 Tracked in GitHub issue #50. Experimental still-image HTTP serving is now
-opt-in for Qwen3.5-0.8B on NVIDIA A2 (FP16/Q8 text) and Apple M4 (FP16/Q8 text). See the
+opt-in for Qwen3.5-0.8B AND Qwen3.5-2B on NVIDIA A2 (FP16/Q8 text) and Apple
+M4 (FP16/Q8 text), with per-depth calibrated intermediate gates (#571 depth
+12, #575 depth 24; see `evidence/vision/qwen35-2b-admission-README.md`). See the
 final section for current scope and lifecycle evidence. Earlier sections record
 the qualification sequence, including the intermediate numerical limits (the
 block-11 absolute gate was miscalibrated and is resolved by calibration in

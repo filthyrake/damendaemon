@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import io
 import json
+import math
 import os
 from pathlib import Path
 import subprocess
@@ -69,8 +70,14 @@ def main():
     if args.allocation_reference:
         data=Path(args.allocation_reference).read_bytes()
         allocations=json.loads(data)
-        if not allocations or any(not any('getNewWorkspace' in frame.get('name','')
-                for frame in allocation.get('frames',[])) for allocation in allocations):
+        # Persistent cuBLAS workspaces are identified by the workspace
+        # allocation frames; torch >=2.13 emits them via the C++
+        # setWorkspaceForHandle path, older builds via getNewWorkspace (#575).
+        def identified(allocation):
+            return any('getNewWorkspace' in frame.get('name','')
+                       or 'setWorkspaceForHandle' in frame.get('name','')
+                       for frame in allocation.get('frames',[]))
+        if not allocations or any(not identified(allocation) for allocation in allocations):
             raise ValueError('allocation reference contains unidentified live allocations')
         workspace=sum(allocation['size'] for allocation in allocations)
         report['library_allocation_reference_sha256']=hashlib.sha256(data).hexdigest()
@@ -84,9 +91,24 @@ def main():
             command=([sys.executable,'scripts/diagnose_vision_server.py'] if args.allocation_diagnostics
                      else [sys.executable,'scripts/profile_vision_server.py'] if args.stage_profile
                      else [sys.executable,'-m','damendaemon'])
-            process=subprocess.Popen([*command,'serve','--port','0',
+            # Two model aliases must co-reside in the host cache for the
+            # host-restore check; scale the budget with the checkpoint so the
+            # lifecycle semantics under test do not depend on model size
+            # (#575: two 2B residents need ~10 GiB, the fixed 8 evicted one).
+            from damendaemon.models import weight_bytes
+            # The serve below runs with the vision opt-in, and its host
+            # accounting includes the vision weights; estimate under the same
+            # opt-in or the budget is text-only and two residents cannot
+            # co-exist (#575).
+            with patch.dict(os.environ,{'DAMENDAEMON_EXPERIMENTAL_VISION':'1'}):
+                estimated=weight_bytes(model_path,quantization=reference.get('text_quantization','none'))
+            host_gib=max(8,math.ceil(2.2*estimated/2**30))
+            serve_command=[*command,'serve','--port','0',
                 '--context','1024','--batch-size','4','--gpu-models','1','--host-models','2',
-                '--host-gib','8','--model','a='+model_path,'--model','b='+model_path],
+                '--host-gib',str(host_gib),'--model','a='+model_path,'--model','b='+model_path]
+            report['serve_host_gib']=host_gib
+            report['serve_command']=[c if 'safetensors' not in c else c.split('/')[-1] for c in serve_command]
+            process=subprocess.Popen(serve_command,
                 env=env,stdout=log,stderr=log)
             try:
                 deadline=time.monotonic()+180
@@ -120,7 +142,8 @@ def main():
                     report['trials'].append(dict(name=reference['cases'][index]['name'],
                         http_seconds=result['measured_http_seconds'],timing=result['damendaemon_timing'],usage=result['usage']))
                 loaded=status('loaded')
-                assert loaded['models'][0]['vision_gpu_weight_bytes']==204977152
+                from damendaemon.vision_qwen35 import expected_vision_bytes
+                assert loaded['models'][0]['vision_gpu_weight_bytes']==expected_vision_bytes(model_path)
                 assert loaded['models'][0]['host_weight_bytes']==report['estimated_host_weight_bytes']
                 for _ in range(args.warm_requests):
                     result=request(payloads[0]);check(result,0,'warm')
@@ -159,6 +182,8 @@ def main():
                 check(request(payloads[0]),0,'malformed-input-recovery')
                 check(request({**payloads[0],'model':'b'}),0,'second-model-alias')
                 restored=request(payloads[0]);check(restored,0,'host-restore')
+                report['host_restore_tier']=restored['damendaemon_timing']['source_tier']
+                report['statuses']['before-restore']=status('before-restore')
                 assert restored['damendaemon_timing']['source_tier']=='host'
                 for alias in ('a','b'):
                     with open_request('/v1/models/unload',dict(model=alias,release_host=True)) as response:json.load(response)

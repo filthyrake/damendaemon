@@ -1,0 +1,1086 @@
+{
+  "passed": true,
+  "scope": "standalone vision encoder, not multimodal serving qualification",
+  "device": "Apple MPS",
+  "torch": "2.6.0",
+  "backend": "torch-fp32-vision",
+  "attention": "sdpa",
+  "projection_storage": "torch.float16",
+  "model": "/Users/damenknight/.hermes/cache/scratch/qwen35-2b-real",
+  "reference_model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-2B/snapshots/15852e8c16360a2fea060d615a32b45270f8a8fc",
+  "host_weight_bytes": 668209152,
+  "device_weight_bytes": 668209152,
+  "reference_device": "cpu",
+  "reference_dtype": "float32",
+  "reference_transformers": "5.18.0",
+  "reference_torch": "2.13.0+cu130",
+  "reference_sha256": "e57965505ed2ae49f070665e3de158a2c2039e9ce91b9a7fe8fc60696bf349d0",
+  "source_sha256": "ce1c64eecbc83db41030085f37c3e64322385d81377c9e5bc4812731a1e3f96a",
+  "gates": {
+    "relative_rms": 0.0007,
+    "max_absolute_floor": 0.02,
+    "max_absolute_element_relative": 0.002
+  },
+  "cases": [
+    {
+      "name": "square",
+      "grids": [
+        [
+          1,
+          16,
+          16
+        ]
+      ],
+      "checks": [
+        {
+          "stage": "patch",
+          "relative_rms": 5.10366476191848e-07,
+          "max_absolute": 1.0013580322265625e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "positioned",
+          "relative_rms": 4.878496042692859e-07,
+          "max_absolute": 1.0013580322265625e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.0",
+          "relative_rms": 1.1634641623459174e-06,
+          "max_absolute": 2.7894973754882812e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.1",
+          "relative_rms": 2.6693935524235712e-06,
+          "max_absolute": 4.279613494873047e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.2",
+          "relative_rms": 4.079792233824264e-06,
+          "max_absolute": 6.008148193359375e-05,
+          "absolute_limit": 0.022911151885986327,
+          "passed": true
+        },
+        {
+          "stage": "block.3",
+          "relative_rms": 4.72006831842009e-06,
+          "max_absolute": 5.733966827392578e-05,
+          "absolute_limit": 0.028856184005737306,
+          "passed": true
+        },
+        {
+          "stage": "block.4",
+          "relative_rms": 4.579946562444093e-06,
+          "max_absolute": 5.316734313964844e-05,
+          "absolute_limit": 0.029959781646728516,
+          "passed": true
+        },
+        {
+          "stage": "block.5",
+          "relative_rms": 4.626783720595995e-06,
+          "max_absolute": 4.863739013671875e-05,
+          "absolute_limit": 0.02805418586730957,
+          "passed": true
+        },
+        {
+          "stage": "block.6",
+          "relative_rms": 4.483199518290348e-06,
+          "max_absolute": 4.100799560546875e-05,
+          "absolute_limit": 0.02235792350769043,
+          "passed": true
+        },
+        {
+          "stage": "block.7",
+          "relative_rms": 4.357654688647017e-06,
+          "max_absolute": 3.457069396972656e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.8",
+          "relative_rms": 4.903377430309774e-06,
+          "max_absolute": 4.8160552978515625e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.9",
+          "relative_rms": 5.6869735090003815e-06,
+          "max_absolute": 4.9114227294921875e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.10",
+          "relative_rms": 1.203785723191686e-05,
+          "max_absolute": 0.00194549560546875,
+          "absolute_limit": 0.23926760864257812,
+          "passed": true
+        },
+        {
+          "stage": "block.11",
+          "relative_rms": 1.2577246707223821e-05,
+          "max_absolute": 0.00380706787109375,
+          "absolute_limit": 0.36946514892578125,
+          "passed": true
+        },
+        {
+          "stage": "block.12",
+          "relative_rms": 1.3177692380850203e-05,
+          "max_absolute": 0.0037994384765625,
+          "absolute_limit": 0.37221731567382815,
+          "passed": true
+        },
+        {
+          "stage": "block.13",
+          "relative_rms": 1.5348743545473553e-05,
+          "max_absolute": 0.00379180908203125,
+          "absolute_limit": 0.37433145141601565,
+          "passed": true
+        },
+        {
+          "stage": "block.14",
+          "relative_rms": 1.671338213782292e-05,
+          "max_absolute": 0.0037841796875,
+          "absolute_limit": 0.3884281005859375,
+          "passed": true
+        },
+        {
+          "stage": "block.15",
+          "relative_rms": 3.5208198823966086e-05,
+          "max_absolute": 0.011295795440673828,
+          "absolute_limit": 0.4131284484863281,
+          "passed": true
+        },
+        {
+          "stage": "block.16",
+          "relative_rms": 3.905336052412167e-05,
+          "max_absolute": 0.011838436126708984,
+          "absolute_limit": 0.41500714111328124,
+          "passed": true
+        },
+        {
+          "stage": "block.17",
+          "relative_rms": 4.8340232751797885e-05,
+          "max_absolute": 0.011970043182373047,
+          "absolute_limit": 0.41428054809570314,
+          "passed": true
+        },
+        {
+          "stage": "block.18",
+          "relative_rms": 5.719026012229733e-05,
+          "max_absolute": 0.01366567611694336,
+          "absolute_limit": 0.4188616943359375,
+          "passed": true
+        },
+        {
+          "stage": "block.19",
+          "relative_rms": 6.615999154746532e-05,
+          "max_absolute": 0.013437271118164062,
+          "absolute_limit": 0.434927001953125,
+          "passed": true
+        },
+        {
+          "stage": "block.20",
+          "relative_rms": 8.27466428745538e-05,
+          "max_absolute": 0.020967483520507812,
+          "absolute_limit": 0.4379242858886719,
+          "passed": true
+        },
+        {
+          "stage": "block.21",
+          "relative_rms": 8.52474186103791e-05,
+          "max_absolute": 0.020631790161132812,
+          "absolute_limit": 0.44335681152343753,
+          "passed": true
+        },
+        {
+          "stage": "block.22",
+          "relative_rms": 0.00011151315266033635,
+          "max_absolute": 0.019608020782470703,
+          "absolute_limit": 0.44219476318359374,
+          "passed": true
+        },
+        {
+          "stage": "block.23",
+          "relative_rms": 7.70597907830961e-05,
+          "max_absolute": 1.50244140625,
+          "absolute_limit": 11.732466796875,
+          "passed": true
+        },
+        {
+          "stage": "merged",
+          "relative_rms": 6.503953045466915e-05,
+          "max_absolute": 0.0002633333206176758,
+          "absolute_limit": 0.02,
+          "passed": true
+        }
+      ],
+      "median_encoder_seconds": 0.12702349992468953,
+      "encoder_seconds": [
+        0.12107612495310605,
+        0.11825933400541544,
+        0.12867204193025827,
+        0.12702349992468953,
+        0.13940995908342302
+      ],
+      "peak_extra_allocated_bytes": null,
+      "timing_scope": "warm encoder only; staged GPU pixels; input processing/copy and text decoding excluded"
+    },
+    {
+      "name": "landscape",
+      "grids": [
+        [
+          1,
+          16,
+          24
+        ]
+      ],
+      "checks": [
+        {
+          "stage": "patch",
+          "relative_rms": 6.350741728056164e-07,
+          "max_absolute": 1.049041748046875e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "positioned",
+          "relative_rms": 6.260318059503334e-07,
+          "max_absolute": 1.049041748046875e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.0",
+          "relative_rms": 1.1918590416826191e-06,
+          "max_absolute": 2.9087066650390625e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.1",
+          "relative_rms": 2.3883746962383157e-06,
+          "max_absolute": 4.0531158447265625e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.2",
+          "relative_rms": 3.4452580166544067e-06,
+          "max_absolute": 4.7326087951660156e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.3",
+          "relative_rms": 4.159645868639927e-06,
+          "max_absolute": 5.91278076171875e-05,
+          "absolute_limit": 0.02740508270263672,
+          "passed": true
+        },
+        {
+          "stage": "block.4",
+          "relative_rms": 4.122887730773073e-06,
+          "max_absolute": 5.570054054260254e-05,
+          "absolute_limit": 0.029345348358154298,
+          "passed": true
+        },
+        {
+          "stage": "block.5",
+          "relative_rms": 4.306482423999114e-06,
+          "max_absolute": 5.2094459533691406e-05,
+          "absolute_limit": 0.027364158630371095,
+          "passed": true
+        },
+        {
+          "stage": "block.6",
+          "relative_rms": 4.132683443458518e-06,
+          "max_absolute": 4.4465065002441406e-05,
+          "absolute_limit": 0.02211737823486328,
+          "passed": true
+        },
+        {
+          "stage": "block.7",
+          "relative_rms": 3.982540874858387e-06,
+          "max_absolute": 3.6597251892089844e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.8",
+          "relative_rms": 4.0501436160411686e-06,
+          "max_absolute": 3.159046173095703e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.9",
+          "relative_rms": 3.99533155359677e-06,
+          "max_absolute": 2.2292137145996094e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.10",
+          "relative_rms": 7.193923920567613e-06,
+          "max_absolute": 0.0008697509765625,
+          "absolute_limit": 0.215045654296875,
+          "passed": true
+        },
+        {
+          "stage": "block.11",
+          "relative_rms": 7.2456109592167195e-06,
+          "max_absolute": 0.0017547607421875,
+          "absolute_limit": 0.3474344482421875,
+          "passed": true
+        },
+        {
+          "stage": "block.12",
+          "relative_rms": 7.129933692340273e-06,
+          "max_absolute": 0.001750946044921875,
+          "absolute_limit": 0.3502969665527344,
+          "passed": true
+        },
+        {
+          "stage": "block.13",
+          "relative_rms": 7.093888143572258e-06,
+          "max_absolute": 0.001743316650390625,
+          "absolute_limit": 0.35303680419921873,
+          "passed": true
+        },
+        {
+          "stage": "block.14",
+          "relative_rms": 6.768430921511026e-06,
+          "max_absolute": 0.00174713134765625,
+          "absolute_limit": 0.36675146484375,
+          "passed": true
+        },
+        {
+          "stage": "block.15",
+          "relative_rms": 6.317575753200799e-06,
+          "max_absolute": 0.00173187255859375,
+          "absolute_limit": 0.39015682983398436,
+          "passed": true
+        },
+        {
+          "stage": "block.16",
+          "relative_rms": 6.437272986659082e-06,
+          "max_absolute": 0.00173187255859375,
+          "absolute_limit": 0.39207916259765624,
+          "passed": true
+        },
+        {
+          "stage": "block.17",
+          "relative_rms": 6.478961495304247e-06,
+          "max_absolute": 0.00173187255859375,
+          "absolute_limit": 0.3912373046875,
+          "passed": true
+        },
+        {
+          "stage": "block.18",
+          "relative_rms": 6.666412900813157e-06,
+          "max_absolute": 0.00177001953125,
+          "absolute_limit": 0.3957606201171875,
+          "passed": true
+        },
+        {
+          "stage": "block.19",
+          "relative_rms": 7.034420832496835e-06,
+          "max_absolute": 0.001861572265625,
+          "absolute_limit": 0.4119007263183594,
+          "passed": true
+        },
+        {
+          "stage": "block.20",
+          "relative_rms": 7.214351171569433e-06,
+          "max_absolute": 0.00188446044921875,
+          "absolute_limit": 0.4147875671386719,
+          "passed": true
+        },
+        {
+          "stage": "block.21",
+          "relative_rms": 8.07814285508357e-06,
+          "max_absolute": 0.001922607421875,
+          "absolute_limit": 0.4205281066894531,
+          "passed": true
+        },
+        {
+          "stage": "block.22",
+          "relative_rms": 1.0510055290069431e-05,
+          "max_absolute": 0.00196075439453125,
+          "absolute_limit": 0.4202596740722656,
+          "passed": true
+        },
+        {
+          "stage": "block.23",
+          "relative_rms": 1.537704883958213e-05,
+          "max_absolute": 0.38623046875,
+          "absolute_limit": 11.5758681640625,
+          "passed": true
+        },
+        {
+          "stage": "merged",
+          "relative_rms": 1.7442365788156167e-05,
+          "max_absolute": 0.0001112222671508789,
+          "absolute_limit": 0.02,
+          "passed": true
+        }
+      ],
+      "median_encoder_seconds": 0.18261945783160627,
+      "encoder_seconds": [
+        0.1872870831284672,
+        0.1864817081950605,
+        0.18119462486356497,
+        0.1825700830668211,
+        0.18261945783160627
+      ],
+      "peak_extra_allocated_bytes": null,
+      "timing_scope": "warm encoder only; staged GPU pixels; input processing/copy and text decoding excluded"
+    },
+    {
+      "name": "resized",
+      "grids": [
+        [
+          1,
+          14,
+          22
+        ]
+      ],
+      "checks": [
+        {
+          "stage": "patch",
+          "relative_rms": 5.203622208682646e-07,
+          "max_absolute": 1.1920928955078125e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "positioned",
+          "relative_rms": 5.010980999031744e-07,
+          "max_absolute": 1.1920928955078125e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.0",
+          "relative_rms": 1.2048160442645894e-06,
+          "max_absolute": 4.029273986816406e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.1",
+          "relative_rms": 2.763501015579095e-06,
+          "max_absolute": 3.743171691894531e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.2",
+          "relative_rms": 4.31808439316228e-06,
+          "max_absolute": 5.245208740234375e-05,
+          "absolute_limit": 0.02236098098754883,
+          "passed": true
+        },
+        {
+          "stage": "block.3",
+          "relative_rms": 4.999619704904035e-06,
+          "max_absolute": 6.318092346191406e-05,
+          "absolute_limit": 0.028709453582763673,
+          "passed": true
+        },
+        {
+          "stage": "block.4",
+          "relative_rms": 4.895955953543307e-06,
+          "max_absolute": 5.4717063903808594e-05,
+          "absolute_limit": 0.02992495346069336,
+          "passed": true
+        },
+        {
+          "stage": "block.5",
+          "relative_rms": 4.9081113502325024e-06,
+          "max_absolute": 5.1021575927734375e-05,
+          "absolute_limit": 0.02741764259338379,
+          "passed": true
+        },
+        {
+          "stage": "block.6",
+          "relative_rms": 4.771254225488519e-06,
+          "max_absolute": 4.410743713378906e-05,
+          "absolute_limit": 0.021504615783691408,
+          "passed": true
+        },
+        {
+          "stage": "block.7",
+          "relative_rms": 4.526724296738394e-06,
+          "max_absolute": 4.1484832763671875e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.8",
+          "relative_rms": 4.978259767085547e-06,
+          "max_absolute": 3.695487976074219e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.9",
+          "relative_rms": 6.274993211263791e-06,
+          "max_absolute": 0.00014591217041015625,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.10",
+          "relative_rms": 2.09502613870427e-05,
+          "max_absolute": 0.0043792724609375,
+          "absolute_limit": 0.24679771423339844,
+          "passed": true
+        },
+        {
+          "stage": "block.11",
+          "relative_rms": 1.5388928659376688e-05,
+          "max_absolute": 0.0046844482421875,
+          "absolute_limit": 0.37733203125000003,
+          "passed": true
+        },
+        {
+          "stage": "block.12",
+          "relative_rms": 1.5214152881526388e-05,
+          "max_absolute": 0.0046844482421875,
+          "absolute_limit": 0.37996682739257814,
+          "passed": true
+        },
+        {
+          "stage": "block.13",
+          "relative_rms": 1.5169397556746844e-05,
+          "max_absolute": 0.00469970703125,
+          "absolute_limit": 0.38212744140625,
+          "passed": true
+        },
+        {
+          "stage": "block.14",
+          "relative_rms": 1.4608229321311228e-05,
+          "max_absolute": 0.00469970703125,
+          "absolute_limit": 0.39615319824218753,
+          "passed": true
+        },
+        {
+          "stage": "block.15",
+          "relative_rms": 1.5095673006726429e-05,
+          "max_absolute": 0.004638671875,
+          "absolute_limit": 0.4206617126464844,
+          "passed": true
+        },
+        {
+          "stage": "block.16",
+          "relative_rms": 1.537333446322009e-05,
+          "max_absolute": 0.004638671875,
+          "absolute_limit": 0.4224869689941406,
+          "passed": true
+        },
+        {
+          "stage": "block.17",
+          "relative_rms": 1.585155405336991e-05,
+          "max_absolute": 0.004638671875,
+          "absolute_limit": 0.4217349853515625,
+          "passed": true
+        },
+        {
+          "stage": "block.18",
+          "relative_rms": 1.6565223631914705e-05,
+          "max_absolute": 0.0046844482421875,
+          "absolute_limit": 0.4264908447265625,
+          "passed": true
+        },
+        {
+          "stage": "block.19",
+          "relative_rms": 1.72181553352857e-05,
+          "max_absolute": 0.0047760009765625,
+          "absolute_limit": 0.44271603393554687,
+          "passed": true
+        },
+        {
+          "stage": "block.20",
+          "relative_rms": 1.871776294137817e-05,
+          "max_absolute": 0.0048065185546875,
+          "absolute_limit": 0.445720947265625,
+          "passed": true
+        },
+        {
+          "stage": "block.21",
+          "relative_rms": 2.1732937966589816e-05,
+          "max_absolute": 0.0048370361328125,
+          "absolute_limit": 0.4512341003417969,
+          "passed": true
+        },
+        {
+          "stage": "block.22",
+          "relative_rms": 3.061957249883562e-05,
+          "max_absolute": 0.0048828125,
+          "absolute_limit": 0.4504059143066406,
+          "passed": true
+        },
+        {
+          "stage": "block.23",
+          "relative_rms": 3.206967085134238e-05,
+          "max_absolute": 0.49609375,
+          "absolute_limit": 10.9578740234375,
+          "passed": true
+        },
+        {
+          "stage": "merged",
+          "relative_rms": 8.11132340459153e-05,
+          "max_absolute": 0.0006003379821777344,
+          "absolute_limit": 0.02,
+          "passed": true
+        }
+      ],
+      "median_encoder_seconds": 0.14779341593384743,
+      "encoder_seconds": [
+        0.14825612492859364,
+        0.14647779194638133,
+        0.14922225009649992,
+        0.14720233320258558,
+        0.14779341593384743
+      ],
+      "peak_extra_allocated_bytes": null,
+      "timing_scope": "warm encoder only; staged GPU pixels; input processing/copy and text decoding excluded"
+    },
+    {
+      "name": "larger",
+      "grids": [
+        [
+          1,
+          32,
+          32
+        ]
+      ],
+      "checks": [
+        {
+          "stage": "patch",
+          "relative_rms": 6.356149810926581e-07,
+          "max_absolute": 1.049041748046875e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "positioned",
+          "relative_rms": 6.281817945819057e-07,
+          "max_absolute": 1.049041748046875e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.0",
+          "relative_rms": 1.2174166386103025e-06,
+          "max_absolute": 3.2901763916015625e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.1",
+          "relative_rms": 2.4151024717866676e-06,
+          "max_absolute": 4.5299530029296875e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.2",
+          "relative_rms": 3.509122961986577e-06,
+          "max_absolute": 6.186962127685547e-05,
+          "absolute_limit": 0.02271033477783203,
+          "passed": true
+        },
+        {
+          "stage": "block.3",
+          "relative_rms": 4.193008862785064e-06,
+          "max_absolute": 9.1552734375e-05,
+          "absolute_limit": 0.02989731788635254,
+          "passed": true
+        },
+        {
+          "stage": "block.4",
+          "relative_rms": 4.202460786473239e-06,
+          "max_absolute": 0.0001087188720703125,
+          "absolute_limit": 0.03149054527282715,
+          "passed": true
+        },
+        {
+          "stage": "block.5",
+          "relative_rms": 4.443155376065988e-06,
+          "max_absolute": 0.00011181831359863281,
+          "absolute_limit": 0.029719154357910157,
+          "passed": true
+        },
+        {
+          "stage": "block.6",
+          "relative_rms": 4.326515409047715e-06,
+          "max_absolute": 9.942054748535156e-05,
+          "absolute_limit": 0.024358268737792968,
+          "passed": true
+        },
+        {
+          "stage": "block.7",
+          "relative_rms": 4.23758592660306e-06,
+          "max_absolute": 7.95125961303711e-05,
+          "absolute_limit": 0.020552906036376953,
+          "passed": true
+        },
+        {
+          "stage": "block.8",
+          "relative_rms": 4.341906333138468e-06,
+          "max_absolute": 5.3882598876953125e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.9",
+          "relative_rms": 4.388396519061644e-06,
+          "max_absolute": 8.296966552734375e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.10",
+          "relative_rms": 2.7049351047025993e-05,
+          "max_absolute": 0.008636474609375,
+          "absolute_limit": 0.342150634765625,
+          "passed": true
+        },
+        {
+          "stage": "block.11",
+          "relative_rms": 3.4238128137076274e-05,
+          "max_absolute": 0.01659393310546875,
+          "absolute_limit": 0.4799927978515625,
+          "passed": true
+        },
+        {
+          "stage": "block.12",
+          "relative_rms": 3.309312160126865e-05,
+          "max_absolute": 0.0166015625,
+          "absolute_limit": 0.4826786804199219,
+          "passed": true
+        },
+        {
+          "stage": "block.13",
+          "relative_rms": 3.166375608998351e-05,
+          "max_absolute": 0.01662445068359375,
+          "absolute_limit": 0.4854521179199219,
+          "passed": true
+        },
+        {
+          "stage": "block.14",
+          "relative_rms": 2.901584048231598e-05,
+          "max_absolute": 0.016632080078125,
+          "absolute_limit": 0.4989987487792969,
+          "passed": true
+        },
+        {
+          "stage": "block.15",
+          "relative_rms": 2.6541074475971982e-05,
+          "max_absolute": 0.01644134521484375,
+          "absolute_limit": 0.5212992553710938,
+          "passed": true
+        },
+        {
+          "stage": "block.16",
+          "relative_rms": 2.639353806443978e-05,
+          "max_absolute": 0.016448974609375,
+          "absolute_limit": 0.5232268676757813,
+          "passed": true
+        },
+        {
+          "stage": "block.17",
+          "relative_rms": 2.5678107704152353e-05,
+          "max_absolute": 0.016448974609375,
+          "absolute_limit": 0.5224012451171876,
+          "passed": true
+        },
+        {
+          "stage": "block.18",
+          "relative_rms": 2.5379067665198818e-05,
+          "max_absolute": 0.016815185546875,
+          "absolute_limit": 0.5277528686523437,
+          "passed": true
+        },
+        {
+          "stage": "block.19",
+          "relative_rms": 2.5026840376085602e-05,
+          "max_absolute": 0.01750946044921875,
+          "absolute_limit": 0.5453203125,
+          "passed": true
+        },
+        {
+          "stage": "block.20",
+          "relative_rms": 2.38597349380143e-05,
+          "max_absolute": 0.0176849365234375,
+          "absolute_limit": 0.5487705688476563,
+          "passed": true
+        },
+        {
+          "stage": "block.21",
+          "relative_rms": 2.377205964876339e-05,
+          "max_absolute": 0.01798248291015625,
+          "absolute_limit": 0.5548668212890625,
+          "passed": true
+        },
+        {
+          "stage": "block.22",
+          "relative_rms": 2.484355900378432e-05,
+          "max_absolute": 0.01819610595703125,
+          "absolute_limit": 0.55600390625,
+          "passed": true
+        },
+        {
+          "stage": "block.23",
+          "relative_rms": 1.5789053577464074e-05,
+          "max_absolute": 0.55029296875,
+          "absolute_limit": 11.552326171875,
+          "passed": true
+        },
+        {
+          "stage": "merged",
+          "relative_rms": 8.41343353386037e-05,
+          "max_absolute": 0.002648591995239258,
+          "absolute_limit": 0.02,
+          "passed": true
+        }
+      ],
+      "median_encoder_seconds": 0.6076486250385642,
+      "encoder_seconds": [
+        0.624575792113319,
+        0.5966580838430673,
+        0.6086907079443336,
+        0.6076486250385642,
+        0.5830300829838961
+      ],
+      "peak_extra_allocated_bytes": null,
+      "timing_scope": "warm encoder only; staged GPU pixels; input processing/copy and text decoding excluded"
+    },
+    {
+      "name": "two-images",
+      "grids": [
+        [
+          1,
+          16,
+          16
+        ],
+        [
+          1,
+          16,
+          24
+        ]
+      ],
+      "checks": [
+        {
+          "stage": "patch",
+          "relative_rms": 6.1161443909441e-07,
+          "max_absolute": 1.049041748046875e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "positioned",
+          "relative_rms": 5.990054319227056e-07,
+          "max_absolute": 1.049041748046875e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.0",
+          "relative_rms": 1.1889645747942268e-06,
+          "max_absolute": 3.123283386230469e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.1",
+          "relative_rms": 2.47677030529303e-06,
+          "max_absolute": 4.2438507080078125e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.2",
+          "relative_rms": 3.6707826893689344e-06,
+          "max_absolute": 6.0677528381347656e-05,
+          "absolute_limit": 0.022911151885986327,
+          "passed": true
+        },
+        {
+          "stage": "block.3",
+          "relative_rms": 4.356782028480666e-06,
+          "max_absolute": 5.990266799926758e-05,
+          "absolute_limit": 0.02885618591308594,
+          "passed": true
+        },
+        {
+          "stage": "block.4",
+          "relative_rms": 4.2844912968575954e-06,
+          "max_absolute": 5.665421485900879e-05,
+          "absolute_limit": 0.029959781646728516,
+          "passed": true
+        },
+        {
+          "stage": "block.5",
+          "relative_rms": 4.42433474745485e-06,
+          "max_absolute": 5.352497100830078e-05,
+          "absolute_limit": 0.028054183959960937,
+          "passed": true
+        },
+        {
+          "stage": "block.6",
+          "relative_rms": 4.268582415534183e-06,
+          "max_absolute": 4.470348358154297e-05,
+          "absolute_limit": 0.022357919692993163,
+          "passed": true
+        },
+        {
+          "stage": "block.7",
+          "relative_rms": 4.138792064622976e-06,
+          "max_absolute": 3.612041473388672e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.8",
+          "relative_rms": 4.443327725311974e-06,
+          "max_absolute": 4.267692565917969e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.9",
+          "relative_rms": 4.828203600482084e-06,
+          "max_absolute": 4.8160552978515625e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.10",
+          "relative_rms": 9.952578693628311e-06,
+          "max_absolute": 0.00203704833984375,
+          "absolute_limit": 0.23926760864257812,
+          "passed": true
+        },
+        {
+          "stage": "block.11",
+          "relative_rms": 1.0267202924296726e-05,
+          "max_absolute": 0.00399017333984375,
+          "absolute_limit": 0.36946514892578125,
+          "passed": true
+        },
+        {
+          "stage": "block.12",
+          "relative_rms": 1.0498046322027221e-05,
+          "max_absolute": 0.0039825439453125,
+          "absolute_limit": 0.37221731567382815,
+          "passed": true
+        },
+        {
+          "stage": "block.13",
+          "relative_rms": 1.1420936061767861e-05,
+          "max_absolute": 0.00397491455078125,
+          "absolute_limit": 0.37433145141601565,
+          "passed": true
+        },
+        {
+          "stage": "block.14",
+          "relative_rms": 1.1738417924789246e-05,
+          "max_absolute": 0.00396728515625,
+          "absolute_limit": 0.3884281005859375,
+          "passed": true
+        },
+        {
+          "stage": "block.15",
+          "relative_rms": 2.0330026018200442e-05,
+          "max_absolute": 0.008769512176513672,
+          "absolute_limit": 0.4131284484863281,
+          "passed": true
+        },
+        {
+          "stage": "block.16",
+          "relative_rms": 2.242815025965683e-05,
+          "max_absolute": 0.009190082550048828,
+          "absolute_limit": 0.41500714111328124,
+          "passed": true
+        },
+        {
+          "stage": "block.17",
+          "relative_rms": 2.7140436941408552e-05,
+          "max_absolute": 0.009292125701904297,
+          "absolute_limit": 0.41428054809570314,
+          "passed": true
+        },
+        {
+          "stage": "block.18",
+          "relative_rms": 3.173719596816227e-05,
+          "max_absolute": 0.010606765747070312,
+          "absolute_limit": 0.4188616943359375,
+          "passed": true
+        },
+        {
+          "stage": "block.19",
+          "relative_rms": 3.6315072065917775e-05,
+          "max_absolute": 0.010429859161376953,
+          "absolute_limit": 0.434927001953125,
+          "passed": true
+        },
+        {
+          "stage": "block.20",
+          "relative_rms": 4.491048457566649e-05,
+          "max_absolute": 0.01627349853515625,
+          "absolute_limit": 0.43792431640625,
+          "passed": true
+        },
+        {
+          "stage": "block.21",
+          "relative_rms": 4.613739292835817e-05,
+          "max_absolute": 0.016012191772460938,
+          "absolute_limit": 0.4433568420410156,
+          "passed": true
+        },
+        {
+          "stage": "block.22",
+          "relative_rms": 6.115341966506094e-05,
+          "max_absolute": 0.015223503112792969,
+          "absolute_limit": 0.44219476318359374,
+          "passed": true
+        },
+        {
+          "stage": "block.23",
+          "relative_rms": 4.564022310660221e-05,
+          "max_absolute": 1.55206298828125,
+          "absolute_limit": 11.7324775390625,
+          "passed": true
+        },
+        {
+          "stage": "merged",
+          "relative_rms": 4.1755341953830793e-05,
+          "max_absolute": 0.00021636486053466797,
+          "absolute_limit": 0.02,
+          "passed": true
+        }
+      ],
+      "median_encoder_seconds": 0.33401637501083314,
+      "encoder_seconds": [
+        0.29599583288654685,
+        0.33401637501083314,
+        0.35309962509199977,
+        0.3272635410539806,
+        0.34365599998272955
+      ],
+      "peak_extra_allocated_bytes": null,
+      "timing_scope": "warm encoder only; staged GPU pixels; input processing/copy and text decoding excluded"
+    }
+  ]
+}

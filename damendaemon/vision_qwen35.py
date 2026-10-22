@@ -60,6 +60,59 @@ def read_vision_config(path):
     return c
 
 
+def vision_gates(depth):
+    """Intermediate bounds, calibrated per encoder depth (#571, #575).
+
+    Depth 12 (0.8B): #571 bounds — relative RMS 1e-04; absolute
+    max(0.02, 5e-04 x max|target|), 3x the worst passing element-relative
+    error in the depth-12 population (1.647e-04).
+
+    Depth 24 (2B): #575 bounds, calibrated from the ORACLE CPU-vs-CUDA
+    device-spread population (the reference stack's own reproducibility
+    floor at this depth): 3x worst spread RMS 2.205e-04 -> 7e-04; 3x worst
+    spread element-relative 5.350e-04 -> 2e-03, same 0.02 floor.
+    """
+    if depth == 12:
+        return dict(relative_rms=1e-4,max_absolute_floor=.02,max_absolute_element_relative=5e-4)
+    if depth == 24:
+        return dict(relative_rms=7e-4,max_absolute_floor=.02,max_absolute_element_relative=2e-3)
+    raise ValueError('no calibrated vision gate for encoder depth %r' % (depth,))
+
+
+def _vision_schema(c):
+    """Tensor shapes of the vision checkpoint for a validated geometry."""
+    h,inner,merged = c['hidden_size'],c['intermediate_size'],c['hidden_size']*4
+    schema = {'patch_embed.proj.weight':(h,3,2,16,16),'patch_embed.proj.bias':(h,),
+              'pos_embed.weight':(c['num_position_embeddings'],h),
+              'merger.norm.weight':(h,),'merger.norm.bias':(h,),
+              'merger.linear_fc1.weight':(merged,merged),'merger.linear_fc1.bias':(merged,),
+              'merger.linear_fc2.weight':(c['out_hidden_size'],merged),
+              'merger.linear_fc2.bias':(c['out_hidden_size'],)}
+    for layer in range(c['depth']):
+        root=f'blocks.{layer}.'
+        for name in ('norm1','norm2'):
+            schema[root+name+'.weight']=schema[root+name+'.bias']=(h,)
+        for name,outputs,inputs in (('attn.qkv',3*h,h),('attn.proj',h,h),
+                                    ('mlp.linear_fc1',inner,h),('mlp.linear_fc2',h,inner)):
+            schema[root+name+'.weight']=(outputs,inputs)
+            schema[root+name+'.bias']=(outputs,)
+    return schema
+
+
+def _vision_storage_dtype(name,projection_dtype):
+    return projection_dtype if (name.endswith('.weight') and name!='pos_embed.weight' and '.norm' not in name) else torch.float32
+
+
+def expected_vision_bytes(path,*,projection_dtype=torch.float16):
+    """Byte total of the vision checkpoint for a validated geometry, without loading tensors."""
+    import math
+    if projection_dtype not in (torch.float16,torch.float32):
+        raise ValueError('unsupported vision projection storage')
+    schema=_vision_schema(read_vision_config(Path(path)))
+    return sum(math.prod(shape)*torch.empty((),dtype=_vision_storage_dtype(name,projection_dtype)).element_size()
+               for name,shape in schema.items())
+
+
 class VisionWeights:
     def __init__(self, path, *, projection_dtype=torch.float16):
         if projection_dtype not in (torch.float16,torch.float32):
@@ -67,21 +120,7 @@ class VisionWeights:
         self.projection_dtype=projection_dtype
         self.path = Path(path)
         self.config = c = read_vision_config(self.path)
-        h,inner,merged = c['hidden_size'],c['intermediate_size'],c['hidden_size']*4
-        schema = {'patch_embed.proj.weight':(h,3,2,16,16),'patch_embed.proj.bias':(h,),
-                  'pos_embed.weight':(c['num_position_embeddings'],h),
-                  'merger.norm.weight':(h,),'merger.norm.bias':(h,),
-                  'merger.linear_fc1.weight':(merged,merged),'merger.linear_fc1.bias':(merged,),
-                  'merger.linear_fc2.weight':(c['out_hidden_size'],merged),
-                  'merger.linear_fc2.bias':(c['out_hidden_size'],)}
-        for layer in range(c['depth']):
-            root=f'blocks.{layer}.'
-            for name in ('norm1','norm2'):
-                schema[root+name+'.weight']=schema[root+name+'.bias']=(h,)
-            for name,outputs,inputs in (('attn.qkv',3*h,h),('attn.proj',h,h),
-                                        ('mlp.linear_fc1',inner,h),('mlp.linear_fc2',h,inner)):
-                schema[root+name+'.weight']=(outputs,inputs)
-                schema[root+name+'.bias']=(outputs,)
+        schema = _vision_schema(c)
         self.weights={}
         for filename in weight_files(self.path):
             with safe_open(str(filename),framework='pt',device='cpu') as reader:
@@ -91,8 +130,7 @@ class VisionWeights:
                     if name not in schema or tuple(reader.get_slice(key).get_shape())!=schema[name]:
                         raise ValueError(f'unsupported vision tensor: {name}')
                     if name in self.weights:raise ValueError(f'duplicate vision tensor: {name}')
-                    projection=name.endswith('.weight') and name!='pos_embed.weight' and '.norm' not in name
-                    value=reader.get_tensor(key).to(projection_dtype if projection else torch.float32)
+                    value=reader.get_tensor(key).to(_vision_storage_dtype(name,projection_dtype))
                     if name=='patch_embed.proj.weight':value=value.flatten(1)
                     self.weights[name]=value.contiguous()
         if self.weights.keys()!=schema.keys():raise ValueError('incomplete vision checkpoint')
