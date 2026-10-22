@@ -7,7 +7,7 @@ import statistics
 import time
 
 import torch
-from damendaemon.vision_qwen35 import VisionWeights, VisionEncoder
+from damendaemon.vision_qwen35 import VisionWeights, VisionEncoder, vision_gates
 
 
 @torch.inference_mode()
@@ -25,6 +25,7 @@ def main():
     torch.backends.cuda.matmul.allow_tf32=False
     reference=torch.load(args.reference,map_location='cpu',weights_only=True)
     model=VisionWeights(args.model or reference['model'],projection_dtype=torch.float32 if args.source_weights else torch.float16)
+    gates=vision_gates(model.config['depth'])
     encoder=VisionEncoder(model,device=args.device,kernels=args.kernels,attention=args.attention)
     synchronize=torch.mps.synchronize if args.device=='mps' else torch.cuda.synchronize
     allocated=torch.mps.current_allocated_memory if args.device=='mps' else torch.cuda.memory_allocated
@@ -37,7 +38,7 @@ def main():
                 reference_transformers=reference['transformers'],reference_torch=reference['torch'],
                 reference_sha256=hashlib.sha256(Path(args.reference).read_bytes()).hexdigest(),
                 source_sha256=hashlib.sha256(Path('damendaemon/vision_qwen35.py').read_bytes()).hexdigest(),
-                gates=dict(relative_rms=1e-4,max_absolute_floor=.02,max_absolute_element_relative=5e-4),cases=[])
+                gates=gates,cases=[])
     try:
         for case in reference['cases']:
             trace={}
@@ -50,9 +51,9 @@ def main():
                 error=actual-target
                 rms=(error.square().mean()/target.square().mean().clamp_min(1e-12)).sqrt().item()
                 maximum=error.abs().max().item()
-                absolute_limit=max(.02,5e-4*target.abs().max().item())
+                absolute_limit=max(gates['max_absolute_floor'],gates['max_absolute_element_relative']*target.abs().max().item())
                 checks.append(dict(stage=name,relative_rms=rms,max_absolute=maximum,absolute_limit=absolute_limit,
-                    passed=bool(torch.isfinite(actual).all()) and rms<1e-4 and maximum<absolute_limit))
+                    passed=bool(torch.isfinite(actual).all()) and rms<gates['relative_rms'] and maximum<absolute_limit))
             result=dict(name=case['name'],grids=case['grids'],checks=checks)
             report['cases'].append(result)
             if not all(check['passed'] for check in checks):

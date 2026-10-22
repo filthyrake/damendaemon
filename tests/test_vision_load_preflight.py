@@ -13,7 +13,7 @@ class VisionLoadPreflightTests(unittest.TestCase):
         config = {'model_type': 'qwen3_5_text', 'hidden_size': 1024,
                   'num_hidden_layers': 24}
         for changed, context in (({'model_type': 'qwen3'}, 1024),
-                                 ({'hidden_size': 2048}, 1024),
+                                 ({'hidden_size': 1536}, 1024),
                                  ({'num_hidden_layers': 32}, 1024), ({}, 2048)):
             with self.subTest(changed=changed, context=context), self.assertRaises(ValueError):
                 VisionModelWeights(SimpleNamespace(config={**config, **changed},

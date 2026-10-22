@@ -10,13 +10,15 @@ def enabled():
 
 
 def eligible(config):
-    return (config.get('model_type')=='qwen3_5_text' and config.get('hidden_size')==1024
-            and config.get('num_hidden_layers')==24)
+    text=(config.get('model_type')=='qwen3_5_text'
+          and config.get('num_hidden_layers')==24)
+    # Qualified geometries: 0.8B (1024-wide) and 2B (2048-wide), per #573/#575.
+    return text and config.get('hidden_size') in (1024,2048)
 
 
 def validate_model(config, context):
     if not eligible(config) or context > 1024:
-        raise ValueError('image execution currently requires the qualified 1024-wide Qwen3.5 text geometry and context <=1024')
+        raise ValueError('image execution currently requires the qualified 1024-wide or 2048-wide Qwen3.5 text geometry and context <=1024')
 
 
 def validate_execution(model,max_batch):
