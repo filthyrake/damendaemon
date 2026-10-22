@@ -13,7 +13,7 @@ class VisionPolicyTests(unittest.TestCase):
         with patch.dict(os.environ,{'DAMENDAEMON_DEVICE':'mps'}), \
                 patch('torch.backends.mps.is_available',return_value=True), \
                 patch('damendaemon.vision_hybrid.VisionHybridExecutor') as constructor:
-            with self.assertRaisesRegex(ValueError,'vision serving requires NVIDIA A2'):
+            with self.assertRaisesRegex(ValueError,'at most four slots'):
                 make_executor(model,max_batch=5)
             constructor.assert_not_called()
 
