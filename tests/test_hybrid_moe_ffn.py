@@ -71,6 +71,12 @@ class TestHybridMoeFeedForward(unittest.TestCase):
                 result = self.ffn(w).forward(self.hidden(*shape))
                 self.assertTrue(torch.isfinite(result).all() and result.shape == shape + (DIM,))
 
+    def test_qualified_default_policy(self):
+        # Pinned to Transformers 5.20.2 Qwen3_5MoeTopKRouter: softmax +
+        # unconditional top-k renormalization.
+        ffn = self.ffn()
+        self.assertEqual((ffn.scoring, ffn.renormalize), ('softmax', True))
+
     def test_policy_rejection(self):
         with self.assertRaises(ValueError): self.ffn(top_k=0)
         with self.assertRaises(ValueError): self.ffn(top_k=EXPERTS + 1)

@@ -38,16 +38,43 @@ torch 2.6.0 CPU build (ubuntu-24.04).
 
 ## Explicitly not claimed
 
-- **Routing policy is not qualified.** The qwen3_5_moe_text config pins no
-  routing keys (no `norm_topk_prob`, no scoring field). Scoring and
-  renormalization are explicit constructor policies here. Upstream qwen3_moe
-  uses softmax with config-gated renormalization (Transformers 4.56.1 default
-  off); whether qwen3_5_moe_text uses sigmoid scoring (like GLM) or softmax
-  (like qwen3_moe) is unresolved and must be pinned against the real
-  checkpoint in the executor cell — the same discipline that caught the
-  q_proj gate packing.
-- No real-checkpoint execution, no GPU, no performance, no quality claims.
+- **Routing policy is now pinned** to the eager reference implementation
+  (Transformers 5.20.2 `Qwen3_5MoeTopKRouter`): FP32 softmax over router
+  logits, top-k on the probabilities, **unconditional** renormalization of
+  the selected weights (no config gate — unlike earlier qwen3_moe, whose
+  `norm_topk_prob` defaulted off). The qualified default of
+  `HybridMoeFeedForward` encodes this (`scoring='softmax'`,
+  `renormalize=True`); sigmoid remains an explicit unqualified option.
+- No full-model execution, no GPU, no performance, no quality claims.
 - MTP and vision tensors remain excluded per the contract.
 
-Next ordered cell: real-checkpoint staging decision (67 GiB / 26 BF16 shards)
-and the first executor run against pinned weights.
+## Executor: real-weight single-layer run
+
+`scripts/experiments/qwen35_moe_layer_executor.py` reads one layer's seven
+MoE FFN tensors from the real Qwen3.6-35B-A3B snapshot by bounded safetensors
+slice reads (BF16->FP32, ~3.5 GiB peak host memory, no full materialization,
+no writes to the read-only NAS) and runs three computations over the same
+real tensors: our FFN (qualified policy), an independent per-token naive
+control, and the eager upstream `Qwen3_5MoeSparseMoeBlock` (Transformers
+5.20.2, `_experts_implementation='eager'`).
+
+Layer 3 (full-attention), fixed-seed synthetic normal probe [2, 6, 2048] —
+**not real activations**; evidence
+`qwen35-moe-executor-layer3.json`:
+
+- ours vs upstream eager reference: **max_abs 0.0, rms_rel 0.0 — bitwise
+  identical** (same op sequence and accumulation order over the same tensors).
+- ours vs independent control: max_abs 3.6e-08, rms_rel 3.4e-04 (different
+  accumulation order; near-zero output elements inflate the relative RMS).
+- Per-tensor BF16 digests, config digest, selected experts and weight range
+  recorded; real router selected experts [134, 179, 174, 76, 129, 109, 188, 48]
+  for the first probe row with renormalized weights spanning 0.10–0.17.
+
+Claim: our FFN implements the pinned upstream semantics exactly on real
+checkpoint weights for this layer/probe. Not claimed: full-model execution,
+real-activation behavior, GPU, performance, quality.
+
+Next ordered cell: multi-layer/full-text execution path (attention + MoE FFN
+against the qualified dense-hybrid machinery), then quantization/placement
+decisions for GPU residency.
+

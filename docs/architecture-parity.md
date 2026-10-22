@@ -2139,9 +2139,24 @@ gated shared expert. It matches an independent per-token control across
 sigmoid/softmax scoring with and without top-k renormalization
 (`test_hybrid_moe_ffn`, torch CI job).
 
-The qwen3_5_moe_text config pins no routing keys (no `norm_topk_prob`, no
-scoring field), so scoring and renormalization are explicit FFN policies, not
-qualified choices; pinning them belongs to the real-checkpoint executor cell.
-Upstream qwen3_moe (Transformers 4.56.1) uses softmax with config-gated
-renormalization (default off). No real-checkpoint execution, GPU work or
-performance is claimed for this cell.
+The qwen3_5_moe_text config pins no routing keys of its own (no
+`norm_topk_prob`, no scoring field), so the routing semantics are pinned to
+the eager reference implementation instead (Transformers 5.20.2
+`Qwen3_5MoeTopKRouter`): FP32 softmax scoring, top-k on the probabilities,
+and unconditional renormalization of the selected weights — no config gate,
+unlike earlier qwen3_moe whose `norm_topk_prob` defaulted off. The FFN's
+qualified default encodes exactly this; sigmoid scoring remains an explicit
+unqualified option.
+
+The executor (`scripts/experiments/qwen35_moe_layer_executor.py`) reads one
+layer's seven MoE FFN tensors from the real 26-shard snapshot by bounded
+slice reads (BF16->FP32, ~3.5 GiB peak, no staging copy, read-only NAS
+untouched) and compares our FFN, an independent per-token control and the
+eager upstream `Qwen3_5MoeSparseMoeBlock` over the same real tensors: layer 3
+with a fixed-seed synthetic probe matches the upstream reference **bitwise
+(max_abs 0.0, rms_rel 0.0)** and the independent control to 3.6e-08
+(accumulation order). Real-router behavior, per-tensor digests and the probe
+are recorded in `qwen35-moe-executor-layer3.json` under
+`evidence/architectures`. Claimed: implementation semantics on real FFN
+weights for this layer/probe. Not claimed: full-model execution,
+real activations, GPU, performance or quality.

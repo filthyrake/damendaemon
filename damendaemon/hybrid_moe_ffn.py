@@ -6,17 +6,17 @@ Tensor structure follows the pinned checkpoint contract
 [experts, 2*inter, hidden] with ``mlp.experts.down_proj`` [experts, hidden,
 inter]; a dense shared expert (gate/up [shared, hidden], down [hidden,
 shared]); and a [1, hidden] ``shared_expert_gate`` sigmoid combine gate.
-Expert execution mirrors the sparse-MoE block of Transformers 4.56.1
-qwen3_moe modeling (one pass per routed expert with weighted accumulation)
-and routing reuses the audited ``damendaemon.expert_selection.select_experts``.
-
-The qwen3_5_moe_text checkpoint config pins no routing keys (there is no
-norm_topk_prob or scoring field), so scoring and renormalization are
-explicit constructor policies here. The upstream qwen3_moe family block uses
-softmax scoring with config-gated top-k renormalization; neither policy is
-qualified against the real checkpoint - that pinning belongs to the
-real-checkpoint executor cell. FP32 CPU arithmetic only; no model execution
-or quality is claimed.
+Routing semantics are pinned to the eager reference implementation
+``Qwen3_5MoeTopKRouter``/``Qwen3_5MoeSparseMoeBlock`` of Transformers 5.20.2
+``models/qwen3_5_moe/modeling_qwen3_5_moe.py``: FP32 softmax over router
+logits, top-k selection on the probabilities, then unconditional
+renormalization of the selected weights (no config gate), weights applied
+after each expert's down projection, gate/up split as the first/second half
+of the fused projection, and the shared expert scaled by the sigmoid of its
+combine gate. The qualified default encodes exactly this
+(scoring='softmax', renormalize=True); the sigmoid policy remains available
+as an explicit unqualified option. FP32 CPU arithmetic only; no model
+execution or quality is claimed.
 """
 import torch
 import torch.nn.functional as F
@@ -45,7 +45,7 @@ class HybridMoeFeedForward:
     """
 
     def __init__(self, router, gate_up, down, shared_gate, shared_up, shared_down,
-                 shared_expert_gate, *, top_k, scoring='sigmoid', renormalize=True,
+                 shared_expert_gate, *, top_k, scoring='softmax', renormalize=True,
                  max_output_bytes=64 * 1024 ** 2, workspace_bytes=64 * 1024 ** 2):
         if (type(top_k) is not int or scoring not in SCORINGS or type(renormalize) is not bool
                 or type(max_output_bytes) is not int or not 0 < max_output_bytes <= 2 ** 53
