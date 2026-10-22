@@ -366,6 +366,11 @@ device-independent, prompt-length dependent). 8B-class reference cells must use
 `--reference-dtype float32` or record the paired FP32 control
 (`scripts/experiments/q4km_fp32_reference_control.py`): an FP16 GPU reference
 at 8B scale added 0.5-1.3 points of apparent RMS on these fixtures.
+Qwen3-4B-Instruct-2507 Q4_K_M is ladder-qualified at context 512
+([ladder evidence](evidence/quantization/qwen3-q4km-ladder-4b-8b-README.md)):
+layouts 128/128, tokenizer 38/38, HTTP byte-exact against an FP32 teacher
+trace. Qwen3-8B remains short of the layout gate on a chunked-prefill
+divergence at chunk 128 (#585); single-chunk and same-width controls pass.
 Floating tensors follow the existing decoder's FP16 weight policy;
 this does not provide FP32-weight inference. On CUDA, quantized embeddings stay
 packed in host/GPU memory and only selected token rows are dequantized, preserving
