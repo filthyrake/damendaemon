@@ -1,7 +1,8 @@
 # Qwen3.5 still-image qualification
 
 Tracked in GitHub issue #50. Experimental still-image HTTP serving is now
-opt-in for Qwen3.5-0.8B AND Qwen3.5-2B on NVIDIA A2 (FP16/Q8 text) and Apple
+opt-in for Qwen3.5-0.8B AND Qwen3.5-2B on NVIDIA A2 (FP16/Q8 text), NVIDIA
+A30 (#579, see "NVIDIA A30 image serving" below), and Apple
 M4 (FP16/Q8 text), with per-depth calibrated intermediate gates (#571 depth
 12, #575 depth 24; see `evidence/vision/qwen35-2b-admission-README.md`). See the
 final section for current scope and lifecycle evidence. Earlier sections record
@@ -372,3 +373,32 @@ Hybrid Q8 remains restricted to the qualified 0.8B geometry, context <=1024 and
 at most four slots, and requires the native Metal scan. Other Apple decoder
 quantization support remains unchanged. Raw numerical, lifecycle, timing and
 reference metadata are retained in `evidence/vision/`.
+
+## NVIDIA A30 image serving (#579, 2026-10-22)
+
+The qualified-device set is extended to the NVIDIA A30 on merit, with all gates
+unchanged: 0.8B against the depth-12 calibrated bounds, 2B against the depth-24
+bounds (#571/#575). The A30 (labnode3 GPU0, 24,576 MiB, sm80, torch
+2.13.0+cu130) ran every gate under the guarded shared-GPU reserve gate with TF32
+disabled; the compensated Triton product backend is unchanged
+(`compensated-cuda-vision`).
+
+- Encoder intermediate gates: 0.8B 5/5 cases passed
+  (`qwen35-vision-a30-enc08b.json`, gate 1e-4 relative); 2B 135/135 checks
+  passed with worst relative RMS 1.696e-04 against the 7e-04 depth-24 gate
+  (`qwen35-vision-a30-enc2b.json`).
+- Full-model image gate: 0.8B 27/27 (`qwen35-vision-a30-model08b.json`);
+  2B 54/54 with worst RMS 4.614e-03 (gate 0.01) and greedy agreement on every
+  check, changed-image control healthy (`qwen35-vision-a30-model2b.json`).
+- Real HTTP service gate: 2B 20/20 lifecycle checks
+  (`qwen35-vision-a30-svc2b.json`); 0.8B 20/20 against the six-case reference
+  (`qwen35-vision-a30-svc08b.json`). Both report persistent retained
+  allocations of 17,039,360 bytes identified as cuBLAS workspace via the
+  trusted #575 allocator reference; no unexplained growth.
+- Guard reports for every run are retained alongside
+  (`qwen35-vision-a30-*-guard.json`).
+
+`vision_policy.validate_execution` now admits `NVIDIA A30` by name; thresholds,
+geometry admission, context/slot limits and the opt-in requirement are
+unchanged. The service gates were executed with exactly this policy. Other
+devices remain unqualified; unsupported devices keep the explicit error.
