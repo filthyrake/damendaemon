@@ -377,6 +377,7 @@ This qualifies execution against independently quantized weights; original
 checkpoint task quality, longer contexts and comparative MoE performance remain
 open measurements.
 
+
 Stable prefill grouping retains identical records on all 82 independent checks
 and passes all 24 routed/synthetic GPU checks. On the same resident Q8 checkpoint,
 control/candidate/candidate/control measurements produce bitwise-identical
@@ -2124,3 +2125,23 @@ context/slots. Exit 0 means declared limits fit, 1 means they do not, and 2 mean
 invalid metadata/controls. This is not execution admission or a measured memory
 peak; driver/allocator overhead, unmeasured temporaries, other workloads and
 coordinator vision/full image feature storage still need separate admission.
+
+## Qwen3.5-MoE checkpoint contract and host text FFN
+
+Issue #14, Qwen modern target (Qwen3.6-35B-A3B). The checkpoint contract
+(`hybrid_moe_checkpoint`, merged in `1ecb9243`) pins the 693-tensor main-text
+inventory — fused stacked experts, dense shared expert with a scalar
+`shared_expert_gate` combine gate, and the 2x-width `q_proj` gate packing —
+against the real 26-shard snapshot; MTP and vision tensors are enumerated and
+excluded. `hybrid_moe_ffn` is the host reference FFN for that contract: FP32
+CPU, top-k fused-expert routing through the audited `select_experts`, plus the
+gated shared expert. It matches an independent per-token control across
+sigmoid/softmax scoring with and without top-k renormalization
+(`test_hybrid_moe_ffn`, torch CI job).
+
+The qwen3_5_moe_text config pins no routing keys (no `norm_topk_prob`, no
+scoring field), so scoring and renormalization are explicit FFN policies, not
+qualified choices; pinning them belongs to the real-checkpoint executor cell.
+Upstream qwen3_moe (Transformers 4.56.1) uses softmax with config-gated
+renormalization (default off). No real-checkpoint execution, GPU work or
+performance is claimed for this cell.
