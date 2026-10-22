@@ -1,0 +1,131 @@
+{
+ "config_sha256": "93a4693fa9d8392fbfccd4b3c9873f4bfdcb14fdede978b123d07d19675efe99",
+ "final_hidden": {
+  "max_abs": 1.71661376953125e-05,
+  "rms_rel": 0.0002505643351469189
+ },
+ "implementation": "ours: qualified dense-hybrid math ported to qwen3_5_moe names + HybridMoeFeedForward",
+ "layers": 4,
+ "per_layer": [
+  {
+   "kind": "linear_attention",
+   "layer": 0,
+   "ours_vs_upstream": {
+    "max_abs": 2.086162567138672e-07,
+    "rms_rel": 0.00020764196233358234
+   }
+  },
+  {
+   "kind": "linear_attention",
+   "layer": 1,
+   "ours_vs_upstream": {
+    "max_abs": 2.682209014892578e-07,
+    "rms_rel": 9.589086403138936e-05
+   }
+  },
+  {
+   "kind": "linear_attention",
+   "layer": 2,
+   "ours_vs_upstream": {
+    "max_abs": 7.152557373046875e-07,
+    "rms_rel": 0.001703549874946475
+   }
+  },
+  {
+   "kind": "full_attention",
+   "layer": 3,
+   "ours_vs_upstream": {
+    "max_abs": 6.556510925292969e-07,
+    "rms_rel": 0.000250564597081393
+   }
+  }
+ ],
+ "probe": {
+  "kind": "synthetic random token IDs (not real text)",
+  "seed": 20261023,
+  "shape": [
+   1,
+   32,
+   2048
+  ]
+ },
+ "snapshot": "/Volumes/llm-models/models/qwen3.6-35b-a3b",
+ "tensor_sha256": {
+  "0.input_layernorm": "f12e4e829f5750307c47758e3e2dde98ad6399b21bccef307d5e29036ed990af",
+  "0.linear_attn.A_log": "1e5e50f9d7e3783c9bb1b9e3b7039170a9ba479841daf3e3e81927b6e72ae082",
+  "0.linear_attn.conv1d": "aff11e04fe4a12fc3ce92ee1a990cab487a3ebb4f9175ae5a82fce28b875ca79",
+  "0.linear_attn.dt_bias": "1cb5de230d4591bce17a0f25bf84ceb30f1f9a2f9b8f1494b603c740d935ba86",
+  "0.linear_attn.in_proj_a": "f839ba496e0ac45348d5b3a2ff8a8aef0b33d1182c00edae7492eb56dbb54d3a",
+  "0.linear_attn.in_proj_b": "e0ca3ca241a379ab2c2d57a94c507f5fac26301881384b824ec59d75f88ae088",
+  "0.linear_attn.in_proj_qkv": "576129f2edc49d099e2018e2c5bdf1b3c9b979a6d45874014cce2bdbd7996d19",
+  "0.linear_attn.in_proj_z": "10534467508b9865bae91f0ceffdc979cf793d7da0edcf038c7ccf04b0365ccb",
+  "0.linear_attn.norm": "8b51ece7e812b72c556fa4540e4ce46ead78c137b11c2dbdace07f238f85b36c",
+  "0.linear_attn.out_proj": "404aebcb60c93621bfffbaffd930989e820c3ab4188ad4a1d4a578d3881bd719",
+  "0.mlp.gate": "b07fb695bd8ed184fba6e13c43d21ef4fb0c29b76d3cca7b0ece67b7def85222",
+  "0.mlp.shared_expert.down_proj": "eda77eec8a780540496c3db95098ebcd30868bf42b07e5203be7c8ffd7822cfd",
+  "0.mlp.shared_expert.gate_proj": "b0e3a05faf1442308858b1b631e27c63811aed35603a76f4ed25c374fdca226c",
+  "0.mlp.shared_expert.up_proj": "33efbd6e2d910e479eb2b44ed2531fccc4f8e7ba18f8542e598f13625f32af0d",
+  "0.mlp.shared_expert_gate": "b79f587c6837e413617b7c1a1569b96880aacbdaed0599521e8b4f7580474932",
+  "0.post_attention_layernorm": "5e6dd7abcd7c65340f3057efd8fc9c92495c6269d8628e8a6b637dfc07d9c9ed",
+  "1.input_layernorm": "54a284b96f5df0ac5ced0b50c0c8a72a34d929da558a518e09e73a25d0b0f937",
+  "1.linear_attn.A_log": "8b8edf2e0a8b2984d04e490c74ec3280aeae8af8f55c9f999fbdf7e35c6e987e",
+  "1.linear_attn.conv1d": "bc515e1f6302ff6ea081ae3c22a0d42cc0e7bbbb0e9737b55ea0f20044a40ef6",
+  "1.linear_attn.dt_bias": "4433f378dc37999f4dce7051855992c0b138ba0f7077234d6c509fff46cb1930",
+  "1.linear_attn.in_proj_a": "81d1c224b9ab52a647c67c7e7543c06c4879c94b17c351b0ff512431960534ed",
+  "1.linear_attn.in_proj_b": "679cbbb33da42c957469c069bb36081dc5ce94fec1c08d8017334a0a300ac2e3",
+  "1.linear_attn.in_proj_qkv": "ecc04b7df20b46741abad46a32ef7cacdf77c8ba863157b26303c8449e75862e",
+  "1.linear_attn.in_proj_z": "65d44bc7ece4b86b851a12bbbabd818f8a1381ae9b382b3f90d347d6fb832cc2",
+  "1.linear_attn.norm": "c33f19dd8b0441984cc79299badeac3e01add7db32de3609ca6249c1f153ef36",
+  "1.linear_attn.out_proj": "694291362bfd106c49c94f94679f064c03069ed4535a72290941c913f8e166e1",
+  "1.mlp.gate": "57ded4e8769bcab55929cdc37f01d6b5d4cdfaa9d068230cc504ca7260357fb9",
+  "1.mlp.shared_expert.down_proj": "f342ca0cb0d5e7dd6b9c074ee6b4136b6ae968728f8cbc6d42092f9a47bc30f6",
+  "1.mlp.shared_expert.gate_proj": "e44c0e4105d27c5b219205f132a8d8f523d2085c820de68410aad0423016a55f",
+  "1.mlp.shared_expert.up_proj": "7c9321c66ab35a5f378d2818df9793edc1f82a9ac90c8a097852965aa0301ebf",
+  "1.mlp.shared_expert_gate": "1b1fd57c4881b3260172470f241ac0dcd82acb75071eb93bd8dd58c39558b4ff",
+  "1.post_attention_layernorm": "d065d84a8099e7131fc740a5fe17d4c4621b5785d15477a394a6d7ad94b7ba75",
+  "2.input_layernorm": "5fa4cdc86e75ce5bbf1502b1c80688c4fc0be1b7c5be0f8e78105ed374a26bbb",
+  "2.linear_attn.A_log": "b934323493c909802bbc3bd8b758e72bca4b8af2d826fba6203e7ea12f62a394",
+  "2.linear_attn.conv1d": "ef82db7bfc2d74bb0bf137d08f8a7e2487f6f72cf05b887d59371460d535eac9",
+  "2.linear_attn.dt_bias": "3b99c9061acc3d1172240d6cea01663a24bcc887bf80b6f16c6a955fbec610f5",
+  "2.linear_attn.in_proj_a": "54f43d39ea5fbe7cc11778ac8b2d754aae3899454cffeec324a9dd7167e32a81",
+  "2.linear_attn.in_proj_b": "2833c6d2fe2d8037743c82b94e15a4c374221573a45badb209c2a5965fb9b10d",
+  "2.linear_attn.in_proj_qkv": "4e34c4ad781174e0387436e9df7f80b4edea0ce64ec0fb4c303dbba1fe3700ab",
+  "2.linear_attn.in_proj_z": "4d30cc3de26aa90dd1ecfb2a9af0898166b2546b1510eabc63e2e9e64fa6dc67",
+  "2.linear_attn.norm": "c6a14eefd60495262b3bbf35920691d3d79146405f57a53cc8d0099d1baec00d",
+  "2.linear_attn.out_proj": "89930bbf44dcaa1b2f0752a3996b71f89ac83ad0498dc0518cd1d71a457cd25d",
+  "2.mlp.gate": "488f1e8d2825c9d9f0db6d4382c834139837da43bd019f87f357766fade308b4",
+  "2.mlp.shared_expert.down_proj": "286dea457f2dd01152b65311b45ca69a0dd8cb8803f879d9c3c038056af7f798",
+  "2.mlp.shared_expert.gate_proj": "424015e714eec1165ed1f9b3ecb8ac1a414f9b71493edb3d2de219afa0dd3b6e",
+  "2.mlp.shared_expert.up_proj": "fb6c3238d94a5e614c44ce0a3b8e7e467d453a032957edb5a0b2046bd46945ea",
+  "2.mlp.shared_expert_gate": "69f49c49ae17c06269c5e4d2c8809e357cec8659a11db6b5159900b80f8169d0",
+  "2.post_attention_layernorm": "44dc627b225d1fe3f64e59d48612bc69b3014267765aa5356e186df0310e2f97",
+  "3.input_layernorm": "3a7419944c5e323cd1e4871c941019744e12cd1c845462f67975d880131633ec",
+  "3.mlp.gate": "1ba877ada6820191a9f63702e81a0b8505eaae17b370fe6b54a5504f0f17703e",
+  "3.mlp.shared_expert.down_proj": "150defb042dfed5d7ffba8a2841d33e3e42ba10f10e09e34fdddbddad7451ea5",
+  "3.mlp.shared_expert.gate_proj": "337a915551cb4aa991ceff970f101c27ebed4e2c67c9f770020b698838060feb",
+  "3.mlp.shared_expert.up_proj": "26d12d72a7e0890ef043c0169a08d6def707fa34b38e85df1940e28e44092b1b",
+  "3.mlp.shared_expert_gate": "437fffe805279669471b0913bcaf9eb4f0fee6c20528a8c221c243af5042c047",
+  "3.post_attention_layernorm": "615bd63c614d45928c98ce36149a03fb2f1d5bc9188fab0e99b2818cf9c7bf0c",
+  "3.self_attn.k_norm": "d0aec0ea6a66573535fc83526c5db2ca34dacfbbc8f12b1ec7ecbaabac54b394",
+  "3.self_attn.k_proj": "594663fbd2bfc5aa77f908431cb9f6fefae2ed4d82c4ba68a011a263612c70a8",
+  "3.self_attn.o_proj": "34998573ef3e2c1739f4846b3deae640d87496bdf3f49c01f78c1c121605a0e3",
+  "3.self_attn.q_norm": "61ddc4c71474652a1ab10176fc7cc89970ae0415b3ebb736baa6549a470e27a4",
+  "3.self_attn.q_proj": "a5cf64d5711ee2ddce98ff0165f0246288220cfe54dc25f47226180436e1abe3",
+  "3.self_attn.v_proj": "5cbe1ee7a33317f0a4c1b558e70e69e228aff7f562938e777ef84b4bf02b84f0",
+  "embedding": "f2f0bdf743ebef76c4a3e8053b20f975ed2635f44bc756f64947013bf0945e74",
+  "final_norm": "969ac361af337e7b7e8c6d45e77a506d342fd3712c4b186ca53902595d9d8f25",
+  "layer0.down_proj": "c76d3aa021bb4c1cc771d92993cce7daba5bba4b972e46f9bc173a9b25d4366a",
+  "layer0.gate_up_proj": "e98ed4e5bca8f6c1a83d4732ae6e298ffc1e06e0d27384a529f8c529f6ca6b91",
+  "layer1.down_proj": "8fa6ebeb27fa9c62b2e856702fd96dd92d15446f293f50096e04dc189fbd620f",
+  "layer1.gate_up_proj": "818d6b2143231027a729644b05bfdffda7ac8a3cd260810b260c89ef435bd21c",
+  "layer2.down_proj": "cad4a0d78dd86d984a734420d7e88528dae43979be8e1084be646d90763be494",
+  "layer2.gate_up_proj": "e2b4eb6fd335c633eb55a234ca99aaf2546cd3be21e4bad4aa8524c034acc3b4",
+  "layer3.down_proj": "1740f57b2db0caecc1c28dec0e00da8019b14aa7fa38ae42ac9646dd759c13f0",
+  "layer3.gate_up_proj": "d72aa7184f1dc2aa37c15f8f84c2687e0d428662a33493cf7fc4c792ea07e2eb"
+ },
+ "tokens": 32,
+ "upstream": {
+  "reference": "Qwen3_5MoeDecoderLayer eager + Qwen3_5MoeTextRotaryEmbedding",
+  "transformers_version": "5.20.2"
+ }
+}
