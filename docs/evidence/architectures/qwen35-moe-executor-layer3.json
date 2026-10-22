@@ -1,0 +1,55 @@
+{
+ "config_sha256": "93a4693fa9d8392fbfccd4b3c9873f4bfdcb14fdede978b123d07d19675efe99",
+ "layer": 3,
+ "layer_type": "full_attention",
+ "ours_vs_control": {
+  "max_abs": 3.585591912269592e-08,
+  "rms_rel": 0.00034171121660619974
+ },
+ "ours_vs_upstream": {
+  "max_abs": 0.0,
+  "rms_rel": 0.0
+ },
+ "policy": {
+  "pin": "Transformers 5.20.2 Qwen3_5MoeTopKRouter (eager)",
+  "renormalize": true,
+  "scoring": "softmax"
+ },
+ "probe": {
+  "kind": "synthetic normal (not real activations)",
+  "seed": 20261022,
+  "shape": [
+   2,
+   6,
+   2048
+  ]
+ },
+ "routing": {
+  "selected_experts_first_row": [
+   134,
+   179,
+   174,
+   76,
+   129,
+   109,
+   188,
+   48
+  ],
+  "weight_max": 0.1728672981262207,
+  "weight_min": 0.10085447132587433
+ },
+ "snapshot": "/Volumes/llm-models/models/qwen3.6-35b-a3b",
+ "tensor_sha256": {
+  "model.language_model.layers.3.mlp.experts.down_proj": "c18b5507075f0ec984c5eb823b96b18c2f7f4bbadc23c980c6f28e35a665aa60",
+  "model.language_model.layers.3.mlp.experts.gate_up_proj": "89f62413f132671b333660ed20f23bac9cb454bc55afe818ee1917aa66c3265a",
+  "model.language_model.layers.3.mlp.gate.weight": "86a1ba236777d0207ee3661e316b294b3e684c642ed0b27e9063fb5117383bbe",
+  "model.language_model.layers.3.mlp.shared_expert.down_proj.weight": "c31e2776c9d317678cdb30eefd4024752de9d47de7e3b797053b0dfe92c8ee89",
+  "model.language_model.layers.3.mlp.shared_expert.gate_proj.weight": "eed6781e6f5b9023796c373b8c8a077371c3ce22de594c4cbc7be28e738a0a1a",
+  "model.language_model.layers.3.mlp.shared_expert.up_proj.weight": "861c1c8e63be1e757769e84ed4411e4a496a55c540ff90d55c9957c444302ac8",
+  "model.language_model.layers.3.mlp.shared_expert_gate.weight": "ac59b9445a977ad36d1bd18270b0bce42374cb45a7d845a552eaedade01330ca"
+ },
+ "upstream": {
+  "reference": "Qwen3_5MoeSparseMoeBlock (eager)",
+  "transformers_version": "5.20.2"
+ }
+}
