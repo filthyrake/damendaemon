@@ -1,0 +1,276 @@
+{
+  "gguf": "/home/damen/models/qwen3-8b/Qwen3-8B-Q4_K_M.gguf",
+  "device": "NVIDIA A30",
+  "torch": "2.13.0+cu130",
+  "reference": "CPU FP32 arithmetic, fp16-rounded weights (runner rounding), teacher-pinned to reference greedy",
+  "graph": false,
+  "steps": 8,
+  "cases": [
+    {
+      "case": 0,
+      "prompt_tokens": 21,
+      "errors": [
+        {
+          "step": 0,
+          "relative_rms": 0.002201356925070286,
+          "max_absolute": 0.050115346908569336
+        },
+        {
+          "step": 1,
+          "relative_rms": 0.0014615758555009961,
+          "max_absolute": 0.02671527862548828
+        },
+        {
+          "step": 2,
+          "relative_rms": 0.0016027630772441626,
+          "max_absolute": 0.024588823318481445
+        },
+        {
+          "step": 3,
+          "relative_rms": 0.0013139145448803902,
+          "max_absolute": 0.01734328269958496
+        },
+        {
+          "step": 4,
+          "relative_rms": 0.001132023287937045,
+          "max_absolute": 0.012647628784179688
+        },
+        {
+          "step": 5,
+          "relative_rms": 0.0005541785503737628,
+          "max_absolute": 0.011066436767578125
+        },
+        {
+          "step": 6,
+          "relative_rms": 0.000533215468749404,
+          "max_absolute": 0.012622833251953125
+        },
+        {
+          "step": 7,
+          "relative_rms": 0.0011635865084826946,
+          "max_absolute": 0.016887664794921875
+        }
+      ],
+      "reference_tokens": [
+        151667,
+        198,
+        32313,
+        11,
+        279,
+        1196,
+        374,
+        10161
+      ],
+      "actual_tokens": [
+        151667,
+        198,
+        32313,
+        11,
+        279,
+        1196,
+        374,
+        10161
+      ]
+    },
+    {
+      "case": 1,
+      "prompt_tokens": 18,
+      "errors": [
+        {
+          "step": 0,
+          "relative_rms": 0.0017367852851748466,
+          "max_absolute": 0.041556358337402344
+        },
+        {
+          "step": 1,
+          "relative_rms": 0.0016532132867723703,
+          "max_absolute": 0.030508041381835938
+        },
+        {
+          "step": 2,
+          "relative_rms": 0.0026590528432279825,
+          "max_absolute": 0.03078937530517578
+        },
+        {
+          "step": 3,
+          "relative_rms": 0.005726906470954418,
+          "max_absolute": 0.04765892028808594
+        },
+        {
+          "step": 4,
+          "relative_rms": 0.003148486837744713,
+          "max_absolute": 0.01777052879333496
+        },
+        {
+          "step": 5,
+          "relative_rms": 0.002118439180776477,
+          "max_absolute": 0.02425384521484375
+        },
+        {
+          "step": 6,
+          "relative_rms": 0.0009246349800378084,
+          "max_absolute": 0.020760059356689453
+        },
+        {
+          "step": 7,
+          "relative_rms": 0.0015695438487455249,
+          "max_absolute": 0.018747329711914062
+        }
+      ],
+      "reference_tokens": [
+        151667,
+        198,
+        32313,
+        11,
+        279,
+        1196,
+        6801,
+        752
+      ],
+      "actual_tokens": [
+        151667,
+        198,
+        32313,
+        11,
+        279,
+        1196,
+        6801,
+        752
+      ]
+    },
+    {
+      "case": 2,
+      "prompt_tokens": 129,
+      "errors": [
+        {
+          "step": 0,
+          "relative_rms": 0.00041975287604145706,
+          "max_absolute": 0.012294769287109375
+        },
+        {
+          "step": 1,
+          "relative_rms": 0.0007342579774558544,
+          "max_absolute": 0.014261245727539062
+        },
+        {
+          "step": 2,
+          "relative_rms": 0.001192758558318019,
+          "max_absolute": 0.016982078552246094
+        },
+        {
+          "step": 3,
+          "relative_rms": 0.000816314248368144,
+          "max_absolute": 0.01654338836669922
+        },
+        {
+          "step": 4,
+          "relative_rms": 0.0017581963911652565,
+          "max_absolute": 0.02141404151916504
+        },
+        {
+          "step": 5,
+          "relative_rms": 0.0025912057608366013,
+          "max_absolute": 0.02724742889404297
+        },
+        {
+          "step": 6,
+          "relative_rms": 0.00047607062151655555,
+          "max_absolute": 0.019327163696289062
+        },
+        {
+          "step": 7,
+          "relative_rms": 0.0007404221105389297,
+          "max_absolute": 0.013201713562011719
+        }
+      ],
+      "reference_tokens": [
+        220,
+        576,
+        17951,
+        33353,
+        34235,
+        9104,
+        13,
+        81917
+      ],
+      "actual_tokens": [
+        220,
+        576,
+        17951,
+        33353,
+        34235,
+        9104,
+        13,
+        81917
+      ]
+    },
+    {
+      "case": 3,
+      "prompt_tokens": 505,
+      "errors": [
+        {
+          "step": 0,
+          "relative_rms": 0.0005020548705942929,
+          "max_absolute": 0.013709068298339844
+        },
+        {
+          "step": 1,
+          "relative_rms": 0.00048827711725607514,
+          "max_absolute": 0.019949913024902344
+        },
+        {
+          "step": 2,
+          "relative_rms": 0.0010903701186180115,
+          "max_absolute": 0.01788616180419922
+        },
+        {
+          "step": 3,
+          "relative_rms": 0.00141105055809021,
+          "max_absolute": 0.03885698318481445
+        },
+        {
+          "step": 4,
+          "relative_rms": 0.0013069366104900837,
+          "max_absolute": 0.029151439666748047
+        },
+        {
+          "step": 5,
+          "relative_rms": 0.0012797040399163961,
+          "max_absolute": 0.018993377685546875
+        },
+        {
+          "step": 6,
+          "relative_rms": 0.0015654137823730707,
+          "max_absolute": 0.024838685989379883
+        },
+        {
+          "step": 7,
+          "relative_rms": 0.0005546052125282586,
+          "max_absolute": 0.01756000518798828
+        }
+      ],
+      "reference_tokens": [
+        13,
+        220,
+        576,
+        17951,
+        33353,
+        34235,
+        9104,
+        13
+      ],
+      "actual_tokens": [
+        13,
+        220,
+        576,
+        17951,
+        33353,
+        34235,
+        9104,
+        13
+      ]
+    }
+  ],
+  "worst_relative_rms": 0.005726906470954418,
+  "greedy_agree_all": true
+}
