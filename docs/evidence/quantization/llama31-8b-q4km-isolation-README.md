@@ -2,9 +2,18 @@
 
 Retention note for `llama31-8b-q4km-isolate-a30.json` and
 `llama31-8b-q4km-isolate-a2.json`. Both runs: 505-token fixed probe
-(`(i * 7919 + 101) % 128000`), 8 decode steps, FP32 HF eager reference vs native
-packed Q4_K_M executor, guarded shared-GPU reserve gate, TF32 disabled,
-`triton+mixed` backend, torch 2.13.0+cu130.
+(`(i * 7919 + 101) % 128000`), 8 decode steps, native packed Q4_K_M executor vs
+an HF eager reference built from the same GGUF, guarded shared-GPU reserve gate,
+TF32 disabled, `triton+mixed` backend, torch 2.13.0+cu130.
+
+Reference dtype errata (2026-10-22): the two runs deliberately differ in
+reference precision, and the original note overstated the A30 side. The A30 run
+used an **FP16-storage, FP16-arithmetic GPU reference**; the A2 control used a
+**raw-dequantized FP32 CPU reference** (no storage rounding). The two agree to
+0.008 points at step 0 (1.0995% vs 1.1072%), which bounds the FP16-reference
+contribution at 8B scale well below the observed deviation — the deviation is
+not reference-precision noise. Any future cycle that pins this checkpoint
+should use an explicit `--reference-dtype float32` ladder run for the record.
 
 ## Checkpoint
 

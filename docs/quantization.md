@@ -357,6 +357,15 @@ GGUF v2/v3, F16/F32, Q4_0/Q8_0 and experimental Q4_K/Q5_K/Q6_K.
 K-quants remain experimental. Optional CUDA C++ decode significantly improves
 A2 performance; the default Triton path retains a measured gap. See the
 qualification report before choosing them for serving.
+A 2026-10 scale scan on the independent-reference instrument
+([evidence](evidence/quantization/qwen3-q4km-scale-scan-583-README.md)) holds
+the <1% relative-RMS gate for dense Q4_K_M through Qwen3-8B (0.362%/0.239%/
+0.365%/0.573% worst RMS at 0.6B/1.7B/4B/8B against FP32 references), while
+Llama-3.1-8B fails on checkpoint-specific real drift (13.588% FP32-bounded,
+device-independent, prompt-length dependent). 8B-class reference cells must use
+`--reference-dtype float32` or record the paired FP32 control
+(`scripts/experiments/q4km_fp32_reference_control.py`): an FP16 GPU reference
+at 8B scale added 0.5-1.3 points of apparent RMS on these fixtures.
 Floating tensors follow the existing decoder's FP16 weight policy;
 this does not provide FP32-weight inference. On CUDA, quantized embeddings stay
 packed in host/GPU memory and only selected token rows are dequantized, preserving
