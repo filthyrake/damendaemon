@@ -87,9 +87,16 @@ on the host as the incident record and is not evidence.
 ## Reproducing the controls
 
 `scripts/experiments/q4km_fp32_reference_control.py` (added in this change) is
-the parameterized, repository copy of the control used for both 8B rows; the
-executed host scripts differed only in argv plumbing (identical method), and
-the repo copy is the canonical form for future runs.
+the repository copy of the control used for both 8B rows. For auditability: the
+executed llama control script is byte-identical to the retained host copy
+`/tmp/dd583_fp32_control.py` (sha256
+`f2499fec2598892ddf591aacb3d1b0c54c444bb2c5cbe053c655e1e1f2826c37`); the
+executed qwen3 control used an earlier hardcoded-variant of the same method,
+since overwritten on the scratch host — its method is the one described above
+and each run report records its own `gguf`, `reference` and `torch` fields for
+verification. The repo copy is a method-identical refactor with argparse
+plumbing and is the canonical form for future runs. Habit rule recorded from
+the incident: verify the remote script hash before any guarded launch.
 
 ## Disposition
 
