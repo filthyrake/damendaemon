@@ -2230,3 +2230,20 @@ Route-flip compounding is structural to weights-only expert quantization;
 hidden-state fidelity at depth requires unquantized (streamed BF16) experts.
 Generation-quality gates on real text are the arbiter for quantized-bank
 deployability. Evidence qwen35-moe-a30-e4m3-compounding.json.
+
+Cell 10 runs that arbiter. Four fixed model-card prompts (4 x 46 tokens,
+snapshot tokenizer), full 40-layer forward to lm_head logits; reference =
+host FP32 ported math (cell 5), candidate = the cell-9 E4M3 per-layer
+streamed bank under the A30 guard (peak 0.91 GiB, completed 1409 s).
+Pre-declared gates, unchanged at evaluation: greedy top-1 agreement
+>= 0.80 (positions >= 8), mean KL(ref || cand) <= 1.0 nat full-vocab,
+perplexity ratio <= 1.10. Measured: agreement 0.9932, KL 0.00424 nat,
+ratio 1.0081 (NLL 2.588 vs 2.580) - all three PASS. Divergence canaries:
+logit_max_abs 1.66 (candidate provably not the reference), all-positions
+agreement 0.9946; two independent guarded runs agree to GPU-reduction
+noise (agreement bit-identical). The E4M3 streamed bank is deployable in
+kind at this prompt scale: generation quality is numerically
+indistinguishable from FP32 despite cell-9 hidden-state decorrelation.
+Scope: three pre-declared metrics, four fixed prompts, <= 64 tokens; no
+throughput, long-context, or other-prompt-set claims. Evidence
+`qwen35-moe-generation-quality-e4m3.json` + guard report.

@@ -1,0 +1,38 @@
+{
+ "config_sha256": "93a4693fa9d8392fbfccd4b3c9873f4bfdcb14fdede978b123d07d19675efe99",
+ "expert_format": "e4m3fn",
+ "expert_residency": "single-layer streamed packing (bank never resident)",
+ "fused_route_chunk": 1536,
+ "gate_results": {
+  "greedy_agreement": true,
+  "mean_kl_nats": true,
+  "perplexity_ratio": true
+ },
+ "max_gather_bytes": 268435456,
+ "metrics": {
+  "candidate_nll": 2.588212251663208,
+  "greedy_agreement": 0.9932432174682617,
+  "greedy_agreement_all_positions": 0.9945651888847351,
+  "logit_max_abs": 1.6612052917480469,
+  "mean_kl_nats": 0.004238709807395935,
+  "perplexity_ratio": 1.0081069469451904,
+  "reference_nll": 2.5801379680633545
+ },
+ "peak_gpu_gib": 0.91,
+ "predeclared_gates": {
+  "greedy_agreement_min": 0.8,
+  "kl_max": 1.0,
+  "perplexity_ratio_max": 1.1
+ },
+ "prompts": {
+  "count": 4,
+  "ids_sha256": "7c01660c38646f7043828ab7ad7ca68f37b0380591af95cd635a3fb4477d73b1",
+  "kind": "fixed excerpts of the Qwen3.6-35B-A3B model card (real text)",
+  "max_tokens": 64,
+  "warmup_positions": 8
+ },
+ "reference": "host FP32 ported math (cell 5; verified vs eager upstream at rms_rel 2.4e-04)",
+ "scope": "three pre-declared metrics on four fixed model-card prompts for this snapshot; no throughput, long-context, or other-prompt-set claims",
+ "snapshot": "/mnt/nas-models/models/qwen3.6-35b-a3b",
+ "tf32": false
+}

@@ -234,3 +234,42 @@ whether the E4M3 bank is deployable; hidden-state fidelity is not that
 gate. The epic's next decision: E4M3 quality-gated generation cell vs
 exact-but-slower BF16 per-layer streaming. Evidence:
 qwen35-moe-a30-e4m3-compounding.json + guard report.
+
+## Generation-quality gate (cell 10)
+
+The arbiter cell 9 deferred to. Harness
+`scripts/experiments/qwen35_moe_a30_generation_quality.py`: four fixed
+model-card text prompts tokenized with the snapshot tokenizer (4 x 46
+tokens), full 40-layer forward to lm_head logits, reference = host FP32
+ported math (cell 5, verified vs eager upstream at rms_rel 2.4e-04),
+candidate = the cell-9 E4M3 per-layer streamed bank under
+`guard_shared_cuda` on the A30 (one fused route chunk per layer; peak
+0.91 GiB; guard completed in 1409 s).
+
+Gates pre-declared before any run, thresholds unchanged at evaluation:
+
+- greedy top-1 agreement >= 0.80 over positions >= 8 (warmup removed)
+- mean KL(ref || cand) <= 1.0 nat over the full 151936-vocab
+- candidate/reference perplexity ratio <= 1.10
+
+Measured (as run, no relaxation): agreement **0.9932**, mean KL
+**0.00424 nat**, perplexity ratio **1.0081** (NLL 2.588 vs 2.580). All
+three gates PASS. Divergence canaries (added in review remediation, run
+recorded by it): logit_max_abs **1.66** - the candidate is provably not
+the reference - and all-positions agreement 0.9946. Reproducibility:
+two independent guarded runs of the candidate agree to GPU-reduction
+noise (agreement bit-identical; KL/NLL within ~1e-9). Scope, recorded
+exactly: three pre-declared metrics on four fixed model-card prompts for
+this snapshot at <= 64 tokens; no throughput, long-context, or
+other-prompt-set claims. Evidence:
+qwen35-moe-generation-quality-e4m3.json + guard report; reference
+manifest (ids digest + shape) in the run log.
+
+**Cell-10 conclusion:** the E4M3 per-layer-streamed expert bank is
+deployable in kind - at this prompt scale it is numerically
+indistinguishable from the FP32 reference on greedy continuation,
+next-token distribution, and perplexity, despite the cell-9 hidden-state
+decorrelation (final max_abs 3.49). Route-flip compounding degrades
+hidden-state fidelity but not, at this scale, generation quality. The
+structural cell-8/9 finding stands; the deployability question it raised
+is answered in kind, at the pre-declared gates.
