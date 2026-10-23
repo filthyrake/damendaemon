@@ -1,0 +1,152 @@
+{
+ "arms": [
+  "fp8",
+  "fp4",
+  "fp4_hadamard"
+ ],
+ "bank_values": 32212254720,
+ "config_sha256": "93a4693fa9d8392fbfccd4b3c9873f4bfdcb14fdede978b123d07d19675efe99",
+ "expert_bank_memory_arithmetic": {
+  "bf16": {
+   "bank_bytes_arithmetic": 64424509440.0,
+   "bytes_per_value": 2.0
+  },
+  "e2m1_e8m0": {
+   "bank_bytes_arithmetic": 17112760320.0,
+   "bytes_per_value": 0.53125
+  },
+  "e4m3fn": {
+   "bank_bytes_arithmetic": 32715571200.0,
+   "bytes_per_value": 1.015625
+  }
+ },
+ "layers": [
+  0,
+  3,
+  9,
+  20,
+  39
+ ],
+ "per_arm_per_layer": {
+  "fp4": {
+   "0": {
+    "max_abs": 0.0011184923350811005,
+    "rms_rel": 2.8063793182373047
+   },
+   "20": {
+    "max_abs": 0.001965518109500408,
+    "rms_rel": 15.140474319458008
+   },
+   "3": {
+    "max_abs": 0.001876989845186472,
+    "rms_rel": 25.783824920654297
+   },
+   "39": {
+    "max_abs": 0.0052676815539598465,
+    "rms_rel": 39.73925018310547
+   },
+   "9": {
+    "max_abs": 0.0020238198339939117,
+    "rms_rel": 12.15880012512207
+   }
+  },
+  "fp4_hadamard": {
+   "0": {
+    "max_abs": 0.000990256667137146,
+    "rms_rel": 2.6389408111572266
+   },
+   "20": {
+    "max_abs": 0.0021934621036052704,
+    "rms_rel": 15.290450096130371
+   },
+   "3": {
+    "max_abs": 0.001967396354302764,
+    "rms_rel": 33.07069396972656
+   },
+   "39": {
+    "max_abs": 0.004893340170383453,
+    "rms_rel": 26.254688262939453
+   },
+   "9": {
+    "max_abs": 0.001829816377721727,
+    "rms_rel": 15.969244956970215
+   }
+  },
+  "fp8": {
+   "0": {
+    "max_abs": 0.00023910333402454853,
+    "rms_rel": 1.1804847717285156
+   },
+   "20": {
+    "max_abs": 0.0004693293012678623,
+    "rms_rel": 4.987659454345703
+   },
+   "3": {
+    "max_abs": 0.00042285933159291744,
+    "rms_rel": 6.004683494567871
+   },
+   "39": {
+    "max_abs": 0.0013911472633481026,
+    "rms_rel": 9.256159782409668
+   },
+   "9": {
+    "max_abs": 0.0004351036623120308,
+    "rms_rel": 3.189985990524292
+   }
+  }
+ },
+ "probe": {
+  "kind": "synthetic normal (not real activations)",
+  "seed": 20261022,
+  "shape": [
+   2,
+   6,
+   2048
+  ]
+ },
+ "quantized_scope": "routed expert bank only; router, shared expert and combine gate stay FP32",
+ "simulations": "damendaemon.activation_simulation (DeepSeek-V4-Flash conventions, pinned in module)",
+ "snapshot": "/Volumes/llm-models/models/qwen3.6-35b-a3b",
+ "tensor_sha256": {
+  "layer0.mlp.experts.down_proj": "c76d3aa021bb4c1cc771d92993cce7daba5bba4b972e46f9bc173a9b25d4366a",
+  "layer0.mlp.experts.gate_up_proj": "e98ed4e5bca8f6c1a83d4732ae6e298ffc1e06e0d27384a529f8c529f6ca6b91",
+  "layer0.mlp.gate.weight": "b07fb695bd8ed184fba6e13c43d21ef4fb0c29b76d3cca7b0ece67b7def85222",
+  "layer0.mlp.shared_expert.down_proj.weight": "eda77eec8a780540496c3db95098ebcd30868bf42b07e5203be7c8ffd7822cfd",
+  "layer0.mlp.shared_expert.gate_proj.weight": "b0e3a05faf1442308858b1b631e27c63811aed35603a76f4ed25c374fdca226c",
+  "layer0.mlp.shared_expert.up_proj.weight": "33efbd6e2d910e479eb2b44ed2531fccc4f8e7ba18f8542e598f13625f32af0d",
+  "layer0.mlp.shared_expert_gate.weight": "b79f587c6837e413617b7c1a1569b96880aacbdaed0599521e8b4f7580474932",
+  "layer20.mlp.experts.down_proj": "51b39910f9d06878f7934d842d0671dc6c01a93326f8c818a73fd7c132aba1e3",
+  "layer20.mlp.experts.gate_up_proj": "93688526eaa91fa11edc3e3e6d4d0c5754f7226c230cfe85db78ca918f63381d",
+  "layer20.mlp.gate.weight": "aeef1fccbbbd1ada323fb39cc9aeeb474cc639a7441b65ff12a62ce5dfdb90d5",
+  "layer20.mlp.shared_expert.down_proj.weight": "cabcf79a1533c76c5dca184e469fe70d3a829f5fc268e2698e43b89ea4cec027",
+  "layer20.mlp.shared_expert.gate_proj.weight": "dd835908c5ca606ac006c15f3b955a6f756ae88a28d3b45604b6615f31b13460",
+  "layer20.mlp.shared_expert.up_proj.weight": "e00e378fda1f97e869e98f7fd4a5d6bf0028466087dbcf142997cb42b31c734b",
+  "layer20.mlp.shared_expert_gate.weight": "34e8aa999087393e946fa9f2f727f3719af74bd6de1d9820253624d8afd4e00c",
+  "layer3.mlp.experts.down_proj": "1740f57b2db0caecc1c28dec0e00da8019b14aa7fa38ae42ac9646dd759c13f0",
+  "layer3.mlp.experts.gate_up_proj": "d72aa7184f1dc2aa37c15f8f84c2687e0d428662a33493cf7fc4c792ea07e2eb",
+  "layer3.mlp.gate.weight": "1ba877ada6820191a9f63702e81a0b8505eaae17b370fe6b54a5504f0f17703e",
+  "layer3.mlp.shared_expert.down_proj.weight": "150defb042dfed5d7ffba8a2841d33e3e42ba10f10e09e34fdddbddad7451ea5",
+  "layer3.mlp.shared_expert.gate_proj.weight": "337a915551cb4aa991ceff970f101c27ebed4e2c67c9f770020b698838060feb",
+  "layer3.mlp.shared_expert.up_proj.weight": "26d12d72a7e0890ef043c0169a08d6def707fa34b38e85df1940e28e44092b1b",
+  "layer3.mlp.shared_expert_gate.weight": "437fffe805279669471b0913bcaf9eb4f0fee6c20528a8c221c243af5042c047",
+  "layer39.mlp.experts.down_proj": "c7375cab80a1552ec6beda164009f60c55aab08c338d6ee48a3a6552a3e2a57c",
+  "layer39.mlp.experts.gate_up_proj": "64ff37996e993963bf6dbee5e3d40f1f12512393ebd53d7600addd6909ae2f00",
+  "layer39.mlp.gate.weight": "638777347c51049bc8529b4e88b6d60fc3ff54a6a328fb10ce836f2d59925254",
+  "layer39.mlp.shared_expert.down_proj.weight": "af97987dd162deb2411bd1ecf6cc06cabd27b9e40f1ed5c7df11d45bc73795e2",
+  "layer39.mlp.shared_expert.gate_proj.weight": "85447223df576a41a751d4fdfd536ef205b692b27e7df88038df64c5e6d52960",
+  "layer39.mlp.shared_expert.up_proj.weight": "6d84dccc9ff5cfa22068039162bcd3576f3a05abb3abc575911c70f5db824ada",
+  "layer39.mlp.shared_expert_gate.weight": "39902429cba0b3c06944afb1e7e0fd347c2e75db717112e270064cfd3b7bfc33",
+  "layer9.mlp.experts.down_proj": "fff8ea08b88e3ad84d0d6b4bbb4e56247f52dc425fae9afb7eb08ed69e2476b6",
+  "layer9.mlp.experts.gate_up_proj": "c556c3b79c20b6110b67ac34fb1e185cdd4073a56ee1ab8a59ca665145e05e68",
+  "layer9.mlp.gate.weight": "614e45e533fb2be87cc8b3ceb0dff0c083a8ece32c7945b34b0e1865b9e62c02",
+  "layer9.mlp.shared_expert.down_proj.weight": "dd4d472036cbde37aa2d86ab15704e9d1e258e80022b65d59c2dc8745de5fcf3",
+  "layer9.mlp.shared_expert.gate_proj.weight": "3425571e28b8ff4b127bb01e47aa4888badbae0ccd3791fbd8565924ab1144bf",
+  "layer9.mlp.shared_expert.up_proj.weight": "be29064f575b72e04ea7f685ea2e8a20805da4250292a4600ecd7dff1a76e2b3",
+  "layer9.mlp.shared_expert_gate.weight": "7c91eadcd32cb2893a0c4f817b1a1d60dd51a7b77bc46ebcac894ed27933cb7f"
+ },
+ "worst_per_arm": {
+  "fp4": 0.0052676815539598465,
+  "fp4_hadamard": 0.004893340170383453,
+  "fp8": 0.0013911472633481026
+ }
+}
