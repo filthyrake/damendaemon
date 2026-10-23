@@ -1,0 +1,58 @@
+{
+ "allocated_after_placement_gib": 0.76,
+ "bank_bytes_arithmetic": 17112760320.0,
+ "config_sha256": "93a4693fa9d8392fbfccd4b3c9873f4bfdcb14fdede978b123d07d19675efe99",
+ "expert_format": "e4m3fn",
+ "expert_residency": "single-layer streamed packing (bank never resident)",
+ "gpu_vs_host_ours_checkpoints": {
+  "0": {
+   "max_abs": 0.0012291669845581055,
+   "rms_rel": 4.334691047668457
+  },
+  "20": {
+   "max_abs": 0.1286301612854004,
+   "rms_rel": 158.19085693359375
+  },
+  "3": {
+   "max_abs": 0.01391911506652832,
+   "rms_rel": 15.325126647949219
+  },
+  "39": {
+   "max_abs": 1.2702579498291016,
+   "rms_rel": 127.6465072631836
+  },
+  "9": {
+   "max_abs": 0.03548246622085571,
+   "rms_rel": 35.685611724853516
+  }
+ },
+ "gpu_vs_host_ours_final": {
+  "max_abs": 3.492436408996582,
+  "rms_rel": 125.25455474853516
+ },
+ "gpu_vs_host_upstream_final": {
+  "max_abs": 3.492445945739746,
+  "rms_rel": 121.80968475341797
+ },
+ "layer_range": [
+  0,
+  40
+ ],
+ "nonexpert_bytes_arithmetic": 4362731520,
+ "nonexpert_residency": "streamed per layer (~150 MiB, used once); full FP32 residency of bank+weights (~21.7 GiB) exceeds the guard envelope (24 - 2.5 reserve)",
+ "peak_forward_allocated_gib": 0.9,
+ "placement": [],
+ "probe": {
+  "kind": "synthetic random token IDs (not real text)",
+  "seed": 20261023,
+  "shape": [
+   1,
+   32,
+   2048
+  ]
+ },
+ "reserved_after_placement_gib": 2.52,
+ "scope": "single-GPU forward: quantized routed experts (format recorded above) + FP32 non-expert weights streamed per layer; CPU control is the cell-5 host run",
+ "snapshot": "/mnt/nas-models/models/qwen3.6-35b-a3b",
+ "tf32": false
+}
