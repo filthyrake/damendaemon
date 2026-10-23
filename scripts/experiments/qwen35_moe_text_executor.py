@@ -84,22 +84,22 @@ def l2norm(x, eps=1e-6):
     return x * torch.rsqrt((x * x).sum(-1, keepdim=True) + eps)
 
 
-def ours_linear(w, root, x, c):
+def ours_linear(lw, root, x, c):
     b, t, _ = x.shape
     lk, lv, dk, dv = c['linear_num_key_heads'], c['linear_num_value_heads'], \
         c['linear_key_head_dim'], c['linear_value_head_dim']
     width, kernel = 2 * lk * dk + lv * dv, c['linear_conv_kernel_dim']
-    qkv = F.linear(x, w[root + 'linear_attn.in_proj_qkv.weight']).transpose(1, 2)
-    convolved = F.conv1d(qkv, w[root + 'linear_attn.conv1d.weight'], padding=kernel - 1,
+    qkv = F.linear(x, lw[root + 'linear_attn.in_proj_qkv.weight']).transpose(1, 2)
+    convolved = F.conv1d(qkv, lw[root + 'linear_attn.conv1d.weight'], padding=kernel - 1,
                          groups=width)[..., :t]
     qkv = F.silu(convolved).transpose(1, 2)
     q, k, v = qkv.split((lk * dk, lk * dk, lv * dv), -1)
     q, k = [a.reshape(b, t, lk, dk) for a in (q, k)]
     v = v.reshape(b, t, lv, dv)
-    beta = F.linear(x, w[root + 'linear_attn.in_proj_b.weight']).sigmoid()
-    decay = -w[root + 'linear_attn.A_log'].exp() * F.softplus(
-        F.linear(x, w[root + 'linear_attn.in_proj_a.weight']) + w[root + 'linear_attn.dt_bias'])
-    z = F.linear(x, w[root + 'linear_attn.in_proj_z.weight']).reshape(b, t, lv, dv)
+    beta = F.linear(x, lw[root + 'linear_attn.in_proj_b.weight']).sigmoid()
+    decay = -lw[root + 'linear_attn.A_log'].exp() * F.softplus(
+        F.linear(x, lw[root + 'linear_attn.in_proj_a.weight']) + lw[root + 'linear_attn.dt_bias'])
+    z = F.linear(x, lw[root + 'linear_attn.in_proj_z.weight']).reshape(b, t, lv, dv)
     q, k = [l2norm(a) for a in (q, k)]
     q, k = [a.repeat_interleave(lv // lk, dim=2) for a in (q, k)]
     q = q * (dk ** -0.5)
@@ -113,22 +113,22 @@ def ours_linear(w, root, x, c):
     out = torch.stack(outputs, 1)
     # Upstream RMSNormGated: plain weight (not the zero-centered convention), silu(z) gate.
     out = out * torch.rsqrt(out.pow(2).mean(-1, keepdim=True) + c['rms_norm_eps']) \
-        * w[root + 'linear_attn.norm.weight']
+        * lw[root + 'linear_attn.norm.weight']
     out = out * F.silu(z)
-    return F.linear(out.reshape(b, t, lv * dv), w[root + 'linear_attn.out_proj.weight'])
+    return F.linear(out.reshape(b, t, lv * dv), lw[root + 'linear_attn.out_proj.weight'])
 
 
-def ours_full(w, root, x, cos, sin, c):
+def ours_full(lw, root, x, cos, sin, c):
     b, t, _ = x.shape
     heads, kh, dim, rd = c['num_attention_heads'], c['num_key_value_heads'], c['head_dim'], c['rotary_dim']
-    q = F.linear(x, w[root + 'self_attn.q_proj.weight']).view(b, t, heads, 2 * dim)
+    q = F.linear(x, lw[root + 'self_attn.q_proj.weight']).view(b, t, heads, 2 * dim)
     q, gate = q.chunk(2, -1)
     gate = gate.reshape(b, t, heads * dim)
-    k = F.linear(x, w[root + 'self_attn.k_proj.weight']).view(b, t, kh, dim)
-    v = F.linear(x, w[root + 'self_attn.v_proj.weight']).view(b, t, kh, dim)
+    k = F.linear(x, lw[root + 'self_attn.k_proj.weight']).view(b, t, kh, dim)
+    v = F.linear(x, lw[root + 'self_attn.v_proj.weight']).view(b, t, kh, dim)
     eps = c['rms_norm_eps']
-    q = rms(q, w[root + 'self_attn.q_norm.weight'], eps)
-    k = rms(k, w[root + 'self_attn.k_norm.weight'], eps)
+    q = rms(q, lw[root + 'self_attn.q_norm.weight'], eps)
+    k = rms(k, lw[root + 'self_attn.k_norm.weight'], eps)
 
     def rotate(a):
         rotated, rest = a[..., :rd], a[..., rd:]
@@ -143,14 +143,14 @@ def ours_full(w, root, x, cos, sin, c):
     weights = torch.softmax(scores + causal, dim=-1, dtype=torch.float32)
     out = torch.matmul(weights, v).transpose(1, 2).reshape(b, t, heads * dim)
     out = out * gate.sigmoid()
-    return F.linear(out, w[root + 'self_attn.o_proj.weight'])
+    return F.linear(out, lw[root + 'self_attn.o_proj.weight'])
 
 
-def ours_ffn(w, root, c):
+def ours_ffn(lw, root, c):
     return HybridMoeFeedForward(
-        w[root + 'mlp.gate.weight'], w[root + 'mlp.experts.gate_up_proj'], w[root + 'mlp.experts.down_proj'],
-        w[root + 'mlp.shared_expert.gate_proj.weight'], w[root + 'mlp.shared_expert.up_proj.weight'],
-        w[root + 'mlp.shared_expert.down_proj.weight'], w[root + 'mlp.shared_expert_gate.weight'],
+        lw[root + 'mlp.gate.weight'], lw[root + 'mlp.experts.gate_up_proj'], lw[root + 'mlp.experts.down_proj'],
+        lw[root + 'mlp.shared_expert.gate_proj.weight'], lw[root + 'mlp.shared_expert.up_proj.weight'],
+        lw[root + 'mlp.shared_expert.down_proj.weight'], lw[root + 'mlp.shared_expert_gate.weight'],
         top_k=c['num_experts_per_tok'], scoring='softmax', renormalize=True,
         workspace_bytes=2 ** 40, max_output_bytes=2 ** 40)
 
@@ -176,22 +176,9 @@ def main():
     c['rotary_dim'] = int(c['head_dim'] * c['rope_parameters']['partial_rotary_factor'])
 
     names = ['model.language_model.embed_tokens.weight', 'model.language_model.norm.weight']
-    for layer in range(args.layers):
-        names += layer_names(layer, c['layer_types'][layer])
     w = read_tensors(base, names)
-    digests = {}
-    for name, tensor in w.items():
-        if 'mlp.experts' in name:
-            continue  # large fused expert tensors hashed below with short keys
-        short = ('embedding' if 'embed' in name else 'final_norm' if name.endswith('norm.weight')
-                 and 'layers' not in name else name.split('layers.')[1].replace('.weight', ''))
-        digests[short] = digest(tensor)
-    # Hash the two large fused expert tensors per layer from their FP32 bytes.
-    for layer in range(args.layers):
-        for suffix in ('mlp.experts.gate_up_proj', 'mlp.experts.down_proj'):
-            name = f'model.language_model.layers.{layer}.{suffix}'
-            digests[f'layer{layer}.{suffix.split(".")[-1]}'] = hashlib.sha256(
-                w[name].contiguous().view(torch.uint8).numpy().tobytes()).hexdigest()
+    digests = {'embedding': digest(w['model.language_model.embed_tokens.weight']),
+               'final_norm': digest(w['model.language_model.norm.weight'])}
 
     generator = torch.Generator().manual_seed(args.seed)
     ids = torch.randint(0, c['vocab_size'], (1, args.tokens), generator=generator)
@@ -222,15 +209,20 @@ def main():
     cos, sin = rotary(hidden, position_ids)
     cos, sin = cos.unsqueeze(-2), sin.unsqueeze(-2)
 
-    upstream_layers = []
+    causal_mask = torch.full((1, 1, args.tokens, args.tokens), float('-inf')).triu(1)
+    ours, theirs = hidden, hidden.clone()
+    per_layer = []
+    eps = c['rms_norm_eps']
     for layer in range(args.layers):
-        block = Qwen3_5MoeDecoderLayer(ns, layer)
+        kind = c['layer_types'][layer]
         root = f'model.language_model.layers.{layer}.'
+        lw = read_tensors(base, layer_names(layer, kind))
+        block = Qwen3_5MoeDecoderLayer(ns, layer)
         with torch.no_grad():
-            block.input_layernorm.weight = torch.nn.Parameter(w[root + 'input_layernorm.weight'],
+            block.input_layernorm.weight = torch.nn.Parameter(lw[root + 'input_layernorm.weight'],
                                                               requires_grad=False)
             block.post_attention_layernorm.weight = torch.nn.Parameter(
-                w[root + 'post_attention_layernorm.weight'], requires_grad=False)
+                lw[root + 'post_attention_layernorm.weight'], requires_grad=False)
             for attr, name in (('gate.weight', 'mlp.gate.weight'),
                                ('experts.gate_up_proj', 'mlp.experts.gate_up_proj'),
                                ('experts.down_proj', 'mlp.experts.down_proj'),
@@ -242,53 +234,51 @@ def main():
                 for part in attr.split('.')[:-1]:
                     target = getattr(target, part)
                 setattr(target, attr.split('.')[-1],
-                        torch.nn.Parameter(w[root + name], requires_grad=False))
+                        torch.nn.Parameter(lw[root + name], requires_grad=False))
             if c['layer_types'][layer] == 'full_attention':
                 for proj in FULL_NAMES:
                     getattr(block.self_attn, proj).weight = torch.nn.Parameter(
-                        w[root + f'self_attn.{proj}.weight'], requires_grad=False)
+                        lw[root + f'self_attn.{proj}.weight'], requires_grad=False)
                 block.self_attn.q_norm.weight = torch.nn.Parameter(
-                    w[root + 'self_attn.q_norm.weight'], requires_grad=False)
+                    lw[root + 'self_attn.q_norm.weight'], requires_grad=False)
                 block.self_attn.k_norm.weight = torch.nn.Parameter(
-                    w[root + 'self_attn.k_norm.weight'], requires_grad=False)
+                    lw[root + 'self_attn.k_norm.weight'], requires_grad=False)
             else:
                 for proj in LINEAR_NAMES:
                     getattr(block.linear_attn, proj).weight = torch.nn.Parameter(
-                        w[root + f'linear_attn.{proj}.weight'], requires_grad=False)
+                        lw[root + f'linear_attn.{proj}.weight'], requires_grad=False)
                 block.linear_attn.out_proj.weight = torch.nn.Parameter(
-                    w[root + 'linear_attn.out_proj.weight'], requires_grad=False)
+                    lw[root + 'linear_attn.out_proj.weight'], requires_grad=False)
                 block.linear_attn.conv1d.weight = torch.nn.Parameter(
-                    w[root + 'linear_attn.conv1d.weight'], requires_grad=False)
-                block.linear_attn.dt_bias = torch.nn.Parameter(w[root + 'linear_attn.dt_bias'],
+                    lw[root + 'linear_attn.conv1d.weight'], requires_grad=False)
+                block.linear_attn.dt_bias = torch.nn.Parameter(lw[root + 'linear_attn.dt_bias'],
                                                                requires_grad=False)
-                block.linear_attn.A_log = torch.nn.Parameter(w[root + 'linear_attn.A_log'],
+                block.linear_attn.A_log = torch.nn.Parameter(lw[root + 'linear_attn.A_log'],
                                                              requires_grad=False)
                 block.linear_attn.norm.weight = torch.nn.Parameter(
-                    w[root + 'linear_attn.norm.weight'], requires_grad=False)
+                    lw[root + 'linear_attn.norm.weight'], requires_grad=False)
             block.eval()
-        upstream_layers.append(block)
-
-    causal_mask = torch.full((1, 1, args.tokens, args.tokens), float('-inf')).triu(1)
-    ours, theirs = hidden, hidden.clone()
-    per_layer = []
-    with torch.no_grad():
-        for layer in range(args.layers):
-            kind = c['layer_types'][layer]
-            root = f'model.language_model.layers.{layer}.'
-            eps = c['rms_norm_eps']
+        for name, tensor in lw.items():
+            if 'mlp.experts' in name:
+                continue  # large fused expert tensors hashed below with short keys
+            digests[f'layer{layer}.{name.split("layers.")[1].replace(".weight", "")}'] = digest(tensor)
+        for suffix in ('mlp.experts.gate_up_proj', 'mlp.experts.down_proj'):
+            digests[f'layer{layer}.{suffix.split(".")[-1]}'] = digest(lw[root + suffix])
+        with torch.no_grad():
             # ours
-            normed = rms(ours, w[root + 'input_layernorm.weight'], eps)
-            mixer = (ours_full(w, root, normed, cos, sin, c) if kind == 'full_attention'
-                     else ours_linear(w, root, normed, c))
+            normed = rms(ours, lw[root + 'input_layernorm.weight'], eps)
+            mixer = (ours_full(lw, root, normed, cos, sin, c) if kind == 'full_attention'
+                     else ours_linear(lw, root, normed, c))
             ours = ours + mixer
-            ours = ours + ours_ffn(w, root, c).forward(rms(ours, w[root + 'post_attention_layernorm.weight'], eps))
+            ours = ours + ours_ffn(lw, root, c).forward(
+                rms(ours, lw[root + 'post_attention_layernorm.weight'], eps))
             # upstream
-            normed_t = theirs
-            theirs = upstream_layers[layer](hidden_states=normed_t,
-                                            position_embeddings=rotary(normed_t, position_ids),
-                                            attention_mask=causal_mask if kind == 'full_attention' else None,
-                                            position_ids=position_ids)
+            theirs = block(hidden_states=theirs,
+                           position_embeddings=rotary(theirs, position_ids),
+                           attention_mask=causal_mask if kind == 'full_attention' else None,
+                           position_ids=position_ids)
             per_layer.append({'layer': layer, 'kind': kind, 'ours_vs_upstream': metrics(ours, theirs)})
+        del block, lw
     final_ours = rms(ours, w['model.language_model.norm.weight'], c['rms_norm_eps'])
     from transformers.models.qwen3_5_moe.modeling_qwen3_5_moe import Qwen3_5MoeRMSNorm
     final_norm = Qwen3_5MoeRMSNorm(c['hidden_size'], eps=c['rms_norm_eps'])
