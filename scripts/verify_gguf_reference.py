@@ -91,6 +91,9 @@ def main():
     p.add_argument('--reference-prefill-chunk-size', type=int, default=0,
                    help='bound independent HF prefill attention memory; zero uses whole prompts')
     p.add_argument('--reference-dtype', choices=('float16', 'float32'), default='float16')
+    p.add_argument('--reference-device', choices=('cuda', 'cpu'), default='cuda',
+                   help='device for the independent HF reference; CPU keeps FP32 references of '
+                        'checkpoints whose weights plus conversion transient exceed one GPU')
     p.add_argument('--teacher-trace', help='hold token inputs fixed to a previous report')
     p.add_argument('--extended', action='store_true', help='additional multi-turn, Unicode, code and raw-prefix cases')
     p.add_argument('--window-boundaries', action='store_true', help='include prompts before, at and after the declared sliding window')
@@ -223,7 +226,7 @@ def main():
         reference = AutoModelForCausalLM.from_config(config, torch_dtype=torch.float16, attn_implementation='eager')
     state, formats, embedding_type = reference_weights(args.gguf,args.weight_rounding)
     reference.load_state_dict(state, strict=True, assign=True); del state
-    reference.eval().to(device="cuda", dtype=getattr(torch, args.reference_dtype))
+    reference.eval().to(device=args.reference_device, dtype=getattr(torch, args.reference_dtype))
     reference_cache = {}
     if args.serial_reference:
         # Large checkpoints need not hold HF's expanded weights and damendaemon's
@@ -232,14 +235,14 @@ def main():
             for graph in (False, True):
                 for index, ids in enumerate(prompts):
                     previous = teacher_tokens.get((graph,index))
-                    expected = reference_prefill(reference, torch.tensor([ids], device='cuda'), args.reference_prefill_chunk_size)
+                    expected = reference_prefill(reference, torch.tensor([ids], device=args.reference_device), args.reference_prefill_chunk_size)
                     trace = []
                     for step in range(steps):
                         target = expected.logits[:, -1, :].cpu()
                         trace.append(target)
                         token = previous[step] if previous else target.argmax(-1).item()
                         if step < steps-1:
-                            expected = reference(torch.tensor([[token]], device='cuda'), past_key_values=expected.past_key_values, use_cache=True)
+                            expected = reference(torch.tensor([[token]], device=args.reference_device), past_key_values=expected.past_key_values, use_cache=True)
                     reference_cache[graph, index] = trace
                     del expected
         del reference
@@ -284,7 +287,7 @@ def main():
                              nonlinear_precise=executor.precise, rotary_precise=executor.rotary_precise, backend=executor.kernel_backend,
                              q4_marlin_abi=getattr(executor,"q4_marlin_abi",None))
             for index, ids in enumerate(prompts):
-                expected = None if args.serial_reference else reference_prefill(reference, torch.tensor([ids], device='cuda'), args.reference_prefill_chunk_size)
+                expected = None if args.serial_reference else reference_prefill(reference, torch.tensor([ids], device=args.reference_device), args.reference_prefill_chunk_size)
                 actual = executor.prefill(ids)
                 errors = []; output = []; actual_tokens = []; margins = []; mismatches = []; forced = []; eos_step = None
                 previous = teacher_tokens.get((graph,index))
@@ -304,7 +307,7 @@ def main():
                     if token != actual.argmax(-1).item(): mismatches.append(step)
                     if step < steps-1:
                         if not args.serial_reference:
-                            expected = reference(torch.tensor([[next_input]], device='cuda'), past_key_values=expected.past_key_values, use_cache=True)
+                            expected = reference(torch.tensor([[next_input]], device=args.reference_device), past_key_values=expected.past_key_values, use_cache=True)
                         actual, _ = executor.decode(next_input)
                 cases.append(dict(graph=graph, case=index, prompt_tokens=len(ids), errors=errors,
                                   greedy_mismatches=mismatches, reference_tokens=output, actual_tokens=actual_tokens, reference_top_two_margins=margins, teacher_tokens=forced, eos_step=eos_step))
@@ -345,6 +348,7 @@ def main():
                   precision=precision, q4_prompt_policy=q4_prompt_policy, context=args.context, suite="benchmark" if benchmark else "extended" if args.extended else "initial",
                   benchmark_report=args.benchmark_report, steps=steps, workload_sha256=workload_sha256,
                   reference=f'independent gguf.quants dequantization into HF eager {config.model_type} execution', reference_dtype=args.reference_dtype,
+                  reference_device=args.reference_device,
                   reference_prefill_chunk_size=args.reference_prefill_chunk_size,
                   window_boundary_validation=args.window_boundaries, sliding_window=source.config.get('sliding_window'),
                   weight_rounding=args.weight_rounding, tf32=False, formats=formats, embedding_type=embedding_type,
