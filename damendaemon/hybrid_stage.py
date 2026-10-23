@@ -59,7 +59,9 @@ class HybridLayerStage(HybridExecutor):
             return
         device = self.actual_device
         if device.type != 'cpu':
-            getattr(torch, device.type).synchronize(device)
+            api = getattr(torch, device.type)
+            # MPS exposes a single device and its synchronize takes no argument.
+            api.synchronize() if device.type == 'mps' else api.synchronize(device)
 
     def close(self):
         if self.closed:
@@ -76,8 +78,12 @@ class HybridLayerStage(HybridExecutor):
         self.closed = True
         if device.type != 'cpu':
             api = getattr(torch, device.type)
-            with api.device(device):
+            if device.type == 'mps':
+                # MPS exposes one device and no per-device context manager.
                 api.empty_cache()
+            else:
+                with api.device(device):
+                    api.empty_cache()
 
     def release_partial(self):
         """Release a failed construction after its caller synchronized devices.

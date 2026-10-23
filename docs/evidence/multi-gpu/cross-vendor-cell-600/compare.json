@@ -1,0 +1,84 @@
+{
+ "configurations": [
+  "coordinator",
+  "pair-cuda",
+  "pair-xpu",
+  "single-cuda",
+  "single-xpu",
+  "worker"
+ ],
+ "coordinator": {
+  "compute_dtype": "torch.float16",
+  "device": "cuda:0",
+  "layers": [
+   0,
+   12
+  ],
+  "stats": {
+   "bytes_in": 530736,
+   "bytes_out": 1056768,
+   "calls": 72,
+   "compute_seconds": 0.5491201737895608,
+   "copy_seconds": 0.0
+  }
+ },
+ "cuda_boundary_bit_exact": true,
+ "cuda_protocol_control": true,
+ "passed": true,
+ "token_agreement": {
+  "coordinator|pair-cuda": 3,
+  "coordinator|pair-xpu": 3,
+  "coordinator|single-cuda": 3,
+  "coordinator|single-xpu": 3,
+  "pair-cuda|pair-xpu": 3,
+  "pair-cuda|single-cuda": 3,
+  "pair-cuda|single-xpu": 3,
+  "pair-xpu|single-cuda": 3,
+  "pair-xpu|single-xpu": 3,
+  "single-cuda|single-xpu": 3
+ },
+ "token_counts": {
+  "coordinator": [
+   12,
+   12,
+   12
+  ],
+  "pair-cuda": [
+   12,
+   12,
+   12
+  ],
+  "pair-xpu": [
+   12,
+   12,
+   12
+  ],
+  "single-cuda": [
+   12,
+   12,
+   12
+  ],
+  "single-xpu": [
+   12,
+   12,
+   12
+  ]
+ },
+ "wire_digests_match": true,
+ "worker": {
+  "compute_dtype": "torch.float32",
+  "device": "xpu:0",
+  "layers": [
+   12,
+   24
+  ],
+  "stats": {
+   "bytes_in": 677160,
+   "bytes_out": 36286464,
+   "calls": 72,
+   "compute_seconds": 2.4400489151012152,
+   "copy_seconds": 0.0
+  }
+ },
+ "xpu_protocol_control": true
+}

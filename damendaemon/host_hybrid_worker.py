@@ -9,9 +9,16 @@ import hashlib
 import json
 import threading
 import torch
+from .device_hybrid_stage import DeviceHybridStage
 from .host_stage_channel import HostStageChannel
 from .hybrid_stage import HybridLayerStage
 from .stage_protocol import Command,PREFILL,PREFILL_BATCH,PREFILL_CHUNK,DECODE,RELEASE,PING,STOP
+
+# Device workers disclose their accelerator and compute precision at setup;
+# the shared digest below covers the boundary contract instead, so the two
+# ranks of a cross-vendor pair may legitimately differ in compute precision.
+DEVICE_CODES={'cpu':0,'cuda':1,'xpu':2,'mps':3}
+DTYPE_CODES={torch.float32:0,torch.float16:1}
 
 
 def _token_policy(config,mapped_vocab_size,excluded_ids):
@@ -31,22 +38,36 @@ def _token_policy(config,mapped_vocab_size,excluded_ids):
 
 class HostHybridWorker:
     def __init__(self,channel,stage,*,mapped_vocab_size=None,excluded_ids=()):
+        device_stage=isinstance(stage,DeviceHybridStage)
         if (not isinstance(channel,HostStageChannel) or channel.ready or channel.closed
                 or getattr(channel,'_worker_owner',None) is not None
-                or not isinstance(stage,HybridLayerStage) or stage.closed or getattr(stage,'failed',False)
+                or not (device_stage or isinstance(stage,HybridLayerStage))
+                or stage.closed or getattr(stage,'failed',False)
                 or getattr(stage,'_pipeline_owner',None) is not None or any(stage.lengths)
-                or stage.actual_device.type!='cpu' or stage.compute_dtype!=torch.float32
+                or (not device_stage and (stage.actual_device.type!='cpu' or stage.compute_dtype!=torch.float32))
+                or (device_stage and stage.boundary_dtype!=torch.float32)
                 or stage.context!=channel.state.context or stage.max_batch!=channel.state.slots
                 or stage.c['vocab_size']!=channel.vocab_size
                 or (channel.rank==0 and (not stage.first or stage.last))
                 or (channel.rank==1 and (stage.first or not stage.last))):
-            raise ValueError('host hybrid worker needs fresh compatible CPU FP32 stage ownership')
+            raise ValueError('host hybrid worker needs fresh compatible CPU FP32 or device-boundary stage ownership')
         mapped,excluded=_token_policy(stage.c,mapped_vocab_size,excluded_ids)
-        encoded=json.dumps(dict(config=stage.c,dtype=str(stage.compute_dtype),quantization=stage.model.quantization,
+        # CPU stages pin their FP32 compute dtype in the shared contract; device
+        # stages pin the FP32 wire boundary, letting each rank keep its own
+        # qualified device precision (disclosed through the setup descriptor).
+        dtype_label='boundary-float32' if device_stage else str(stage.compute_dtype)
+        encoded=json.dumps(dict(config=stage.c,dtype=dtype_label,quantization=stage.model.quantization,
                                 token_policy=dict(mapped_vocab_size=mapped,excluded_ids=sorted(excluded))),sort_keys=True,
                            separators=(',',':'),allow_nan=False).encode()
         if len(encoded)>1024**2:raise ValueError('host hybrid configuration exceeds metadata limit')
         self.contract=hashlib.sha256(encoded).digest()
+        self.device_stage=device_stage
+        if device_stage and stage.actual_device.type not in DEVICE_CODES:
+            raise ValueError('device boundary stage uses an undisclosed accelerator')
+        self.descriptor=[int(device_stage),
+                         DEVICE_CODES[stage.actual_device.type] if device_stage else 0,
+                         DTYPE_CODES[stage.compute_dtype] if device_stage else 0]
+        self.peer_descriptor=None
         self.mapped_vocab_size,self.excluded_ids=mapped,excluded
         self.channel,self.stage,self.rank=channel,stage,channel.rank
         self.width=stage.c['hidden_size'];self.ready=self.failed=self.closed=False
@@ -87,6 +108,11 @@ class HostHybridWorker:
                 identity=torch.tensor(list(self.contract),dtype=torch.uint8,device='cpu')
                 if not torch.equal(self._exchange_setup(identity),identity):
                     raise ValueError('host hybrid model configuration/precision disagrees')
+                descriptor=torch.tensor(self.descriptor,dtype=torch.int64,device='cpu')
+                peer=self._exchange_setup(descriptor).tolist()
+                if peer[0]!=self.descriptor[0] or any(type(value) is not int or value<0 for value in peer):
+                    raise ValueError('host hybrid worker kinds disagree (CPU vs device boundary)')
+                if self.device_stage:self.peer_descriptor=peer
                 self.ready=True
             except BaseException as error:self._fail(error);raise
 
