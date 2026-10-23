@@ -1,0 +1,89 @@
+{
+ "model": "/home/damen/models/qwen3-8b/Qwen3-8B-Q4_K_M.gguf",
+ "prompt_lengths": [
+  4,
+  128,
+  256,
+  384
+ ],
+ "chunk": 128,
+ "variants": {
+  "bare": {
+   "prefill": {
+    "max_absolute": 0.0625,
+    "relative_rms": 0.004890419542789459,
+    "greedy_equal": true
+   },
+   "decode_worst": {
+    "max_absolute": 1.25,
+    "relative_rms": 0.030523192137479782,
+    "greedy_equal": true
+   },
+   "error": null
+  },
+  "stock": {
+   "prefill": {
+    "max_absolute": 0.0625,
+    "relative_rms": 0.004890419542789459,
+    "greedy_equal": true
+   },
+   "decode_worst": {
+    "max_absolute": 1.25,
+    "relative_rms": 0.030523192137479782,
+    "greedy_equal": true
+   },
+   "error": null
+  },
+  "math": {
+   "prefill": {
+    "max_absolute": 0.06756591796875,
+    "relative_rms": 0.0052605667151510715,
+    "greedy_equal": true
+   },
+   "decode_worst": {
+    "max_absolute": 1.40625,
+    "relative_rms": 0.03602549433708191,
+    "greedy_equal": true
+   },
+   "error": null
+  },
+  "efficient": {
+   "prefill": null,
+   "decode_worst": null,
+   "error": "RuntimeError('No available kernel. Aborting execution.')"
+  },
+  "flash-nogqa": {
+   "prefill": {
+    "max_absolute": 0.0625,
+    "relative_rms": 0.004890419542789459,
+    "greedy_equal": true
+   },
+   "decode_worst": {
+    "max_absolute": 1.25,
+    "relative_rms": 0.030523192137479782,
+    "greedy_equal": true
+   },
+   "error": null
+  },
+  "fp32-attn": {
+   "prefill": {
+    "max_absolute": 0.0625,
+    "relative_rms": 0.00592854805290699,
+    "greedy_equal": true
+   },
+   "decode_worst": {
+    "max_absolute": 1.21875,
+    "relative_rms": 0.030381405726075172,
+    "greedy_equal": true
+   },
+   "error": null
+  }
+ },
+ "completed": true,
+ "scope": "#585 gate-exact chunked-continuation bisect; logit comparison vs the stock whole-prefill eager trace only",
+ "backend": "triton+mixed",
+ "precision": {
+  "matrix": "torch.float16",
+  "residual": "torch.float32"
+ }
+}

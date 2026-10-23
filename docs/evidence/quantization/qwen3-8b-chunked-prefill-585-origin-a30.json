@@ -1,0 +1,78 @@
+{
+ "model": "/home/damen/models/qwen3-8b/Qwen3-8B-Q4_K_M.gguf",
+ "probes": {
+  "gemm_row_invariance": {
+   "bit_exact": true,
+   "max_abs": 0.0,
+   "rel_rms": 0.0
+  },
+  "rope_q": {
+   "bit_exact": true,
+   "max_abs": 0.0,
+   "rel_rms": 0.0
+  },
+  "rope_cache_k": {
+   "bit_exact": true,
+   "max_abs": 0.0,
+   "rel_rms": 0.0
+  },
+  "rope_cache_v": {
+   "bit_exact": true,
+   "max_abs": 0.0,
+   "rel_rms": 0.0
+  },
+  "cache_k_layer0": {
+   "bit_exact": true,
+   "max_abs": 0.0,
+   "rel_rms": 0.0
+  },
+  "cache_v_layer0": {
+   "bit_exact": true,
+   "max_abs": 0.0,
+   "rel_rms": 0.0
+  },
+  "cache_k_layer1": {
+   "bit_exact": false,
+   "max_abs": 0.03125,
+   "rel_rms": 0.0003111088299192488
+  },
+  "cache_v_layer1": {
+   "bit_exact": false,
+   "max_abs": 0.000244140625,
+   "rel_rms": 0.00040140358032658696
+  },
+  "cache_k_layer2": {
+   "bit_exact": false,
+   "max_abs": 0.015625,
+   "rel_rms": 0.00042200012831017375
+  },
+  "cache_v_layer2": {
+   "bit_exact": false,
+   "max_abs": 0.0003662109375,
+   "rel_rms": 0.0005269723478704691
+  },
+  "cache_k_layer20": {
+   "bit_exact": false,
+   "max_abs": 0.984375,
+   "rel_rms": 0.008553740568459034
+  },
+  "cache_v_layer20": {
+   "bit_exact": false,
+   "max_abs": 0.664794921875,
+   "rel_rms": 0.014238911680877209
+  },
+  "cache_k_layer35": {
+   "bit_exact": false,
+   "max_abs": 1.81640625,
+   "rel_rms": 0.006715038325637579
+  },
+  "cache_v_layer35": {
+   "bit_exact": false,
+   "max_abs": 2.9443359375,
+   "rel_rms": 0.020561594516038895
+  }
+ },
+ "completed": true,
+ "scope": "#585 origin probes: GEMM row-invariance, rope kernel equivalence, per-layer KV cache taps whole-vs-chunked",
+ "backend": "triton+mixed"
+}

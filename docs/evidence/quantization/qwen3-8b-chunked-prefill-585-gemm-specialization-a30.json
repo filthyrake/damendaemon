@@ -1,0 +1,24 @@
+{
+ "model": "/home/damen/models/qwen3-8b/Qwen3-8B-Q4_K_M.gguf",
+ "probe": "E",
+ "cases": {
+  "constexpr_M_384_vs_3x128": {
+   "bit_exact": true,
+   "max_abs": 0.0,
+   "rel_rms": 0.0
+  },
+  "runtime_M_384_vs_3x128": {
+   "bit_exact": true,
+   "max_abs": 0.0,
+   "rel_rms": 0.0
+  },
+  "runtime_vs_constexpr_384": {
+   "bit_exact": true,
+   "max_abs": 0.0,
+   "rel_rms": 0.0
+  }
+ },
+ "completed": true,
+ "scope": "#585 probe E: _gemm M-specialization row-invariance on real weights",
+ "backend": "triton+mixed"
+}

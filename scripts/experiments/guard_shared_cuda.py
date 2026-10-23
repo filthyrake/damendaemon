@@ -160,7 +160,8 @@ def main():
                       incumbent_service=args.service,
                       gpu_reserve_mib=args.gpu_reserve_mib,
                       timeout_seconds=args.timeout, isolation=False, allow_busy=args.allow_busy)
-        PASSTHROUGH = ('DAMENDAEMON_PIPELINE_EMPTY_CACHE', 'DAMENDAEMON_PREFILL_CHUNK_COOLDOWN_S')
+        PASSTHROUGH = ('DAMENDAEMON_PIPELINE_EMPTY_CACHE', 'DAMENDAEMON_PREFILL_CHUNK_COOLDOWN_S',
+                       'DAMENDAEMON_TRITON_PREFILL_GEMM')
         env = {k: v for k, v in os.environ.items() if not k.startswith('DAMENDAEMON_') or k in PASSTHROUGH}
         env.update(CUDA_VISIBLE_DEVICES=','.join(args.gpu), DAMENDAEMON_DEVICE='cuda',
                    OMP_NUM_THREADS='1', MKL_NUM_THREADS='1', DAMENDAEMON_SHARED_CUDA_GUARD='1')

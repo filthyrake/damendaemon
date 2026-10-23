@@ -1,0 +1,24 @@
+{
+ "model": "/home/damen/models/qwen3-8b/Qwen3-8B-Q4_K_M.gguf",
+ "probe": "F",
+ "cases": {
+  "view_stride_vs_whole": {
+   "bit_exact": false,
+   "max_abs": 0.0001220703125,
+   "rel_rms": 4.19799325754866e-05
+  },
+  "contiguous_vs_whole": {
+   "bit_exact": false,
+   "max_abs": 0.0001220703125,
+   "rel_rms": 4.19799325754866e-05
+  },
+  "view_vs_contiguous": {
+   "bit_exact": true,
+   "max_abs": 0.0,
+   "rel_rms": 0.0
+  }
+ },
+ "completed": true,
+ "scope": "#585 probe F: query-stride effect on SDPA rounding, real layer-0 weights",
+ "backend": "triton+mixed"
+}
