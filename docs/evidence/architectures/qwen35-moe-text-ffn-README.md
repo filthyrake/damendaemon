@@ -244,7 +244,7 @@ tokens), full 40-layer forward to lm_head logits, reference = host FP32
 ported math (cell 5, verified vs eager upstream at rms_rel 2.4e-04),
 candidate = the cell-9 E4M3 per-layer streamed bank under
 `guard_shared_cuda` on the A30 (one fused route chunk per layer; peak
-0.91 GiB; guard completed in 1402 s).
+0.91 GiB; guard completed in 1409 s).
 
 Gates pre-declared before any run, thresholds unchanged at evaluation:
 
@@ -254,9 +254,14 @@ Gates pre-declared before any run, thresholds unchanged at evaluation:
 
 Measured (as run, no relaxation): agreement **0.9932**, mean KL
 **0.00424 nat**, perplexity ratio **1.0081** (NLL 2.588 vs 2.580). All
-three gates PASS. Scope, recorded exactly: three pre-declared metrics on
-four fixed model-card prompts for this snapshot at <= 64 tokens; no
-throughput, long-context, or other-prompt-set claims. Evidence:
+three gates PASS. Divergence canaries (added in review remediation, run
+recorded by it): logit_max_abs **1.66** - the candidate is provably not
+the reference - and all-positions agreement 0.9946. Reproducibility:
+two independent guarded runs of the candidate agree to GPU-reduction
+noise (agreement bit-identical; KL/NLL within ~1e-9). Scope, recorded
+exactly: three pre-declared metrics on four fixed model-card prompts for
+this snapshot at <= 64 tokens; no throughput, long-context, or
+other-prompt-set claims. Evidence:
 qwen35-moe-generation-quality-e4m3.json + guard report; reference
 manifest (ids digest + shape) in the run log.
 
