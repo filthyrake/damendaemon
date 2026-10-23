@@ -2220,3 +2220,13 @@ through the residual stream. Recorded negative result: naive E2M1 full-bank
 quantization is not numerically viable at full depth; the precision path is
 E4M3FN (30.5 GiB, requires bank split or per-layer streaming). Evidence
 `qwen35-moe-a30-fullforward.json` + guard report.
+
+Cell 9 measures the E4M3 compounding curve on the same probe/reference:
+max_abs 1.2e-03 (layer 0) to 1.27 (layer 39) to 3.49 final - 3.2x better
+than E2M1 at the end but the same super-linear class, and the per-format
+gap (5.1x at layer 0) collapses to 1.3x by layer 39: both formats
+decorrelate into the same O(1)-deviation basin (~1.6x host RMS for E4M3).
+Route-flip compounding is structural to weights-only expert quantization;
+hidden-state fidelity at depth requires unquantized (streamed BF16) experts.
+Generation-quality gates on real text are the arbiter for quantized-bank
+deployability. Evidence qwen35-moe-a30-e4m3-compounding.json.

@@ -39,6 +39,88 @@ from scripts.experiments.qwen35_moe_text_executor import (
     digest, layer_names, metrics, read_tensors)
 
 CHECKPOINTS = (0, 3, 9, 20, 39)
+E4M3_MAX = 448.0
+
+
+def _ceil_pow2_exponent(values):
+    mantissa, exponent = torch.frexp(values)
+    return exponent - (mantissa == .5).to(exponent.dtype)
+
+
+def pack_e4m3fn(matrix):
+    """Pack one FP32 [rows, columns] matrix into the prepared e4m3fn layout.
+
+    Convention (DeepSeek-V4-Flash inference/kernel.py, as documented in
+    ``activation_simulation``): per 128x128 block, E8M0 power-of-two scale
+    ceil(amax/448); values/scale clamped to +-448, cast to E4M3FN. Layout per
+    ``packed_tiles.validate_layout('e4m3fn')``: byte weights, uint8 scale
+    codes at [rows//128, columns//128].
+    """
+    rows, columns = matrix.shape
+    if matrix.dtype is not torch.float32 or rows % 128 or columns % 128:
+        raise ValueError('e4m3fn packing needs FP32 with 128-aligned rows and columns')
+    blocks = matrix.view(rows // 128, 128, columns // 128, 128)
+    amax = blocks.abs().amax(dim=(1, 3), keepdim=True).clamp_min(torch.finfo(torch.float32).tiny)
+    exponent = _ceil_pow2_exponent(amax * (1 / E4M3_MAX))
+    scale = torch.ldexp(torch.ones_like(exponent, dtype=torch.float32), exponent)
+    quantized = (blocks / scale).clamp(-E4M3_MAX, E4M3_MAX).to(torch.float8_e4m3fn)
+    weight = quantized.view(torch.uint8).view(rows, columns)
+    scales = (exponent + 127).to(torch.uint8).view(rows // 128, columns // 128)
+    return weight, scales
+
+
+def e4m3fn_reference(matrix):
+    """Independent CPU transcription of the same convention for the exactness assert."""
+    rows, columns = matrix.shape
+    blocks = matrix.view(rows // 128, 128, columns // 128, 128)
+    amax = blocks.abs().amax(dim=(1, 3), keepdim=True).clamp_min(torch.finfo(torch.float32).tiny)
+    mantissa, exponent = torch.frexp(amax * (1 / E4M3_MAX))
+    exponent = exponent - (mantissa == .5).to(exponent.dtype)
+    scale = torch.ldexp(torch.ones_like(exponent, dtype=torch.float32), exponent)
+    return ((blocks / scale).clamp(-E4M3_MAX, E4M3_MAX)
+            .to(torch.float8_e4m3fn).float() * scale).view(rows, columns)
+
+
+def pack_layer_experts(tensors, root, c, device, fmt, verify):
+    """Pack one layer's routed experts from streamed FP32; returns six stacked banks."""
+    inter, hidden = 2 * c['moe_intermediate_size'], c['hidden_size']
+    I = c['moe_intermediate_size']
+    gate_up = tensors[root + 'mlp.experts.gate_up_proj'].reshape(c['num_experts'] * inter, hidden)
+    down = tensors[root + 'mlp.experts.down_proj'].reshape(c['num_experts'] * hidden, I)
+    gw, gs, uw, us, dw, ds = [], [], [], [], [], []
+    for start in range(0, c['num_experts'], 32):
+        stop = min(c['num_experts'], start + 32)
+        rows = stop - start
+        if fmt == 'e2m1':
+            gu_p, gu_s = pack_e2m1(gate_up[start * inter:stop * inter].to(device))
+            dn_p, dn_s = pack_e2m1(down[start * hidden:stop * hidden].to(device))
+            gw.append(gu_p.view(rows, inter, hidden // 2)[:, :I])
+            gs.append(gu_s.view(rows, inter, hidden // 32)[:, :I])
+            uw.append(gu_p.view(rows, inter, hidden // 2)[:, I:])
+            us.append(gu_s.view(rows, inter, hidden // 32)[:, I:])
+            dw.append(dn_p.view(rows, hidden, I // 2))
+            ds.append(dn_s.view(rows, hidden, I // 32))
+        else:
+            gu_p, gu_s = pack_e4m3fn(gate_up[start * inter:stop * inter].to(device))
+            dn_p, dn_s = pack_e4m3fn(down[start * hidden:stop * hidden].to(device))
+            gw.append(gu_p.view(rows, inter, hidden)[:, :I])
+            gs.append(gu_s.view(rows, inter // 128, hidden // 128)[:, :I // 128])
+            uw.append(gu_p.view(rows, inter, hidden)[:, I:])
+            us.append(gu_s.view(rows, inter // 128, hidden // 128)[:, I // 128:])
+            dw.append(dn_p.view(rows, hidden, I))
+            ds.append(dn_s.view(rows, hidden // 128, I // 128))
+            if verify and start == 0:
+                from damendaemon.packed_tiles import decode_tile
+                # decode_tile caps at 65536 elements; 128x512 is exactly at the cap.
+                cpu_slice = gate_up[start * inter:start * inter + 128, :512].contiguous()
+                decoded = decode_tile(gu_p[:128, :512].cpu().contiguous(), gu_s[:1, :4].cpu().contiguous(),
+                                      format='e4m3fn', row_start=0, row_stop=128,
+                                      column_start=0, column_stop=512)
+                assert torch.equal(decoded, e4m3fn_reference(cpu_slice)), 'e4m3fn packing is not exact'
+        del gu_p, gu_s, dn_p, dn_s
+    stacked = tuple(torch.cat(parts) for parts in (gw, gs, uw, us, dw, ds))
+    del gate_up, down, gw, gs, uw, us, dw, ds
+    return stacked
 
 
 def rms(x, weight, eps):
@@ -119,6 +201,10 @@ def main():
     parser.add_argument('--hidden-out', default=None, help='save the hidden state after the last layer')
     parser.add_argument('--fused-route-chunk', type=int, default=256,
                         help='routes per fused composition chunk (256 removes per-chunk tile re-decode)')
+    parser.add_argument('--format', choices=('e2m1', 'e4m3fn'), default='e2m1')
+    parser.add_argument('--single-layer', action='store_true',
+                        help='pack each layer from streamed FP32 and free after use '
+                             '(no bank residency; required for e4m3fn on one A30)')
     parser.add_argument('--probe-seed', type=int, default=20261023)
     args = parser.parse_args()
     if args.layer_end is None:
@@ -156,13 +242,15 @@ def main():
     placement = []
     bank = {}
     cache_path = Path(args.cache) if args.cache else None
+    if args.single_layer:
+        cache_path = None  # per-layer packing in the forward loop; no bank residency
     if cache_path is not None and cache_path.exists():
         bank = torch.load(cache_path, map_location=device, weights_only=True)
         allocated = torch.cuda.memory_allocated()
         placement.append({'loaded_from_cache': str(cache_path), 'allocated_gib': round(allocated / 2 ** 30, 2)})
         print(f'bank loaded from cache: {allocated/2**30:.2f} GiB', flush=True)
     else:
-        for layer in range(c['num_hidden_layers']):
+        for layer in range(c['num_hidden_layers'] if not args.single_layer else 0):
             kind = c['layer_types'][layer]
             root = f'model.language_model.layers.{layer}.'
             tensors = read_tensors(base, layer_names(layer, kind))
@@ -222,11 +310,15 @@ def main():
             # full residency (~21.7 GiB bank+weights) exceeds the guard's
             # 21.5 GiB envelope on the 24-GiB A30 - recorded, not bypassed.
             tensors = read_tensors(base, layer_names(layer, kind))
-            gate_w, gate_s, up_w, up_s, down_w, down_s = bank[layer]
+            if args.single_layer:
+                gate_w, gate_s, up_w, up_s, down_w, down_s = pack_layer_experts(
+                    tensors, root, c, device, args.format, verify=layer == 0)
+            else:
+                gate_w, gate_s, up_w, up_s, down_w, down_s = bank[layer]
             experts = [CudaPackedExpert(
-                CudaPackedMatrix(gate_w[e], gate_s[e], 'e2m1'),
-                CudaPackedMatrix(up_w[e], up_s[e], 'e2m1'),
-                CudaPackedMatrix(down_w[e], down_s[e], 'e2m1'),
+                CudaPackedMatrix(gate_w[e], gate_s[e], args.format),
+                CudaPackedMatrix(up_w[e], up_s[e], args.format),
+                CudaPackedMatrix(down_w[e], down_s[e], args.format),
                 row_chunk=64, column_chunk=256, workspace_bytes=8 * 1024 ** 2)
                 for e in range(c['num_experts'])]
             e = {
@@ -278,7 +370,7 @@ def main():
             if layer in CHECKPOINTS:
                 checkpoints[layer] = hidden_states.detach().clone()
             peak_forward_allocated = max(peak_forward_allocated, torch.cuda.memory_allocated())
-            del e
+            del e, gate_w, gate_s, up_w, up_s, down_w, down_s
             print(f'forward layer {layer} done', flush=True)
         if args.hidden_out:
             torch.save(hidden_states.detach().clone(), args.hidden_out)
@@ -308,9 +400,12 @@ def main():
         'probe': {'kind': 'synthetic random token IDs (not real text)', 'seed': args.probe_seed,
                   'shape': [1, 32, c['hidden_size']]},
         'gpu_vs_host_ours_checkpoints': {str(k): curve[k] for k in curve},
+        'expert_format': args.format,
+        'expert_residency': 'single-layer streamed packing (bank never resident)' if args.single_layer
+                            else 'full bank resident',
         'tf32': False,
-        'scope': 'single-GPU forward: E2M1 expert bank + FP32 non-expert weights streamed per layer; '
-                 'embedding host-side; CPU control is the cell-5 host run',
+        'scope': 'single-GPU forward: quantized routed experts (format recorded above) + '
+                 'FP32 non-expert weights streamed per layer; CPU control is the cell-5 host run',
     }
     if layer_end == c['num_hidden_layers']:
         host_final = torch.load(dumps / 'final.pt', map_location='cpu', weights_only=True)

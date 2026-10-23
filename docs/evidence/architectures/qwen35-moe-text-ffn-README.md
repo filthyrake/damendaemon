@@ -207,3 +207,30 @@ Hadamard rotation was already a wash (cell 6). Consequence: the precision
 path is E4M3FN experts (1.4e-03/layer, 30.5 GiB bank - does not fit one
 A30), so the next cell is bank split across A30+A2 or per-layer E4M3
 host streaming. No generation-quality cell should run on the E2M1 bank.
+
+## E4M3 compounding measurement (cell 9)
+
+Same single-GPU forward, expert bank E4M3FN (per-128x128-block E8M0 scales,
+DeepSeek-V4-Flash convention; packing exactness asserted against an
+independent CPU transcription and the prepared decoder) packed per layer
+from streamed FP32 - the 30.5-GiB bank is never resident; peak GPU 0.9 GiB,
+guard completed. Probe/host reference identical to cell 8 (seed 20261023).
+
+E4M3 vs E2M1 max_abs by depth (both vs the same host FP32 reference):
+layer 0: 1.2e-03 vs 6.3e-03 (5.1x) ... layer 39: 1.27 vs 1.65 (1.3x);
+final: 3.49 vs 11.27 (3.2x). The format gap collapses with depth - both
+quantization formats land in the same O(1)-deviation basin (~1.6x host RMS,
+6% of peak for E4M3): a trajectory-decorrelation signature. Compounding is
+again super-linear (per-layer 1.2e-03 -> ~2900x at final; quadrature ~6x).
+
+**Conclusion, recorded exactly:** super-linear compounding through route
+flips is structural to weights-only expert quantization at either format,
+not a precision class that a better format escapes. Hidden-state fidelity
+through 40 layers requires unquantized experts (host-streamed BF16, the
+only exact path; ~1.5 GiB/layer transfers). The standard acceptance
+methodology for quantized deployments - generation-quality gates on real
+text (perplexity, greedy agreement, logit divergence) - is the arbiter for
+whether the E4M3 bank is deployable; hidden-state fidelity is not that
+gate. The epic's next decision: E4M3 quality-gated generation cell vs
+exact-but-slower BF16 per-layer streaming. Evidence:
+qwen35-moe-a30-e4m3-compounding.json + guard report.
