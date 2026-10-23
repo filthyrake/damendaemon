@@ -1,0 +1,33 @@
+{
+ "model": "/home/damen/models/qwen3-8b/Qwen3-8B-Q4_K_M.gguf",
+ "env": "DAMENDAEMON_TRITON_PREFILL_GEMM=1",
+ "completed": true,
+ "scope": "#585 verify: shape-invariant GEMM path",
+ "backend": "triton+mixed",
+ "chunked_vs_whole": {
+  "prefill": {
+   "bit_exact": false,
+   "max_absolute": 0.046875,
+   "relative_rms": 0.004537132568657398,
+   "greedy_equal": true
+  },
+  "decode_worst": {
+   "bit_exact": false,
+   "max_absolute": 0.3515625,
+   "relative_rms": 0.004971895832568407,
+   "greedy_equal": true
+  }
+ },
+ "timing_seconds": {
+  "triton_gemm": [
+   0.4335500820016023,
+   0.43475159199442714,
+   0.43304682499729097
+  ],
+  "expand_cublas": [
+   0.12677351500315126,
+   0.11660853101057,
+   0.11743033499806188
+  ]
+ }
+}

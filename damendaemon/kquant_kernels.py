@@ -4,6 +4,8 @@ Format reference: MIT-licensed gguf-py/gguf/quants.py in llama.cpp,
 836d57176dc699a726c55418e4f96b8ca628e1bf. Independently implemented GPU arithmetic.
 Packed coefficients are decoded directly by CUDA kernels.
 """
+import os
+
 import torch
 import triton as tr
 import triton.language as tl
@@ -222,6 +224,20 @@ def linear(x,weight,layout,bias=None):
         result=torch.empty((rows,outputs),device=x.device,dtype=x.dtype)
         _gemv[(tr.cdiv(outputs,4),)](x,weight,weight if bias is None else bias,result,outputs,width,rows,
             spec,4,tr.next_power_of_2(width),bias is not None,enable_fp_fusion=False)
+    elif x.dtype == torch.float16 and os.environ.get('DAMENDAEMON_TRITON_PREFILL_GEMM') == '1':
+        # Shape-invariant opt-in prefill GEMM (#585): the per-row K-loop of
+        # _gemm is independent of the row count, so 128-row chunked calls and
+        # a whole 384-row prefill produce bit-identical rows. The default
+        # expand+cuBLAS path below is measured faster but selects cuBLAS
+        # kernels per (M, N, K); at qwen3-8B the out (4096x4096) and down
+        # (4096x6144) projections round differently between M=384 and
+        # M=128 (1.4-2.2e-5 per element), which chunked-prefill comparisons
+        # then amplify through decode near-ties. Opt in when bit-stable
+        # chunking matters more than speed.
+        result=torch.empty((rows,outputs),device=x.device,dtype=x.dtype)
+        _gemm[(tr.cdiv(rows,64),tr.cdiv(outputs,64))](x,weight,
+            weight if bias is None else bias,result,rows,outputs,width,spec,
+            64,64,64,bias is not None,enable_fp_fusion=False)
     else:
         # Measured faster than repeated packed Tensor Core tile decoding on A2.
         # Only this projection is expanded; persistent weights remain packed.

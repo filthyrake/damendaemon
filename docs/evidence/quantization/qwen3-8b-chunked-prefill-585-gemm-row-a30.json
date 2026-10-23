@@ -1,0 +1,58 @@
+{
+ "model": "/home/damen/models/qwen3-8b/Qwen3-8B-Q4_K_M.gguf",
+ "probe": "A2",
+ "cases": {
+  "L0_0.qkv.weight": {
+   "bit_exact": true,
+   "max_abs": 0.0,
+   "rel_rms": 0.0
+  },
+  "L0_0.out": {
+   "bit_exact": false,
+   "max_abs": 1.6868114471435547e-05,
+   "rel_rms": 1.2021897646263824e-06
+  },
+  "L0_0.gate_up": {
+   "bit_exact": true,
+   "max_abs": 0.0,
+   "rel_rms": 0.0
+  },
+  "L0_0.down": {
+   "bit_exact": false,
+   "max_abs": 1.5735626220703125e-05,
+   "rel_rms": 6.274708539422136e-07
+  },
+  "L1_1.qkv.weight": {
+   "bit_exact": true,
+   "max_abs": 0.0,
+   "rel_rms": 0.0
+  },
+  "L1_1.out": {
+   "bit_exact": false,
+   "max_abs": 1.4543533325195312e-05,
+   "rel_rms": 1.2187423408249742e-06
+  },
+  "L1_1.gate_up": {
+   "bit_exact": true,
+   "max_abs": 0.0,
+   "rel_rms": 0.0
+  },
+  "L1_1.down": {
+   "bit_exact": false,
+   "max_abs": 2.0503997802734375e-05,
+   "rel_rms": 5.813873826809868e-07
+  },
+  "norm_row_invariance": {
+   "bit_exact": true,
+   "max_abs": 0.0,
+   "rel_rms": 0.0
+  },
+  "swiglu_shape_note": {
+   "note": "swiglu is elementwise; random inputs are not comparable across calls",
+   "skipped": true
+  }
+ },
+ "completed": true,
+ "scope": "#585 probe A2: per-projection row-count invariance, 384-row vs 3x128-row, real qwen3-8B Q4_K_M packed weights",
+ "backend": "triton+mixed"
+}

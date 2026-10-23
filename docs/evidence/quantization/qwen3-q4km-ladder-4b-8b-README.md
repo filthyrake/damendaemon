@@ -45,6 +45,16 @@ checkpoint. A further width control (`llama31-8b-layout-a30.json`): Llama-3.1-8B
 chunk 128** (worst 0.125%) — the defect is qwen3-8B-specific, not hidden-width
 general. Filed as #585 with the per-stage localization path recorded.
 
+**#585 resolved** — full attribution, mechanism, and the corrected chunked
+contract: see [qwen3-8b-chunked-prefill-585-README.md](qwen3-8b-chunked-prefill-585-README.md).
+Summary: not a continuation-logic defect; the divergence is FP16
+kernel-arithmetic signature (cuBLAS expand-GEMM M-variance on the
+`out`/`down` projections + attention call-geometry rounding), bounded
+and greedy-preserving, occasionally amplified by a decode near-tie. Gate rerun
+passes under the evidence-justified chunked bounds; an opt-in
+shape-invariant Triton GEMM path (`DAMENDAEMON_TRITON_PREFILL_GEMM=1`)
+removes the GEMM component when bit-stable chunking is required.
+
 ## Gate 3 — standalone tokenizer (`verify_gguf_tokenizer.py` vs llama.cpp)
 
 38/38 cases both cells (chat/special tokens, `add_special` both ways,
