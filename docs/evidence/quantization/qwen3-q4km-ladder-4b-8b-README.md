@@ -163,6 +163,15 @@ path for qwen3 (currently an explicit unqualified opt-in for packed
 checkpoints), or a deliberate bounded-drift acceptance decision for the
 8B class. Filed as #612.
 
+**#612 delivered (option 1)** — the FP32-arithmetic packed path
+(`DAMENDAEMON_QWEN3_PRECISION=float32`) is qualified for this checkpoint:
+teacher initial 0.105%, benchmark workload 0.593% worst RMS (vs 5.13%
+FP16), HTTP gate byte-exact 3/3, layout gate 128/128 at 2.84e-05 —
+see [qwen3-8b-fp32-packed-612-README.md](qwen3-8b-fp32-packed-612-README.md).
+The 8B cell's gate-4 blocker is resolved for this configuration; the
+FP16-mixed bounded-drift acceptance decision remains open as a separate
+policy choice.
+
 - **Qwen3-8B Q4_K_M: gates 1-3 pass; gate 4 blocked by long-prompt FP16
   drift** (gate 2 re-passed under #585's corrected contract, 128/128;
   gate 3 tokenizer 38/38; gate 4's teacher qualification fails at 5.13%

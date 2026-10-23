@@ -328,10 +328,17 @@ def qwen3_default_precision(model):
     independent FP32 reference on the same trace. The qualified path is the
     DEFAULT for unpacked checkpoints.
 
-    Quantized weights keep the `standard` default their own gates qualified:
-    the packed residual/kquant decode kernels and the AWQ FP16-rounding path
-    require FP16 compute inputs, and `DAMENDAEMON_QWEN3_PRECISION=float32`
-    remains an explicit (rejected-for-AWQ, unqualified-for-packed) opt-in.
+    For packed checkpoints the `float32` opt-in is qualified at
+    qwen3-8B Q4_K_M context 512 on the A30 (#612: teacher initial 0.105%,
+    benchmark 0.593% worst vs the FP16 mixed path's 5.13% long-prompt
+    drift, HTTP byte-exact, 128/128 layouts) — evidence
+    docs/evidence/quantization/qwen3-8b-fp32-packed-612-README.md. Set the
+    variable before process start; it is read at executor construction and
+    applies to every qwen3 executor in that process. The
+    packed decode kernels fall back to the dtype-following Triton path at
+    FP32; `DAMENDAEMON_QWEN3_PRECISION=float32` remains an explicit opt-in
+    (rejected-for-AWQ; unqualified for other packed checkpoints and for
+    contexts beyond 512).
     """
     quantized = bool(getattr(model, 'scales', None)
                      or getattr(model, 'packed_formats', {})
