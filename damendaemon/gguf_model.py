@@ -31,7 +31,15 @@ def identity(path):
     return file_identity(info)
 
 
-def file_identity(info):return info.st_dev,info.st_ino,info.st_size,info.st_mtime_ns,info.st_ctime_ns
+from .network_filesystem import network_device
+
+
+def file_identity(info):
+    # Network filesystems may jitter ctime on reads; identity keeps
+    # device/inode/size/mtime there and the strict contract elsewhere.
+    if network_device(info.st_dev):
+        return info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns
+    return info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns
 
 
 @dataclass(frozen=True)

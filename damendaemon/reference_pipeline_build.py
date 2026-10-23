@@ -2,6 +2,7 @@
 from pathlib import Path
 import stat
 from .checkpoint import snapshot_shards
+from .network_filesystem import network_device
 
 
 def snapshot_inventory(path):
@@ -13,7 +14,12 @@ def snapshot_inventory(path):
     for file in names:
         info=file.stat()
         if not stat.S_ISREG(info.st_mode):raise ValueError('reference pipeline requires regular checkpoint files')
-        result.append((str(file),info.st_dev,info.st_ino,info.st_size,info.st_mtime_ns,info.st_ctime_ns))
+        # Network filesystems may jitter ctime on reads; keep the strict
+        # receipt for local checkpoint directories.
+        if network_device(info.st_dev):
+            result.append((str(file),info.st_dev,info.st_ino,info.st_size,info.st_mtime_ns))
+        else:
+            result.append((str(file),info.st_dev,info.st_ino,info.st_size,info.st_mtime_ns,info.st_ctime_ns))
     return tuple(result)
 
 

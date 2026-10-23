@@ -27,9 +27,16 @@ ITEM_BYTES = {'BOOL':1,'U8':1,'I8':1,'F8_E4M3':1,'F8_E4M3FN':1,'F8_E5M2':1,
               'I32':4,'U32':4,'F32':4,'I64':8,'U64':8,'F64':8}
 
 
+from .network_filesystem import network_device
+
+
 def file_stamp(reader):
-    state=os.fstat(reader.fileno())
-    return state.st_size,state.st_mtime_ns,state.st_ctime_ns
+    state = os.fstat(reader.fileno())
+    # Network filesystems may jitter ctime on reads; keep the strict stamp
+    # everywhere else so local checkpoints keep their full contract.
+    if network_device(state.st_dev):
+        return state.st_size, state.st_mtime_ns
+    return state.st_size, state.st_mtime_ns, state.st_ctime_ns
 
 
 def read_header_json(reader, *, max_header_bytes=MAX_HEADER_BYTES):
