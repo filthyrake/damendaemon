@@ -44,9 +44,9 @@ under `guard_shared_cuda` (TF32 off) on the byte-identical checkpoint
    by step 4, greedy tokens equal at every recorded step. Exact-FP32
    attention does not remove the event (bisect fp32-attn variant:
    3.04%), confirming the trigger is the accumulated input delta, not
-   attention arithmetic. llama31-8B passes the same gate because its
-   accumulated chunked delta stays below its near-tie margins at this
-   prompt (0.125% worst); qwen3-4B-2507 likewise (0.209%).
+   attention arithmetic. llama31-8B passes the same gate, consistent with
+   its accumulated chunked delta staying below its near-tie margins at
+   this prompt (0.125% worst); qwen3-4B-2507 likewise (0.209%).
 
 ## Changes
 
@@ -78,6 +78,9 @@ Not claimed: other checkpoints, chunk sizes, devices, or prompt sets;
 no throughput claims beyond the measured prefill timing pair.
 
 ## Evidence
+
+Each JSON has its guard report committed alongside (`*-guard.json`,
+phase `completed`).
 
 - `qwen3-8b-chunked-prefill-585-bisect-a30.json` — attention-variant
   bisect; stock reproduces the gate event bit-exactly; exact-fP32

@@ -232,8 +232,9 @@ def linear(x,weight,layout,bias=None):
         # kernels per (M, N, K); at qwen3-8B the out (4096x4096) and down
         # (4096x6144) projections round differently between M=384 and
         # M=128 (1.4-2.2e-5 per element), which chunked-prefill comparisons
-        # then amplify through decode near-ties. Opt in when bit-stable
-        # chunking matters more than speed.
+        # then amplify through decode near-ties. FP16 packed prefill only;
+        # the FP32 policy paths do not consult this variable. Opt in when
+        # GEMM shape-invariance matters more than speed.
         result=torch.empty((rows,outputs),device=x.device,dtype=x.dtype)
         _gemm[(tr.cdiv(rows,64),tr.cdiv(outputs,64))](x,weight,
             weight if bias is None else bias,result,rows,outputs,width,spec,

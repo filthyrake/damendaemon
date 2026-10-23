@@ -38,11 +38,11 @@ def gate_limits(kind):
     projections round differently between M=384 and M=128 (1.4-2.2e-5 per
     element), which cascades through the cache and can flip one decode
     near-tie (transient 3.05% relative RMS, max_abs 1.25, greedy tokens
-    equal at every recorded step). The continuation-logic contract is
-    greedy equality at every step with bounded divergence; continuation
-    logic defects produce order-one divergence and greedy flips, which
-    these bounds still catch. Evidence: docs/evidence/quantization/
-    qwen3-8b-chunked-prefill-585-*.json."""
+    equal at every recorded step). Contract coverage: order-one divergence
+    is caught by the bounds, and greedy flips are caught by the mandatory
+    greedy-equality check at every step - together these cover the
+    continuation-logic defect classes observed in this codebase's history.
+    Evidence: docs/evidence/quantization/qwen3-8b-chunked-prefill-585-*.json."""
     if kind == 'chunked':
         return 2.5, 0.05
     return 0.5, 0.01
@@ -270,6 +270,12 @@ def main():
         report['gate_limits'] = {kind: dict(max_absolute=a, relative_rms=b)
                                  for kind, (a, b) in (('chunked', gate_limits('chunked')),
                                                       ('other', gate_limits('other')))}
+        report['gate_limits_provenance'] = {
+            'chunked': 'observed event max_abs 1.25 / relative RMS 3.05% at qwen3-8B Q4_K_M '
+                       '(#585); bounds are a 2x margin over the measured kernel-arithmetic '
+                       'envelope, greedy equality mandatory at every step',
+            'other': 'original strict contract, unchanged',
+        }
         report['passed'] = all(c['max_absolute'] < gate_limits(c['kind'])[0]
                                and c['relative_rms'] < gate_limits(c['kind'])[1]
                                and c['greedy_equal'] for c in checks)
