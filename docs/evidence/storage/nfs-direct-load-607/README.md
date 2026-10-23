@@ -51,7 +51,33 @@ temp file whose ctime is bumped via `os.utime` with identical atime/mtime:
 Focused batch with the touched modules' existing suites:
 `tests.test_network_filesystem tests.test_cpu_snapshot_identity
 tests.test_weight_cache tests.test_awq_model tests.test_checkpoint_inventory
-tests.test_gguf` — 63 tests, OK. Full-suite result recorded in the PR.
+tests.test_gguf` — 63 tests, OK.
+
+## Full local suite (2026-10-23, this Mac)
+
+2344 tests, `FAILED (failures=4, errors=43, skipped=6)` — none attributable
+to this change, verified by standalone reruns and pristine-main comparison:
+
+- 13 module-import errors: missing `PIL` (vision/Flash-image modules), local
+  `transformers` newer than the CI pin (`no_init_weights` moved), and one
+  sibling-module import quirk (`test_gguf_reference` importing `test_gguf`).
+  All reproduce on pristine `main`.
+- Checkpoint-reference cluster (`test_dense_checkpoint`,
+  `test_specialized_checkpoint`, `test_gguf_sentencepiece`,
+  `test_gguf_reference_gates`, mamba/starcoder/floating/decay): identical
+  failure sets on pristine `main` — the local transformers build emits
+  reference configs the pinned `decoder_config` rejects. CI pins
+  `transformers==4.51.3` where these pass.
+- 5 host-serving subprocess/HTTP errors: identical on pristine `main`
+  standalone.
+- 1 prepared-weights-cache error under full-suite load: green standalone
+  (8/8).
+
+The suite ran via a file-fed module list (420 names) because collecting
+~420 argv names exhausts importlib recursion in this shell environment; the
+identical byte-for-byte collection traceback reproduced twice in background
+runs and never in foreground runs on either checkout.
+
 
 ## Scope and not claimed
 
