@@ -30,6 +30,9 @@ control multiplies after (Qwen order), and tile decode/matmul orders differ.
 Metrics are recorded exactly as measured. No quality, throughput or serving
 claim. Run under scripts.experiments.guard_shared_cuda with the A30 UUID.
 """
+if not __debug__:
+    raise RuntimeError('qwen35_moe_a30_residency asserts exact packing; run without -O')
+
 import argparse
 import hashlib
 import json
