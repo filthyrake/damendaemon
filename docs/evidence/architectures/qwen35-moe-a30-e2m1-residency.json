@@ -1,0 +1,128 @@
+{
+ "allocated_after_placement_bytes": 17121280000,
+ "bank_bytes_arithmetic": 17112760320.0,
+ "bank_gib_arithmetic": 15.9375,
+ "composed_tensor_sha256": {
+  "layer3.mlp.experts.down_proj": "1740f57b2db0caecc1c28dec0e00da8019b14aa7fa38ae42ac9646dd759c13f0",
+  "layer3.mlp.experts.gate_up_proj": "d72aa7184f1dc2aa37c15f8f84c2687e0d428662a33493cf7fc4c792ea07e2eb",
+  "layer3.mlp.gate.weight": "1ba877ada6820191a9f63702e81a0b8505eaae17b370fe6b54a5504f0f17703e",
+  "layer3.mlp.shared_expert.down_proj.weight": "150defb042dfed5d7ffba8a2841d33e3e42ba10f10e09e34fdddbddad7451ea5",
+  "layer3.mlp.shared_expert.gate_proj.weight": "337a915551cb4aa991ceff970f101c27ebed4e2c67c9f770020b698838060feb",
+  "layer3.mlp.shared_expert.up_proj.weight": "26d12d72a7e0890ef043c0169a08d6def707fa34b38e85df1940e28e44092b1b",
+  "layer3.mlp.shared_expert_gate.weight": "437fffe805279669471b0913bcaf9eb4f0fee6c20528a8c221c243af5042c047",
+  "layer39.mlp.experts.down_proj": "c7375cab80a1552ec6beda164009f60c55aab08c338d6ee48a3a6552a3e2a57c",
+  "layer39.mlp.experts.gate_up_proj": "64ff37996e993963bf6dbee5e3d40f1f12512393ebd53d7600addd6909ae2f00",
+  "layer39.mlp.gate.weight": "638777347c51049bc8529b4e88b6d60fc3ff54a6a328fb10ce836f2d59925254",
+  "layer39.mlp.shared_expert.down_proj.weight": "af97987dd162deb2411bd1ecf6cc06cabd27b9e40f1ed5c7df11d45bc73795e2",
+  "layer39.mlp.shared_expert.gate_proj.weight": "85447223df576a41a751d4fdfd536ef205b692b27e7df88038df64c5e6d52960",
+  "layer39.mlp.shared_expert.up_proj.weight": "6d84dccc9ff5cfa22068039162bcd3576f3a05abb3abc575911c70f5db824ada",
+  "layer39.mlp.shared_expert_gate.weight": "39902429cba0b3c06944afb1e7e0fd347c2e75db717112e270064cfd3b7bfc33"
+ },
+ "composition": {
+  "3": {
+   "gpu_vs_cell6_control": {
+    "max_abs": 3.259629011154175e-09,
+    "rms_rel": 6.65071202092804e-05
+   },
+   "gpu_vs_fp32_reference": {
+    "max_abs": 0.0018769941525533795,
+    "rms_rel": 21.60143280029297
+   },
+   "selected_first_row": [
+    134,
+    179,
+    174,
+    76,
+    129,
+    109,
+    188,
+    48
+   ]
+  },
+  "39": {
+   "gpu_vs_cell6_control": {
+    "max_abs": 1.1175870895385742e-08,
+    "rms_rel": 6.921406020410359e-05
+   },
+   "gpu_vs_fp32_reference": {
+    "max_abs": 0.005267676431685686,
+    "rms_rel": 76.49813079833984
+   },
+   "selected_first_row": [
+    103,
+    99,
+    15,
+    45,
+    48,
+    66,
+    190,
+    237
+   ]
+  }
+ },
+ "config_sha256": "93a4693fa9d8392fbfccd4b3c9873f4bfdcb14fdede978b123d07d19675efe99",
+ "gpu_free_before_gib": 23.36859130859375,
+ "gpu_total_gib": 23.597900390625,
+ "placed_layers": 40,
+ "placement": [
+  {
+   "allocated_bytes": 427819008,
+   "allocated_gib": 0.4,
+   "layer": 0
+  },
+  {
+   "allocated_bytes": 2566914048,
+   "allocated_gib": 2.39,
+   "layer": 5
+  },
+  {
+   "allocated_bytes": 4706009088,
+   "allocated_gib": 4.38,
+   "layer": 10
+  },
+  {
+   "allocated_bytes": 6845104128,
+   "allocated_gib": 6.38,
+   "layer": 15
+  },
+  {
+   "allocated_bytes": 8984199168,
+   "allocated_gib": 8.37,
+   "layer": 20
+  },
+  {
+   "allocated_bytes": 11123294208,
+   "allocated_gib": 10.36,
+   "layer": 25
+  },
+  {
+   "allocated_bytes": 13262389248,
+   "allocated_gib": 12.35,
+   "layer": 30
+  },
+  {
+   "allocated_bytes": 15401484288,
+   "allocated_gib": 14.34,
+   "layer": 35
+  },
+  {
+   "allocated_bytes": 17112760320,
+   "allocated_gib": 15.94,
+   "layer": 39
+  }
+ ],
+ "probe": {
+  "kind": "synthetic normal (not real activations)",
+  "seed": 20261022,
+  "shape": [
+   2,
+   6,
+   2048
+  ]
+ },
+ "reserved_after_placement_bytes": 19906166784,
+ "roundtrip_assert": "decode_tile(pack(w)) == simulate_fp4(w) exact (random sample + real gate_up tile)",
+ "scope": "routed expert bank E2M1 residency + fused composition; router/shared stay FP32 CPU",
+ "snapshot": "/mnt/nas-models/models/qwen3.6-35b-a3b",
+ "tf32": false
+}
