@@ -459,3 +459,33 @@ scales. It validates both headers and their joint raw byte budget before either
 payload, supports same-shard or cross-shard pairs, and preserves packed storage.
 Returned owned tensors feed `PackedProjection` or prepared CPU stages. This is
 selected-matrix loading; it does not import GGUF or admit an entire model.
+
+## Cross-vendor rank boundaries (implementation + desktop qualification)
+
+`damendaemon.device_hybrid_stage.DeviceHybridStage` adapts a fresh eager
+`HybridLayerStage` on CUDA, Intel XPU or MPS behind the exact CPU FP32
+surface the host workers already drive, so `HostHybridWorker` can run a
+rank on an accelerator without touching the transport contract. Boundary
+activations move to the device unchanged (FP32, matching the hybrid
+residual stream), device copies are blocking and bounded, and close is
+serialized behind a module lock because concurrent synchronize/cache
+release aborts some vendor runtimes. Each rank keeps its own qualified
+compute precision (CUDA fp16 + Triton, XPU eager FP32, MPS); a mixed pair
+is inherently mixed precision and both halves widen to the same FP32 wire
+tensors. Handshakes exchange a per-rank descriptor (device kind, boundary
+dtype, layer range, stage kind); peer kinds must agree (CPU-to-CPU or
+device-to-device), undisclosed accelerator device kinds fail closed, and
+the shared digest still pins config, quantization and token policy.
+
+A two-process cross-vendor cell was qualified on `rocky10-desktop`
+(2026-10-23): one model as CUDA rank 0 (RTX 3090, fp16 + Triton,
+embedding + layers 0–12) and Intel XPU rank 1 (Arc B580, eager FP32,
+layers 12–24 + output head) over mutual-TLS `HostStageChannel`. Greedy
+tokens matched all same-vendor controls, boundary wire digests were
+bit-exact in both directions, and the mixed pair's CUDA boundary digests
+equaled the CUDA-only pair's. See
+`docs/evidence/multi-gpu/cross-vendor-cell-600/` and
+`scripts/experiments/cross_vendor_worker_cell.py`. Qualified there only:
+two ranks, two vendors, one host, loopback transport, greedy agreement.
+Serving admission, concurrency SLOs, cross-host transport and performance
+remain unqualified.
