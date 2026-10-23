@@ -72,6 +72,12 @@ under `guard_shared_cuda` (TF32 off) on the byte-identical checkpoint
 
 ## Scope, recorded exactly
 
+(FP32 corroboration of the mechanism: the #612 qualification's layout
+gate measured the chunked cell at 2.84e-05 under FP32 arithmetic — the
+cuBLAS M-variance signature this document attributes the gate event to
+collapses by ~5 orders of magnitude, exactly as predicted. See
+[qwen3-8b-fp32-packed-612-README.md](qwen3-8b-fp32-packed-612-README.md).)
+
 Attribution for this checkpoint (qwen3-8B Q4_K_M, context 512, chunk
 128, prompt 384) on the A30 / torch 2.13.0+cu130 / triton+mixed.
 Not claimed: other checkpoints, chunk sizes, devices, or prompt sets;
