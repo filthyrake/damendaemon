@@ -167,7 +167,9 @@ def main():
     parser.add_argument('--layers', type=int, default=4)
     parser.add_argument('--tokens', type=int, default=32)
     parser.add_argument('--seed', type=int, default=20261023)
-    parser.add_argument('--output', default='docs/evidence/architectures/qwen35-moe-text-executor-layers0-3.json')
+    parser.add_argument('--output', default='docs/evidence/architectures/qwen35-moe-text-executor-full40.json')
+    parser.add_argument('--dump-dir', default=None,
+                        help='optional directory for .pt hidden dumps at layers 0,3,9,20,39 and the final state')
     args = parser.parse_args()
 
     base = Path(args.snapshot)
@@ -183,6 +185,8 @@ def main():
     generator = torch.Generator().manual_seed(args.seed)
     ids = torch.randint(0, c['vocab_size'], (1, args.tokens), generator=generator)
     hidden = w['model.language_model.embed_tokens.weight'][ids]
+    if args.dump_dir:
+        torch.save(ids.clone(), Path(args.dump_dir) / 'probe.pt')
 
     from transformers.models.qwen3_5_moe.modeling_qwen3_5_moe import (
         Qwen3_5MoeDecoderLayer, Qwen3_5MoeTextRotaryEmbedding)
@@ -278,6 +282,9 @@ def main():
                            attention_mask=causal_mask if kind == 'full_attention' else None,
                            position_ids=position_ids)
             per_layer.append({'layer': layer, 'kind': kind, 'ours_vs_upstream': metrics(ours, theirs)})
+            if args.dump_dir and layer in (0, 3, 9, 20, 39):
+                torch.save({'ours': ours.clone(), 'theirs': theirs.clone()},
+                           Path(args.dump_dir) / f'layer{layer}.pt')
         del block, lw
     final_ours = rms(ours, w['model.language_model.norm.weight'], c['rms_norm_eps'])
     from transformers.models.qwen3_5_moe.modeling_qwen3_5_moe import Qwen3_5MoeRMSNorm
@@ -285,6 +292,9 @@ def main():
     final_norm.weight = torch.nn.Parameter(w['model.language_model.norm.weight'], requires_grad=False)
     with torch.no_grad():
         final_theirs = final_norm(theirs)
+    if args.dump_dir:
+        torch.save({'final_ours': final_ours.clone(), 'final_theirs': final_theirs.clone()},
+                   Path(args.dump_dir) / 'final.pt')
 
     report = {
         'snapshot': str(base), 'layers': args.layers, 'tokens': args.tokens,

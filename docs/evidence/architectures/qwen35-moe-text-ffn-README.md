@@ -182,3 +182,28 @@ cell-6 budget; residency adds nothing to the quantization error. Routes
 asserted equal. Evidence: `qwen35-moe-a30-e2m1-residency.json` + guard
 report. Claimed: bank residency + composition fidelity. Not claimed:
 throughput, full-model GPU execution, quality.
+
+## Single-GPU 40-layer forward and the E2M1 compounding finding (cell 8)
+
+`scripts/experiments/qwen35_moe_a30_full_forward.py` runs all 40 text layers
+in one guarded A30 process: E2M1 bank resident (15.95 GiB, cacheable),
+non-expert FP32 weights streamed per layer (full bank+weights residency
+~21.7 GiB exceeds the guard envelope - the reserve gate correctly refused
+the first all-resident attempt at layer 30), fused composition chunk-256,
+peak 16.09 GiB, phase completed, TF32 off. The first streaming attempt
+honestly failed the 1800s guard deadline (~85 s/layer); the packed-bank cache
+plus chunk-256 (~25 s/layer) brought it inside one window.
+
+GPU (E2M1 bank) vs host FP32 reference, max_abs by depth: 6.3e-03 (layer 0),
+3.3e-02, 1.1e-01, 1.9e-01, 1.65 (layer 39), 11.27 final after the norm.
+Host final max 57.2 / RMS 2.24: the deviation reaches ~20% of peak, ~5x RMS.
+The cell-6 per-layer budget (~2e-03) compounds ~5000x - super-linear, not
+the ~6x of quadrature - consistent with route flips amplifying through the
+residual stream. rms_rel 55.8 is near-zero-inflated; max_abs is load-bearing.
+
+**Negative result, recorded exactly:** E2M1 weights-only quantization of the
+entire routed bank does not survive 40-layer depth at usable precision.
+Hadamard rotation was already a wash (cell 6). Consequence: the precision
+path is E4M3FN experts (1.4e-03/layer, 30.5 GiB bank - does not fit one
+A30), so the next cell is bank split across A30+A2 or per-layer E4M3
+host streaming. No generation-quality cell should run on the E2M1 bank.

@@ -2210,3 +2210,13 @@ error. Packing is exact by assertion (decode(pack(w)) == simulate_fp4(w)).
 Evidence `qwen35-moe-a30-e2m1-residency.json`. Claimed: residency +
 composition fidelity; not claimed: throughput, full-model GPU execution,
 quality.
+
+Cell 8 executes the first single-GPU 40-layer forward (E2M1 bank resident,
+non-expert FP32 streamed per layer, guard-clean at 16.09 GiB peak) and
+measures the E2M1-vs-FP32 compounding curve on real weights: max_abs grows
+6.3e-03 -> 1.65 (layer 39) -> 11.27 final (~20% of the host peak, ~5x RMS)
+- super-linear (~5000x the per-layer budget), consistent with route flips
+through the residual stream. Recorded negative result: naive E2M1 full-bank
+quantization is not numerically viable at full depth; the precision path is
+E4M3FN (30.5 GiB, requires bank split or per-layer streaming). Evidence
+`qwen35-moe-a30-fullforward.json` + guard report.
