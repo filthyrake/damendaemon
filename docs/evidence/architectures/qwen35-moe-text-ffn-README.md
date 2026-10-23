@@ -129,3 +129,36 @@ relative metric, not propagation (layer 11 back to 4.5e-04). Peak RSS ~8 GB,
 digests). Claimed: our text path matches the upstream eager reference on real
 weights for all 40 layers at float tolerance. Not claimed: mixer bitwise
 equality, real activations, generation quality, GPU, performance.
+
+## Expert-residency FP4 error budget (cell 6)
+
+`scripts/experiments/qwen35_moe_expert_fp4.py` measures the real-weight error
+budget for quantizing the routed-expert bank (router, shared expert and
+combine gate stay FP32 — the residency plan), using the audited
+`activation_simulation` component simulations (DeepSeek-V4-Flash
+conventions: E2M1 nearest/even with one E8M0 power-of-two scale per 32
+values; E4M3FN with one scale per 64) on real layer tensors across depth
+(layers 0, 3, 9, 20, 39), fixed-seed synthetic probe [2, 6, 2048].
+Simulated quantization substitutes dequantized FP32 tensors into the audited
+FFN, so the FP32 op order matches the cell-3 reference exactly and the
+deviation is purely the quantization effect. Evidence:
+`qwen35-moe-expert-fp4-budget.json` (35 digests).
+
+- fp8 (E4M3FN): max_abs 2.4e-04 (layer 0) .. 1.4e-03 (layer 39, worst).
+- fp4 (E2M1+E8M0): 1.1e-03 .. 5.3e-03 (worst, layer 39); typical ~2e-03.
+- fp4 with normalized-Hadamard weight rotation (effective dequant(W@H)@H):
+  9.9e-04 .. 4.9e-03 — a wash vs plain fp4 on these weights (better on 3/5
+  layers, worse on 2), so rotation buys nothing decisive here.
+
+rms_rel values are near-zero-output-inflated (established in the 40-layer
+run); max_abs is the load-bearing metric. Bank memory arithmetic (computed,
+not measured): 60.0 GiB BF16 / 30.5 GiB E4M3FN / 15.9 GiB E2M1+E8M0 for the
+full 40-layer bank — E2M1 is the only single-GPU option on the 24-GiB A30
+(E4M3FN does not fit; BF16 needs none of the GPUs).
+
+Claimed: per-layer FFN-output error budget of E2M1/E8M0 and E4M3FN
+weights-only expert quantization on real weights, sampled across depth.
+Not claimed: error compounding through 40 layers, logits/generation impact,
+quality acceptability, GPU execution. Whether 5e-03-class per-layer FFN
+deviation is acceptable for serving quality is a downstream qualification
+gating decision, not a measurement made here.

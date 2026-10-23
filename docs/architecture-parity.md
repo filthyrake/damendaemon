@@ -2189,3 +2189,13 @@ unchanged max_abs (metric inflation, not divergence). Evidence
 match vs upstream eager on real weights at float tolerance. Not claimed:
 mixer bitwise equality, real activations, generation quality, GPU,
 performance.
+
+The expert-residency quantization budget (cell 6) measures weights-only
+expert-bank quantization on real tensors across depth (layers 0/3/9/20/39)
+with the audited simulations: E4M3FN worst max_abs 1.4e-03 (30.5 GiB bank -
+does not fit the 24-GiB A30), E2M1+E8M0 worst 5.3e-03 / typical ~2e-03
+(15.9 GiB - the only single-GPU residency option), normalized-Hadamard
+rotation a wash (4.9e-03 worst). Router/shared-expert/combine-gate stay FP32
+per the residency plan. Evidence `qwen35-moe-expert-fp4-budget.json`.
+Claimed: the per-layer FFN-output budget only. Not claimed: compounding,
+logits/generation impact, quality acceptability, GPU execution.
