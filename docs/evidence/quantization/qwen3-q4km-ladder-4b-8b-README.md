@@ -136,33 +136,39 @@ workload) is where the cell stops:
   the 8B FP32 reference plus its conversion transient exceeds one A30 —
   three reserve/configuration attempts recorded honestly before the
   `--reference-device` instrument option, added for exactly this), vs
-  damendaemon's normal FP16 mixed path. **Worst relative RMS 5.13%,
-  max absolute 0.946 — the 1% / 0.5 contract fails**, with **zero greedy
-  mismatches** at every step. The 16-token prompt is clean (0.16%);
-  the drift is prompt-length-driven: 129 tokens worst 4.4%, 400 tokens
-  worst 5.1%. The 4B passed this identical workload at 0.411% — the 8B
-  drifts ~12x, consistent with the hidden-width-4096 sensitivity #585
-  established for this checkpoint. Gate-1's 0.573% (retained) was measured
-  on the initial suite's short chat prompts only; this is the first
-  long-prompt FP32 comparison for the 8B.
+  damendaemon's normal FP16 mixed path. This is the evidence set's first
+  cross-hardware teacher (CPU FP32 oracle vs GPU FP16 executor); prior
+  FP32 references all ran on the A30. **Worst relative RMS 5.13%,
+  max absolute 0.946 — the 1% / 0.5 contract fails**, with **no greedy
+  flips in the measured 16 decode steps**. The 16-token prompt is clean
+  (0.16%); the drift is prompt-length-driven: 129 tokens worst 4.4%, 400
+  tokens worst 5.1%. The 4B teacher ran the token-identical workload
+  (same `workload_sha256` 9162bbeb…, same prompt IDs) and passed at
+  0.411% — the 8B drifts ~12x, consistent with the hidden-width-4096
+  sensitivity #585 established for this checkpoint. Gate-1's 0.573%
+  (retained) was measured on the initial suite's short chat prompts
+  only; this is the first long-prompt FP32 comparison for the 8B.
 - `verify_gguf_generated_http` requires a passing teacher on the same
   workload identity, so the HTTP lifecycle gate cannot run. **The 8B cell
   stays unqualified at FP16 mixed precision** — not an instrument artifact
   this time: the drift is real (max_abs ~0.95 on logits with ~17 RMS),
-  bounded (zero greedy flips through 16 decode steps), and
-  prompt-length-dependent.
+  with no greedy flips in the measured 16 decode steps, and
+  prompt-length-dependent. The teacher's guard report is `phase: failed`
+  because the qualification gate raised; the child ran to completion in
+  368 s of the 1800 s window (the retained honest-failure pattern, same
+  as every gate-failure record in this evidence set).
 
 Follow-up (not this cycle): a qualified FP32-arithmetic packed execution
 path for qwen3 (currently an explicit unqualified opt-in for packed
 checkpoints), or a deliberate bounded-drift acceptance decision for the
-8B class. Filed as its own issue; the ladder records the outcome either
-way.
+8B class. Filed as #612.
 
 - **Qwen3-8B Q4_K_M: gates 1-3 pass; gate 4 blocked by long-prompt FP16
   drift** (gate 2 re-passed under #585's corrected contract, 128/128;
   gate 3 tokenizer 38/38; gate 4's teacher qualification fails at 5.13%
   worst relative RMS on the 400-token prompt vs the FP32 reference —
-  zero greedy mismatches, prompt-length-dependent, ~12x the 4B on the
-  identical workload). The 8B cell stays unqualified at FP16 mixed
-  precision pending the FP32-arithmetic packed-path qualification or an
-  explicit bounded-drift acceptance decision.
+  no greedy flips in the measured 16 decode steps, prompt-length-driven,
+  ~12x the 4B on the token-identical workload). The 8B cell stays
+  unqualified at FP16 mixed precision pending the FP32-arithmetic
+  packed-path qualification or an explicit bounded-drift acceptance
+  decision.
