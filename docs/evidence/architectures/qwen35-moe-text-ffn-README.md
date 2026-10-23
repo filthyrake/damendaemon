@@ -162,3 +162,23 @@ Not claimed: error compounding through 40 layers, logits/generation impact,
 quality acceptability, GPU execution. Whether 5e-03-class per-layer FFN
 deviation is acceptable for serving quality is a downstream qualification
 gating decision, not a measurement made here.
+
+## E2M1 bank residency on the A30 (cell 7)
+
+`scripts/experiments/qwen35_moe_a30_residency.py` places the full 40-layer
+routed-expert bank on the A30 under the shared-CUDA guard (UUID-pinned, TF32
+off, phase completed) and composes layers 3 and 39 through the prepared CUDA
+MoE stack. Packing is transcribed from `simulate_fp4` (same boundaries,
+nearest-even ties, power-of-two scales per 32 values) into the prepared
+e2m1 layout, runs on-GPU in 32-expert chunks, and is asserted exact:
+`decode_tile(pack(w)) == simulate_fp4(w)` on a random sample, a real gate_up
+tile and a GPU-packed slice. Measured: 15.95 GiB allocated vs 15.94 GiB
+arithmetic (18.54 reserved). Composition vs the cell-6 CPU control
+(pinned-quantization, shared expert zeroed): max_abs 3.260e-09 (layer 3) /
+1.118e-08 (layer 39) — the GPU reproduces the pinned E2M1 semantics to
+op-order noise (fused coefficients fold pre-down vs the control's post-down;
+same math). Vs the FP32 reference: 1.877e-03 / 5.268e-03 — exactly the
+cell-6 budget; residency adds nothing to the quantization error. Routes
+asserted equal. Evidence: `qwen35-moe-a30-e2m1-residency.json` + guard
+report. Claimed: bank residency + composition fidelity. Not claimed:
+throughput, full-model GPU execution, quality.

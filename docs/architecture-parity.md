@@ -2199,3 +2199,14 @@ rotation a wash (4.9e-03 worst). Router/shared-expert/combine-gate stay FP32
 per the residency plan. Evidence `qwen35-moe-expert-fp4-budget.json`.
 Claimed: the per-layer FFN-output budget only. Not claimed: compounding,
 logits/generation impact, quality acceptability, GPU execution.
+
+Cell 7 places the full 40-layer E2M1 expert bank on the A30 under the
+shared-CUDA guard (15.95 GiB allocated vs 15.94 arithmetic) and composes
+real layers through the prepared CUDA MoE stack: GPU vs the pinned-
+quantization CPU control agrees to 1.1e-08 max_abs (op-order only), and vs
+the FP32 reference lands exactly on the cell-6 budget (1.877e-03 /
+5.268e-03) - the residency chain adds nothing to the measured quantization
+error. Packing is exact by assertion (decode(pack(w)) == simulate_fp4(w)).
+Evidence `qwen35-moe-a30-e2m1-residency.json`. Claimed: residency +
+composition fidelity; not claimed: throughput, full-model GPU execution,
+quality.
