@@ -113,3 +113,19 @@ memory (bounded per-layer slice streaming), then quantization/placement for
 GPU residency.
 
 
+
+## Full 40-layer text-path run (streamed, labnode3)
+
+The same executor, per-layer slice-streamed (one layer ~3.5 GiB FP32 resident
+at a time; an all-resident FP32 pass would need ~132 GiB), ran all 40 text
+layers on labnode3 against the eager upstream stack (Transformers 5.20.2,
+isolated --target install, md5-verified transfer). Fixed-seed probe [1, 32,
+2048]: all layers agree — per-layer max_abs 1.2e-07 (min) / 1.2e-06 (median)
+/ 7.6e-06 (worst, layer 39 full attention); final hidden max_abs 3.0e-05,
+rms_rel 2.4e-04. Two linear layers (9, 10) show rms_rel spikes (0.10, 0.015)
+with max_abs identical to neighbors — near-zero-output inflation of the
+relative metric, not propagation (layer 11 back to 4.5e-04). Peak RSS ~8 GB,
+~254% CPU, ~12 min wall. Evidence: qwen35-moe-text-executor-full40.json (692
+digests). Claimed: our text path matches the upstream eager reference on real
+weights for all 40 layers at float tolerance. Not claimed: mixer bitwise
+equality, real activations, generation quality, GPU, performance.

@@ -2178,3 +2178,14 @@ mismatch signature. Evidence `qwen35-moe-text-executor-layers0-3.json`
 upstream eager reference on real checkpoint weights for these layers and
 this probe at float tolerance. Not claimed: mixer bitwise equality,
 real activations, the full 40-layer run, GPU, performance, quality.
+
+The full 40-layer streamed run (per-layer slice reads, ~8 GiB peak on
+labnode3) completes the text-path qualification on real weights: all 40
+layers agree with the eager upstream stack — per-layer max_abs up to 7.6e-06
+(deepest full-attention layer), final hidden max_abs 3.0e-05 / rms_rel
+2.4e-04; two linear layers show near-zero-output rms_rel spikes with
+unchanged max_abs (metric inflation, not divergence). Evidence
+`qwen35-moe-text-executor-full40.json` (692 digests). Claimed: full text-path
+match vs upstream eager on real weights at float tolerance. Not claimed:
+mixer bitwise equality, real activations, generation quality, GPU,
+performance.
