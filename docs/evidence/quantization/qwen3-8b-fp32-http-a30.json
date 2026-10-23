@@ -1,0 +1,192 @@
+{
+  "passed": true,
+  "model_sha256": "54fffa050078e984116639c83dfb64b5aa6d4cd474e018b076777c632bbccccd",
+  "workload_sha256": "9162bbebeb8551f3d1cbd3c0c41b180d416ce302406d940261945269ef33d8d7",
+  "cases": [
+    {
+      "prompt_tokens": 16,
+      "expected": ".\n\nThe algorithm's steps are as follows:\n1. Initialize two pointers, '",
+      "expected_usage": {
+        "prompt_tokens": 16,
+        "completion_tokens": 16,
+        "total_tokens": 32
+      },
+      "timing": {
+        "source_tier": "disk",
+        "activation_seconds": 46.584452419003355,
+        "queue_seconds": 0.00027539599977899343,
+        "token_observation": {
+          "scope": "server_sample_observation",
+          "sampled_tokens": 16,
+          "first_sample_seconds": 47.082401277002646,
+          "last_sample_seconds": 47.54834891700011,
+          "sequential_token_timing": true,
+          "mean_gap_seconds": 0.0310631759998311,
+          "max_gap_seconds": 0.035667110001668334,
+          "interval_tokens_per_second": 32.192458363093245
+        },
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+mixed",
+        "weight_quantization": "gguf_mixed",
+        "max_batch_size": 1,
+        "residual_dtype": "float32",
+        "first_token_seconds": 47.082401277002646,
+        "total_seconds": 47.54851889300335,
+        "decode_tokens_per_second": 32.18071895394191
+      },
+      "nonstream": {
+        "text": ".\n\nThe algorithm's steps are as follows:\n1. Initialize two pointers, '",
+        "equal": true,
+        "usage": {
+          "prompt_tokens": 16,
+          "completion_tokens": 16,
+          "total_tokens": 32
+        }
+      },
+      "stream": {
+        "text": ".\n\nThe algorithm's steps are as follows:\n1. Initialize two pointers, '",
+        "equal": true,
+        "usage": {
+          "prompt_tokens": 16,
+          "completion_tokens": 16,
+          "total_tokens": 32
+        }
+      },
+      "llama_reference_equal": false
+    },
+    {
+      "prompt_tokens": 129,
+      "expected": " halves a sorted range to locate an element. A detailed explanation follows.  Binary",
+      "expected_usage": {
+        "prompt_tokens": 129,
+        "completion_tokens": 16,
+        "total_tokens": 145
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 1.4807999832555652e-05,
+        "queue_seconds": 0.0002691770059755072,
+        "token_observation": {
+          "scope": "server_sample_observation",
+          "sampled_tokens": 16,
+          "first_sample_seconds": 0.44261539200670086,
+          "last_sample_seconds": 0.8875557790015591,
+          "sequential_token_timing": true,
+          "mean_gap_seconds": 0.029662692466323883,
+          "max_gap_seconds": 0.031352349993539974,
+          "interval_tokens_per_second": 33.71238134013971
+        },
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+mixed",
+        "weight_quantization": "gguf_mixed",
+        "max_batch_size": 1,
+        "residual_dtype": "float32",
+        "first_token_seconds": 0.44261539200670086,
+        "total_seconds": 0.8877441760123475,
+        "decode_tokens_per_second": 33.698112858524375
+      },
+      "nonstream": {
+        "text": " halves a sorted range to locate an element. A detailed explanation follows.  Binary",
+        "equal": true,
+        "usage": {
+          "prompt_tokens": 129,
+          "completion_tokens": 16,
+          "total_tokens": 145
+        }
+      },
+      "stream": {
+        "text": " halves a sorted range to locate an element. A detailed explanation follows.  Binary",
+        "equal": true,
+        "usage": {
+          "prompt_tokens": 129,
+          "completion_tokens": 16,
+          "total_tokens": 145
+        }
+      },
+      "llama_reference_equal": true
+    },
+    {
+      "prompt_tokens": 400,
+      "expected": " a sorted range to locate an element. A detailed explanation follows.  Binary search",
+      "expected_usage": {
+        "prompt_tokens": 400,
+        "completion_tokens": 16,
+        "total_tokens": 416
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 1.2310993042774498e-05,
+        "queue_seconds": 0.00022864900529384613,
+        "token_observation": {
+          "scope": "server_sample_observation",
+          "sampled_tokens": 16,
+          "first_sample_seconds": 0.9745908339973539,
+          "last_sample_seconds": 1.467017326009227,
+          "sequential_token_timing": true,
+          "mean_gap_seconds": 0.032828432800791535,
+          "max_gap_seconds": 0.035177706013200805,
+          "interval_tokens_per_second": 30.461399301884697
+        },
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+mixed",
+        "weight_quantization": "gguf_mixed",
+        "max_batch_size": 1,
+        "residual_dtype": "float32",
+        "first_token_seconds": 0.9745908339973539,
+        "total_seconds": 1.4672029110079166,
+        "decode_tokens_per_second": 30.449923377900394
+      },
+      "nonstream": {
+        "text": " a sorted range to locate an element. A detailed explanation follows.  Binary search",
+        "equal": true,
+        "usage": {
+          "prompt_tokens": 400,
+          "completion_tokens": 16,
+          "total_tokens": 416
+        }
+      },
+      "stream": {
+        "text": " a sorted range to locate an element. A detailed explanation follows.  Binary search",
+        "equal": true,
+        "usage": {
+          "prompt_tokens": 400,
+          "completion_tokens": 16,
+          "total_tokens": 416
+        }
+      },
+      "llama_reference_equal": true
+    }
+  ],
+  "reference": "/tmp/dd612/8b-fp32-benchmark.json",
+  "benchmark": "/tmp/dd612/8b-bench.json",
+  "scope": "normal HTTP continuation decoding against independently qualified token traces",
+  "command": [
+    "/home/damen/dllm-dev/venv/bin/python",
+    "-m",
+    "damendaemon",
+    "serve",
+    "--model",
+    "a=/home/damen/models/qwen3-8b/Qwen3-8B-Q4_K_M.gguf",
+    "--port",
+    "60063",
+    "--context",
+    "512",
+    "--batch-size",
+    "4",
+    "--kv-cache-tokens",
+    "0",
+    "--prefill-chunk-size",
+    "0",
+    "--prefix-cache-tokens",
+    "0"
+  ]
+}
