@@ -18,7 +18,15 @@ _METADATA_LIMITS={'config.json':2**20,'tokenizer.json':32*2**20,
                   'generation_config.json':2**20,'tokenizer_config.json':2**20,INDEX:16*2**20}
 
 
-def _stamp(info):return info.st_dev,info.st_ino,info.st_size,info.st_mtime_ns,info.st_ctime_ns
+from .network_filesystem import network_device
+
+
+def _stamp(info):
+    # Network filesystems may jitter ctime on reads; the full-content
+    # sha256 records above stay the content anchor in every mode.
+    if network_device(info.st_dev):
+        return info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns
+    return info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns
 
 
 @contextmanager

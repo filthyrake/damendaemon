@@ -45,6 +45,22 @@ switching. The default `scan` path has no FLA dependency. Both paths are checked
 against independently generated FP32 reference logits. First-use compilation
 can be substantial; warm measurements exclude it.
 
+## Loading from a network share
+
+Checkpoints can be loaded directly from a mounted network share (NFS, SMB and
+similar). File identity on those filesystems keeps device, inode, size and
+mtime but drops ctime, which some servers update when files are merely read;
+ordinary replacement or modification still changes mtime and aborts a run
+exactly as on local disk. Unrecognized filesystems keep the full local
+contract, so nothing is silently weakened. Classification is host-local from
+the mount table and needs no configuration.
+
+Direct loads suit interactive use and small models. Repeated benchmarking and
+whole-file verification still favor staging the checkpoint on local disk
+first: first-load hashing and payload reads are share-bandwidth-bound. The
+measured direct-load cells live in
+[the storage evidence](evidence/storage/nfs-direct-load-607/README.md).
+
 ## Apple Silicon (experimental)
 
 Install `.[runtime]` in a native arm64 Python environment on macOS and select MPS:

@@ -64,10 +64,17 @@ def dense_groups(c):
                 yield f'{layer}.{kind}_norm', [(prefix+f'self_attn.{kind}_norm.weight', (c['head_dim'],))]
 
 
+from .network_filesystem import network_device
+
+
 def identity(path):
     if not path.exists():
         return None
     stat = path.stat()
+    # Network filesystems may jitter ctime on reads; keep the strict stamp
+    # for local import sources.
+    if network_device(stat.st_dev):
+        return stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns
     return stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns
 
 

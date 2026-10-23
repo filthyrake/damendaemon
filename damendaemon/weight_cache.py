@@ -1,10 +1,14 @@
 """Explicit, atomic cache of prepared dense weights; never loads pickle.
 
-Source identity uses local file metadata, not a checkpoint content digest.
-The cache directory and checkpoint directory must both be trusted local data.
-Bump VERSION whenever preparation or packing semantics change.
+Source identity uses file metadata, not a checkpoint content digest. Local
+checkpoint directories keep the full size/mtime/ctime receipt; network-mounted
+sources (NFS/SMB and similar) drop ctime, which some servers jitter on reads,
+while keeping device/inode/size/mtime. The cache directory itself must remain
+trusted local data. Bump VERSION whenever preparation or packing semantics
+change.
 """
 from .config import read_config
+from .network_filesystem import network_device
 import hashlib
 import json
 import os
@@ -73,8 +77,14 @@ class PreparedCache:
         result = []
         for path in self.files:
             stat = path.stat()
-            result.append([str(path.resolve()), stat.st_dev, stat.st_ino, stat.st_size,
-                           stat.st_mtime_ns, stat.st_ctime_ns])
+            # Network filesystems may jitter ctime on reads; the strict
+            # record applies to local cache sources only.
+            if network_device(stat.st_dev):
+                result.append([str(path.resolve()), stat.st_dev, stat.st_ino,
+                               stat.st_size, stat.st_mtime_ns])
+            else:
+                result.append([str(path.resolve()), stat.st_dev, stat.st_ino,
+                               stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns])
         return result
 
     def check_source(self):
