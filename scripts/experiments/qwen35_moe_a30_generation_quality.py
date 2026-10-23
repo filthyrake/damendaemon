@@ -8,7 +8,9 @@ the eager upstream stack at rms_rel 2.4e-04 on the same snapshot).
 
 Prompts: four fixed English excerpts from the Qwen3.6-35B-A3B model card
 (real natural text, deterministic, no network). Tokenized with the snapshot
-tokenizer; truncated to 64 tokens each; batch [4, 64].
+tokenizer; truncated to 64 tokens each, then trimmed to the shortest row
+(46 tokens for this snapshot: batch [4, 46]) because the ported reference
+math assumes uniform causal lengths with no padding.
 
 PRE-DECLARED ACCEPTANCE THRESHOLDS (no post-hoc relaxation; failure is
 recorded as failure):
@@ -91,6 +93,8 @@ def tokenize(snapshot):
 
 def load_lm_head(base):
     head = read_tensors(base, ['lm_head.weight'])['lm_head.weight']
+    # Vocab is 151936; a head this small means we read the wrong tensor,
+    # not a smaller model (config_sha256 pins the snapshot).
     if head.shape[0] < 240000:
         raise ValueError('unexpected lm_head geometry')
     return head
@@ -103,7 +107,7 @@ def reference_forward(base, c, ids):
     embed = read_tensors(base, ['model.language_model.embed_tokens.weight'])['model.language_model.embed_tokens.weight']
     hidden = embed[ids]
     del embed
-    rd = int(c['head_dim'] * c['rope_parameters']['partial_rotary_factor'])
+    rd = c['rotary_dim']
     theta = c['rope_parameters']['rope_theta']
     inv = theta ** (-torch.arange(0, rd, 2, dtype=torch.float32) / rd)
     freqs = torch.outer(torch.arange(ids.shape[1], dtype=torch.float32), inv)
@@ -149,7 +153,7 @@ def candidate_forward(base, c, ids, device, *, route_chunk, max_gather_bytes):
     hidden = embed[ids].to(device)
     del embed
     tokens = ids.shape[1]
-    rd = int(c['head_dim'] * c['rope_parameters']['partial_rotary_factor'])
+    rd = c['rotary_dim']
     theta = c['rope_parameters']['rope_theta']
     inv = theta ** (-torch.arange(0, rd, 2, dtype=torch.float32, device=device) / rd)
     freqs = torch.outer(torch.arange(tokens, device=device, dtype=torch.float32), inv)
@@ -229,10 +233,16 @@ def candidate_forward(base, c, ids, device, *, route_chunk, max_gather_bytes):
 
 
 def evaluate(ref_logits, cand_logits, ids):
-    """Pre-declared metrics; agreement/KL/NLL all over positions [warmup, last-1)."""
+    """Pre-declared metrics; agreement/KL/NLL all over positions [warmup, last-1).
+
+    Divergence canaries (logit_max_abs, full-range agreement) are structural
+    mis-wiring defenses: exact zeros mean the "candidate" is the reference.
+    """
     rows, positions = ids.shape[0], ids.shape[1]
     ref = ref_logits.view(rows, positions, -1).float()
     cand = cand_logits.view(rows, positions, -1).float()
+    canary_max_abs = float((ref - cand).abs().max())
+    canary_full_agreement = float((ref.argmax(-1) == cand.argmax(-1)).float().mean())
     ref_logp = F.log_softmax(ref, -1)
     cand_logp = F.log_softmax(cand, -1)
     agree = (ref.argmax(-1) == cand.argmax(-1))[:, WARMUP_POSITIONS:positions - 1]
@@ -245,9 +255,13 @@ def evaluate(ref_logits, cand_logits, ids):
         picked = source[:, WARMUP_POSITIONS:positions - 1].gather(-1, target.unsqueeze(-1)).squeeze(-1)
         nll.append(float(-picked.mean()))
     ratio = float(torch.exp(torch.tensor(nll[1] - nll[0])))
+    if canary_max_abs == 0.0:
+        raise ValueError('candidate logits identical to reference: mis-wired load/mode')
     return {'greedy_agreement': agreement, 'mean_kl_nats': mean_kl,
             'perplexity_ratio': ratio,
-            'reference_nll': nll[0], 'candidate_nll': nll[1]}
+            'reference_nll': nll[0], 'candidate_nll': nll[1],
+            'logit_max_abs': canary_max_abs,
+            'greedy_agreement_all_positions': canary_full_agreement}
 
 
 def main():
