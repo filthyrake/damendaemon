@@ -103,17 +103,66 @@ retained as the comparator measurement record with that finding stated.
 
 - **Qwen3-4B-2507 Q4_K_M: ladder qualified** at context 512 (gates 1-4: 0.365%
   FP32 reference, 128/128 layouts, 38/38 tokenizer, HTTP byte-exact vs the
-  FP32 teacher with streaming). Note: the ABBA comparator's lifecycle
-  extension (host restore, disk reload, cancellation recovery, model swap)
-  did **not** execute in the retained runs — the cross-engine text-equality
-  assert fires before the lifecycle block writes its checks. The ladder
-  gate-4 pass rests on `verify_gguf_generated_http` (which exercises stream,
-  non-stream and usage identity against the teacher), not on the ABBA
-  lifecycle; a lifecycle-complete comparator pass is open follow-up once the
-  benchmark invariant is reconciled with cross-engine text differences.
-- **Qwen3-8B Q4_K_M: gates 1 and 3 pass; gate 2 fails on chunked prefill**
-  (defect #585, localized: multi-chunk 128-boundary continuation,
-  qwen3-8B-specific; single-chunk exact; llama31-8B at the same width passes).
-  Gate 4 not attempted at 8B — the layout gate precedes it in the ladder; the
-  8B cell stays short of qualification until #585 is fixed and gate 2
-  re-passes at the default contract.
+  FP32 teacher with streaming). The ABBA comparator's lifecycle extension
+  (host restore, disk reload, cancellation recovery, model swap, chat
+  stream/concurrency) recorded green in both damendaemon legs of the
+  retained runs; the ladder gate-4 pass rests on `verify_gguf_generated_http`
+  (stream, non-stream and usage identity against the teacher), with the
+  ABBA text-equality invariant retained as the cross-engine difference
+  record described above.
+
+## Gate 4 at 8B — blocked by a genuine long-prompt FP16 drift (recorded)
+
+With gate 2 unblocked by #585's corrected contract, the 8B cell proceeded
+to gate 4. The ABBA comparator completed on the A30
+(`qwen3-8b-bench-a30.json`, sm80 llama-server, native K-quant decode):
+
+- All four phases ran (3 warmup + 6 measured rounds; 16/129/400-token
+  workloads at concurrency 1/2). The 129/400-token cells are text-identical
+  across engines; the 16-token prompt again shows the deterministic
+  cross-engine continuation difference (the same comparator finding as the
+  4B record — engine text parity is not the gate).
+- **Lifecycle checks complete and green in both damendaemon legs**: host
+  restore, model swap (to the 4B cell), disk reload, cancellation
+  recovery, chat stream + concurrency.
+- The ABBA text-equality assert fires on the 16-token cross-engine
+  difference, as at 4B — retained as the comparator record, not a gate
+  criterion.
+
+The teacher qualification (`verify_gguf_reference.py` on the exact bench
+workload) is where the cell stops:
+
+- `qwen3-8b-teacher-benchmark-a30.json` — FP32 HF eager reference (CPU;
+  the 8B FP32 reference plus its conversion transient exceeds one A30 —
+  three reserve/configuration attempts recorded honestly before the
+  `--reference-device` instrument option, added for exactly this), vs
+  damendaemon's normal FP16 mixed path. **Worst relative RMS 5.13%,
+  max absolute 0.946 — the 1% / 0.5 contract fails**, with **zero greedy
+  mismatches** at every step. The 16-token prompt is clean (0.16%);
+  the drift is prompt-length-driven: 129 tokens worst 4.4%, 400 tokens
+  worst 5.1%. The 4B passed this identical workload at 0.411% — the 8B
+  drifts ~12x, consistent with the hidden-width-4096 sensitivity #585
+  established for this checkpoint. Gate-1's 0.573% (retained) was measured
+  on the initial suite's short chat prompts only; this is the first
+  long-prompt FP32 comparison for the 8B.
+- `verify_gguf_generated_http` requires a passing teacher on the same
+  workload identity, so the HTTP lifecycle gate cannot run. **The 8B cell
+  stays unqualified at FP16 mixed precision** — not an instrument artifact
+  this time: the drift is real (max_abs ~0.95 on logits with ~17 RMS),
+  bounded (zero greedy flips through 16 decode steps), and
+  prompt-length-dependent.
+
+Follow-up (not this cycle): a qualified FP32-arithmetic packed execution
+path for qwen3 (currently an explicit unqualified opt-in for packed
+checkpoints), or a deliberate bounded-drift acceptance decision for the
+8B class. Filed as its own issue; the ladder records the outcome either
+way.
+
+- **Qwen3-8B Q4_K_M: gates 1-3 pass; gate 4 blocked by long-prompt FP16
+  drift** (gate 2 re-passed under #585's corrected contract, 128/128;
+  gate 3 tokenizer 38/38; gate 4's teacher qualification fails at 5.13%
+  worst relative RMS on the 400-token prompt vs the FP32 reference —
+  zero greedy mismatches, prompt-length-dependent, ~12x the 4B on the
+  identical workload). The 8B cell stays unqualified at FP16 mixed
+  precision pending the FP32-arithmetic packed-path qualification or an
+  explicit bounded-drift acceptance decision.
