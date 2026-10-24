@@ -489,3 +489,41 @@ equaled the CUDA-only pair's. See
 two ranks, two vendors, one host, loopback transport, greedy agreement.
 Serving admission, concurrency SLOs, cross-host transport and performance
 remain unqualified.
+
+## Per-rank heterogeneous precision (implementation + 27B chain cell)
+
+`--quantization q4_0,q4_0,none` (one entry per rank, identical on every
+rank) lets each chain rank load the checkpoint in its own weight format:
+Q4 ranks keep the compensated chain admission, unquantized ranks run the
+qualified FP16 Triton path, and every rank prices every other rank's stage
+from a format-independent pricing table (`stage_pricing_table`: logical
+shapes, non-matrix element sizes, the config-derived tied embedding/head
+relationship) so the deterministic split (`choose_stage_splits_formats`)
+is identical on every rank regardless of which format it loaded. The
+pricing rules are pinned to real loads: tests equate the rule-priced
+`stage_budget_formats` with the tensor-accounted `stage_budget` for every
+layer range in every format from every extraction format.
+
+Mixed chains cannot compare loaded weight bytes, so startup agreement
+moves to `stage_identity.chain_contract`: every rank derives the same
+32-byte digest of the checkpoint-sourced config, the context, the full
+per-rank format vector and the FP32 boundary activation dtype, and a
+disagreement aborts before execution. `/v1/models/status` reports
+`rank_quantizations` and `rank_weight_bytes` for mixed chains. Q8_0
+participation stays rejected with its policy reason (compensated Q8 is
+ROCm-scoped; no Q8 chain cell is qualified), and uniform lists keep the
+single-value form and the existing tensor-planner path.
+
+A Qwen3.8-27B three-rank A30+A2+3090 cell with mixed per-rank formats is
+qualified in `docs/evidence/distributed/per-rank-precision-601/` (runner:
+`scripts/experiments/gate4_mixed_precision_chain.py`): same split as the
+qualified uniform chain, boundary transport bit-exact at both inter-rank
+boundaries for every input-identical round against the all-Q4 reference
+(divergence is isolated inside the mixed head rank), and the mixed head's
+logit divergence measured exactly — greedy 10/12, head max_abs 2.62 /
+max rms_rel 0.121, per-round argmax 9/10 — recorded as it lands. Mixed
+precision across ranks does not compose bit-exactly by construction; the
+claim class is the calibrated measurement. The per-rank-format planner's
+own split for the same budgets is reported as the capacity demonstration.
+Not qualified: mixed chain HTTP serving, resident switching, Q8 ranks,
+performance.

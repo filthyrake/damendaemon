@@ -15,6 +15,17 @@ admission budgets env each rank process declares is its NODE-LOCAL slice:
 empty_cache() walks one CUDA ordinal per entry, so a rank may only declare
 the devices its process can see.
 
+Mixed per-rank precision (--quantization q4_0,q4_0,none, #601): one format
+entry per rank, identical on every rank, from {none, q4_0}. Each rank loads
+the checkpoint in its own format (Q4 ranks keep the compensated chain
+admission; unquantized ranks run the qualified FP16 Triton path), every
+rank prices every other rank's stage from a format-independent table so
+the split stays deterministic, the startup digest becomes the shared
+chain contract (config, context, the full format vector, the FP32 boundary
+dtype) instead of loaded weight bytes, and /v1/models/status reports the
+per-rank formats and weight bytes. Q8_0 participation stays rejected with
+its policy reason.
+
 Run: torchrun --nnodes=2 --node_rank={0|1} --nproc_per_node={2|1} \
         --rdzv_backend=static --master_addr=<rank0 host> --master_port=29500 \
         -m damendaemon chain-serve <checkpoint> --port 8017
@@ -29,22 +40,48 @@ import torch
 
 
 def build_stage(checkpoint, rank, world, device, context, quantization, *, slots,
-                rank_budgets=None):
+                rank_budgets=None, rank_quantizations=None):
+    """Build this rank's stage; quantization is per-rank for mixed chains (#601).
+
+    Uniform chains (rank_quantizations is None) keep the exact existing
+    behavior. Mixed chains load THIS rank's format, price every rank's
+    stage from the format-independent pricing table (so every rank derives
+    the identical split) and build Triton stages on every rank.
+    """
     from damendaemon.models import load as load_model
     from damendaemon.hybrid_stage import HybridLayerStage
-    model = load_model(checkpoint, context, quantization)
+    # Mixed chains pass the explicit per-rank list; uniform chains keep the
+    # exact existing single-quantization path (tensor planner, real loads).
+    if rank_quantizations is not None:
+        local = rank_quantizations[rank]
+        local_quantization = None if local == 'none' else local
+    else:
+        local_quantization = quantization
+    model = load_model(checkpoint, context, local_quantization)
     layers = model.config['num_hidden_layers']
     if rank_budgets is None:
         bounds = [round(i * layers / world) for i in range(world + 1)]
         kernels = 'torch'
     else:
-        # Same deterministic storage planner as the gate-2 pair, evaluated
-        # with the per-rank budgets; every rank derives the identical split.
-        from damendaemon.hybrid_layout import choose_stage_splits
-        placement = choose_stage_splits(model.weights, model.config,
-                                         model.max_context, slots, 2,
-                                         [mib * 1024**2 for mib in rank_budgets],
-                                         scales=getattr(model, 'scales', None))
+        bounds = None
+        if rank_quantizations is None:
+            # Same deterministic storage planner as the gate-2 pair, evaluated
+            # with the per-rank budgets; every rank derives the identical split.
+            from damendaemon.hybrid_layout import choose_stage_splits
+            placement = choose_stage_splits(model.weights, model.config,
+                                           model.max_context, slots, 2,
+                                           [mib * 1024**2 for mib in rank_budgets],
+                                           scales=getattr(model, 'scales', None))
+        else:
+            # Per-rank formats: every rank prices every rank's stage in that
+            # rank's format from its own load's format-independent table.
+            from damendaemon.hybrid_layout import (choose_stage_splits_formats,
+                                                   stage_pricing_table)
+            pricing = stage_pricing_table(model.weights, getattr(model, 'scales', None),
+                                          model.config)
+            placement = choose_stage_splits_formats(
+                pricing, model.config, model.max_context, slots, 2,
+                [mib * 1024**2 for mib in rank_budgets], rank_quantizations)
         if not placement['storage_plan_found']:
             raise SystemExit('chain storage plan not found for the given '
                              'rank budgets: ' + str(placement['reason']))
@@ -90,8 +127,11 @@ def main(argv=None):
     p = argparse.ArgumentParser(prog='damendaemon chain-serve',
         description='Experimental three-rank chain greedy HTTP service under torchrun')
     p.add_argument('path', help='matching local safetensors snapshot on every rank')
-    p.add_argument('--quantization', choices=('none', 'q8_0', 'q4_0'),
-                   default=os.environ.get('DAMENDAEMON_QUANTIZATION', 'none'))
+    p.add_argument('--quantization',
+                   default=os.environ.get('DAMENDAEMON_QUANTIZATION', 'none'),
+                   help='uniform weight format (none/q8_0/q4_0), or a comma-separated '
+                        'per-rank list from none/q4_0 (mixed chains, #601; '
+                        'q8_0 chain participation stays rejected)')
     p.add_argument('--context', type=int, default=512)
     p.add_argument('--alias', default='model')
     p.add_argument('--port', type=int, default=8017)
@@ -114,6 +154,24 @@ def main(argv=None):
     p.add_argument('--bind', default='127.0.0.1')
     args = p.parse_args(argv)
     quantization = None if args.quantization == 'none' else args.quantization
+    rank_quantizations = None
+    if ',' in args.quantization:
+        # Per-rank heterogeneous precision (#601): one entry per rank,
+        # identical on every rank, mixed across ranks.
+        entries = args.quantization.split(',')
+        if (not 2 <= len(entries) <= 16
+                or any(entry not in ('none', 'q8_0', 'q4_0') for entry in entries)):
+            p.error('per-rank --quantization needs 2..16 comma-separated entries '
+                    'from none, q4_0, q8_0')
+        if 'q8_0' in entries:
+            p.error('Q8_0 chain participation stays rejected: compensated Q8 is '
+                    'ROCm-scoped and no Q8 chain cell is qualified (admission '
+                    'is honest, not silently downgraded)')
+        if len(set(entries)) < 2 or 'q4_0' not in entries:
+            p.error('mixed per-rank --quantization needs at least one q4_0 rank '
+                    'and one differing rank (uniform lists use the single-value form)')
+        rank_quantizations = entries
+        quantization = None
     rank_budgets = None
     if args.rank_budgets_mib is not None:
         entries = args.rank_budgets_mib.split(',')
@@ -121,7 +179,8 @@ def main(argv=None):
                               or int(entry) <= 0 for entry in entries):
             p.error('rank budgets are comma-separated positive MiB integers')
         rank_budgets = [int(entry) for entry in entries]
-    context_bound = 2048 if quantization == 'q4_0' else 512
+    quantized_chain = quantization == 'q4_0' or rank_quantizations is not None
+    context_bound = 2048 if quantized_chain else 512
     if not 1 <= args.context <= context_bound or not 0 <= args.port <= 65535:
         p.error(f'invalid context or port (context 1..{context_bound} for '
                 f'--quantization {args.quantization})')
@@ -130,6 +189,8 @@ def main(argv=None):
                 '(the #536 gate-4 qualified path)')
     if quantization == 'q4_0' and rank_budgets is None:
         p.error('--quantization q4_0 requires --rank-budgets-mib (one entry per rank)')
+    if rank_quantizations is not None and rank_budgets is None:
+        p.error('per-rank --quantization requires --rank-budgets-mib (one entry per rank)')
     if not 0 <= args.idle_timeout <= 86400 or not 1 <= args.queue_size <= 64:
         p.error('invalid idle timeout or queue size')
     if not 0 < args.queue_timeout <= 300 or not 1 <= len(args.alias) <= 128:
@@ -145,7 +206,7 @@ def main(argv=None):
     additional = [tuple(entry.split('=', 1)) for entry in args.model]
     if any(not alias or not path or alias == args.alias for alias, path in additional):
         p.error('additional model needs a distinct alias and local path')
-    if additional and quantization is not None:
+    if additional and (quantization is not None or rank_quantizations is not None):
         p.error('resident chain switching currently requires unquantized models')
 
     rank = int(os.environ['RANK'])
@@ -155,26 +216,37 @@ def main(argv=None):
     if rank_budgets is not None and len(rank_budgets) != world:
         raise SystemExit(f'--rank-budgets-mib needs exactly {world} entries '
                          f'(got {len(rank_budgets)})')
+    if rank_quantizations is not None and len(rank_quantizations) != world:
+        raise SystemExit(f'per-rank --quantization needs exactly {world} entries '
+                         f'(got {len(rank_quantizations)})')
     os.environ.setdefault('MASTER_ADDR', '10.30.100.3')
     os.environ.setdefault('MASTER_PORT', '29500')
     os.environ['DAMENDAEMON_DEVICE'] = 'cuda'
-    if quantization == 'q4_0':
+    if quantized_chain:
         # The explicit experimental chain-Q4 admission (#536 gate 4): the
         # opt-ins mirror the qualified runner; every guard except the
-        # A30-primary anchor and the 512 context bound still applies.
+        # A30-primary anchor and the 512 context bound still applies. For a
+        # mixed chain (#601) each rank declares its OWN format's opt-ins:
+        # Q4 ranks keep the compensated chain admission, unquantized ranks
+        # run the qualified FP16 Triton pipeline path.
         local_size = int(os.environ['LOCAL_WORLD_SIZE'])
         local = node_local_budgets(rank, int(os.environ.get('LOCAL_RANK', 0)),
                                     local_size, rank_budgets)
         if torch.cuda.device_count() < len(local):
             raise SystemExit(f'rank {rank} sees {torch.cuda.device_count()} CUDA '
                              f'devices but its node-local budgets declare {len(local)}')
+        rank_format = (rank_quantizations[rank] if rank_quantizations is not None
+                       else 'q4_0')
         os.environ['DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE'] = '1'
-        os.environ['DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE_QUANT'] = '1'
-        os.environ['DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4'] = '1'
-        os.environ['DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CHAIN'] = '1'
-        os.environ['DAMENDAEMON_HYBRID_PRECISION'] = 'compensated'
-        os.environ['DAMENDAEMON_HYBRID_PREFILL'] = 'scan'
         os.environ['DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB'] = ','.join(str(m) for m in local)
+        if rank_format == 'q4_0':
+            os.environ['DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE_QUANT'] = '1'
+            os.environ['DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4'] = '1'
+            os.environ['DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CHAIN'] = '1'
+            os.environ['DAMENDAEMON_HYBRID_PRECISION'] = 'compensated'
+        else:
+            os.environ['DAMENDAEMON_HYBRID_PRECISION'] = 'float16'
+        os.environ['DAMENDAEMON_HYBRID_PREFILL'] = 'scan'
     local_rank = int(os.environ.get('LOCAL_RANK', 0))
     torch.cuda.set_device(local_rank)
     torch.distributed.init_process_group('nccl', rank=rank, world_size=world,
@@ -182,13 +254,14 @@ def main(argv=None):
     device = torch.device('cuda', local_rank)
 
     from damendaemon.distributed_chain import ChainChannel, ChainRole, NcclChainTransport
-    from damendaemon.stage_identity import fingerprint
+    from damendaemon.stage_identity import chain_contract, fingerprint
     from damendaemon.stage_protocol import StageState
 
     model, stage, layer_bounds = build_stage(args.path, rank, world, device,
                                              args.context, quantization,
                                              slots=args.batch_size,
-                                             rank_budgets=rank_budgets)
+                                             rank_budgets=rank_budgets,
+                                             rank_quantizations=rank_quantizations)
     # Additional resident models: same decoder config, distinct identity.
     from damendaemon.models import load as load_model
     extra_models = []
@@ -212,7 +285,19 @@ def main(argv=None):
             raise SystemExit(f'chain model identity disagreement on {alias}; '
                              'aborting before serving')
 
-    identity = fingerprint(model)
+    if rank_quantizations is None:
+        identity = fingerprint(model)
+    else:
+        # Mixed-format chains cannot compare loaded weight bytes (each rank
+        # loads its own format); the shared chain contract pins config,
+        # context, the full per-rank format vector and the FP32 boundary
+        # dtype every rank derives identically from its own load, PLUS the
+        # checkpoint's CRC manifest when staged with one (crc32.txt, the
+        # gate-4 discipline) — without it a wrong checkpoint with identical
+        # architecture cannot be detected across ranks.
+        from damendaemon.checkpoint_manifest import manifest_digest
+        identity = chain_contract(model.config, args.context, rank_quantizations,
+                                  checkpoint_digest=manifest_digest(args.path))
     agree(args.alias, identity)
     extra_identities = []
     for alias, extra in extra_models:
@@ -222,13 +307,28 @@ def main(argv=None):
 
     # Per-rank shard table: index 0 is the resident (initial) model; each
     # entry is the rank's layer-range weight dict of CPU tensors. Quantized
-    # chain serving keeps a single resident model (no SWITCH support), so no
-    # shard table is staged.
-    if quantization is None:
+    # and mixed-format chain serving keep a single resident model (no
+    # SWITCH support), so no shard table is staged.
+    if quantization is None and rank_quantizations is None:
         shards = [{name: source[name] for name in stage.w}
                   for source in (model.weights, *(extra.weights for _, extra in extra_models))]
     else:
         shards = None
+
+    # Truthful per-rank precision/weight accounting for mixed chains (#601):
+    # every rank's stage bytes priced in that rank's format from this rank's
+    # own format-independent table (the same table that derived the split).
+    rank_weight_bytes = None
+    if rank_quantizations is not None:
+        from damendaemon.hybrid_layout import stage_budget_formats, stage_pricing_table
+        pricing = stage_pricing_table(model.weights, getattr(model, 'scales', None),
+                                      model.config)
+        rank_weight_bytes = []
+        for index, (start, end) in enumerate(layer_bounds):
+            budget = stage_budget_formats(pricing, model.config, args.context,
+                                          args.batch_size, 2, start, end,
+                                          rank_quantizations[index])
+            rank_weight_bytes.append(budget['weight_bytes'] + budget['scale_bytes'])
 
     state = StageState(epoch=1, context=args.context, slots=args.batch_size,
                        models=1 + len(extra_models), context_limit=args.context)
@@ -255,7 +355,9 @@ def main(argv=None):
     pair = ChainServingPair(pipeline, model, alias=args.alias,
                             identity=identity, stage_layers=layer_bounds,
                             chunk_size=args.chunk_size,
-                            models=models, identities=identities)
+                            models=models, identities=identities,
+                            stage_quantizations=rank_quantizations,
+                            stage_weight_bytes=rank_weight_bytes)
     runtime = ChainDistributedRuntime(pair, args.alias, args.queue_size,
                                       args.queue_timeout,
                                       interleaved_prefill=args.interleaved_prefill,
