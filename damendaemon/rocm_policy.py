@@ -1,4 +1,5 @@
 """Explicit experimental single-APU admission; no NVIDIA native libraries."""
+import json
 import math
 import os
 from pathlib import Path
@@ -87,15 +88,42 @@ def configure_allocator(torch):
     return int(budget)
 
 
+def host_reserve_gib(host_available_bytes):
+    """Host reserve for admission: 16 GiB discrete, 6 GiB APU.
+
+    On a unified-memory APU (gfx1151) host RAM is the device memory, so
+    MemAvailable at admission includes the model pages about to become
+    residency; the flat 16 GiB discrete-style reserve double-charges them.
+    The APU reserve covers desktop/services/watchdog only. The running
+    HostMemoryWatchdog keeps killing on true host exhaustion either way.
+    """
+    if is_apu():
+        return float(os.environ.get('DAMENDAEMON_HOST_RESERVE_GIB', '6'))
+    return 16.0
+
+
+def is_apu():
+    """gfx1151 (Strix Halo) is a unified-memory APU: host RAM is device RAM."""
+    return os.environ.get('DAMENDAEMON_FORCE_DISCRETE_ACCOUNTING', '') == ''
+
+
 def available_memory(torch):
     validate_runtime(torch)
     free, total = torch.cuda.mem_get_info()
     # APU free-memory reporting may exceed the reported device total. Bound by
     # both, the explicit process budget, and live host headroom. Allocator-owned
     # library workspaces count against the process budget, even after unload.
+    components = dict(free=free, total=total,
+                      limit_minus_allocated=memory_limit() - torch.cuda.memory_allocated(),
+                      host_minus_reserve=host_available() - int(host_reserve_gib(host_available()) * 2**30),
+                      allocated=torch.cuda.memory_allocated())
+    report = os.environ.get('DAMENDAEMON_ADMISSION_REPORT')
+    if report:
+        try:Path(report).write_text(json.dumps(components) + '\n')
+        except OSError:pass
     return max(0, min(free, total,
                       memory_limit() - torch.cuda.memory_allocated(),
-                      host_available() - 16 * 1024**3))
+                      host_available() - int(host_reserve_gib(host_available()) * 2**30)))
 
 
 def prefer_q8_small_batch_matvec(torch, device, rows):
