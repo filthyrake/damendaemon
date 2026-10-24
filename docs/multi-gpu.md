@@ -54,7 +54,17 @@ Failed requests are not resumed. Reported preparation failures now propagate
 through the CPU rendezvous store before NCCL starts; unreported crashes and
 blocked preparation still need an outer process deadline. General worker
 supervision remains incomplete.
-No available test host exposes RDMA, so RDMA and GPUDirect RDMA remain unqualified.
+No fleet host exposes an RDMA device, so RDMA and GPUDirect RDMA remain
+unqualified and socket transport stays the qualified default. The probe now
+captures the full NCCL debug transcript per rank and classifies it
+(`damendaemon.nccl_transport_evidence`): the selected transport is recorded
+from NCCL's own selection lines, and GPUDirect RDMA is recorded as
+`evidenced` only when NCCL's per-HCA capability line says so — a verified
+verdict machinery, not a verified endpoint. The parser's recognized line
+shapes are pinned to the fleet's actual build (format strings extracted
+from libnccl.so 2.29.7). When RDMA hardware lands, the first-run checklist
+is `docs/rdma-roce-first-run.md` and the qualification path is #602, which
+stays open as inventory-blocked until then.
 
 ## Run a prompt across two workers
 

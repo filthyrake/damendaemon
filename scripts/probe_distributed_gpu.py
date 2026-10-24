@@ -1,7 +1,13 @@
 """Bounded two-worker CUDA/NCCL correctness and communication measurements.
 
 Launch one process on each explicitly selected GPU. Socket and IB are forced
-transport choices; RDMA success alone does not establish GPUDirect RDMA.
+transport choices. The NCCL debug transcript is captured verbatim per rank
+and classified by damendaemon.nccl_transport_evidence: the selected network
+transport is recorded from NCCL's own selection lines, and GPUDirect RDMA is
+recorded as evidenced ONLY by NCCL's per-HCA capability lines ('evidenced'
+still means NCCL's own check, not a per-transfer DMA-bypass confirmation).
+RDMA success alone does not establish GPUDirect RDMA; RDMA stays non-default
+and unqualified until a real RDMA pair runs it (#602, inventory-gated).
 """
 if not __debug__:
     raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
@@ -18,6 +24,9 @@ import statistics
 import time
 import torch
 import torch.distributed as dist
+from damendaemon.nccl_transport_evidence import (StderrTranscript,
+                                                 parse_transport_evidence,
+                                                 rdma_devices)
 
 
 def main():
@@ -30,14 +39,18 @@ def main():
     args=p.parse_args()
     if not args.rendezvous.startswith('tcp://'):p.error('explicit TCP bootstrap address required')
     if torch.cuda.device_count()!=1:p.error('select exactly one GPU per worker with CUDA_VISIBLE_DEVICES')
-    if args.transport=='rdma' and not list(Path('/sys/class/infiniband').glob('*')):
+    devices=rdma_devices()
+    if args.transport=='rdma' and not devices:
         p.error('RDMA requested but no RDMA device is exposed to this worker')
     if args.transport!='auto':os.environ['NCCL_NET']='Socket' if args.transport=='socket' else 'IB'
     os.environ.setdefault('NCCL_DEBUG','INFO')
     os.environ.setdefault('NCCL_DEBUG_SUBSYS','INIT,NET')
     torch.cuda.set_device(0)
+    transcript=StderrTranscript(args.output+'.nccl-debug.log')
+    transcript.install()
     report=dict(passed=False,host=socket.gethostname(),rank=args.rank,world_size=2,
-        backend='nccl',requested_transport=args.transport,gpudirect_rdma='unverified',
+        backend='nccl',requested_transport=args.transport,rdma_devices=devices,
+        gpudirect_rdma='pending_transcript',
         torch=str(torch.__version__),nccl=torch.cuda.nccl.version(),
         device=torch.cuda.get_device_name(),visible_devices=os.environ.get('CUDA_VISIBLE_DEVICES'),
         measurements=[],scope='GPU collectives and point-to-point probe; not model inference')
@@ -83,6 +96,16 @@ def main():
         report['passed']=True
     except BaseException as error:report['error']=repr(error);raise
     finally:
+        stalled=False
+        try:stalled=transcript.close()
+        finally:
+            report['transcript_stall']=bool(stalled)
+            lines=Path(args.output+'.nccl-debug.log').read_text(errors='replace').splitlines()
+            report['transport_evidence']=parse_transport_evidence(lines)
+            report['gpudirect_rdma']=report['transport_evidence']['gpudirect_rdma']
+            import hashlib
+            report['transcript_sha256']=hashlib.sha256(
+                Path(args.output+'.nccl-debug.log').read_bytes()).hexdigest()
         Path(args.output).write_text(json.dumps(report,indent=2)+'\n')
         if dist.is_initialized():dist.destroy_process_group()
 
