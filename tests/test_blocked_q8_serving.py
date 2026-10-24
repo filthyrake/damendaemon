@@ -36,12 +36,13 @@ class BlockedAdmissionTest(unittest.TestCase):
             self.assertFalse(rocm_policy.prefer_q8_blocked_matvec(fake_torch, 'cuda'))
         with mock.patch.dict(os.environ, {'DAMENDAEMON_Q8_BLOCKED_MATVEC': ''}):
             self.assertTrue(rocm_policy.prefer_q8_blocked_matvec(fake_torch, 'cuda'))
-        with mock.patch.dict(os.environ, {'DAMENDAEMON_Q8_BLOCKED_MATVEC': '1'}):
-            with self.assertRaises(ValueError):
-                rocm_policy.prefer_q8_blocked_matvec(fake_torch, 'cuda')
-        with mock.patch.dict(os.environ, {'DAMENDAEMON_Q8_BLOCKED_MATVEC': 'yes'}):
-            with self.assertRaises(ValueError):
-                rocm_policy.prefer_q8_blocked_matvec(fake_torch, 'cuda')
+        for value in ('1', 'true', 'on'):
+            with mock.patch.dict(os.environ, {'DAMENDAEMON_Q8_BLOCKED_MATVEC': value}):
+                self.assertTrue(rocm_policy.prefer_q8_blocked_matvec(fake_torch, 'cuda'))
+        for value in ('yes', 'enabled', '2'):
+            with mock.patch.dict(os.environ, {'DAMENDAEMON_Q8_BLOCKED_MATVEC': value}):
+                with self.assertRaises(ValueError):
+                    rocm_policy.prefer_q8_blocked_matvec(fake_torch, 'cuda')
 
 
 class ThermalPacingEnvTest(unittest.TestCase):

@@ -108,7 +108,8 @@ def prefer_q8_small_batch_matvec(torch, device, rows):
             and torch.cuda.get_device_properties(device).gcnArchName.split(':', 1)[0] == 'gfx1151')
 
 
-BLOCKED_DISABLE_VALUES = ('', '0', 'false', 'off')
+BLOCKED_ENABLE_VALUES = ('', '1', 'true', 'on')
+BLOCKED_DISABLE_VALUES = ('0', 'false', 'off')
 
 
 def blocked_matvec_admitted(hip, gcn_arch, disabled):
@@ -121,11 +122,16 @@ def prefer_q8_blocked_matvec(torch, device):
 
     Qualified at full-model scope on gfx1151 (#619 evidence: all 84 targets,
     11x batch-4 / 6.1x batch-2 decode). Set DAMENDAEMON_Q8_BLOCKED_MATVEC
-    to 0/false/off to restore the previous full-width dispatch.
+    to 0/false/off to restore the previous full-width dispatch; 1/true/on
+    or unset keeps the blocked path.
     """
     value = os.environ.get('DAMENDAEMON_Q8_BLOCKED_MATVEC', '')
-    if value not in BLOCKED_DISABLE_VALUES:
-        raise ValueError('DAMENDAEMON_Q8_BLOCKED_MATVEC accepts only 0, false or off')
+    if value in BLOCKED_DISABLE_VALUES:
+        disabled = True
+    elif value in BLOCKED_ENABLE_VALUES:
+        disabled = False
+    else:
+        raise ValueError('DAMENDAEMON_Q8_BLOCKED_MATVEC accepts only 0/false/off or 1/true/on')
     return blocked_matvec_admitted(torch.version.hip,
         torch.cuda.get_device_properties(device).gcnArchName,
-        bool(value))
+        disabled)

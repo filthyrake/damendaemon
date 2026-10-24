@@ -1,0 +1,79 @@
+{
+  "command": [
+    "/home/damen/strixenv/bin/python",
+    "-m",
+    "damendaemon",
+    "serve",
+    "--port",
+    "8390",
+    "--context",
+    "512",
+    "--batch-size",
+    "4",
+    "--no-graph",
+    "--host-gib",
+    "96",
+    "--gpu-models",
+    "1",
+    "--model",
+    "a=/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.8-27B/snapshots/1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0"
+  ],
+  "timeout_seconds": 1800,
+  "cooling": {
+    "limit_celsius": 85,
+    "checks": 257,
+    "fans": [
+      {
+        "name": "fan1",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4219,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan2",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4321,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan3",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 1852,
+        "minimum_rpm": 1000
+      }
+    ],
+    "maximum_observed_celsius": 57.0,
+    "sensors": [
+      {
+        "driver": "amdgpu",
+        "label": "edge",
+        "celsius": 35.0,
+        "cutoff_celsius": 85
+      },
+      {
+        "driver": "k10temp",
+        "label": "Tctl",
+        "celsius": 36.125,
+        "cutoff_celsius": 85
+      }
+    ],
+    "error": null
+  },
+  "watchdog": {
+    "reserve_bytes": 21474836480,
+    "minimum_available_bytes": 57588391936,
+    "last_available_bytes": 120463269888,
+    "triggered": false,
+    "error": null
+  },
+  "phase": "completed",
+  "cleanup_complete": true,
+  "host_available_before": 120645464064,
+  "child_pid": 26042,
+  "seconds": 262.4103834540001,
+  "exit_code": 0,
+  "host_available_after": 120730824704
+}
