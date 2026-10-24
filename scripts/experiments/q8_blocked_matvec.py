@@ -1,4 +1,7 @@
 """Experimental FP32 small-batch Q8 matvec with bounded reduction tiles."""
+if not __debug__:
+    raise RuntimeError("q8 blocked-matvec experiment asserts numerical gates; run Python without -O or -OO.")
+
 import torch
 import triton as tr
 import triton.language as tl
