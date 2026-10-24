@@ -262,6 +262,14 @@ def main():
     runtime = runtime_type(models, chat_templates=templates, **options, context=args.context, gpu_models=args.gpu_models,
                       host_models=args.host_models, host_gib=args.host_gib, use_graph=not args.no_graph)
     if args.command == "serve":
+        from .thermal_pacing import activate_from_env
+        try:
+            pacing = activate_from_env()
+        except ValueError as error:
+            parser.error(str(error))
+        if pacing is not None:
+            print(f"thermal pacing active: soft stop {pacing[0].report['soft_stop_celsius']} Celsius",
+                  flush=True)
         from .server import serve
         serve(runtime, args.port)
     else:

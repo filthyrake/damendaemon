@@ -5,6 +5,7 @@ from pathlib import Path
 import torch
 
 from scripts.experiments import thermal_pacing
+from damendaemon import thermal_pacing as runtime_pacing
 
 
 def write_hwmon(root, directory, driver, values):
@@ -70,14 +71,14 @@ class ThermalPacingTest(unittest.TestCase):
         self.assertEqual(report['events'], [])
 
     def test_resolve_device_finds_device_arguments(self):
-        self.assertIsNone(thermal_pacing._resolve_device((), {}))
-        self.assertIsNone(thermal_pacing._resolve_device((torch.float32,), {}))
-        device = thermal_pacing._resolve_device((), {'device': 'cuda'})
+        self.assertIsNone(runtime_pacing._resolve_device((), {}))
+        self.assertIsNone(runtime_pacing._resolve_device((torch.float32,), {}))
+        device = runtime_pacing._resolve_device((), {'device': 'cuda'})
         self.assertEqual(device.type, 'cuda')
-        device = thermal_pacing._resolve_device((torch.device('cuda:0'),), {})
+        device = runtime_pacing._resolve_device((torch.device('cuda:0'),), {})
         self.assertEqual((device.type, device.index), ('cuda', 0))
-        self.assertIsNone(thermal_pacing._resolve_device((0,), {}))
-        self.assertIsNone(thermal_pacing._resolve_device(('cpu',), {}))
+        self.assertIsNone(runtime_pacing._resolve_device((0,), {}))
+        self.assertIsNone(runtime_pacing._resolve_device(('cpu',), {}))
 
     def test_activate_gates_only_large_transfers_to_cuda_targets(self):
         report = {}
@@ -88,8 +89,8 @@ class ThermalPacingTest(unittest.TestCase):
         original_gate = pacer.gate
         pacer.gate = lambda reason: reasons.append(reason)
         deactivate = thermal_pacing.activate(pacer, min_transfer_bytes=64)
-        real_resolve = thermal_pacing._resolve_device
-        thermal_pacing._resolve_device = lambda a, k: torch.device('cuda')
+        real_resolve = runtime_pacing._resolve_device
+        runtime_pacing._resolve_device = lambda a, k: torch.device('cuda')
         try:
             torch.zeros(4).to('cpu')
             self.assertEqual(reasons, [])
@@ -98,10 +99,10 @@ class ThermalPacingTest(unittest.TestCase):
             moved = torch.zeros(4).to('cpu', non_blocking=False)
             self.assertEqual(moved.device.type, 'cpu')
         finally:
-            thermal_pacing._resolve_device = real_resolve
+            runtime_pacing._resolve_device = real_resolve
             deactivate()
             pacer.gate = original_gate
-        self.assertIs(torch.Tensor.to, thermal_pacing.torch.Tensor.to)
+        self.assertIs(torch.Tensor.to, runtime_pacing.torch.Tensor.to)
 
 
 if __name__ == '__main__':
