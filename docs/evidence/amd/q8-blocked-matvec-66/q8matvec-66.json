@@ -1,0 +1,2480 @@
+{
+  "passed": true,
+  "device": "Radeon 8060S Graphics",
+  "torch": "2.11.0+rocm7.13.0a20260425",
+  "storage": "q8_0",
+  "input_output_dtype": "float32",
+  "cases": [
+    {
+      "shape": [
+        1,
+        1,
+        32
+      ],
+      "checks": [
+        {
+          "path": "current",
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "passed": true
+        },
+        {
+          "path": "compensated",
+          "relative_rms": 1.9286990209366195e-06,
+          "max_absolute": 5.364418029785156e-07,
+          "passed": true
+        },
+        {
+          "path": "blocked",
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "passed": true
+        }
+      ],
+      "samples": [
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 4.639799999495153e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 3.247899985581171e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 2.842899993993342e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 3.532799973982037e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 4.013799980384647e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 4.1388000227016164e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.606799989735009e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 4.135800008953083e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 4.115799993087421e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 4.216800016365596e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 4.577799973048968e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 3.62180003321555e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.5969000034820056e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.6378000256954692e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.5709000055940123e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.549900000303751e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 2.4778999886621023e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 4.170800002611941e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 2.659899973878055e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 2.5328999981866218e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.4189000214391854e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 4.159800027991878e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.516899985494092e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.4278999717353145e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 2.378899989707861e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 2.5888999971357407e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 2.5428999833820853e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 2.380800015089335e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.3208999664348084e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 3.101899983448675e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.4499000119249104e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.403899998171255e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 2.2919000002730172e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 2.5959000140574062e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 2.510900003471761e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 2.3299000076804077e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.3209000119095435e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.4928999664552975e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.414900018266053e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.4198000119213248e-05
+        }
+      ],
+      "median_seconds": {
+        "current": 2.4528999801987084e-05,
+        "compensated": 2.7513999839356984e-05,
+        "blocked": 2.5888499976645107e-05
+      }
+    },
+    {
+      "shape": [
+        2,
+        63,
+        96
+      ],
+      "checks": [
+        {
+          "path": "current",
+          "relative_rms": 1.9145423379995918e-07,
+          "max_absolute": 2.980232238769531e-07,
+          "passed": true
+        },
+        {
+          "path": "compensated",
+          "relative_rms": 4.7785351853235625e-06,
+          "max_absolute": 6.377696990966797e-06,
+          "passed": true
+        },
+        {
+          "path": "blocked",
+          "relative_rms": 1.907056486061265e-07,
+          "max_absolute": 2.980232238769531e-07,
+          "passed": true
+        }
+      ],
+      "samples": [
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 3.27179996020277e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 3.492800033200183e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 3.791800008912105e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 2.642900017235661e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.555799983383622e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.7608999971562298e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.6887999865721213e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.6209000225208e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 2.454900004522642e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 4.278799997337046e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 4.827799966733437e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 2.9518000246753218e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.4308999854838476e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.684799983398989e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.5488999654044164e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.5348999770358205e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 2.41190000451752e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 3.154900014123996e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 4.1817999772320036e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 3.464900009930716e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.327899983356474e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.4789000235614367e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.403899998171255e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.3798999791324604e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 2.293900024596951e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 3.092799988735351e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 4.126800013182219e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 3.892799986715545e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.31090002671408e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.3639000119146658e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.330899997105007e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.366900025663199e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 2.2748999981558882e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 3.068799969696556e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 4.120799985685153e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 3.369800015207147e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.3608999981661327e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.5987999833887443e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.4158999622159172e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.3599000087415334e-05
+        }
+      ],
+      "median_seconds": {
+        "current": 2.442899995003245e-05,
+        "compensated": 3.956299997298629e-05,
+        "blocked": 2.5138999944829266e-05
+      }
+    },
+    {
+      "shape": [
+        3,
+        65,
+        544
+      ],
+      "checks": [
+        {
+          "path": "current",
+          "relative_rms": 4.2792663634827477e-07,
+          "max_absolute": 2.6226043701171875e-06,
+          "passed": true
+        },
+        {
+          "path": "compensated",
+          "relative_rms": 4.269239525456214e-06,
+          "max_absolute": 1.1086463928222656e-05,
+          "passed": true
+        },
+        {
+          "path": "blocked",
+          "relative_rms": 4.186731530353427e-07,
+          "max_absolute": 2.384185791015625e-06,
+          "passed": true
+        }
+      ],
+      "samples": [
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 3.3877999612741405e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 6.06369999331946e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 5.362699994293507e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 3.63679996553401e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.586800019344082e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 3.6917999750585295e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 3.738800023711519e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 3.9477999962400645e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 2.572900029917946e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 4.88569999106403e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 5.421800005933619e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 3.000900005645235e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.521900023566559e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 4.148799962422345e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 3.5647999993670965e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 4.0748000174062327e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 2.4898999981814995e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 4.984699990018271e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 5.632700003843638e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 3.346899984535412e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.4808000034681754e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.7369000235921703e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.4639000002935063e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.3459000203729374e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 2.3318999865296064e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 4.095800022696494e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 5.508699996426003e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 3.848799997285823e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.2448999970947625e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.3818000045139343e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.3209000119095435e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.3828999928809935e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 2.3158999738370767e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 4.089800040674163e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 6.0726999890903244e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 3.679799965539132e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.3048999992170138e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.3509000129706692e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 2.3299000076804077e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.3089000023901463e-05
+        }
+      ],
+      "median_seconds": {
+        "current": 2.5474000267422525e-05,
+        "compensated": 5.392250000113563e-05,
+        "blocked": 2.6004000119428383e-05
+      }
+    },
+    {
+      "shape": [
+        4,
+        48,
+        5120
+      ],
+      "checks": [
+        {
+          "path": "current",
+          "relative_rms": 1.2583798252308043e-06,
+          "max_absolute": 1.4781951904296875e-05,
+          "passed": true
+        },
+        {
+          "path": "compensated",
+          "relative_rms": 9.879748176899739e-06,
+          "max_absolute": 8.916854858398438e-05,
+          "passed": true
+        },
+        {
+          "path": "blocked",
+          "relative_rms": 1.2452208011382027e-06,
+          "max_absolute": 1.4781951904296875e-05,
+          "passed": true
+        }
+      ],
+      "samples": [
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 3.8998000036372105e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.00021373900017351843
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0002838960003828106
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 4.4006999814882874e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 4.063799997311435e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 4.4408000121620717e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 4.260800005795318e-05
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 3.8348000089172274e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 4.0766999973129714e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.00021893900020586443
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.00021646999994118232
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 4.257699993104325e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 4.111799989914289e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 4.5167999815021176e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 3.814799993051565e-05
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 3.346800031067687e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 3.55879997187003e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.00021941900013189297
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.00022205899995242362
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 4.22580001213646e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 4.030799982501776e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 4.452799976206734e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 4.166799999438808e-05
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 3.686800027935533e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 4.072799993082299e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0002142590001312783
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.00022221899962460157
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 4.1388000227016164e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 4.05579999096517e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 4.4968000111111905e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 4.159799982517143e-05
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.7908999982173555e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 3.5958999887952814e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.00022055899989936734
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.00022335800031214603
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 4.2657999983930495e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 2.8829000257246662e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 5.221799983701203e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 4.753700022774865e-05
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 3.725800024767523e-05
+        }
+      ],
+      "median_seconds": {
+        "current": 4.043299986733473e-05,
+        "compensated": 0.00021998900001563015,
+        "blocked": 4.446799994184403e-05
+      }
+    },
+    {
+      "shape": [
+        2,
+        14336,
+        5120
+      ],
+      "checks": [
+        {
+          "path": "current",
+          "relative_rms": 1.2737001497953315e-06,
+          "max_absolute": 3.337860107421875e-05,
+          "passed": true
+        },
+        {
+          "path": "compensated",
+          "relative_rms": 9.042983947438188e-06,
+          "max_absolute": 0.000156402587890625,
+          "passed": true
+        },
+        {
+          "path": "blocked",
+          "relative_rms": 1.2664581845456269e-06,
+          "max_absolute": 3.337860107421875e-05,
+          "passed": true
+        }
+      ],
+      "samples": [
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.00039410999988831463
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0014321090002340497
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0014257200000429293
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0004050989996358112
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0003974500000367698
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0003697219999594381
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0003764409998439078
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.00038677100019413047
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0004052200001751771
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0014562780002052023
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0014106799999353825
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.00040994900018631597
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0004013899997517001
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.00037314199971660855
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.00037090200021339115
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.00039425000022674794
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0003772609998122789
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.001446648000182904
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.001413029999639548
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.00040803000001687906
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.00039352100020551006
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.00037248099988573813
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.00036904199987475295
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0003853210000670515
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0003893909997714218
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0013929710003139917
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0015008650002528157
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.00039908000007926603
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0003917509998245805
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0003726920003828127
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0003664519999801996
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.00039858099989942275
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.00038486099992951495
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.001427118999799859
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0014526880004268605
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.00040764999994280515
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0003832499996860861
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0003648420001809427
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0003679120000015246
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.00037534100010816474
+        }
+      ],
+      "median_seconds": {
+        "current": 0.0003941800000575313,
+        "compensated": 0.0014296140000169544,
+        "blocked": 0.00037031200008641463
+      }
+    },
+    {
+      "shape": [
+        4,
+        14336,
+        5120
+      ],
+      "checks": [
+        {
+          "path": "current",
+          "relative_rms": 1.2797507906725514e-06,
+          "max_absolute": 3.814697265625e-05,
+          "passed": true
+        },
+        {
+          "path": "compensated",
+          "relative_rms": 9.225111170962919e-06,
+          "max_absolute": 0.00019931793212890625,
+          "passed": true
+        },
+        {
+          "path": "blocked",
+          "relative_rms": 1.2717694062303053e-06,
+          "max_absolute": 3.719329833984375e-05,
+          "passed": true
+        }
+      ],
+      "samples": [
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0007810910001353477
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0013924210002187465
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0014312979997157527
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0007835810001779464
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0007814710002094216
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.00039720099994156044
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.00039698099999441183
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0007947499998408603
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0007806510002410505
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0014141199999357923
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0014064199999666016
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0007833409999875585
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0007809210001141764
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.00040051999985735165
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.00039930999992066063
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0007767909996800881
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0007846710000194435
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0013786710001113534
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0013921710001341125
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0007896010001786635
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0007878809997237113
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0003996199998255179
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0003947410000364471
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0007752709998385399
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.000780090999796812
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.001354612999875826
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0014106500002526445
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0007827609997548279
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0007794620000822761
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.00039591099994140677
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0003960600001846615
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0007817709997652855
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.000777430999733042
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.001404739999998128
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.001402680000410328
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0007794320003995381
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0007793019999553508
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0003988600001321174
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.00039752000020598643
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0007738509998489462
+        }
+      ],
+      "median_seconds": {
+        "current": 0.0007810060001247621,
+        "compensated": 0.001403710000204228,
+        "blocked": 0.00039736050007377344
+      }
+    },
+    {
+      "shape": [
+        4,
+        34816,
+        5120
+      ],
+      "checks": [
+        {
+          "path": "current",
+          "relative_rms": 1.2866627230323502e-06,
+          "max_absolute": 4.482269287109375e-05,
+          "passed": true
+        },
+        {
+          "path": "compensated",
+          "relative_rms": 9.170084922516253e-06,
+          "max_absolute": 0.00018215179443359375,
+          "passed": true
+        },
+        {
+          "path": "blocked",
+          "relative_rms": 1.2810925227313419e-06,
+          "max_absolute": 4.482269287109375e-05,
+          "passed": true
+        }
+      ],
+      "samples": [
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0019491230000312498
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0031142450002334954
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.003106845999809593
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0019493830000101298
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0019302640002933913
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0008997550003186916
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0008965249999164371
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.001925873999880423
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0019327639997754886
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0031269750002138608
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0030448379998233577
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0019363339997653384
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.001932533999934094
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0009029050002027361
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0008963350001067738
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.001923713999985921
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0019381839997549832
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0030330790000334673
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.003128185000150552
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0019390940001358103
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.001939282999956049
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0009028960002979147
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0008935159999055031
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0019230939997214591
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0019392439999137423
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0030980559999989055
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0030365889997483464
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0019381039996915206
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0019335040001351445
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0008890359999895736
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0008926049999899988
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.001928303999648051
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.001934263999828545
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0031124249999265885
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0031287050001083117
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.0019394029995964956
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.00192508399959479
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0008959460001278785
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0008883949999471952
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0019238449999647855
+        }
+      ],
+      "median_seconds": {
+        "current": 0.0019338839999818447,
+        "compensated": 0.003109635499868091,
+        "blocked": 0.0008961405001173262
+      }
+    },
+    {
+      "shape": [
+        4,
+        5120,
+        17408
+      ],
+      "checks": [
+        {
+          "path": "current",
+          "relative_rms": 2.3593568130308995e-06,
+          "max_absolute": 0.000118255615234375,
+          "passed": true
+        },
+        {
+          "path": "compensated",
+          "relative_rms": 3.572439163690433e-05,
+          "max_absolute": 0.001251220703125,
+          "passed": true
+        },
+        {
+          "path": "blocked",
+          "relative_rms": 2.3485742985940306e-06,
+          "max_absolute": 0.0001163482666015625,
+          "passed": true
+        }
+      ],
+      "samples": [
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.024063874000148644
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0018525079999562877
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.001703705999716476
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.02392515099973025
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.02391160100023626
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0005185539998819877
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0004756570001518412
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.023910692000299605
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.02386854399992444
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0018589769997561234
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0017264040002373804
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.023934611000186123
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.023901302000012947
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0005157640002835251
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.00047309599995060125
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.02387663399986195
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.023918581000089034
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0018857659997593146
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0017257540002901806
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.023896343000160414
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.023852514999816776
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0005146540001987887
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.00048340599960283726
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.023940249999668595
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.02394274000016594
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0017396839998582436
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.001655117999689537
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.023938911000186636
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.023845695000090927
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.000519795000400336
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.00047038599996085395
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.023893442999906256
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.023906452000119316
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0018444389997966937
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.0017267849998461315
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.02390803100024641
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.023848204999922018
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0005282440001792565
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.00047131600013017305
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.023989217999769608
+        }
+      ],
+      "median_seconds": {
+        "current": 0.023909361500273008,
+        "compensated": 0.0017332344998521876,
+        "blocked": 0.000499029999900813
+      }
+    },
+    {
+      "shape": [
+        4,
+        248320,
+        5120
+      ],
+      "checks": [
+        {
+          "path": "current",
+          "relative_rms": 1.2856791045123828e-06,
+          "max_absolute": 5.435943603515625e-05,
+          "passed": true
+        },
+        {
+          "path": "compensated",
+          "relative_rms": 9.281867278332356e-06,
+          "max_absolute": 0.0002155303955078125,
+          "passed": true
+        },
+        {
+          "path": "blocked",
+          "relative_rms": 1.2798410580217023e-06,
+          "max_absolute": 5.435943603515625e-05,
+          "passed": true
+        }
+      ],
+      "samples": [
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.014137936999759404
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.020558237999921403
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.02065187399966817
+        },
+        {
+          "cycle": 0,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.013809423000111565
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.013794474999940576
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.006095217000165576
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0060754979999728675
+        },
+        {
+          "cycle": 0,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.013909538999996585
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.013817853000091418
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.020639124999888736
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.020684213000095042
+        },
+        {
+          "cycle": 1,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.013834032999966439
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.013787955000225338
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.006070897999961744
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.00606112800005576
+        },
+        {
+          "cycle": 1,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.013939007999852038
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.013772716000403307
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.020502451000083965
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.020864493000317452
+        },
+        {
+          "cycle": 2,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.013903138999921794
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.013803484000163735
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.006080457999814826
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.006175652999900194
+        },
+        {
+          "cycle": 2,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.013931808000052115
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.013800814000205719
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.02067277300011483
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.020909781000227667
+        },
+        {
+          "cycle": 3,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.013920768000389216
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.013808413999868208
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.00608941699965726
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.006072507999761001
+        },
+        {
+          "cycle": 3,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.013953897000192228
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.013812523000069632
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.02059735600005297
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "compensated",
+          "seconds": 0.02090467100015303
+        },
+        {
+          "cycle": 4,
+          "pair": "compensated",
+          "path": "current",
+          "seconds": 0.013936828000169044
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.0138143230001333
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.0060888870002600015
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "blocked",
+          "seconds": 0.006091506999837293
+        },
+        {
+          "cycle": 4,
+          "pair": "blocked",
+          "path": "current",
+          "seconds": 0.01394281700004285
+        }
+      ],
+      "median_seconds": {
+        "current": 0.013825943000028929,
+        "compensated": 0.0206623234998915,
+        "blocked": 0.0060846725000374136
+      }
+    }
+  ],
+  "arithmetic": {
+    "current": "FP32 full-width reduction",
+    "blocked": "FP32 tiled reduction",
+    "compensated": "three BF16 products with FP32 accumulation"
+  }
+}

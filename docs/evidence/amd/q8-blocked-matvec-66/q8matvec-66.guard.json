@@ -1,0 +1,67 @@
+{
+  "command": [
+    "/home/damen/strixenv/bin/python",
+    "-m",
+    "scripts.experiments.bench_q8_blocked_matvec",
+    "--output",
+    "/tmp/q8matvec66/q8matvec-66.json"
+  ],
+  "timeout_seconds": 900,
+  "cooling": {
+    "limit_celsius": 85,
+    "checks": 5,
+    "fans": [
+      {
+        "name": "fan1",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4219,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan2",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4321,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan3",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 1821,
+        "minimum_rpm": 1000
+      }
+    ],
+    "maximum_observed_celsius": 57.0,
+    "sensors": [
+      {
+        "driver": "amdgpu",
+        "label": "edge",
+        "celsius": 57.0,
+        "cutoff_celsius": 85
+      },
+      {
+        "driver": "k10temp",
+        "label": "Tctl",
+        "celsius": 48.0,
+        "cutoff_celsius": 85
+      }
+    ],
+    "error": null
+  },
+  "watchdog": {
+    "reserve_bytes": 21474836480,
+    "minimum_available_bytes": 107425898496,
+    "last_available_bytes": 119397072896,
+    "triggered": false,
+    "error": null
+  },
+  "phase": "completed",
+  "cleanup_complete": true,
+  "host_available_before": 120123826176,
+  "child_pid": 8038,
+  "seconds": 4.534524721000253,
+  "exit_code": 0,
+  "host_available_after": 120087576576
+}
