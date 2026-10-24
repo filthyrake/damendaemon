@@ -53,10 +53,34 @@ def chain_anchor():
     return budgets() is not None and quant_pipeline_enabled()
 
 
+def _experimental_context_limit(chain):
+    """Non-chain Q4 context bound: 512, or an explicit bounded ROCm opt-in.
+
+    #68: the guarded 32K cell (golden4096 4K completed under the improved
+    thermal envelope) may opt in with DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CONTEXT
+    =<tokens>, valid 512..32768, ROCm/gfx1151 only. Discrete A30 admission is
+    unchanged; the chain keeps its own qualified bound.
+    """
+    if chain:
+        return CHAIN_CONTEXT_LIMIT
+    value = os.environ.get('DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CONTEXT', '')
+    if not value:
+        return 512
+    if not (value.isascii() and value.isdecimal() and 512 <= int(value) <= 32768):
+        raise ValueError('DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CONTEXT accepts 512..32768')
+    if selected_accelerator() != 'rocm':
+        raise ValueError('the experimental Q4 context extension is ROCm gfx1151 only')
+    import torch
+    architecture = getattr(torch.cuda.get_device_properties(0), 'gcnArchName', '')
+    if not architecture.startswith('gfx1151'):
+        raise ValueError('the experimental Q4 context extension is gfx1151 only')
+    return int(value)
+
+
 def validate(config, max_context=None):
     accelerator = selected_accelerator()
     chain = chain_anchor()
-    context_limit = CHAIN_CONTEXT_LIMIT if chain else 512
+    context_limit = _experimental_context_limit(chain)
     if (os.environ.get('DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4', '0') != '1'
             or accelerator not in ('rocm', 'cuda')
             or config.get('model_type') != 'qwen3_5_text'
