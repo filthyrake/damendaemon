@@ -19,6 +19,10 @@ def main(argv=None):
     p.add_argument('--queue-timeout',type=float,default=120)
     p.add_argument('--client-decode-turns',action='store_true',help='configured ready decode shares per client; default equal')
     p.add_argument('--idle-timeout',type=float,default=0,help='optional coordinator shutdown after idle seconds; zero disables')
+    p.add_argument('--supervise',action='store_true',
+                   help='supervised mode (coordinator process only): dead-peer detection, '
+                        'honest failed state and bounded operator rejoin via '
+                        'POST /v1/distributed/rejoin; spawns its own worker, do not run under torchrun')
     args=p.parse_args(argv)
     if not 1<=args.context<=512 or not 0<=args.port<=65535 or not 0<=args.idle_timeout<=86400:
         p.error('invalid context, port or idle timeout')
@@ -30,6 +34,54 @@ def main(argv=None):
     if any(not alias or not path or alias==args.alias for alias,path in additional):
         p.error('additional model needs a distinct alias and local path')
     os.environ['DAMENDAEMON_DEVICE']='cuda'
+    from .server import BoundedHTTPServer,handler_for
+    if args.supervise:
+        from .distributed_supervised_builder import supervised_builder,teardown_supervised_pair
+        from .distributed_supervisor import DistributedSupervisor
+        import torch
+        supervisor=DistributedSupervisor(supervised_builder(args,torch))
+        server=thread=previous=None;primary=None
+        try:
+            supervisor.start()
+            runtime=supervisor.runtime_proxy
+            base=handler_for(runtime)
+            class Handler(base):
+                def do_GET(self):
+                    if self.path=='/health':
+                        code,body=runtime.health();self.send_json(code,body)
+                    else:super().do_GET()
+                def do_POST(self):
+                    if self.path=='/v1/distributed/rejoin':
+                        initiated,detail=runtime.rejoin()
+                        self.send_json(202 if initiated else 409,dict(rejoin=initiated,detail=detail))
+                    else:super().do_POST()
+            server=BoundedHTTPServer(('127.0.0.1',args.port),Handler)
+            server.daemon_threads=False;server.block_on_close=True
+            thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+            previous=signal.signal(signal.SIGTERM,lambda number,frame:supervisor.close())
+            print(f'damendaemon distributed listening on http://127.0.0.1:{server.server_port} (supervised)',flush=True)
+            try:
+                # HTTP stays up in failed/rejoining states so the operator can
+                # observe /health and trigger the bounded rejoin.
+                while supervisor.state not in ('closed','terminal'):
+                    threading.Event().wait(1)
+            except KeyboardInterrupt:supervisor.close()
+        except BaseException as error:primary=error;raise
+        finally:
+            if previous is not None:signal.signal(signal.SIGTERM,previous)
+            errors=[]
+            if server is not None:
+                try:
+                    if thread is not None:server.shutdown();thread.join(timeout=5)
+                except BaseException as error:errors.append(error)
+                try:server.server_close()
+                except BaseException as error:errors.append(error)
+            try:supervisor.close()
+            except BaseException as error:errors.append(error)
+            if errors:
+                if primary is not None:primary.add_note('supervised distributed HTTP shutdown cleanup failed; retain owners for retry')
+                else:raise errors[0]
+        return
     from .distributed import StagePair
     from .distributed_serving import DistributedRuntime
     from .server import BoundedHTTPServer,handler_for

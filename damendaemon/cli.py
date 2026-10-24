@@ -60,6 +60,10 @@ def main():
     commands.add_parser("bench", help="benchmark a streaming HTTP endpoint")
     commands.add_parser("distributed-run", help="experimental two-rank greedy generation under torchrun")
     commands.add_parser("distributed-serve", help="experimental resident two-rank greedy HTTP service")
+    preflight = commands.add_parser("preflight", help="read-only distributed host preflight report")
+    preflight.add_argument('--peer', metavar='HOST[:PORT]', default=None,
+                           help='probe the peer rendezvous TCP port (default 29500)')
+    preflight.add_argument('--probe-timeout', type=float, default=5.0)
     commands.add_parser("chain-serve", help="experimental three-rank chain greedy HTTP service under torchrun")
     capacity = commands.add_parser('plan-hybrid', help='estimate hybrid text storage from local tensor headers without loading weights')
     capacity.add_argument('path', help='local safetensors snapshot directory; no download')
@@ -189,6 +193,12 @@ def main():
         return
     if args.command == 'run' and args.raw and args.thinking != 'auto':
         parser.error('--raw cannot use chat thinking controls')
+    if args.command == 'preflight':
+        from .fleet_preflight import main as preflight_main
+        forwarded = []
+        if args.peer:forwarded += ['--peer', args.peer]
+        forwarded += ['--probe-timeout', str(args.probe_timeout)]
+        return preflight_main(forwarded)
     if args.command == "pull":
         # Resolve the revision before downloading; report its immutable identity.
         print(json.dumps(download(args.repository, args.revision, args.filename)))
