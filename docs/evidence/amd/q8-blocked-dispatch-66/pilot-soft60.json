@@ -1,0 +1,2374 @@
+{
+  "passed": true,
+  "pilot": true,
+  "model_path": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.8-27B/snapshots/1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "context": 512,
+  "chunk_size": 127,
+  "device": "Radeon 8060S Graphics",
+  "torch": "2.11.0+rocm7.13.0a20260425",
+  "graph": false,
+  "storage": "q8_0",
+  "activation_and_cache_dtype": "float32",
+  "comparison": "A: FP32 matvec for rows <=4; B: blocked-reduction matvec for rows 1-4. Both use compensated BF16 prefill; A is October arm A unchanged.",
+  "limitations": [
+    "pacing inserts idle between synchronous operations only; timed event windows still bracket one synchronize/event/synchronize",
+    "internal decode and memory telemetry outstanding"
+  ],
+  "passes": [
+    {
+      "checks": [
+        {
+          "event_index": 0,
+          "slot": 0,
+          "relative_rms": 0.00021282944362610579,
+          "max_absolute": 0.004643440246582031,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 1,
+          "slot": 0,
+          "relative_rms": 7.554083276772872e-05,
+          "max_absolute": 0.001132965087890625,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 2,
+          "slot": 0,
+          "relative_rms": 0.00021282944362610579,
+          "max_absolute": 0.004643440246582031,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 3,
+          "slot": 3,
+          "relative_rms": 8.025293209357187e-05,
+          "max_absolute": 0.0005893707275390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 3,
+          "slot": 0,
+          "relative_rms": 0.00012604017683770508,
+          "max_absolute": 0.0023527145385742188,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 3,
+          "slot": 2,
+          "relative_rms": 0.00017647344793658704,
+          "max_absolute": 0.005724072456359863,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 3,
+          "slot": 1,
+          "relative_rms": 0.00010515782923903316,
+          "max_absolute": 0.0027437210083007812,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 4,
+          "slot": 3,
+          "relative_rms": 2.744208359217737e-05,
+          "max_absolute": 0.0003312528133392334,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 4,
+          "slot": 0,
+          "relative_rms": 6.741031393175945e-05,
+          "max_absolute": 0.0022314786911010742,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 4,
+          "slot": 2,
+          "relative_rms": 0.0009642856894060969,
+          "max_absolute": 0.02889728546142578,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 4,
+          "slot": 1,
+          "relative_rms": 0.0005987074691802263,
+          "max_absolute": 0.017815828323364258,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 5,
+          "slot": 3,
+          "relative_rms": 2.8101387215428986e-05,
+          "max_absolute": 0.00048732757568359375,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 5,
+          "slot": 0,
+          "relative_rms": 9.211515134666115e-05,
+          "max_absolute": 0.0024824142456054688,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 5,
+          "slot": 2,
+          "relative_rms": 0.00010976482008118182,
+          "max_absolute": 0.0026810169219970703,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 5,
+          "slot": 1,
+          "relative_rms": 0.0002147787599824369,
+          "max_absolute": 0.005036354064941406,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 6,
+          "slot": 3,
+          "relative_rms": 5.627523205475882e-05,
+          "max_absolute": 0.000438690185546875,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 6,
+          "slot": 0,
+          "relative_rms": 0.00011525063746375963,
+          "max_absolute": 0.0034580230712890625,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 6,
+          "slot": 2,
+          "relative_rms": 0.00033736260957084596,
+          "max_absolute": 0.009116172790527344,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 6,
+          "slot": 1,
+          "relative_rms": 0.00033145450288429856,
+          "max_absolute": 0.01658618450164795,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 7,
+          "slot": 3,
+          "relative_rms": 3.62481405318249e-05,
+          "max_absolute": 0.000886768102645874,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 7,
+          "slot": 0,
+          "relative_rms": 0.00012282136594876647,
+          "max_absolute": 0.00817251205444336,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 7,
+          "slot": 2,
+          "relative_rms": 7.583433034596965e-05,
+          "max_absolute": 0.0018506050109863281,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 7,
+          "slot": 1,
+          "relative_rms": 0.00026974172214977443,
+          "max_absolute": 0.007168769836425781,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 8,
+          "slot": 3,
+          "relative_rms": 2.512395440135151e-05,
+          "max_absolute": 0.00030803680419921875,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 8,
+          "slot": 0,
+          "relative_rms": 0.00029967378941364586,
+          "max_absolute": 0.01129603385925293,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 8,
+          "slot": 2,
+          "relative_rms": 0.00015715281188022345,
+          "max_absolute": 0.002603292465209961,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 8,
+          "slot": 1,
+          "relative_rms": 0.00013900520571041852,
+          "max_absolute": 0.005214214324951172,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 9,
+          "slot": 3,
+          "relative_rms": 5.41950466868002e-05,
+          "max_absolute": 0.0016026496887207031,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 9,
+          "slot": 0,
+          "relative_rms": 4.911865835310891e-05,
+          "max_absolute": 0.0015959739685058594,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 9,
+          "slot": 2,
+          "relative_rms": 7.979497604537755e-05,
+          "max_absolute": 0.0015716552734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 9,
+          "slot": 1,
+          "relative_rms": 0.0004647111054509878,
+          "max_absolute": 0.014704704284667969,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 10,
+          "slot": 3,
+          "relative_rms": 1.8166465451940894e-05,
+          "max_absolute": 0.0005130767822265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 10,
+          "slot": 0,
+          "relative_rms": 0.00016366009367629886,
+          "max_absolute": 0.004976153373718262,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 10,
+          "slot": 2,
+          "relative_rms": 6.715769995935261e-05,
+          "max_absolute": 0.00231170654296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 10,
+          "slot": 1,
+          "relative_rms": 4.274863749742508e-05,
+          "max_absolute": 0.00146474689245224,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 11,
+          "slot": 3,
+          "relative_rms": 2.7957576094195247e-05,
+          "max_absolute": 0.000537872314453125,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 11,
+          "slot": 0,
+          "relative_rms": 0.00011767735850298777,
+          "max_absolute": 0.0021039843559265137,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 11,
+          "slot": 2,
+          "relative_rms": 6.891105294926092e-05,
+          "max_absolute": 0.0020951777696609497,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 11,
+          "slot": 1,
+          "relative_rms": 0.0002171268715756014,
+          "max_absolute": 0.0050814151763916016,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 12,
+          "slot": 0,
+          "relative_rms": 0.00017802839283831418,
+          "max_absolute": 0.006539344787597656,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 12,
+          "slot": 1,
+          "relative_rms": 0.00010882848437177017,
+          "max_absolute": 0.0029468536376953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 13,
+          "slot": 2,
+          "relative_rms": 8.893809717847034e-05,
+          "max_absolute": 0.0017032623291015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 13,
+          "slot": 0,
+          "relative_rms": 0.00017911514441948384,
+          "max_absolute": 0.009210586547851562,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 13,
+          "slot": 1,
+          "relative_rms": 5.924443757976405e-05,
+          "max_absolute": 0.0018025636672973633,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 13,
+          "slot": 3,
+          "relative_rms": 2.2035561414668337e-05,
+          "max_absolute": 0.0005025863647460938,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 14,
+          "slot": 2,
+          "relative_rms": 0.00013827897782903165,
+          "max_absolute": 0.001482248306274414,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 14,
+          "slot": 0,
+          "relative_rms": 0.0003445530601311475,
+          "max_absolute": 0.006587028503417969,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 14,
+          "slot": 1,
+          "relative_rms": 3.0020504709682427e-05,
+          "max_absolute": 0.0007886886596679688,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 14,
+          "slot": 3,
+          "relative_rms": 2.8950826163054444e-05,
+          "max_absolute": 0.0006232261657714844,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 15,
+          "slot": 2,
+          "relative_rms": 0.00010032889986177906,
+          "max_absolute": 0.0016336441040039062,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 15,
+          "slot": 0,
+          "relative_rms": 7.593178452225402e-05,
+          "max_absolute": 0.0013349056243896484,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 15,
+          "slot": 1,
+          "relative_rms": 0.0008664246997795999,
+          "max_absolute": 0.021255016326904297,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 15,
+          "slot": 3,
+          "relative_rms": 8.794190944172442e-05,
+          "max_absolute": 0.003231048583984375,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 16,
+          "slot": 2,
+          "relative_rms": 0.00010078754712594673,
+          "max_absolute": 0.002941727638244629,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 16,
+          "slot": 0,
+          "relative_rms": 4.599406383931637e-05,
+          "max_absolute": 0.0011277198791503906,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 16,
+          "slot": 1,
+          "relative_rms": 0.00015407020691782236,
+          "max_absolute": 0.006534576416015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 16,
+          "slot": 3,
+          "relative_rms": 3.5622961149783805e-05,
+          "max_absolute": 0.000558018684387207,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 17,
+          "slot": 2,
+          "relative_rms": 0.00012156578304711729,
+          "max_absolute": 0.0023212432861328125,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 17,
+          "slot": 0,
+          "relative_rms": 2.761631549219601e-05,
+          "max_absolute": 0.0009698867797851562,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 17,
+          "slot": 1,
+          "relative_rms": 0.00012467813212424517,
+          "max_absolute": 0.002232074737548828,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 17,
+          "slot": 3,
+          "relative_rms": 0.0005064207944087684,
+          "max_absolute": 0.010390281677246094,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 18,
+          "slot": 2,
+          "relative_rms": 0.0002652031253091991,
+          "max_absolute": 0.009651541709899902,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 18,
+          "slot": 0,
+          "relative_rms": 5.681691618519835e-05,
+          "max_absolute": 0.0008254051208496094,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 18,
+          "slot": 1,
+          "relative_rms": 6.908061914145947e-05,
+          "max_absolute": 0.00202023983001709,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 18,
+          "slot": 3,
+          "relative_rms": 0.0001477438781876117,
+          "max_absolute": 0.0036497116088867188,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 19,
+          "slot": 2,
+          "relative_rms": 0.0001859753974713385,
+          "max_absolute": 0.003530442714691162,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 19,
+          "slot": 0,
+          "relative_rms": 0.00011054910282837227,
+          "max_absolute": 0.002160787582397461,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 19,
+          "slot": 1,
+          "relative_rms": 9.16103454073891e-05,
+          "max_absolute": 0.003496408462524414,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 19,
+          "slot": 3,
+          "relative_rms": 8.458532101940364e-05,
+          "max_absolute": 0.00289154052734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 20,
+          "slot": 2,
+          "relative_rms": 0.00011114437074866146,
+          "max_absolute": 0.0017560124397277832,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 20,
+          "slot": 0,
+          "relative_rms": 6.691105227218941e-05,
+          "max_absolute": 0.002479076385498047,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 20,
+          "slot": 1,
+          "relative_rms": 8.926077862270176e-05,
+          "max_absolute": 0.003257274627685547,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 20,
+          "slot": 3,
+          "relative_rms": 6.583514186786488e-05,
+          "max_absolute": 0.0015761256217956543,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 21,
+          "slot": 0,
+          "relative_rms": 8.921332482714206e-05,
+          "max_absolute": 0.00346529483795166,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 22,
+          "slot": 0,
+          "relative_rms": 2.8449379897210747e-05,
+          "max_absolute": 0.0006256103515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 23,
+          "slot": 0,
+          "relative_rms": 0.000565179216209799,
+          "max_absolute": 0.013763189315795898,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 24,
+          "slot": 0,
+          "relative_rms": 4.5876095100538805e-05,
+          "max_absolute": 0.0009479522705078125,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 25,
+          "slot": 3,
+          "relative_rms": 0.00011677878501359373,
+          "max_absolute": 0.0018634796142578125,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 25,
+          "slot": 1,
+          "relative_rms": 9.551411494612694e-05,
+          "max_absolute": 0.0019059181213378906,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 26,
+          "slot": 3,
+          "relative_rms": 0.00012623166549019516,
+          "max_absolute": 0.0015592575073242188,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 26,
+          "slot": 1,
+          "relative_rms": 8.636186248622835e-05,
+          "max_absolute": 0.002101302146911621,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 27,
+          "slot": 3,
+          "relative_rms": 0.00013355814735405147,
+          "max_absolute": 0.0014853477478027344,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 27,
+          "slot": 1,
+          "relative_rms": 8.971577335614711e-05,
+          "max_absolute": 0.0015974044799804688,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 28,
+          "slot": 3,
+          "relative_rms": 5.736019375035539e-05,
+          "max_absolute": 0.0014300644397735596,
+          "greedy_match": true,
+          "passed": true
+        }
+      ],
+      "timings": [
+        {
+          "event_index": 0,
+          "kind": "prefill",
+          "slots": [
+            0
+          ],
+          "seconds": 1.4531385869995574
+        },
+        {
+          "event_index": 1,
+          "kind": "prefill",
+          "slots": [
+            0
+          ],
+          "seconds": 0.946209034000276
+        },
+        {
+          "event_index": 2,
+          "kind": "prefill",
+          "slots": [
+            0
+          ],
+          "seconds": 1.292237908000061
+        },
+        {
+          "event_index": 3,
+          "kind": "prefill",
+          "slots": [
+            3,
+            0,
+            2,
+            1
+          ],
+          "seconds": 16.183913998000207
+        },
+        {
+          "event_index": 4,
+          "kind": "decode",
+          "slots": [
+            3,
+            0,
+            2,
+            1
+          ],
+          "seconds": 1.8121060949997627
+        },
+        {
+          "event_index": 5,
+          "kind": "decode",
+          "slots": [
+            3,
+            0,
+            2,
+            1
+          ],
+          "seconds": 1.7793430290003016
+        },
+        {
+          "event_index": 6,
+          "kind": "decode",
+          "slots": [
+            3,
+            0,
+            2,
+            1
+          ],
+          "seconds": 1.7803589929999362
+        },
+        {
+          "event_index": 7,
+          "kind": "decode",
+          "slots": [
+            3,
+            0,
+            2,
+            1
+          ],
+          "seconds": 1.7796593490002124
+        },
+        {
+          "event_index": 8,
+          "kind": "decode",
+          "slots": [
+            3,
+            0,
+            2,
+            1
+          ],
+          "seconds": 1.7797937539999111
+        },
+        {
+          "event_index": 9,
+          "kind": "decode",
+          "slots": [
+            3,
+            0,
+            2,
+            1
+          ],
+          "seconds": 1.7801570040001025
+        },
+        {
+          "event_index": 10,
+          "kind": "decode",
+          "slots": [
+            3,
+            0,
+            2,
+            1
+          ],
+          "seconds": 1.7808568709997417
+        },
+        {
+          "event_index": 11,
+          "kind": "decode",
+          "slots": [
+            3,
+            0,
+            2,
+            1
+          ],
+          "seconds": 1.7788998020005238
+        },
+        {
+          "event_index": 12,
+          "kind": "prefill",
+          "slots": [
+            0,
+            1
+          ],
+          "seconds": 7.995239304000279
+        },
+        {
+          "event_index": 13,
+          "kind": "decode",
+          "slots": [
+            2,
+            0,
+            1,
+            3
+          ],
+          "seconds": 1.7819765550002558
+        },
+        {
+          "event_index": 14,
+          "kind": "decode",
+          "slots": [
+            2,
+            0,
+            1,
+            3
+          ],
+          "seconds": 1.7809192090007855
+        },
+        {
+          "event_index": 15,
+          "kind": "decode",
+          "slots": [
+            2,
+            0,
+            1,
+            3
+          ],
+          "seconds": 1.7813383960001374
+        },
+        {
+          "event_index": 16,
+          "kind": "decode",
+          "slots": [
+            2,
+            0,
+            1,
+            3
+          ],
+          "seconds": 1.7810969430001933
+        },
+        {
+          "event_index": 17,
+          "kind": "decode",
+          "slots": [
+            2,
+            0,
+            1,
+            3
+          ],
+          "seconds": 1.7806122279998817
+        },
+        {
+          "event_index": 18,
+          "kind": "decode",
+          "slots": [
+            2,
+            0,
+            1,
+            3
+          ],
+          "seconds": 1.780477723000331
+        },
+        {
+          "event_index": 19,
+          "kind": "decode",
+          "slots": [
+            2,
+            0,
+            1,
+            3
+          ],
+          "seconds": 1.7807437750007011
+        },
+        {
+          "event_index": 20,
+          "kind": "decode",
+          "slots": [
+            2,
+            0,
+            1,
+            3
+          ],
+          "seconds": 1.7807596140000896
+        },
+        {
+          "event_index": 21,
+          "kind": "decode",
+          "slots": [
+            0
+          ],
+          "seconds": 0.14925012399999105
+        },
+        {
+          "event_index": 22,
+          "kind": "decode",
+          "slots": [
+            0
+          ],
+          "seconds": 0.14644388299984712
+        },
+        {
+          "event_index": 23,
+          "kind": "decode",
+          "slots": [
+            0
+          ],
+          "seconds": 0.148852395999711
+        },
+        {
+          "event_index": 24,
+          "kind": "decode",
+          "slots": [
+            0
+          ],
+          "seconds": 0.1465548789992681
+        },
+        {
+          "event_index": 25,
+          "kind": "decode",
+          "slots": [
+            3,
+            1
+          ],
+          "seconds": 1.052629225999226
+        },
+        {
+          "event_index": 26,
+          "kind": "decode",
+          "slots": [
+            3,
+            1
+          ],
+          "seconds": 1.019597049999902
+        },
+        {
+          "event_index": 27,
+          "kind": "decode",
+          "slots": [
+            3,
+            1
+          ],
+          "seconds": 1.0193602770004873
+        },
+        {
+          "event_index": 28,
+          "kind": "decode",
+          "slots": [
+            3
+          ],
+          "seconds": 0.14783675800026685
+        }
+      ],
+      "passed": true,
+      "name": "warmup-A",
+      "measured": false,
+      "blocked_arm": false
+    },
+    {
+      "checks": [
+        {
+          "event_index": 0,
+          "slot": 0,
+          "relative_rms": 0.00021282944362610579,
+          "max_absolute": 0.004643440246582031,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 1,
+          "slot": 0,
+          "relative_rms": 7.554083276772872e-05,
+          "max_absolute": 0.001132965087890625,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 2,
+          "slot": 0,
+          "relative_rms": 0.00021282944362610579,
+          "max_absolute": 0.004643440246582031,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 3,
+          "slot": 3,
+          "relative_rms": 8.025293209357187e-05,
+          "max_absolute": 0.0005893707275390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 3,
+          "slot": 0,
+          "relative_rms": 0.00012604017683770508,
+          "max_absolute": 0.0023527145385742188,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 3,
+          "slot": 2,
+          "relative_rms": 0.00017647344793658704,
+          "max_absolute": 0.005724072456359863,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 3,
+          "slot": 1,
+          "relative_rms": 0.00010515782923903316,
+          "max_absolute": 0.0027437210083007812,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 4,
+          "slot": 3,
+          "relative_rms": 2.744208359217737e-05,
+          "max_absolute": 0.0003312528133392334,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 4,
+          "slot": 0,
+          "relative_rms": 6.741031393175945e-05,
+          "max_absolute": 0.0022314786911010742,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 4,
+          "slot": 2,
+          "relative_rms": 0.0009642856894060969,
+          "max_absolute": 0.02889728546142578,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 4,
+          "slot": 1,
+          "relative_rms": 0.0005987074691802263,
+          "max_absolute": 0.017815828323364258,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 5,
+          "slot": 3,
+          "relative_rms": 2.8101387215428986e-05,
+          "max_absolute": 0.00048732757568359375,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 5,
+          "slot": 0,
+          "relative_rms": 9.211515134666115e-05,
+          "max_absolute": 0.0024824142456054688,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 5,
+          "slot": 2,
+          "relative_rms": 0.00010976482008118182,
+          "max_absolute": 0.0026810169219970703,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 5,
+          "slot": 1,
+          "relative_rms": 0.0002147787599824369,
+          "max_absolute": 0.005036354064941406,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 6,
+          "slot": 3,
+          "relative_rms": 5.627523205475882e-05,
+          "max_absolute": 0.000438690185546875,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 6,
+          "slot": 0,
+          "relative_rms": 0.00011525063746375963,
+          "max_absolute": 0.0034580230712890625,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 6,
+          "slot": 2,
+          "relative_rms": 0.00033736260957084596,
+          "max_absolute": 0.009116172790527344,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 6,
+          "slot": 1,
+          "relative_rms": 0.00033145450288429856,
+          "max_absolute": 0.01658618450164795,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 7,
+          "slot": 3,
+          "relative_rms": 3.62481405318249e-05,
+          "max_absolute": 0.000886768102645874,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 7,
+          "slot": 0,
+          "relative_rms": 0.00012282136594876647,
+          "max_absolute": 0.00817251205444336,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 7,
+          "slot": 2,
+          "relative_rms": 7.583433034596965e-05,
+          "max_absolute": 0.0018506050109863281,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 7,
+          "slot": 1,
+          "relative_rms": 0.00026974172214977443,
+          "max_absolute": 0.007168769836425781,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 8,
+          "slot": 3,
+          "relative_rms": 2.512395440135151e-05,
+          "max_absolute": 0.00030803680419921875,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 8,
+          "slot": 0,
+          "relative_rms": 0.00029967378941364586,
+          "max_absolute": 0.01129603385925293,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 8,
+          "slot": 2,
+          "relative_rms": 0.00015715281188022345,
+          "max_absolute": 0.002603292465209961,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 8,
+          "slot": 1,
+          "relative_rms": 0.00013900520571041852,
+          "max_absolute": 0.005214214324951172,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 9,
+          "slot": 3,
+          "relative_rms": 5.41950466868002e-05,
+          "max_absolute": 0.0016026496887207031,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 9,
+          "slot": 0,
+          "relative_rms": 4.911865835310891e-05,
+          "max_absolute": 0.0015959739685058594,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 9,
+          "slot": 2,
+          "relative_rms": 7.979497604537755e-05,
+          "max_absolute": 0.0015716552734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 9,
+          "slot": 1,
+          "relative_rms": 0.0004647111054509878,
+          "max_absolute": 0.014704704284667969,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 10,
+          "slot": 3,
+          "relative_rms": 1.8166465451940894e-05,
+          "max_absolute": 0.0005130767822265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 10,
+          "slot": 0,
+          "relative_rms": 0.00016366009367629886,
+          "max_absolute": 0.004976153373718262,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 10,
+          "slot": 2,
+          "relative_rms": 6.715769995935261e-05,
+          "max_absolute": 0.00231170654296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 10,
+          "slot": 1,
+          "relative_rms": 4.274863749742508e-05,
+          "max_absolute": 0.00146474689245224,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 11,
+          "slot": 3,
+          "relative_rms": 2.7957576094195247e-05,
+          "max_absolute": 0.000537872314453125,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 11,
+          "slot": 0,
+          "relative_rms": 0.00011767735850298777,
+          "max_absolute": 0.0021039843559265137,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 11,
+          "slot": 2,
+          "relative_rms": 6.891105294926092e-05,
+          "max_absolute": 0.0020951777696609497,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 11,
+          "slot": 1,
+          "relative_rms": 0.0002171268715756014,
+          "max_absolute": 0.0050814151763916016,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 12,
+          "slot": 0,
+          "relative_rms": 0.00017802839283831418,
+          "max_absolute": 0.006539344787597656,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 12,
+          "slot": 1,
+          "relative_rms": 0.00010882848437177017,
+          "max_absolute": 0.0029468536376953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 13,
+          "slot": 2,
+          "relative_rms": 8.893809717847034e-05,
+          "max_absolute": 0.0017032623291015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 13,
+          "slot": 0,
+          "relative_rms": 0.00017911514441948384,
+          "max_absolute": 0.009210586547851562,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 13,
+          "slot": 1,
+          "relative_rms": 5.924443757976405e-05,
+          "max_absolute": 0.0018025636672973633,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 13,
+          "slot": 3,
+          "relative_rms": 2.2035561414668337e-05,
+          "max_absolute": 0.0005025863647460938,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 14,
+          "slot": 2,
+          "relative_rms": 0.00013827897782903165,
+          "max_absolute": 0.001482248306274414,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 14,
+          "slot": 0,
+          "relative_rms": 0.0003445530601311475,
+          "max_absolute": 0.006587028503417969,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 14,
+          "slot": 1,
+          "relative_rms": 3.0020504709682427e-05,
+          "max_absolute": 0.0007886886596679688,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 14,
+          "slot": 3,
+          "relative_rms": 2.8950826163054444e-05,
+          "max_absolute": 0.0006232261657714844,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 15,
+          "slot": 2,
+          "relative_rms": 0.00010032889986177906,
+          "max_absolute": 0.0016336441040039062,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 15,
+          "slot": 0,
+          "relative_rms": 7.593178452225402e-05,
+          "max_absolute": 0.0013349056243896484,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 15,
+          "slot": 1,
+          "relative_rms": 0.0008664246997795999,
+          "max_absolute": 0.021255016326904297,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 15,
+          "slot": 3,
+          "relative_rms": 8.794190944172442e-05,
+          "max_absolute": 0.003231048583984375,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 16,
+          "slot": 2,
+          "relative_rms": 0.00010078754712594673,
+          "max_absolute": 0.002941727638244629,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 16,
+          "slot": 0,
+          "relative_rms": 4.599406383931637e-05,
+          "max_absolute": 0.0011277198791503906,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 16,
+          "slot": 1,
+          "relative_rms": 0.00015407020691782236,
+          "max_absolute": 0.006534576416015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 16,
+          "slot": 3,
+          "relative_rms": 3.5622961149783805e-05,
+          "max_absolute": 0.000558018684387207,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 17,
+          "slot": 2,
+          "relative_rms": 0.00012156578304711729,
+          "max_absolute": 0.0023212432861328125,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 17,
+          "slot": 0,
+          "relative_rms": 2.761631549219601e-05,
+          "max_absolute": 0.0009698867797851562,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 17,
+          "slot": 1,
+          "relative_rms": 0.00012467813212424517,
+          "max_absolute": 0.002232074737548828,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 17,
+          "slot": 3,
+          "relative_rms": 0.0005064207944087684,
+          "max_absolute": 0.010390281677246094,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 18,
+          "slot": 2,
+          "relative_rms": 0.0002652031253091991,
+          "max_absolute": 0.009651541709899902,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 18,
+          "slot": 0,
+          "relative_rms": 5.681691618519835e-05,
+          "max_absolute": 0.0008254051208496094,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 18,
+          "slot": 1,
+          "relative_rms": 6.908061914145947e-05,
+          "max_absolute": 0.00202023983001709,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 18,
+          "slot": 3,
+          "relative_rms": 0.0001477438781876117,
+          "max_absolute": 0.0036497116088867188,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 19,
+          "slot": 2,
+          "relative_rms": 0.0001859753974713385,
+          "max_absolute": 0.003530442714691162,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 19,
+          "slot": 0,
+          "relative_rms": 0.00011054910282837227,
+          "max_absolute": 0.002160787582397461,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 19,
+          "slot": 1,
+          "relative_rms": 9.16103454073891e-05,
+          "max_absolute": 0.003496408462524414,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 19,
+          "slot": 3,
+          "relative_rms": 8.458532101940364e-05,
+          "max_absolute": 0.00289154052734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 20,
+          "slot": 2,
+          "relative_rms": 0.00011114437074866146,
+          "max_absolute": 0.0017560124397277832,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 20,
+          "slot": 0,
+          "relative_rms": 6.691105227218941e-05,
+          "max_absolute": 0.002479076385498047,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 20,
+          "slot": 1,
+          "relative_rms": 8.926077862270176e-05,
+          "max_absolute": 0.003257274627685547,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 20,
+          "slot": 3,
+          "relative_rms": 6.583514186786488e-05,
+          "max_absolute": 0.0015761256217956543,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 21,
+          "slot": 0,
+          "relative_rms": 8.921332482714206e-05,
+          "max_absolute": 0.00346529483795166,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 22,
+          "slot": 0,
+          "relative_rms": 2.8449379897210747e-05,
+          "max_absolute": 0.0006256103515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 23,
+          "slot": 0,
+          "relative_rms": 0.000565179216209799,
+          "max_absolute": 0.013763189315795898,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 24,
+          "slot": 0,
+          "relative_rms": 4.5876095100538805e-05,
+          "max_absolute": 0.0009479522705078125,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 25,
+          "slot": 3,
+          "relative_rms": 0.00011677878501359373,
+          "max_absolute": 0.0018634796142578125,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 25,
+          "slot": 1,
+          "relative_rms": 9.551411494612694e-05,
+          "max_absolute": 0.0019059181213378906,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 26,
+          "slot": 3,
+          "relative_rms": 0.00012623166549019516,
+          "max_absolute": 0.0015592575073242188,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 26,
+          "slot": 1,
+          "relative_rms": 8.636186248622835e-05,
+          "max_absolute": 0.002101302146911621,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 27,
+          "slot": 3,
+          "relative_rms": 0.00013355814735405147,
+          "max_absolute": 0.0014853477478027344,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 27,
+          "slot": 1,
+          "relative_rms": 8.971577335614711e-05,
+          "max_absolute": 0.0015974044799804688,
+          "greedy_match": true,
+          "passed": true
+        },
+        {
+          "event_index": 28,
+          "slot": 3,
+          "relative_rms": 5.736019375035539e-05,
+          "max_absolute": 0.0014300644397735596,
+          "greedy_match": true,
+          "passed": true
+        }
+      ],
+      "timings": [
+        {
+          "event_index": 0,
+          "kind": "prefill",
+          "slots": [
+            0
+          ],
+          "seconds": 1.294691320000311
+        },
+        {
+          "event_index": 1,
+          "kind": "prefill",
+          "slots": [
+            0
+          ],
+          "seconds": 0.9489433860007921
+        },
+        {
+          "event_index": 2,
+          "kind": "prefill",
+          "slots": [
+            0
+          ],
+          "seconds": 1.2941710760005662
+        },
+        {
+          "event_index": 3,
+          "kind": "prefill",
+          "slots": [
+            3,
+            0,
+            2,
+            1
+          ],
+          "seconds": 15.430736809000337
+        },
+        {
+          "event_index": 4,
+          "kind": "decode",
+          "slots": [
+            3,
+            0,
+            2,
+            1
+          ],
+          "seconds": 1.7795819519997167
+        },
+        {
+          "event_index": 5,
+          "kind": "decode",
+          "slots": [
+            3,
+            0,
+            2,
+            1
+          ],
+          "seconds": 1.7806668809998882
+        },
+        {
+          "event_index": 6,
+          "kind": "decode",
+          "slots": [
+            3,
+            0,
+            2,
+            1
+          ],
+          "seconds": 1.7801361299998462
+        },
+        {
+          "event_index": 7,
+          "kind": "decode",
+          "slots": [
+            3,
+            0,
+            2,
+            1
+          ],
+          "seconds": 1.7803803699998753
+        },
+        {
+          "event_index": 8,
+          "kind": "decode",
+          "slots": [
+            3,
+            0,
+            2,
+            1
+          ],
+          "seconds": 1.7806326439995246
+        },
+        {
+          "event_index": 9,
+          "kind": "decode",
+          "slots": [
+            3,
+            0,
+            2,
+            1
+          ],
+          "seconds": 1.7799307539999063
+        },
+        {
+          "event_index": 10,
+          "kind": "decode",
+          "slots": [
+            3,
+            0,
+            2,
+            1
+          ],
+          "seconds": 1.7877361520004342
+        },
+        {
+          "event_index": 11,
+          "kind": "decode",
+          "slots": [
+            3,
+            0,
+            2,
+            1
+          ],
+          "seconds": 1.7796589429999585
+        },
+        {
+          "event_index": 12,
+          "kind": "prefill",
+          "slots": [
+            0,
+            1
+          ],
+          "seconds": 7.870872680000502
+        },
+        {
+          "event_index": 13,
+          "kind": "decode",
+          "slots": [
+            2,
+            0,
+            1,
+            3
+          ],
+          "seconds": 1.779852397000468
+        },
+        {
+          "event_index": 14,
+          "kind": "decode",
+          "slots": [
+            2,
+            0,
+            1,
+            3
+          ],
+          "seconds": 1.7798540179992415
+        },
+        {
+          "event_index": 15,
+          "kind": "decode",
+          "slots": [
+            2,
+            0,
+            1,
+            3
+          ],
+          "seconds": 1.779886426000303
+        },
+        {
+          "event_index": 16,
+          "kind": "decode",
+          "slots": [
+            2,
+            0,
+            1,
+            3
+          ],
+          "seconds": 1.7805249369994272
+        },
+        {
+          "event_index": 17,
+          "kind": "decode",
+          "slots": [
+            2,
+            0,
+            1,
+            3
+          ],
+          "seconds": 1.781945720999829
+        },
+        {
+          "event_index": 18,
+          "kind": "decode",
+          "slots": [
+            2,
+            0,
+            1,
+            3
+          ],
+          "seconds": 1.7810304679996989
+        },
+        {
+          "event_index": 19,
+          "kind": "decode",
+          "slots": [
+            2,
+            0,
+            1,
+            3
+          ],
+          "seconds": 1.7808154089998425
+        },
+        {
+          "event_index": 20,
+          "kind": "decode",
+          "slots": [
+            2,
+            0,
+            1,
+            3
+          ],
+          "seconds": 1.780493657000079
+        },
+        {
+          "event_index": 21,
+          "kind": "decode",
+          "slots": [
+            0
+          ],
+          "seconds": 0.14928447700003744
+        },
+        {
+          "event_index": 22,
+          "kind": "decode",
+          "slots": [
+            0
+          ],
+          "seconds": 0.14928788800079928
+        },
+        {
+          "event_index": 23,
+          "kind": "decode",
+          "slots": [
+            0
+          ],
+          "seconds": 0.1464284999992742
+        },
+        {
+          "event_index": 24,
+          "kind": "decode",
+          "slots": [
+            0
+          ],
+          "seconds": 0.14664861199980805
+        },
+        {
+          "event_index": 25,
+          "kind": "decode",
+          "slots": [
+            3,
+            1
+          ],
+          "seconds": 1.0165649669997947
+        },
+        {
+          "event_index": 26,
+          "kind": "decode",
+          "slots": [
+            3,
+            1
+          ],
+          "seconds": 1.019616147999841
+        },
+        {
+          "event_index": 27,
+          "kind": "decode",
+          "slots": [
+            3,
+            1
+          ],
+          "seconds": 1.018988808999893
+        },
+        {
+          "event_index": 28,
+          "kind": "decode",
+          "slots": [
+            3
+          ],
+          "seconds": 0.1466655210006138
+        }
+      ],
+      "passed": true,
+      "name": "A1",
+      "measured": true,
+      "blocked_arm": false,
+      "decode_median_seconds": {
+        "1": 0.1466655210006138,
+        "2": 1.018988808999893,
+        "4": 1.7804370134999772
+      }
+    }
+  ],
+  "pacing": {
+    "soft_stop_celsius": 60.0,
+    "poll_seconds": 0.5,
+    "gates": 830,
+    "waited_seconds": 38.5,
+    "maxima": {
+      "amdgpu/temp1_input": 70.0,
+      "k10temp/temp1_input": 83.0
+    },
+    "events": [
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 35.0,
+          "k10temp/temp1_input": 56.375
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 35.0,
+          "k10temp/temp1_input": 57.25
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.5,
+        "sensors": {
+          "amdgpu/temp1_input": 38.0,
+          "k10temp/temp1_input": 57.75
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 38.0,
+          "k10temp/temp1_input": 59.125
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 38.0,
+          "k10temp/temp1_input": 59.0
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 38.0,
+          "k10temp/temp1_input": 58.75
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 38.0,
+          "k10temp/temp1_input": 59.375
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 38.0,
+          "k10temp/temp1_input": 58.875
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 37.0,
+          "k10temp/temp1_input": 58.5
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 37.0,
+          "k10temp/temp1_input": 58.5
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 37.0,
+          "k10temp/temp1_input": 58.25
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.5,
+        "sensors": {
+          "amdgpu/temp1_input": 40.0,
+          "k10temp/temp1_input": 58.375
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.0,
+        "sensors": {
+          "amdgpu/temp1_input": 39.0,
+          "k10temp/temp1_input": 56.375
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 39.0,
+          "k10temp/temp1_input": 59.875
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.0,
+        "sensors": {
+          "amdgpu/temp1_input": 38.0,
+          "k10temp/temp1_input": 55.625
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 38.0,
+          "k10temp/temp1_input": 59.0
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 39.0,
+          "k10temp/temp1_input": 59.5
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 38.0,
+          "k10temp/temp1_input": 59.375
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 38.0,
+          "k10temp/temp1_input": 59.75
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 38.0,
+          "k10temp/temp1_input": 59.625
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 38.0,
+          "k10temp/temp1_input": 55.875
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 38.0,
+          "k10temp/temp1_input": 57.75
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 38.0,
+          "k10temp/temp1_input": 57.625
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 38.0,
+          "k10temp/temp1_input": 57.375
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.0,
+        "sensors": {
+          "amdgpu/temp1_input": 38.0,
+          "k10temp/temp1_input": 56.5
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 39.0,
+          "k10temp/temp1_input": 57.875
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.0,
+        "sensors": {
+          "amdgpu/temp1_input": 38.0,
+          "k10temp/temp1_input": 57.0
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 2.0,
+        "sensors": {
+          "amdgpu/temp1_input": 41.0,
+          "k10temp/temp1_input": 58.75
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.0,
+        "sensors": {
+          "amdgpu/temp1_input": 41.0,
+          "k10temp/temp1_input": 58.5
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.0,
+        "sensors": {
+          "amdgpu/temp1_input": 40.0,
+          "k10temp/temp1_input": 58.0
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.0,
+        "sensors": {
+          "amdgpu/temp1_input": 40.0,
+          "k10temp/temp1_input": 57.25
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.0,
+        "sensors": {
+          "amdgpu/temp1_input": 40.0,
+          "k10temp/temp1_input": 56.875
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.0,
+        "sensors": {
+          "amdgpu/temp1_input": 39.0,
+          "k10temp/temp1_input": 56.5
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.0,
+        "sensors": {
+          "amdgpu/temp1_input": 39.0,
+          "k10temp/temp1_input": 56.0
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 39.0,
+          "k10temp/temp1_input": 59.75
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.0,
+        "sensors": {
+          "amdgpu/temp1_input": 39.0,
+          "k10temp/temp1_input": 55.75
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 2.0,
+        "sensors": {
+          "amdgpu/temp1_input": 41.0,
+          "k10temp/temp1_input": 56.625
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.0,
+        "sensors": {
+          "amdgpu/temp1_input": 41.0,
+          "k10temp/temp1_input": 57.375
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.0,
+        "sensors": {
+          "amdgpu/temp1_input": 40.0,
+          "k10temp/temp1_input": 57.375
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.0,
+        "sensors": {
+          "amdgpu/temp1_input": 39.0,
+          "k10temp/temp1_input": 57.25
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.0,
+        "sensors": {
+          "amdgpu/temp1_input": 39.0,
+          "k10temp/temp1_input": 56.375
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.0,
+        "sensors": {
+          "amdgpu/temp1_input": 39.0,
+          "k10temp/temp1_input": 56.125
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.0,
+        "sensors": {
+          "amdgpu/temp1_input": 39.0,
+          "k10temp/temp1_input": 55.875
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 1.0,
+        "sensors": {
+          "amdgpu/temp1_input": 38.0,
+          "k10temp/temp1_input": 55.5
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 39.0,
+          "k10temp/temp1_input": 59.875
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 39.0,
+          "k10temp/temp1_input": 55.75
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 39.0,
+          "k10temp/temp1_input": 59.0
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 39.0,
+          "k10temp/temp1_input": 58.5
+        }
+      },
+      {
+        "reason": "event",
+        "waited_seconds": 0.5,
+        "sensors": {
+          "amdgpu/temp1_input": 39.0,
+          "k10temp/temp1_input": 58.5
+        }
+      }
+    ],
+    "min_transfer_bytes": 8388608
+  },
+  "phases": {
+    "model_seconds": 25.841420294999807,
+    "executor_seconds": 2.560452331000306,
+    "kernel_backend": "triton-hybrid+float32+q8_0",
+    "warmup-A_seconds": 75.41868076299943,
+    "A1_seconds": 82.83157804999973
+  }
+}
