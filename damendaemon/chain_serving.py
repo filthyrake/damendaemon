@@ -28,7 +28,8 @@ class ChainServingPair:
     packed_prefill = False
 
     def __init__(self, pipeline, model, *, alias='model', identity, stage_layers,
-                 chunk_size=128, models=None, identities=None):
+                 chunk_size=128, models=None, identities=None,
+                 stage_quantizations=None, stage_weight_bytes=None):
         if not isinstance(pipeline, ChainPipeline):
             raise ValueError('chain serving needs a ChainPipeline')
         if (pipeline.failed or pipeline.closed or any(pipeline.state.lengths)
@@ -45,6 +46,15 @@ class ChainServingPair:
                 or any(stage_layers[i][1] != stage_layers[i + 1][0]
                        for i in range(len(stage_layers) - 1))):
             raise ValueError('chain serving needs contiguous stage layer bounds')
+        if stage_quantizations is not None and (not isinstance(stage_quantizations, (list, tuple))
+                or len(stage_quantizations) != len(stage_layers)
+                or any(not isinstance(value, str) or value not in ('none', 'q4_0', 'q8_0')
+                       for value in stage_quantizations)):
+            raise ValueError('chain serving per-rank formats must be admitted formats for every rank')
+        if stage_weight_bytes is not None and (not isinstance(stage_weight_bytes, (list, tuple))
+                or len(stage_weight_bytes) != len(stage_layers)
+                or any(type(value) is not int or value < 0 for value in stage_weight_bytes)):
+            raise ValueError('chain serving per-rank weight bytes must cover every rank')
         self._validate_model(pipeline, model)
         if (type(chunk_size) is not int
                 or not 1 <= chunk_size <= 4096
@@ -54,6 +64,10 @@ class ChainServingPair:
         self.alias = alias
         self.identity = bytes(identity)
         self.stage_layers = [list(pair) for pair in stage_layers]
+        self.stage_quantizations = (None if stage_quantizations is None
+                                    else [str(value) for value in stage_quantizations])
+        self.stage_weight_bytes = (None if stage_weight_bytes is None
+                                    else list(stage_weight_bytes))
         self.state = pipeline.state
         self.max_batch = pipeline.state.slots
         self.chunk_size = chunk_size
@@ -167,22 +181,29 @@ class ChainDistributedRuntime(DistributedRuntime):
         if action != 'status' or options:
             raise ValueError('chain model management is not supported')
         pair = self.pair
-        return dict(device='distributed-cuda-chain',
-                    context=pair.pipeline.context,
-                    models=[dict(id=alias, residency='gpu' if alias == self.current_alias else 'host',
-                                 quantization=pair.models[alias].quantization,
-                                 model_sha256=pair.identities[alias].hex())
+        status = dict(device='distributed-cuda-chain',
+                      context=pair.pipeline.context,
+                      models=[dict(id=alias, residency='gpu' if alias == self.current_alias else 'host',
+                                   quantization=pair.models[alias].quantization,
+                                   model_sha256=pair.identities[alias].hex())
                             for alias in pair.aliases],
-                    current_model=self.current_alias, model_switches=self.switches,
-                    distributed=True, stage_layers=[list(bounds) for bounds in pair.stage_layers],
-                    max_batch_size=self.max_batch, packed_prefill=False,
-                    active=self.active, queued=self.requests.qsize(), completed=self.completed,
-                    heartbeats=self.heartbeats, stream_buffer_events=STREAM_BUFFER_EVENTS,
-                    client_admission_turns=True, client_decode_turns=self.client_decode_turns,
-                    client_prefill_turns=self.client_prefill_turns,
-                    interleaved_prefill=self.interleaved_prefill,
-                    prefill_chunk_size=self.pair.chunk_size,
-                    failed=self.failure is not None, closed=self.closed.is_set())
+                      current_model=self.current_alias, model_switches=self.switches,
+                      distributed=True, stage_layers=[list(bounds) for bounds in pair.stage_layers],
+                      max_batch_size=self.max_batch, packed_prefill=False,
+                      active=self.active, queued=self.requests.qsize(), completed=self.completed,
+                      heartbeats=self.heartbeats, stream_buffer_events=STREAM_BUFFER_EVENTS,
+                      client_admission_turns=True, client_decode_turns=self.client_decode_turns,
+                      client_prefill_turns=self.client_prefill_turns,
+                      interleaved_prefill=self.interleaved_prefill,
+                      prefill_chunk_size=self.pair.chunk_size,
+                      failed=self.failure is not None, closed=self.closed.is_set())
+        if pair.stage_quantizations is not None:
+            # Mixed-format chains (#601) report the per-rank precision and
+            # per-rank weight bytes the planner actually priced.
+            status['rank_quantizations'] = list(pair.stage_quantizations)
+            if pair.stage_weight_bytes is not None:
+                status['rank_weight_bytes'] = list(pair.stage_weight_bytes)
+        return status
 
     def _execution_failed(self, primary):
         # A poisoned chain epoch is never returned to an owner for reuse.
