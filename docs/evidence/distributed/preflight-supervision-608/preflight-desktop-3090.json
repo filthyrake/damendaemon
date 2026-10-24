@@ -1,0 +1,29 @@
+{
+  "items": [
+    {
+      "item": "torch",
+      "passed": true,
+      "torch": "2.13.0+cu130",
+      "build": "cuda",
+      "cuda": "13.0",
+      "hip": null,
+      "nccl": "2.29.7",
+      "note": "record this report and compare with the peer's before rendezvous; mixed torch/NCCL builds fail with opaque socket errors \u2014 align venvs first (gate 4 finding)"
+    },
+    {
+      "item": "gpus",
+      "passed": true,
+      "devices": [
+        {
+          "index": 0,
+          "name": "NVIDIA GeForce RTX 3090",
+          "uuid": "24ef3d4c-51dc-d004-4150-d6a70b05e069",
+          "total_gib": 23.61,
+          "free_gib": 23.34
+        }
+      ],
+      "note": "two-rank distributed-run needs two distinct explicit GPU UUIDs"
+    }
+  ],
+  "passed": true
+}

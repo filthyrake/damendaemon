@@ -18,6 +18,8 @@ from .layer_stage import LayerStage
 from .partition_policy import validate, packed_prefill_enabled
 from .qwen2 import ModelWeights
 from .stage_identity import fingerprint
+from .distributed_agreement import (MAX_PAYLOAD_BYTES, compare_payloads,
+                                    session_payload, transport_identity)
 from .stage_protocol import Command, StageState, PREFILL, DECODE, RELEASE, STOP, PING, VERSION, FAILED_TOKEN, PREFILL_BATCH, SWITCH, token_rows
 from .stage_setup import StageSetup
 from .stage_transport import StageChannel
@@ -92,14 +94,15 @@ class StagePair:
             self.owns_group = True
             dist.init_process_group('nccl', timeout=timedelta(seconds=30),
                                     device_id=torch.device('cuda', local_rank))
-            table=json.dumps([(alias,self.identities[alias].hex()) for alias in self.aliases],
-                             separators=(',',':'),ensure_ascii=True).encode()
-            agreement = table + struct.pack('<qqqqq', VERSION, context, max_batch, int(self.packed_prefill),
-                                                     int(self.q4_stage_adjacent))
-            identity = torch.tensor(list(hashlib.sha256(agreement).digest()), dtype=torch.uint8, device='cuda')
-            peers = [torch.empty_like(identity) for _ in range(2)]
-            dist.all_gather(peers, identity)
-            if not torch.equal(peers[0], peers[1]):raise ValueError('distributed model or session bounds mismatch')
+            table=[(alias,self.identities[alias].hex()) for alias in self.aliases]
+            bounds=dict(context=context,max_batch=max_batch,packed_prefill=self.packed_prefill,
+                        q4_stage_adjacent=self.q4_stage_adjacent)
+            payload=session_payload(table,bounds,transport_identity(torch),VERSION)
+            identity=torch.tensor(list(payload.ljust(MAX_PAYLOAD_BYTES,b'\0')),dtype=torch.uint8,device='cuda')
+            peers=[torch.empty_like(identity) for _ in range(2)]
+            dist.all_gather(peers,identity)
+            compare_payloads(bytes(peers[self.rank].tolist()).rstrip(b'\0'),
+                             bytes(peers[1-self.rank].tolist()).rstrip(b'\0'),self.rank)
             self.state = StageState(1, context, max_batch, models=len(self.models))
             self.channel = StageChannel(self.state, self.rank)
         except BaseException as error:
