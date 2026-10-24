@@ -2,7 +2,7 @@
 import torch
 import triton as tr
 import triton.language as tl
-from .rocm_policy import prefer_q8_small_batch_matvec
+from .rocm_policy import prefer_q8_blocked_matvec, prefer_q8_small_batch_matvec
 
 
 @tr.jit
@@ -82,6 +82,11 @@ def linear(x, weight, scales, bias=None):
         result = matmul(x,weight,scales,bias)
     elif x.shape[0] > 4:
         result = torch.nn.functional.linear(x, expand(weight, scales, x.dtype), bias)
+    elif (x.dtype == torch.float32 and bias is None
+          and prefer_q8_blocked_matvec(torch, x.device)):
+        # #66/#619: blocked reduction for one-to-four-row FP32 Q8 decode.
+        from .blocked_q8 import linear as blocked_linear
+        result = blocked_linear(x, weight, scales)
     else:
         result = torch.empty((x.shape[0],weight.shape[0]), device=x.device, dtype=x.dtype)
         block = tr.next_power_of_2(x.shape[1])
