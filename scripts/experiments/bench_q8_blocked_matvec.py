@@ -5,6 +5,9 @@ from pathlib import Path
 import statistics
 import time
 
+if not __debug__:
+    raise RuntimeError("q8 blocked-matvec experiment asserts numerical gates; run Python without -O or -OO.")
+
 import torch
 
 from damendaemon.runtime import require_gpu
