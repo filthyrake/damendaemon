@@ -527,3 +527,38 @@ claim class is the calibrated measurement. The per-rank-format planner's
 own split for the same budgets is reported as the capacity demonstration.
 Not qualified: mixed chain HTTP serving, resident switching, Q8 ranks,
 performance.
+
+## Fleet worker daemon (implementation + LAN cell)
+
+`damendaemon.worker_daemon.WorkerDaemon` turns a host's GPU head stage
+into a bounded listener speaking the EXISTING two-rank worker protocol —
+the same `HostTensorChannel`/`HostStageChannel`/`HostHybridWorker`
+frames over the same mutual-TLS pins and `damendaemon-host/1` ALPN; no
+second protocol exists. Nothing binds until construction succeeds: the
+stage factory must load a fresh final-range stage, which is validated and
+then released (the stage protocol closes stages on STOP, so every session
+rebuilds its own stage through the factory and the session identity — the
+caller-supplied 32-byte fingerprint both hosts derive from the same
+checkpoint — is pinned by the transport handshake).
+
+One exclusive client session runs at a time: a client that arrives while
+the session slot is held is refused at accept time, never queued. Any
+handshake, policy or execution failure poisons only that session and
+returns the daemon to idle; a client disconnect or idle timeout ends the
+session through the channel's own transport discipline. `close()`
+interrupts the listener and the active session and fails loudly if
+cleanup stalls. No multi-tenant scheduling, restart policy, serving
+admission or throughput claim is made.
+
+A LAN cell is qualified in
+`docs/evidence/distributed/fleet-worker-daemon-603/` (runner:
+`scripts/experiments/fleet_worker_cell_603.py`): one daemon process on
+the RTX 3090 served the Qwen3.5-0.8B head stage for two sequential
+sessions — a desktop loopback coordinator and a REMOTE coordinator on
+labnode3's A2 — with greedy tokens identical to a direct-socket
+no-daemon pair and the loopback session's boundary digests bit-exact
+against that pair. The cell runs unquantized: the Mac venv's torch 2.6.0
+predates the public `torch.mps.compile_shader` the real-model Metal
+kernels use, so the remote rank moved to the A2; quantized device cells
+are #600 evidence. Not qualified: session concurrency, model switching
+on a live daemon, serving admission, performance.
