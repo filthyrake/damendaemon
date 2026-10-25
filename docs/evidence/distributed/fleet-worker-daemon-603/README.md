@@ -87,3 +87,29 @@ covered by `tests/test_worker_daemon.py` over real TLS loopback. Not
 qualified: concurrent sessions, model switching on a live daemon, HTTP
 serving admission, throughput/latency, and automatic restart. HOMER was
 offline (thermal pad upgrade) and took no part.
+
+## #603 follow-ups (2026-10-25): session queue, live model switching, deployment
+
+Three recorded follow-ups landed as CPU-loopback work in
+`tests/test_worker_daemon.py` (no new remote cell; the LAN cell above
+remains the only remote qualification):
+
+- **Bounded session queue** (`session_queue=1..16`): FIFO parking of
+  arrivals while the session slot is held; the newest arrival is refused
+  when the bound is hit; a waiter whose slot never frees within the
+  daemon timeout is dropped and the daemon keeps serving.
+- **Live model switching** (`additional_models` on both ranks, at most
+  two entries, identical decoder configs, compatible unquantized
+  host-resident layouts, sources detached from the live stage): the
+  table is pinned at handshake, `switch_model` runs on idle sessions,
+  both models round-trip with distinct greedy outputs, a fresh session
+  reopens on the primary, and a table-size mismatch refuses the session
+  on both sides instead of deadlocking.
+- **Deployment note** (systemd unit pattern + out-of-band mutual-TLS
+  provisioning + loopback default): the "Deployment note (gate 5)"
+  section of `docs/multi-gpu.md` closes the last never-started item of
+  the original #603 acceptance list.
+
+Not qualified: quantized or device-boundary switch tables (rejected with
+an explicit reason at construction), switch latency under load, and
+concurrent sessions (still one exclusive slot).

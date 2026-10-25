@@ -42,6 +42,10 @@ class HybridLayerStage(HybridExecutor):
         if identity is None:
             identity = model._hybrid_stage_identity = object()
         self.source_identity = identity
+        # Retain the full source model: the stage's own .model is the layer
+        # shard, and switch tables (rebind sources, fingerprints) need the
+        # complete prepared weights.
+        self.source_model = model
         self.closed = False
         self.first = start == 0
         self.last = end == model.config['num_hidden_layers']
