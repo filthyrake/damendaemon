@@ -9,7 +9,7 @@ not a durable distributed transaction or a recovery protocol.
 import threading
 import torch
 from .host_tensor_channel import HostTensorChannel
-from .stage_protocol import StageState,Command,HEADER_WORDS,VERSION,PREFILL,DECODE,PREFILL_BATCH,PREFILL_CHUNK,RELEASE,STOP,PING,token_rows
+from .stage_protocol import StageState,Command,HEADER_WORDS,VERSION,PREFILL,DECODE,PREFILL_BATCH,PREFILL_CHUNK,RELEASE,STOP,PING,SWITCH,token_rows
 
 ADMISSION,COMPLETION=1,2
 EXECUTION=(PREFILL,DECODE,PREFILL_BATCH,PREFILL_CHUNK)
@@ -107,13 +107,20 @@ class HostStageChannel:
             self._pending(command)
             self.state.commit(command)
 
-    def finish(self,command):
-        """Acknowledge completed release/ping/stop, then commit local ownership."""
+    def finish(self,command,success=True):
+        """Acknowledge completed release/ping/stop/switch, then commit ownership.
+
+        A switch round commits model_index + a fresh epoch on success; a rank
+        whose local weight copy failed aborts the channel instead, poisoning
+        both ranks (there is no partial-weight rollback to publish).
+        """
         with self.lock:
             try:
                 self._pending(command)
-                if command.operation not in (RELEASE,PING,STOP):
+                if command.operation not in (RELEASE,PING,STOP,SWITCH):
                     raise ValueError('execution commands require validated token completion')
+                if not success:
+                    raise RuntimeError('stage round failed on this rank')
                 self._commit(command)
                 if command.operation==STOP:self.close()
             except BaseException:self.abort();raise

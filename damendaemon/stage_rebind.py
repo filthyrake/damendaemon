@@ -4,7 +4,28 @@ The owner must fence GPU work before copying and synchronize every participating
 stage before committing metadata. A copy failure invalidates the whole owner;
 these helpers cannot roll back partially overwritten device buffers.
 """
+import copy
+
 from .layer_stage import shard_model
+
+
+def detached_model(model):
+    """Clone a model's tensors so no stage construction aliases its weights.
+
+    CPU stage construction reuses model tensors without copying (.to() on a
+    matching CPU tensor is identity), so an in-place switch copy would corrupt
+    a source the live stage shares. Switch sources must be private. Ties
+    within weights (and within scales) are preserved.
+    """
+    detached = copy.copy(model)
+    seen = {}
+
+    def private(tensor):
+        return seen.setdefault(id(tensor), tensor.clone())
+
+    detached.weights = {name: private(tensor) for name, tensor in model.weights.items()}
+    detached.scales = {name: private(tensor) for name, tensor in model.scales.items()}
+    return detached
 
 
 def compatible_shard(stage, model):

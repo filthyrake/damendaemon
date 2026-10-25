@@ -560,5 +560,50 @@ no-daemon pair and the loopback session's boundary digests bit-exact
 against that pair. The cell runs unquantized: the Mac venv's torch 2.6.0
 predates the public `torch.mps.compile_shader` the real-model Metal
 kernels use, so the remote rank moved to the A2; quantized device cells
-are #600 evidence. Not qualified: session concurrency, model switching
-on a live daemon, serving admission, performance.
+are #600 evidence. Not qualified: serving admission, performance.
+
+### Session queue, live model switching, deployment (#603 follow-ups)
+
+**Bounded session queue.** `WorkerDaemon(..., session_queue=N)` (0..16,
+default 0) parks up to N arrivals in FIFO order instead of refusing them
+at accept time. One pump thread hands the queue head to the session slot
+when it frees; when the bound is hit the NEWEST arrival is refused and
+earlier arrivals keep their position. A waiter whose slot never frees
+within the daemon timeout is dropped (the daemon timeout is also the
+session idle timeout, so a long queue wait competes with the live
+session's own liveness, not just the waiter's patience). Queue waiters
+hold a raw TLS connection and execute nothing until served.
+
+**Live model switching.** `WorkerDaemon(..., additional_models=[(alias,
+factory), ...])` (at most one additional alias) and the coordinator-side
+`HostHybridWorker(..., additional_models=[(alias, model), ...])` agree on
+a pre-arranged switch table: at most two entries, identical decoder
+configs, and each entry must shard into the resident stage layout. Every
+session pins the table at handshake — switch tables carry content
+fingerprints, single-model sessions pin the active contract digest, so a
+peer with a different table fails the handshake instead of deadlocking.
+`switch_model(alias)` (coordinator only, idle sessions only: every slot
+released) copies each rank's pre-agreed shard in place and the lockstep
+ack commits model_index plus a fresh epoch everywhere; a copy failure
+aborts the channel on the failing rank and poisons the session — there is
+no partial-weight rollback. Sources are detached clones, so the resident
+table never aliases a live stage. Scope is honest: host-resident
+UNQUANTIZED stages only (packed formats cache precomputed projections an
+in-place copy cannot refresh; device-boundary workers hold no switchable
+source), and both models stay resident for the daemon's lifetime —
+switching trades residency for latency, it does not stream weights from
+disk.
+
+**Deployment note (gate 5).** The daemon is a plain long-running Python
+process; the systemd unit pattern is `ExecStart=<venv>/python -m
+<entrypoint>` with `Restart=on-failure` and a `RestartSec` that respects
+the stage factory's load time. There is no client-facing PKI service:
+the mutual-TLS identity comes from the existing `host_tls` material
+(`server_context` + the single admitted client pin), so the deployment
+step is provisioning `ca.pem`/`server.pem`/`server.key` plus the client
+certificate pair out-of-band and pinning the client certificate at
+construction. Bind loopback unless the LAN path is the point; the
+fingerprint handshake catches a stale checkpoint, not a hostile peer.
+Session queueing and model switching above are CPU-loopback-tested in
+`tests/test_worker_daemon.py`; the remote-hardware cell in the evidence
+directory remains the only remote qualification.

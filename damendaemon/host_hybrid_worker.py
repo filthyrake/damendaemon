@@ -11,14 +11,48 @@ import threading
 import torch
 from .device_hybrid_stage import DeviceHybridStage
 from .host_stage_channel import HostStageChannel
-from .hybrid_stage import HybridLayerStage
-from .stage_protocol import Command,PREFILL,PREFILL_BATCH,PREFILL_CHUNK,DECODE,RELEASE,PING,STOP
+from .hybrid_stage import HybridLayerStage, shard_model
+from .stage_identity import fingerprint
+from .stage_protocol import Command,PREFILL,PREFILL_BATCH,PREFILL_CHUNK,DECODE,RELEASE,PING,STOP,SWITCH
+from .stage_rebind import detached_model
 
 # Device workers disclose their accelerator and compute precision at setup;
 # the shared digest below covers the boundary contract instead, so the two
 # ranks of a cross-vendor pair may legitimately differ in compute precision.
 DEVICE_CODES={'cpu':0,'cuda':1,'xpu':2,'mps':3}
 DTYPE_CODES={torch.float32:0,torch.float16:1}
+
+
+def _aliased(weights, resident):
+    """True when any source tensor shares storage with a resident weight."""
+    live = {t.data_ptr() for t in resident.values() if t.numel()}
+    return any(t.data_ptr() in live for t in weights.values() if t.numel())
+
+
+def _host_shard(stage, model):
+    """Host variant of stage_rebind.compatible_shard for HybridLayerStage."""
+    try:
+        shard = shard_model(model, stage.layer_start, stage.layer_end)
+    except ValueError:
+        return None
+    if (stage.model.config != shard.config
+            or stage.model.quantization != shard.quantization
+            or stage.model.max_context != shard.max_context
+            or stage.w.keys() != shard.weights.keys()):
+        return None
+
+    def aliases(values):
+        first = {}
+        return {name: first.setdefault(id(value), name) for name, value in values.items()}
+
+    # Tied weights must stay tied identically on both sides of the copy.
+    if aliases(stage.w) != aliases(shard.weights):
+        return None
+    for name, target in stage.w.items():
+        source = shard.weights[name]
+        if target.shape != source.shape or target.dtype != source.dtype:
+            return None
+    return shard
 
 
 def _token_policy(config,mapped_vocab_size,excluded_ids):
@@ -37,7 +71,7 @@ def _token_policy(config,mapped_vocab_size,excluded_ids):
 
 
 class HostHybridWorker:
-    def __init__(self,channel,stage,*,mapped_vocab_size=None,excluded_ids=()):
+    def __init__(self,channel,stage,*,mapped_vocab_size=None,excluded_ids=(),additional_models=()):
         device_stage=isinstance(stage,DeviceHybridStage)
         if (not isinstance(channel,HostStageChannel) or channel.ready or channel.closed
                 or getattr(channel,'_worker_owner',None) is not None
@@ -70,6 +104,53 @@ class HostHybridWorker:
         self.peer_descriptor=None
         self.mapped_vocab_size,self.excluded_ids=mapped,excluded
         self.channel,self.stage,self.rank=channel,stage,channel.rank
+        # Optional pre-agreed switch table (#603): the active model plus at
+        # most one additional model. Every table entry must shard into the
+        # resident stage layout and share the active decoder config; the
+        # switch itself copies weights in place. Both ranks construct with
+        # the same table and pin it at handshake. Host-resident unquantized
+        # stages only: packed formats cache precomputed projections that an
+        # in-place copy cannot refresh, and device-boundary workers hold no
+        # switchable source at all. With no table, nothing is retained or
+        # cloned — single-model sessions cost nothing extra.
+        self.aliases=('model',)
+        self.models={'model':stage.model}
+        self.identities=None
+        if additional_models:
+            if (device_stage
+                    or stage.model.quantization!='none'
+                    or not isinstance(additional_models,(list,tuple))
+                    or len(additional_models)>1
+                    or any(not isinstance(pair,(list,tuple)) or len(pair)!=2
+                           or not isinstance(pair[0],str) or not 1<=len(pair[0])<=128
+                           for pair in additional_models)
+                    or len({alias for alias,_ in additional_models} | {'model'})
+                    !=1+len(additional_models)
+                    or channel.state.models!=1+len(additional_models)
+                    or any(model.config!=stage.model.config for _,model in additional_models)
+                    or any(_host_shard(stage,model) is None for _,model in additional_models)):
+                raise ValueError('host hybrid model switching requires unique aliases, identical '
+                                 'decoder configs and compatible unquantized resident layouts '
+                                 '(at most two models)')
+            # Sources must be disjoint from the live stage: CPU stage
+            # construction reuses model tensors without copying (.to() on a
+            # matching CPU tensor is identity), so an in-place switch copy
+            # would corrupt a source the stage shares. The primary source is
+            # DETACHED from the stage's own (aliased) view — the stage
+            # retains its full prepared source for exactly this use — and
+            # each owner-supplied source is checked before admission.
+            if any(_aliased(model.weights,stage.w) for _,model in additional_models):
+                raise ValueError('host hybrid model switching requires sources '
+                                 'disjoint from the live stage')
+            full=getattr(stage,'source_model',stage.model)
+            self.aliases=('model',*(alias for alias,_ in additional_models))
+            self.models={'model':detached_model(full),
+                         **{alias:model for alias,model in additional_models}}
+            # Content fingerprints of the prepared CPU models; a device-boundary
+            # worker cannot fingerprint device tensors, so switching is a
+            # host-resident-model feature.
+            try:self.identities={alias:fingerprint(model) for alias,model in self.models.items()}
+            except BaseException:raise ValueError('host hybrid model switching requires prepared CPU models')
         self.width=stage.c['hidden_size'];self.ready=self.failed=self.closed=False
         self.lock=threading.RLock();self.owner=object()
         channel._worker_owner=stage._pipeline_owner=self.owner
@@ -113,6 +194,18 @@ class HostHybridWorker:
                 if peer[0]!=self.descriptor[0] or any(type(value) is not int or value<0 for value in peer):
                     raise ValueError('host hybrid worker kinds disagree (CPU vs device boundary)')
                 if self.device_stage:self.peer_descriptor=peer
+                # Every session pins the model table: switch tables carry
+                # content fingerprints, single-model tables pin the active
+                # contract digest. A peer with a different table size cannot
+                # deadlock here — both sides always send one fixed-size round.
+                if self.identities is not None:
+                    table=[[alias,self.identities[alias].hex()] for alias in self.aliases]
+                else:
+                    table=[['model',self.contract.hex()]]
+                payload=json.dumps(table,separators=(',',':')).encode().ljust(1024,b'\0')
+                peer=bytes(self._exchange_setup(torch.tensor(list(payload),dtype=torch.uint8,device='cpu')).tolist())
+                if peer.rstrip(b'\0')!=payload.rstrip(b'\0'):
+                    raise ValueError('host hybrid model table disagrees')
                 self.ready=True
             except BaseException as error:self._fail(error);raise
 
@@ -188,6 +281,41 @@ class HostHybridWorker:
     def stop(self):
         with self.lock:self._ready(True);return self._execute(self._command(STOP,0,()))
 
+    def switch_model(self,alias):
+        """Switch only an idle session to a model agreed before serving opened."""
+        with self.lock:
+            self._ready(coordinator=True)
+            if alias not in self.models:raise ValueError('unknown host hybrid model alias')
+            index=self.aliases.index(alias)
+            state=self.channel.state
+            if index==state.model_index:return False
+            if any(state.lengths):raise ValueError('model switch requires released request slots')
+            self._execute(self._command(SWITCH,index,()))
+            return True
+
+    def _switch_weights(self,command):
+        """Both ranks copy their pre-agreed shard in place, then the lockstep
+        finish commits model_index + a fresh epoch everywhere. A copy failure
+        aborts the channel on the failing rank; the peer's finish fails on the
+        broken transport and the session poisons (no partial-weight rollback)."""
+        error=None;shard=None
+        try:
+            shard=_host_shard(self.stage,self.models[self.aliases[command.rows]])
+            if shard is None:raise ValueError('host hybrid stage layout changed since admission')
+            for name,target in self.stage.w.items():
+                target.copy_(shard.weights[name])
+        except BaseException as failure:error=failure
+        try:
+            self.channel.finish(command,success=error is None)
+            # Publish only after the lockstep ack: same two-phase discipline
+            # as stage_rebind.commit_stage_binding on the two-rank path.
+            self.stage.model=shard
+            self.stage.c=shard.config
+            self.stage.lengths[:]=self.channel.state.lengths
+            self.stage.length=self.stage.lengths[0]
+        except BaseException as failure:
+            self._fail(failure);raise
+
     def step(self):
         with self.lock:
             self._ready()
@@ -225,6 +353,7 @@ class HostHybridWorker:
     def _execute(self,command=None,tokens=None):
         try:
             command=self.channel.begin(command)
+            if command.operation==SWITCH:return self._switch_weights(command)
             if command.operation in (RELEASE,PING,STOP):
                 if command.operation==RELEASE:self._clear_slots(command)
                 if command.operation==STOP:self.stage.close()
