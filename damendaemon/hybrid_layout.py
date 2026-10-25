@@ -228,26 +228,55 @@ def stage_budget_formats(pricing, config, context, batch, cache_element_bytes, s
 
 
 def choose_stage_splits(weights, config, context, batch, cache_element_bytes, budgets, fp32_weights=False,
-                        scales=None):
+                        scales=None, boundary_topology=None, topology_policy='penalize'):
     """Minimize maximum estimated utilization across ordered device budgets.
 
     Contiguous, nonempty stages only. This balances storage, not transfer or
     compute time; the supplied budgets are inputs, never live device queries.
+
+    Topology awareness (#604): boundary_topology, when supplied, describes
+    each adjacent rank pair (len(budgets)-1 entries) with peer_available and
+    cross_numa. Non-P2P and cross-NUMA links carry disclosed penalties added
+    to the planning score (topology_penalty_total alongside the pure
+    utilization), so callers comparing device orderings can price transfer
+    cost instead of assuming uniform links; topology_policy='exclude' refuses
+    orderings whose adjacent pair lacks P2P outright.
     """
     from fractions import Fraction
+    NON_P2P_PENALTY = Fraction(1, 8)
+    CROSS_NUMA_PENALTY = Fraction(1, 16)
     count = config['num_hidden_layers']
     if (not isinstance(budgets, (list, tuple)) or not 1 <= len(budgets) <= min(16, count)
             or any(type(value) is not int or value <= 0 for value in budgets)
             or count > 256):
         raise ValueError('stage planning requires 1..16 positive byte budgets, at least one layer per stage and at most 256 layers')
+    links = None
+    if boundary_topology is not None:
+        if (not isinstance(boundary_topology, (list, tuple))
+                or len(boundary_topology) != len(budgets) - 1
+                or any(not isinstance(link, dict) or 'peer_available' not in link for link in boundary_topology)):
+            raise ValueError('boundary_topology needs one {peer_available, cross_numa} dict per adjacent rank pair')
+        if topology_policy not in ('penalize', 'exclude'):
+            raise ValueError("topology_policy must be 'penalize' or 'exclude'")
+        links = [dict(peer_available=bool(link['peer_available']),
+                      cross_numa=bool(link.get('cross_numa', False))) for link in boundary_topology]
+        if topology_policy == 'exclude' and any(not link['peer_available'] for link in links):
+            bad = next(index for index, link in enumerate(links) if not link['peer_available'])
+            return dict(storage_plan_found=False, device_budget_bytes=list(budgets),
+                        reason=f'rank {bad} and rank {bad + 1} cannot reach peer access '
+                               f'(topology_policy=exclude); reorder devices or use penalize policy')
     # (range -> shared admission budget) avoids recomputing tensor accounting
     # for the same candidate on different participating devices.
     candidates = {}
-    states = {0: (Fraction(0), ())}
+    states = {0: (Fraction(0), Fraction(0), ())}
     for rank, limit in enumerate(budgets):
         next_states = {}
+        link = links[rank - 1] if links and rank > 0 else None
+        penalty = Fraction(0) if link is None else (
+            (0 if link['peer_available'] else NON_P2P_PENALTY)
+            + (0 if not link['cross_numa'] else CROSS_NUMA_PENALTY))
         last = count-(len(budgets)-rank-1)
-        for start, (score, ranges) in states.items():
+        for start, (score, penalty_total, ranges) in states.items():
             for end in range(start+1, last+1):
                 key = (start, end)
                 if key not in candidates:
@@ -256,16 +285,20 @@ def choose_stage_splits(weights, config, context, batch, cache_element_bytes, bu
                 required = candidates[key]['required_memory_bytes']
                 if required > limit:
                     continue
-                candidate = (max(score, Fraction(required, limit)), (*ranges, key))
+                candidate = (max(score, Fraction(required, limit)), penalty_total + penalty, (*ranges, key))
                 if end not in next_states or candidate < next_states[end]:
                     next_states[end] = candidate
         states = next_states
     if count not in states:
         return dict(storage_plan_found=False, device_budget_bytes=list(budgets),
                     reason='No contiguous nonempty partition fits the supplied storage budgets')
-    score, ranges = states[count]
+    score, penalty_total, ranges = states[count]
     return dict(storage_plan_found=True, splits=[end for _, end in ranges[:-1]],
-                maximum_estimated_utilization=float(score), device_budget_bytes=list(budgets),
+                maximum_estimated_utilization=float(score),
+                topology_penalty_total=float(penalty_total),
+                boundary_links=[dict(ranks=[index, index + 1], **link)
+                                for index, link in enumerate(links)] if links else None,
+                device_budget_bytes=list(budgets),
                 stages=[dict(candidates[key], device_budget_bytes=limit,
                              remaining_budget_bytes=limit-candidates[key]['required_memory_bytes'])
                         for key, limit in zip(ranges, budgets)])
