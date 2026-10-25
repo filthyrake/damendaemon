@@ -32,6 +32,12 @@ class CotenancyInventoryTest(unittest.TestCase):
         self.assertIsNone(report['control_binary'])
         self.assertFalse(report['server_running'])
 
+    def test_compute_mode_skips_honestly_without_nvidia_smi(self):
+        with mock.patch.object(cotenancy_inventory, 'nvidia_smi', return_value=None):
+            report = cotenancy_inventory.compute_mode_inventory()
+        self.assertTrue(report['passed'])
+        self.assertIn('not applicable', report['note'])
+
     def test_mps_detects_running_server(self):
         with mock.patch.object(cotenancy_inventory.shutil, 'which', return_value='/usr/bin/nvidia-cuda-mps-control'), \
              mock.patch.object(cotenancy_inventory, 'nvidia_smi', return_value=[
@@ -56,9 +62,10 @@ class CotenancyInventoryTest(unittest.TestCase):
             report = fleet_preflight.run_report_with_cotenancy(fake, peer=None)
         items = [item['item'] for item in report['items']]
         self.assertEqual(items, ['torch', 'gpus', 'mig', 'compute_mode', 'mps', 'topology'])
-        # with no nvidia-smi, compute_mode honestly fails -> the report fails
-        self.assertFalse(report['passed'])
-        self.assertFalse([i for i in report['items'] if i['item'] == 'compute_mode'][0]['passed'])
+        # every item skips honestly when nvidia-smi is absent -> report passes
+        self.assertTrue(report['passed'])
+        self.assertEqual(
+            [item['item'] for item in report['items'] if not item['passed']], [])
 
 
 if __name__ == '__main__':

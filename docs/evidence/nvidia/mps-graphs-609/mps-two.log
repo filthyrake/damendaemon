@@ -1,0 +1,13 @@
+MPS control started
+serve on 8391 (graphs ON)
+serve on 8392 (graphs ON)
+== port 8391 correctness ==
+correct: mps-two 8391 ' Paris. It is the largest city in Europe and the second' {'prompt_tokens': 5, 'completion_tokens': 12, 'total_tokens': 17}
+{"phase": "mps-two", "port": 8391, "decode_wall_seconds": 0.26, "completion_tokens": 128, "ms_per_token": 2.03}
+== port 8392 correctness ==
+correct: mps-two 8392 ' Paris. It is the largest city in Europe and the second' {'prompt_tokens': 5, 'completion_tokens': 12, 'total_tokens': 17}
+{"phase": "mps-two", "port": 8392, "decode_wall_seconds": 0.257, "completion_tokens": 128, "ms_per_token": 2.01}
+== per-process ==
+1641952, nvidia-cuda-mps-server, 30 MiB
+1641940, /home/damen/3090-damendaemon/venv/bin/python, 1518 MiB
+1641941, /home/damen/3090-damendaemon/venv/bin/python, 1518 MiB

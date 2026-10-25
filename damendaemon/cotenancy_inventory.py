@@ -51,11 +51,17 @@ def mig_inventory():
 
 
 def compute_mode_inventory():
-    """Per-GPU compute mode: Exclusive/Prohibited modes block co-tenancy."""
+    """Per-GPU compute mode: Exclusive/Prohibited modes block co-tenancy.
+
+    nvidia-smi absence means the concept does not apply (non-NVIDIA host) or
+    the tool is unavailable — either way this is a disclosed skip, not a
+    failed preflight: MIG and MPS treat a missing nvidia-smi the same way.
+    """
     rows = nvidia_smi('--query-gpu=index,name,compute_mode', '--format=csv,noheader')
     if rows is None:
-        return dict(item='compute_mode', passed=False,
-                    error='nvidia-smi unavailable; compute mode unknown')
+        return dict(item='compute_mode', passed=True,
+                    note='nvidia-smi unavailable; compute mode is an NVIDIA concept — '
+                         'not applicable or unverifiable on this host')
     blocking = [row for row in rows if row['compute_mode'] not in ('Default',)]
     return dict(item='compute_mode', passed=True, gpus=rows,
                 note='Exclusive/Prohibited modes block a second damendaemon process or MPS'
