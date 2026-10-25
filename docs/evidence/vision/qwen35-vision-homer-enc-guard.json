@@ -1,0 +1,76 @@
+{
+  "command": [
+    "env",
+    "PYTHONPATH=/tmp/v50",
+    "ROCR_VISIBLE_DEVICES=0",
+    "HIP_VISIBLE_DEVICES=0",
+    "OMP_NUM_THREADS=4",
+    "/home/damen/strixenv/bin/python",
+    "scripts/verify_qwen35_vision.py",
+    "/tmp/v50/qwen35-vision-cpu-fp32.pt",
+    "--output",
+    "/tmp/v50/qwen35-vision-homer-enc08b.json",
+    "--device",
+    "cuda",
+    "--model",
+    "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17"
+  ],
+  "timeout_seconds": 1500,
+  "cooling": {
+    "limit_celsius": 85,
+    "checks": 9,
+    "fans": [
+      {
+        "name": "fan1",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4269,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan2",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4347,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan3",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 1816,
+        "minimum_rpm": 1000
+      }
+    ],
+    "maximum_observed_celsius": 53.625,
+    "sensors": [
+      {
+        "driver": "amdgpu",
+        "label": "edge",
+        "celsius": 36.0,
+        "cutoff_celsius": 85
+      },
+      {
+        "driver": "k10temp",
+        "label": "Tctl",
+        "celsius": 53.375,
+        "cutoff_celsius": 85
+      }
+    ],
+    "error": null
+  },
+  "watchdog": {
+    "reserve_bytes": 21474836480,
+    "minimum_available_bytes": 119159504896,
+    "last_available_bytes": 121005588480,
+    "triggered": false,
+    "error": null
+  },
+  "phase": "completed",
+  "cleanup_complete": true,
+  "host_available_before": 121050771456,
+  "child_pid": 111985,
+  "seconds": 8.988747547002276,
+  "exit_code": 0,
+  "host_available_after": 121006112768
+}
