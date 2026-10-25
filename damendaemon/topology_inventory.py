@@ -57,13 +57,15 @@ def device_numa_and_affinity(bus_id, reader=None):
         return dict(numa_node=None, local_cpulist=None,
                     note='PCI bus id unavailable; NUMA placement unknown')
     node = _read_sysfs_int(f'{base}/numa_node', reader)
-    if node is not None and node < 0:
-        node = None  # -1: machine is NUMA-flat or the node is not exported
     cpus = None
     try:
         cpus = (reader or (lambda p: open(p).read()))(f'{base}/local_cpulist').strip() or None
     except OSError:
         pass
+    if node is not None and node < 0:
+        # -1 is not an export failure: the machine is NUMA-flat (single node)
+        return dict(numa_node=None, local_cpulist=cpus,
+                    note='NUMA-flat machine (sysfs node -1): no cross-socket staging cost')
     return dict(numa_node=node, local_cpulist=cpus,
                 note=None if node is not None else 'NUMA node not exported; treat as unknown')
 
