@@ -93,8 +93,11 @@ def main(argv=None):
     parser.add_argument('--peer', metavar='HOST[:PORT]', default=None,
                         help='probe the peer\'s rendezvous TCP port (default port 29500)')
     parser.add_argument('--probe-timeout', type=float, default=5.0)
+    parser.add_argument('--cotenancy', action='store_true', default=True,
+                        help='include read-only NVIDIA co-tenancy items (MIG, compute mode, MPS)')
     args = parser.parse_args(argv)
-    report = run_report(__import__('torch'), peer=args.peer, probe_timeout=args.probe_timeout)
+    report = run_report_with_cotenancy(__import__('torch'), peer=args.peer,
+                                       probe_timeout=args.probe_timeout)
     print(json.dumps(report, indent=2))
     return 0 if report['passed'] else 1
 
