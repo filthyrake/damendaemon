@@ -46,6 +46,11 @@ class HybridPipeline:
         self.lengths = [0]*self.max_batch
         self.failed = self.closed = False
         self.lock = threading.RLock()
+        # #604 gate 3: enable peer access where the runtime reports mutual
+        # availability so cross-stage transfers take the P2P path; single-GPU
+        # or heterogeneous setups yield an empty/all-fallback disclosure.
+        from .transfer_policy import enable_peer_access
+        self.peer_disclosures = enable_peer_access(torch)
 
     def _ready(self):
         if self.closed or self.failed:
