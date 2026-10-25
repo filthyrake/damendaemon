@@ -1,0 +1,413 @@
+{
+  "passed": true,
+  "scope": "experimental multimodal computation; not serving qualification",
+  "graph": false,
+  "kernel_backend": "triton-hybrid",
+  "batch_capacity": 3,
+  "inline_messages": false,
+  "text_quantization": "none",
+  "device": "Radeon 8060S Graphics",
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-2B/snapshots/15852e8c16360a2fea060d615a32b45270f8a8fc",
+  "reference_model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-2B/snapshots/15852e8c16360a2fea060d615a32b45270f8a8fc",
+  "torch": "2.11.0+rocm7.13.0a20260425",
+  "checks": [
+    {
+      "label": "square:prefill",
+      "relative_rms": 0.0035933118779212236,
+      "max_absolute": 0.04011392593383789,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:prefill",
+      "relative_rms": 0.0029577354434877634,
+      "max_absolute": 0.03961992263793945,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:prefill",
+      "relative_rms": 0.0036525093019008636,
+      "max_absolute": 0.05903434753417969,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:0",
+      "relative_rms": 0.0024935731198638678,
+      "max_absolute": 0.05389976501464844,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:0",
+      "relative_rms": 0.0020092830527573824,
+      "max_absolute": 0.027091026306152344,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:0",
+      "relative_rms": 0.002237813314422965,
+      "max_absolute": 0.02476656436920166,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:1",
+      "relative_rms": 0.002524574054405093,
+      "max_absolute": 0.03701305389404297,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:1",
+      "relative_rms": 0.0017117433017119765,
+      "max_absolute": 0.026859283447265625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:1",
+      "relative_rms": 0.0020843246020376682,
+      "max_absolute": 0.02548813819885254,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:2",
+      "relative_rms": 0.0021586688235402107,
+      "max_absolute": 0.03593635559082031,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:2",
+      "relative_rms": 0.0015768117737025023,
+      "max_absolute": 0.025192737579345703,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:2",
+      "relative_rms": 0.002279470441862941,
+      "max_absolute": 0.029392242431640625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:3",
+      "relative_rms": 0.0019511833088472486,
+      "max_absolute": 0.0414576530456543,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:3",
+      "relative_rms": 0.0014403089880943298,
+      "max_absolute": 0.0224611759185791,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:3",
+      "relative_rms": 0.0011721915798261762,
+      "max_absolute": 0.017667293548583984,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:4",
+      "relative_rms": 0.0021625920198857784,
+      "max_absolute": 0.02610301971435547,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:4",
+      "relative_rms": 0.0016475218581035733,
+      "max_absolute": 0.02967679500579834,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:4",
+      "relative_rms": 0.0012377199018374085,
+      "max_absolute": 0.019489288330078125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:5",
+      "relative_rms": 0.0022417812142521143,
+      "max_absolute": 0.02967357635498047,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:5",
+      "relative_rms": 0.0016710851341485977,
+      "max_absolute": 0.021065950393676758,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:5",
+      "relative_rms": 0.002474381122738123,
+      "max_absolute": 0.02447444200515747,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:6",
+      "relative_rms": 0.0016975399339571595,
+      "max_absolute": 0.02345907688140869,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:6",
+      "relative_rms": 0.0013989658327773213,
+      "max_absolute": 0.018625974655151367,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:6",
+      "relative_rms": 0.0019365514162927866,
+      "max_absolute": 0.02169513702392578,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:7",
+      "relative_rms": 0.001285499893128872,
+      "max_absolute": 0.025223731994628906,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:7",
+      "relative_rms": 0.0012483500177040696,
+      "max_absolute": 0.020604372024536133,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:7",
+      "relative_rms": 0.0018588838865980506,
+      "max_absolute": 0.023318886756896973,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:prefill",
+      "relative_rms": 0.004536617547273636,
+      "max_absolute": 0.048478126525878906,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:prefill",
+      "relative_rms": 0.0044016591273248196,
+      "max_absolute": 0.04767167568206787,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:prefill",
+      "relative_rms": 0.0018100370652973652,
+      "max_absolute": 0.0202484130859375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:0",
+      "relative_rms": 0.001569843734614551,
+      "max_absolute": 0.027633070945739746,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:0",
+      "relative_rms": 0.002554649021476507,
+      "max_absolute": 0.05120658874511719,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:0",
+      "relative_rms": 0.001795013784430921,
+      "max_absolute": 0.0351862907409668,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:1",
+      "relative_rms": 0.001788985333405435,
+      "max_absolute": 0.031023025512695312,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:1",
+      "relative_rms": 0.0043318807147443295,
+      "max_absolute": 0.11186826229095459,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:1",
+      "relative_rms": 0.0025282155256718397,
+      "max_absolute": 0.0380021333694458,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:2",
+      "relative_rms": 0.0019036127487197518,
+      "max_absolute": 0.03488445281982422,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:2",
+      "relative_rms": 0.0034629167057573795,
+      "max_absolute": 0.056282997131347656,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:2",
+      "relative_rms": 0.001955281477421522,
+      "max_absolute": 0.031491994857788086,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:3",
+      "relative_rms": 0.0012908800272271037,
+      "max_absolute": 0.027149200439453125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:3",
+      "relative_rms": 0.00395957101136446,
+      "max_absolute": 0.07515096664428711,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:3",
+      "relative_rms": 0.0012822678545489907,
+      "max_absolute": 0.03520631790161133,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:4",
+      "relative_rms": 0.0017722189659252763,
+      "max_absolute": 0.026386022567749023,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:4",
+      "relative_rms": 0.0030635264702141285,
+      "max_absolute": 0.04542011022567749,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:4",
+      "relative_rms": 0.0019480965565890074,
+      "max_absolute": 0.04469633102416992,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:5",
+      "relative_rms": 0.0022342198062688112,
+      "max_absolute": 0.03366804122924805,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:5",
+      "relative_rms": 0.003141489578410983,
+      "max_absolute": 0.054270267486572266,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:5",
+      "relative_rms": 0.0016227259766310453,
+      "max_absolute": 0.03294658660888672,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:6",
+      "relative_rms": 0.0016360729932785034,
+      "max_absolute": 0.019304275512695312,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:6",
+      "relative_rms": 0.0026897441130131483,
+      "max_absolute": 0.04559439420700073,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:6",
+      "relative_rms": 0.0013693650253117085,
+      "max_absolute": 0.020519256591796875,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:7",
+      "relative_rms": 0.0017165462486445904,
+      "max_absolute": 0.02190685272216797,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:7",
+      "relative_rms": 0.0017819564091041684,
+      "max_absolute": 0.036124229431152344,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:7",
+      "relative_rms": 0.0019710834603756666,
+      "max_absolute": 0.03441786766052246,
+      "greedy_match": true,
+      "passed": true
+    }
+  ],
+  "reference_sha256": "f5de106f92d7a31fec3647b5baae7a235404c1fe17762a339052dae327c0ae3d",
+  "sources": {
+    "damendaemon/qwen2.py": "1a186044c00b2cb5d63a9bab44112f560c104f9ae1e5c45a8c056c869cd7d15d",
+    "damendaemon/quantization.py": "a0f94f01f5ab5c17c87b4afcc2fac5f3bd4102a3fb70fda2d542e7d218a91736",
+    "damendaemon/vision_qwen35.py": "27670144348a0b18107ebaa5ae571c1b1a3b6224b896cf73347bb9ecc8eee8b9",
+    "damendaemon/vision_inputs.py": "578406a74491a34ab431859647b755ce7773a7b455c4fd0b40a6e88daff5e73b",
+    "damendaemon/vision_positions.py": "f5ca7930aa22b73192bcdeec55fab7f072c6143ec273d9ff3e10eaa164f5da54",
+    "damendaemon/hybrid.py": "0b3fc682d6f50f0ef74335d95bc1b74a9693d1c39d5e6951e6de35dd67c7c7d1",
+    "damendaemon/hybrid_metal.py": "2ed99072a61d306c8a07470a0bd6ba6f0bc00c55f34bca47520e2813e7fd5202",
+    "damendaemon/quantized_metal.py": "506be7a877c48f379fc69f0be8c4dbfc01ab5fdbc6c7417c49bbd59ab21675ec",
+    "damendaemon/vision_hybrid.py": "34331caca3f73458d12cca8d4c058209c0db51602239de33abab2bb6fa350c07",
+    "damendaemon/vision_model.py": "387acbffe0e3b77c7d342e446d01f79e1c793b6d3d642c0a9a1cdf2cc03a7ec0",
+    "damendaemon/vision_messages.py": "46129a2b90f86f7dc764afffa437a0455b5c19c1c18631f6fb61ec245853cd3d",
+    "scripts/experiments/vision_qwen35.py": "0bd222828c1c2d43cb69b3a984bb04f92eff1d408c6735fff38a3d84fca89f78"
+  },
+  "changed_image_control": {
+    "same_tokens": true,
+    "native_logit_difference": 0.9411025047302246,
+    "reference_logit_difference": 0.9482421875
+  }
+}
