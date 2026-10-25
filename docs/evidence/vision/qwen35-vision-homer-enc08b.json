@@ -1,0 +1,666 @@
+{
+  "passed": true,
+  "scope": "standalone vision encoder, not multimodal serving qualification",
+  "device": "Radeon 8060S Graphics",
+  "torch": "2.11.0+rocm7.13.0a20260425",
+  "backend": "compensated-cuda-vision",
+  "attention": "sdpa",
+  "projection_storage": "torch.float16",
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+  "reference_model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+  "host_weight_bytes": 204977152,
+  "device_weight_bytes": 204977152,
+  "reference_device": "cpu",
+  "reference_dtype": "float32",
+  "reference_transformers": "5.18.0",
+  "reference_torch": "2.13.0+cu130",
+  "reference_sha256": "29b33aeb56a90058b72b7983955f4d7575e35d9da03370fa23d6ba3d44a0c5c2",
+  "source_sha256": "27670144348a0b18107ebaa5ae571c1b1a3b6224b896cf73347bb9ecc8eee8b9",
+  "gates": {
+    "relative_rms": 0.0001,
+    "max_absolute_floor": 0.02,
+    "max_absolute_element_relative": 0.0005
+  },
+  "cases": [
+    {
+      "name": "square",
+      "grids": [
+        [
+          1,
+          16,
+          16
+        ]
+      ],
+      "checks": [
+        {
+          "stage": "patch",
+          "relative_rms": 3.9334605617113994e-07,
+          "max_absolute": 6.9141387939453125e-06,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "positioned",
+          "relative_rms": 4.6549675403184665e-07,
+          "max_absolute": 6.9141387939453125e-06,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.0",
+          "relative_rms": 2.068632284135674e-06,
+          "max_absolute": 1.2755393981933594e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.1",
+          "relative_rms": 2.711662773435819e-06,
+          "max_absolute": 2.5987625122070312e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.2",
+          "relative_rms": 2.867529246941558e-06,
+          "max_absolute": 9.894371032714844e-06,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.3",
+          "relative_rms": 2.8233625926077366e-06,
+          "max_absolute": 1.1205673217773438e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.4",
+          "relative_rms": 3.2243603982351488e-06,
+          "max_absolute": 1.5020370483398438e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.5",
+          "relative_rms": 3.3487153814348858e-06,
+          "max_absolute": 0.00015306472778320312,
+          "absolute_limit": 0.03239617538452148,
+          "passed": true
+        },
+        {
+          "stage": "block.6",
+          "relative_rms": 3.997793101007119e-06,
+          "max_absolute": 0.00019073486328125,
+          "absolute_limit": 0.03398122024536133,
+          "passed": true
+        },
+        {
+          "stage": "block.7",
+          "relative_rms": 4.427768544701394e-06,
+          "max_absolute": 0.00019359588623046875,
+          "absolute_limit": 0.03429471588134766,
+          "passed": true
+        },
+        {
+          "stage": "block.8",
+          "relative_rms": 5.231471732258797e-06,
+          "max_absolute": 0.00019741058349609375,
+          "absolute_limit": 0.03412881088256836,
+          "passed": true
+        },
+        {
+          "stage": "block.9",
+          "relative_rms": 6.040962489350932e-06,
+          "max_absolute": 0.00019931793212890625,
+          "absolute_limit": 0.03450177001953125,
+          "passed": true
+        },
+        {
+          "stage": "block.10",
+          "relative_rms": 7.863481187087018e-06,
+          "max_absolute": 0.0002002716064453125,
+          "absolute_limit": 0.03511422348022461,
+          "passed": true
+        },
+        {
+          "stage": "block.11",
+          "relative_rms": 1.2680744475801475e-05,
+          "max_absolute": 0.08026123046875,
+          "absolute_limit": 1.16937353515625,
+          "passed": true
+        },
+        {
+          "stage": "merged",
+          "relative_rms": 1.1907699445146136e-05,
+          "max_absolute": 5.1975250244140625e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        }
+      ],
+      "median_encoder_seconds": 0.010382791995652951,
+      "encoder_seconds": [
+        0.010398782003903762,
+        0.010382791995652951,
+        0.01040817100147251,
+        0.010319513996364549,
+        0.010326383999199606
+      ],
+      "peak_extra_allocated_bytes": 18744320,
+      "timing_scope": "warm encoder only; staged GPU pixels; input processing/copy and text decoding excluded"
+    },
+    {
+      "name": "landscape",
+      "grids": [
+        [
+          1,
+          16,
+          24
+        ]
+      ],
+      "checks": [
+        {
+          "stage": "patch",
+          "relative_rms": 4.754782310101291e-07,
+          "max_absolute": 5.245208740234375e-06,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "positioned",
+          "relative_rms": 5.173221211407508e-07,
+          "max_absolute": 5.245208740234375e-06,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.0",
+          "relative_rms": 1.5055003359520924e-06,
+          "max_absolute": 8.702278137207031e-06,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.1",
+          "relative_rms": 3.076688017245033e-06,
+          "max_absolute": 2.384185791015625e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.2",
+          "relative_rms": 3.204480208296445e-06,
+          "max_absolute": 1.5735626220703125e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.3",
+          "relative_rms": 3.2120183277584147e-06,
+          "max_absolute": 1.3589859008789062e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.4",
+          "relative_rms": 3.509477437546593e-06,
+          "max_absolute": 1.189112663269043e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.5",
+          "relative_rms": 2.7144290015712613e-06,
+          "max_absolute": 6.866455078125e-05,
+          "absolute_limit": 0.0328618278503418,
+          "passed": true
+        },
+        {
+          "stage": "block.6",
+          "relative_rms": 3.393131692064344e-06,
+          "max_absolute": 6.866455078125e-05,
+          "absolute_limit": 0.03444216537475586,
+          "passed": true
+        },
+        {
+          "stage": "block.7",
+          "relative_rms": 4.086206899955869e-06,
+          "max_absolute": 7.62939453125e-05,
+          "absolute_limit": 0.034758167266845705,
+          "passed": true
+        },
+        {
+          "stage": "block.8",
+          "relative_rms": 4.796685061592143e-06,
+          "max_absolute": 8.0108642578125e-05,
+          "absolute_limit": 0.03467411804199219,
+          "passed": true
+        },
+        {
+          "stage": "block.9",
+          "relative_rms": 5.65663458473864e-06,
+          "max_absolute": 9.72747802734375e-05,
+          "absolute_limit": 0.035073020935058596,
+          "passed": true
+        },
+        {
+          "stage": "block.10",
+          "relative_rms": 7.264879513968481e-06,
+          "max_absolute": 8.0108642578125e-05,
+          "absolute_limit": 0.03553227233886719,
+          "passed": true
+        },
+        {
+          "stage": "block.11",
+          "relative_rms": 7.364150860666996e-06,
+          "max_absolute": 0.05780029296875,
+          "absolute_limit": 1.1488486328125,
+          "passed": true
+        },
+        {
+          "stage": "merged",
+          "relative_rms": 7.88428405940067e-06,
+          "max_absolute": 3.3855438232421875e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        }
+      ],
+      "median_encoder_seconds": 0.015456945999176241,
+      "encoder_seconds": [
+        0.015605262000462972,
+        0.01547561600455083,
+        0.015456945999176241,
+        0.015417897986480966,
+        0.01538342899584677
+      ],
+      "peak_extra_allocated_bytes": 34739200,
+      "timing_scope": "warm encoder only; staged GPU pixels; input processing/copy and text decoding excluded"
+    },
+    {
+      "name": "resized",
+      "grids": [
+        [
+          1,
+          14,
+          22
+        ]
+      ],
+      "checks": [
+        {
+          "stage": "patch",
+          "relative_rms": 3.8332640883709246e-07,
+          "max_absolute": 7.152557373046875e-06,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "positioned",
+          "relative_rms": 4.531772503924003e-07,
+          "max_absolute": 7.152557373046875e-06,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.0",
+          "relative_rms": 2.1958514935249696e-06,
+          "max_absolute": 1.3828277587890625e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.1",
+          "relative_rms": 2.765430281215231e-06,
+          "max_absolute": 7.271766662597656e-06,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.2",
+          "relative_rms": 3.0209555461624404e-06,
+          "max_absolute": 6.67572021484375e-06,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.3",
+          "relative_rms": 3.0061855795793235e-06,
+          "max_absolute": 7.554888725280762e-06,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.4",
+          "relative_rms": 3.7713739402533974e-06,
+          "max_absolute": 2.8878450393676758e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.5",
+          "relative_rms": 8.140956197166815e-06,
+          "max_absolute": 0.0008068084716796875,
+          "absolute_limit": 0.035173236846923826,
+          "passed": true
+        },
+        {
+          "stage": "block.6",
+          "relative_rms": 8.639839506940916e-06,
+          "max_absolute": 0.00078582763671875,
+          "absolute_limit": 0.036652099609375,
+          "passed": true
+        },
+        {
+          "stage": "block.7",
+          "relative_rms": 8.810773579170927e-06,
+          "max_absolute": 0.00079345703125,
+          "absolute_limit": 0.03694990921020508,
+          "passed": true
+        },
+        {
+          "stage": "block.8",
+          "relative_rms": 8.624654583400115e-06,
+          "max_absolute": 0.00079345703125,
+          "absolute_limit": 0.03679570770263672,
+          "passed": true
+        },
+        {
+          "stage": "block.9",
+          "relative_rms": 8.850077392708044e-06,
+          "max_absolute": 0.00079345703125,
+          "absolute_limit": 0.03715960693359375,
+          "passed": true
+        },
+        {
+          "stage": "block.10",
+          "relative_rms": 1.0999167898262385e-05,
+          "max_absolute": 0.000789642333984375,
+          "absolute_limit": 0.03761202621459961,
+          "passed": true
+        },
+        {
+          "stage": "block.11",
+          "relative_rms": 1.8354512576479465e-05,
+          "max_absolute": 0.26123046875,
+          "absolute_limit": 1.201368408203125,
+          "passed": true
+        },
+        {
+          "stage": "merged",
+          "relative_rms": 1.039170820149593e-05,
+          "max_absolute": 9.512901306152344e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        }
+      ],
+      "median_encoder_seconds": 0.012695940997218713,
+      "encoder_seconds": [
+        0.012812537010177039,
+        0.012695940997218713,
+        0.012624334005522542,
+        0.012822336997487582,
+        0.012552625994430855
+      ],
+      "peak_extra_allocated_bytes": 24867328,
+      "timing_scope": "warm encoder only; staged GPU pixels; input processing/copy and text decoding excluded"
+    },
+    {
+      "name": "larger",
+      "grids": [
+        [
+          1,
+          32,
+          32
+        ]
+      ],
+      "checks": [
+        {
+          "stage": "patch",
+          "relative_rms": 4.755151508106792e-07,
+          "max_absolute": 5.245208740234375e-06,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "positioned",
+          "relative_rms": 5.142685495229671e-07,
+          "max_absolute": 5.245208740234375e-06,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.0",
+          "relative_rms": 1.5015409644547617e-06,
+          "max_absolute": 9.298324584960938e-06,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.1",
+          "relative_rms": 3.126699084532447e-06,
+          "max_absolute": 1.621246337890625e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.2",
+          "relative_rms": 3.2629427551000845e-06,
+          "max_absolute": 1.33514404296875e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.3",
+          "relative_rms": 3.3532517136336537e-06,
+          "max_absolute": 9.5367431640625e-06,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.4",
+          "relative_rms": 3.5624238989839796e-06,
+          "max_absolute": 9.059906005859375e-06,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.5",
+          "relative_rms": 2.962391363325878e-06,
+          "max_absolute": 0.0001983642578125,
+          "absolute_limit": 0.03712746047973633,
+          "passed": true
+        },
+        {
+          "stage": "block.6",
+          "relative_rms": 3.6173100852465723e-06,
+          "max_absolute": 0.00020599365234375,
+          "absolute_limit": 0.038594711303710935,
+          "passed": true
+        },
+        {
+          "stage": "block.7",
+          "relative_rms": 4.404795618029311e-06,
+          "max_absolute": 0.00020599365234375,
+          "absolute_limit": 0.038868579864501956,
+          "passed": true
+        },
+        {
+          "stage": "block.8",
+          "relative_rms": 5.231701379670994e-06,
+          "max_absolute": 0.00020599365234375,
+          "absolute_limit": 0.038736057281494145,
+          "passed": true
+        },
+        {
+          "stage": "block.9",
+          "relative_rms": 5.955304914095905e-06,
+          "max_absolute": 0.00020599365234375,
+          "absolute_limit": 0.03909795379638672,
+          "passed": true
+        },
+        {
+          "stage": "block.10",
+          "relative_rms": 7.679091140744276e-06,
+          "max_absolute": 0.00020599365234375,
+          "absolute_limit": 0.03965048217773438,
+          "passed": true
+        },
+        {
+          "stage": "block.11",
+          "relative_rms": 9.91619708656799e-06,
+          "max_absolute": 0.0711669921875,
+          "absolute_limit": 1.1855623779296875,
+          "passed": true
+        },
+        {
+          "stage": "merged",
+          "relative_rms": 1.848677493399009e-05,
+          "max_absolute": 0.00024139881134033203,
+          "absolute_limit": 0.02,
+          "passed": true
+        }
+      ],
+      "median_encoder_seconds": 0.0933541510021314,
+      "encoder_seconds": [
+        0.09276668899110518,
+        0.09357665400602855,
+        0.0933541510021314,
+        0.09346439799992368,
+        0.09304873000655789
+      ],
+      "peak_extra_allocated_bytes": 154677760,
+      "timing_scope": "warm encoder only; staged GPU pixels; input processing/copy and text decoding excluded"
+    },
+    {
+      "name": "two-images",
+      "grids": [
+        [
+          1,
+          16,
+          16
+        ],
+        [
+          1,
+          16,
+          24
+        ]
+      ],
+      "checks": [
+        {
+          "stage": "patch",
+          "relative_rms": 4.5484256361305597e-07,
+          "max_absolute": 6.9141387939453125e-06,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "positioned",
+          "relative_rms": 5.051289235780132e-07,
+          "max_absolute": 6.9141387939453125e-06,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.0",
+          "relative_rms": 1.6862608163137338e-06,
+          "max_absolute": 1.2755393981933594e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.1",
+          "relative_rms": 2.940322019640007e-06,
+          "max_absolute": 2.574920654296875e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.2",
+          "relative_rms": 3.064348675252404e-06,
+          "max_absolute": 1.6689300537109375e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.3",
+          "relative_rms": 3.0604508083342807e-06,
+          "max_absolute": 1.4781951904296875e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.4",
+          "relative_rms": 3.413298372834106e-06,
+          "max_absolute": 1.4901161193847656e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        },
+        {
+          "stage": "block.5",
+          "relative_rms": 3.0858323043503333e-06,
+          "max_absolute": 0.00015163421630859375,
+          "absolute_limit": 0.032861824035644534,
+          "passed": true
+        },
+        {
+          "stage": "block.6",
+          "relative_rms": 3.760318350032321e-06,
+          "max_absolute": 0.0001888275146484375,
+          "absolute_limit": 0.034442161560058596,
+          "passed": true
+        },
+        {
+          "stage": "block.7",
+          "relative_rms": 4.295611688576173e-06,
+          "max_absolute": 0.00019168853759765625,
+          "absolute_limit": 0.03475816345214844,
+          "passed": true
+        },
+        {
+          "stage": "block.8",
+          "relative_rms": 5.0415765144862235e-06,
+          "max_absolute": 0.00019550323486328125,
+          "absolute_limit": 0.034674114227294925,
+          "passed": true
+        },
+        {
+          "stage": "block.9",
+          "relative_rms": 5.880885055375984e-06,
+          "max_absolute": 0.0001964569091796875,
+          "absolute_limit": 0.03507301712036133,
+          "passed": true
+        },
+        {
+          "stage": "block.10",
+          "relative_rms": 7.6013070611224975e-06,
+          "max_absolute": 0.00019741058349609375,
+          "absolute_limit": 0.03553226852416992,
+          "passed": true
+        },
+        {
+          "stage": "block.11",
+          "relative_rms": 9.500140549789649e-06,
+          "max_absolute": 0.08355712890625,
+          "absolute_limit": 1.1693739013671876,
+          "passed": true
+        },
+        {
+          "stage": "merged",
+          "relative_rms": 1.0176358046010137e-05,
+          "max_absolute": 5.054473876953125e-05,
+          "absolute_limit": 0.02,
+          "passed": true
+        }
+      ],
+      "median_encoder_seconds": 0.02326487799291499,
+      "encoder_seconds": [
+        0.02335300500271842,
+        0.023155881004640833,
+        0.023183350000181235,
+        0.02332874501007609,
+        0.02326487799291499
+      ],
+      "peak_extra_allocated_bytes": 44370432,
+      "timing_scope": "warm encoder only; staged GPU pixels; input processing/copy and text decoding excluded"
+    }
+  ]
+}

@@ -18,12 +18,15 @@ def main():
     parser.add_argument('reference')
     parser.add_argument('--output',required=True)
     parser.add_argument('--model',help='local copy of the pinned reference checkpoint')
-    parser.add_argument('--device',choices=('cuda','mps'),default='cuda')
+    parser.add_argument('--device',choices=('cuda','mps','rocm'),default='cuda')
     parser.add_argument('--graph',action='store_true')
     parser.add_argument('--batch-size',type=int,choices=(1,2,3,4),default=3)
     parser.add_argument('--messages',action='store_true',help='exercise inline PNG chat messages and model-owned vision weights')
     args=parser.parse_args()
     os.environ['DAMENDAEMON_DEVICE']=args.device
+    # HIP tensors live in torch's CUDA device namespace; DAMENDAEMON_DEVICE
+    # carries the ROCm selection for admission/policy (device.py).
+    torch_device='cuda' if args.device=='rocm' else args.device
     torch.set_num_threads(4)
     torch.backends.cuda.matmul.allow_tf32=False
     reference=torch.load(args.reference,map_location='cpu',weights_only=True)
@@ -33,7 +36,7 @@ def main():
         from damendaemon.vision_model import VisionModelWeights
         model=VisionModelWeights(model,VisionWeights(model_path))
     executor=ImageHybridExecutor(model,max_batch=args.batch_size,use_graph=args.graph)
-    vision=executor.vision if args.messages else VisionEncoder(VisionWeights(model_path),device=args.device)
+    vision=executor.vision if args.messages else VisionEncoder(VisionWeights(model_path),device=torch_device)
     report=dict(passed=False,scope='experimental multimodal computation; not serving qualification',
                 graph=args.graph,kernel_backend=executor.kernel_backend,
                 batch_capacity=args.batch_size,
