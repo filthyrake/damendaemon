@@ -195,7 +195,7 @@ def main():
         parser.error('--raw cannot use chat thinking controls')
     if args.command == 'preflight':
         from .fleet_preflight import main as preflight_main
-        forwarded = []
+        forwarded = ['--cotenancy']
         if args.peer:forwarded += ['--peer', args.peer]
         forwarded += ['--probe-timeout', str(args.probe_timeout)]
         return preflight_main(forwarded)

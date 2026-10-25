@@ -77,14 +77,27 @@ def run_report(torch, peer=None, probe_timeout=5.0):
     return dict(items=items, passed=all(item['passed'] for item in items))
 
 
+def run_report_with_cotenancy(torch, peer=None, probe_timeout=5.0):
+    """Preflight plus the read-only NVIDIA co-tenancy items (#609 inventory gate)."""
+    report = run_report(torch, peer=peer, probe_timeout=probe_timeout)
+    from .cotenancy_inventory import run_coTenancy_report
+    cotenancy = run_coTenancy_report()
+    report['items'].extend(cotenancy['items'])
+    report['passed'] = report['passed'] and cotenancy['passed']
+    return report
+
+
 def main(argv=None):
     import argparse
     parser = argparse.ArgumentParser(prog='damendaemon preflight', description=__doc__)
     parser.add_argument('--peer', metavar='HOST[:PORT]', default=None,
                         help='probe the peer\'s rendezvous TCP port (default port 29500)')
     parser.add_argument('--probe-timeout', type=float, default=5.0)
+    parser.add_argument('--cotenancy', action='store_true', default=True,
+                        help='include read-only NVIDIA co-tenancy items (MIG, compute mode, MPS)')
     args = parser.parse_args(argv)
-    report = run_report(__import__('torch'), peer=args.peer, probe_timeout=args.probe_timeout)
+    report = run_report_with_cotenancy(__import__('torch'), peer=args.peer,
+                                       probe_timeout=args.probe_timeout)
     print(json.dumps(report, indent=2))
     return 0 if report['passed'] else 1
 
