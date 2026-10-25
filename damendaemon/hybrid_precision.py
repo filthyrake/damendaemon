@@ -26,9 +26,9 @@ def select(model, use_graph, max_batch, kernels):
     # other nondefault precision modes retain their ROCm-only scope. The
     # explicit distributed-chain opt-in (#536 gate 4) admits the chain's
     # qualified context cell for Q4; every other bound still applies.
-    from .hybrid_q4_policy import CHAIN_CONTEXT_LIMIT, chain_anchor
-    context_bound = CHAIN_CONTEXT_LIMIT if (chain_anchor()
-                                            and model.quantization == 'q4_0') else 512
+    from .hybrid_q4_policy import _experimental_context_limit, chain_anchor
+    context_bound = (_experimental_context_limit(chain_anchor())
+                     if model.quantization == 'q4_0' else 512)
     supported_device = selected_accelerator() == 'rocm' or model.quantization == 'q4_0'
     if (not supported_device or model.quantization not in ('q8_0', 'q4_0')
             or model.config['model_type'] != 'qwen3_5_text'
