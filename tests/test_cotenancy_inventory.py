@@ -50,10 +50,12 @@ class CotenancyInventoryTest(unittest.TestCase):
         fake.cuda.mem_get_info.return_value = (2**30, 24 * 2**30)
         fake.cuda.nccl.version.return_value = (2, 21, 5)
         with mock.patch.dict('os.environ', {}, clear=False), \
-             mock.patch.object(cotenancy_inventory.shutil, 'which', return_value=None):
+             mock.patch.object(cotenancy_inventory.shutil, 'which', return_value=None), \
+             mock.patch.object(cotenancy_inventory.subprocess, 'run',
+                               side_effect=OSError('no nvidia-smi')):
             report = fleet_preflight.run_report_with_cotenancy(fake, peer=None)
         items = [item['item'] for item in report['items']]
-        self.assertEqual(items, ['torch', 'gpus', 'mig', 'compute_mode', 'mps'])
+        self.assertEqual(items, ['torch', 'gpus', 'mig', 'compute_mode', 'mps', 'topology'])
         # with no nvidia-smi, compute_mode honestly fails -> the report fails
         self.assertFalse(report['passed'])
         self.assertFalse([i for i in report['items'] if i['item'] == 'compute_mode'][0]['passed'])
