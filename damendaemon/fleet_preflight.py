@@ -77,6 +77,16 @@ def run_report(torch, peer=None, probe_timeout=5.0):
     return dict(items=items, passed=all(item['passed'] for item in items))
 
 
+def run_report_with_cotenancy(torch, peer=None, probe_timeout=5.0):
+    """Preflight plus the read-only NVIDIA co-tenancy items (#609 inventory gate)."""
+    report = run_report(torch, peer=peer, probe_timeout=probe_timeout)
+    from .cotenancy_inventory import run_coTenancy_report
+    cotenancy = run_coTenancy_report()
+    report['items'].extend(cotenancy['items'])
+    report['passed'] = report['passed'] and cotenancy['passed']
+    return report
+
+
 def main(argv=None):
     import argparse
     parser = argparse.ArgumentParser(prog='damendaemon preflight', description=__doc__)
