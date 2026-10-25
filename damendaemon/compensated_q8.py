@@ -59,13 +59,21 @@ def linear(x, weight, scales, *, row_tile=32, reduction_tile=32):
     return _linear(x, weight, scales, row_tile=row_tile, reduction_tile=reduction_tile, q4=False)
 
 
-def linear_q4(x, weight, scales, *, row_tile=32, reduction_tile=32):
-    return _linear(x, weight, scales, row_tile=row_tile, reduction_tile=reduction_tile, q4=True)
+def linear_q4(x, weight, scales, *, row_tile=32, reduction_tile=32, num_warps=4, num_stages=2):
+    return _linear(x, weight, scales, row_tile=row_tile, reduction_tile=reduction_tile, q4=True,
+                   num_warps=num_warps, num_stages=num_stages)
 
 
-def _linear(x, weight, scales, *, row_tile, reduction_tile, q4):
-    if row_tile not in (16, 32, 64):
-        raise ValueError('row tile must be 16, 32 or 64')
+def _ensure_cuda(x, weight, scales):
+    if x.device.type != 'cuda' or weight.device != x.device or scales.device != x.device:
+        raise ValueError('packed projection tensors must share a CUDA/ROCm device')
+    if not weight.is_contiguous() or not scales.is_contiguous():
+        raise ValueError('packed weight and scale storage must be contiguous')
+
+
+def _linear(x, weight, scales, *, row_tile, reduction_tile, q4, num_warps=4, num_stages=2):
+    if row_tile not in (16, 32, 64, 128):
+        raise ValueError('row tile must be 16, 32, 64 or 128')
     if reduction_tile not in (32, 64, 128):
         raise ValueError('reduction tile must be 32, 64 or 128')
     if x.ndim < 1 or weight.ndim != 2 or scales.ndim != 2:
@@ -76,10 +84,7 @@ def _linear(x, weight, scales, *, row_tile, reduction_tile, q4):
         raise ValueError('requires FP32 input and block-aligned packed weights')
     if x.shape[-1] == 0 or weight.shape[0] == 0 or width != x.shape[-1] or scales.shape != (weight.shape[0], width//32):
         raise ValueError('incompatible or empty packed projection dimensions')
-    if x.device.type != 'cuda' or weight.device != x.device or scales.device != x.device:
-        raise ValueError('packed projection tensors must share a CUDA/ROCm device')
-    if not weight.is_contiguous() or not scales.is_contiguous():
-        raise ValueError('packed weight and scale storage must be contiguous')
+    _ensure_cuda(x, weight, scales)
     shape = x.shape[:-1]
     x = x.reshape(-1, x.shape[-1]).contiguous()
     out = torch.empty((x.shape[0], weight.shape[0]), dtype=torch.float32, device=x.device)
@@ -87,5 +92,5 @@ def _linear(x, weight, scales, *, row_tile, reduction_tile, q4):
         return out.reshape(*shape, weight.shape[0])
     _project[(tr.cdiv(x.shape[0], row_tile), tr.cdiv(weight.shape[0], 64))](
         x, weight, scales, out, x.shape[0], weight.shape[0], x.shape[1], row_tile, 64, reduction_tile, q4,
-        num_warps=4, num_stages=2)
+        num_warps=num_warps, num_stages=num_stages)
     return out.reshape(*shape, weight.shape[0])

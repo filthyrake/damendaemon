@@ -1,0 +1,71 @@
+{
+  "command": [
+    "env",
+    "DAMENDAEMON_DEVICE=rocm",
+    "DAMENDAEMON_ROCM_MEMORY_GIB=2",
+    "OMP_NUM_THREADS=4",
+    "PYTHONPATH=/tmp/sweep68",
+    "ROCR_VISIBLE_DEVICES=0",
+    "HIP_VISIBLE_DEVICES=0",
+    "/home/damen/strixenv/bin/python",
+    "scripts/experiments/compensated_prefill_tile_sweep.py"
+  ],
+  "timeout_seconds": 900,
+  "cooling": {
+    "limit_celsius": 85,
+    "checks": 32,
+    "fans": [
+      {
+        "name": "fan1",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4219,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan2",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4312,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan3",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 1855,
+        "minimum_rpm": 1000
+      }
+    ],
+    "maximum_observed_celsius": 60.125,
+    "sensors": [
+      {
+        "driver": "amdgpu",
+        "label": "edge",
+        "celsius": 36.0,
+        "cutoff_celsius": 85
+      },
+      {
+        "driver": "k10temp",
+        "label": "Tctl",
+        "celsius": 59.875,
+        "cutoff_celsius": 85
+      }
+    ],
+    "error": null
+  },
+  "watchdog": {
+    "reserve_bytes": 21474836480,
+    "minimum_available_bytes": 119939932160,
+    "last_available_bytes": 120907407360,
+    "triggered": false,
+    "error": null
+  },
+  "phase": "completed",
+  "cleanup_complete": true,
+  "host_available_before": 121052229632,
+  "child_pid": 69513,
+  "seconds": 32.03384352000285,
+  "exit_code": 0,
+  "host_available_after": 120959352832
+}
