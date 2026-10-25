@@ -35,7 +35,10 @@ def _sysfs_pci_bus_id(torch, index, runner=None):
     if result is None:
         return None
     bus_id = result.strip().splitlines()[0].strip() if result.strip() else None
-    return bus_id and bus_id.lower().replace('0x', '').zfill(16) or None
+    if not bus_id:
+        return None
+    # nvidia-smi pads the PCI domain to 8 digits; sysfs uses 4
+    return '0000:' + bus_id.split(':')[-1]
 
 
 def _run(command, timeout=20):
