@@ -20,9 +20,11 @@ class CudaHostStageSlots:
     """Own a fresh slot set, keeping compute_device truthful and boundaries CPU.
 
     max_transfer_bytes bounds the sum of logical input/output payload bytes per
-    call, not allocator/cache/scratch memory. Copies are blocking, unpinned and
-    contiguous; no streams, peer access, transport or device selection is implied.
-    Callers must not mutate input tensors or use the claimed slots independently.
+    call, not allocator/cache/scratch memory. Copies are blocking and
+    contiguous; with DAMENDAEMON_PINNED_STAGING=1 they stage through a pinned
+    host buffer bounded by that budget (P2P/peer/transport semantics are still
+    not implied). Callers must not mutate input tensors or use the claimed
+    slots independently.
     """
     boundary_device=torch.device('cpu')
     compute_dtype=torch.float32
@@ -31,6 +33,8 @@ class CudaHostStageSlots:
         if not isinstance(slots,(CudaGlmStageSlots,CudaFlashStageSlots,CudaDeepSeekStageSlots)):
             raise ValueError('host boundary requires explicit CUDA slots')
         _budget(0,max_transfer_bytes)
+        from .transfer_policy import PinnedStaging
+        self.staging=PinnedStaging(slots.actual_device,max_transfer_bytes=max_transfer_bytes)
         with slots.lock:
             slots._ready()
             if (getattr(slots,'_boundary_owner',None) is not None or getattr(slots,'_pipeline_owner',None) is not None
@@ -68,8 +72,8 @@ class CudaHostStageSlots:
     @length.setter
     def length(self,value):self.slots.length=value
 
-    def _to_device(self,value):return value.to(self.actual_device,copy=True).contiguous()
-    def _to_host(self,value):return value.to('cpu',copy=True).contiguous()
+    def _to_device(self,value):return self.staging.to_device(value)
+    def _to_host(self,value):return self.staging.to_host(value)
 
     def _copy(self,value,*,out=False):
         try:return self._to_host(value) if out else self._to_device(value)
