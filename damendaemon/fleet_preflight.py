@@ -78,12 +78,17 @@ def run_report(torch, peer=None, probe_timeout=5.0):
 
 
 def run_report_with_cotenancy(torch, peer=None, probe_timeout=5.0):
-    """Preflight plus the read-only NVIDIA co-tenancy items (#609 inventory gate)."""
+    """Preflight plus the read-only co-tenancy (#609) and topology (#604) items."""
     report = run_report(torch, peer=peer, probe_timeout=probe_timeout)
     from .cotenancy_inventory import run_coTenancy_report
     cotenancy = run_coTenancy_report()
     report['items'].extend(cotenancy['items'])
     report['passed'] = report['passed'] and cotenancy['passed']
+    try:
+        from .topology_inventory import run_topology_report
+        report['items'].append(run_topology_report(torch))
+    except Exception as error:  # a broken probe must not sink the whole preflight
+        report['items'].append(dict(item='topology', passed=False, error=str(error)))
     return report
 
 
