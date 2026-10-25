@@ -1,0 +1,79 @@
+{
+  "command": [
+    "/home/damen/strixenv/bin/python",
+    "-m",
+    "damendaemon",
+    "serve",
+    "--device",
+    "rocm",
+    "--port",
+    "8390",
+    "--context",
+    "32768",
+    "--no-graph",
+    "--host-gib",
+    "96",
+    "--prefill-chunk-size",
+    "127",
+    "--model",
+    "a=/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.8-27B/snapshots/1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0/"
+  ],
+  "timeout_seconds": 1800,
+  "cooling": {
+    "limit_celsius": 85,
+    "checks": 192,
+    "fans": [
+      {
+        "name": "fan1",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4227,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan2",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4321,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan3",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 1827,
+        "minimum_rpm": 1000
+      }
+    ],
+    "maximum_observed_celsius": 85.0,
+    "sensors": [
+      {
+        "driver": "amdgpu",
+        "label": "edge",
+        "celsius": 85.0,
+        "cutoff_celsius": 85
+      },
+      {
+        "driver": "k10temp",
+        "label": "Tctl",
+        "celsius": 83.75,
+        "cutoff_celsius": 85
+      }
+    ],
+    "error": "thermal limit reached"
+  },
+  "watchdog": {
+    "reserve_bytes": 21474836480,
+    "minimum_available_bytes": 66873593856,
+    "last_available_bytes": 66874548224,
+    "triggered": true,
+    "error": "RuntimeError('thermal limit reached')"
+  },
+  "phase": "failed",
+  "cleanup_complete": true,
+  "host_available_before": 121050877952,
+  "child_pid": 70802,
+  "seconds": 196.83715223000036,
+  "exit_code": -9,
+  "host_available_after": 116869197824
+}
