@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import patch
 import torch
 from damendaemon.host_stage_channel import HostStageChannel
-from damendaemon.stage_protocol import StageState,Command,PREFILL,PREFILL_BATCH,DECODE,RELEASE,PING,STOP
+from damendaemon.stage_protocol import StageState,Command,PREFILL,PREFILL_BATCH,DECODE,RELEASE,PING,STOP,KV_HANDOFF
 from tests import test_host_tensor_channel
 
 
@@ -112,3 +112,31 @@ class HostStageChannelTests(unittest.TestCase):
             with self.assertRaises((RuntimeError,OSError,EOFError)):future.result(timeout=1)
             self.assertLess(time.monotonic()-started,1)
         self.assertTrue(channels[0].state.failed);self.assertEqual(channels[0].state.sequence,1)
+
+    def test_handoff_round_moves_payload_and_commits_cursor_only_after_ack(self):
+        channels=self.ready()
+        command=Command(7,1,KV_HANDOFF,4,((0,1,4),))
+        payload=torch.arange(12,dtype=torch.float32)
+        def sender():
+            self.assertEqual(channels[0].begin(command),command)
+            channels[0].transport.send(payload)  # payload over the tensor wire
+            channels[0].finish(command)          # ack; cursor commits here
+            return channels[0].state.lengths
+        def receiver():
+            channels[1].begin()
+            got=channels[1].transport.receive(payload.shape,payload.dtype)
+            channels[1].finish(command)
+            return got,channels[1].state.lengths
+        sent,received=self.together([sender,receiver])
+        torch.testing.assert_close(received[0],payload,rtol=0,atol=0)
+        self.assertEqual(sent,[4,0,0,0])
+        self.assertEqual(received[1],[4,0,0,0])
+        for channel in channels:
+            self.assertEqual(channel.state.generations,[1,0,0,0])
+            self.assertEqual(channel.state.sequence,2)
+            self.assertFalse(channel.state.failed)
+        # The installed slot decodes like a prefilled one over the same wire.
+        decode=Command(7,2,DECODE,1,((0,1,4),))
+        self.assertEqual(self.begin(channels,decode),[decode,decode])
+        self.complete(channels,decode,torch.tensor([12]))
+        self.assertEqual(channels[0].state.lengths[0],5)

@@ -392,6 +392,43 @@ occurs. Tests cover 32K control counters without tensor allocation, and actual
 synthetic 513-token CPU arithmetic/state parity through 128-token loopback frames.
 Neither result qualifies practical checkpoint context, quality or hardware speed.
 
+### Populated-slot handoff between ranks (#606, implementation)
+
+Protocol version 6 adds an owned `KV_HANDOFF` command that installs a
+populated slot — rows tokens of transferred attention KV plus
+convolution/recurrent state — as a fresh generation on the receiver. The
+receiver's slot must be empty and claim its next generation, and the
+carried position equals rows: a handoff is never partial, the payload holds
+the whole populated prefix. Stale generations, occupied slots, multi-slot
+handoffs and context overflow refuse with the same stale-offset discipline
+as `PREFILL_CHUNK`; the receiving cursor commits only after the acknowledged
+round. The command is control-only on the wire — payload tensors travel
+over the tensor transport between the channel's begin and finish, exactly
+like execution activations. The version bump keeps v5 peers from silently
+accepting the new semantics.
+
+`damendaemon/slot_handoff.py` carries the payload: `export_slot` clones one
+populated slot's KV (plain or Q8_0-packed, scales included), conv and
+recurrent state to bounded CPU tensors with a content-derived identity
+inventory (config, quantization, KV mode, compute dtype, context, batch,
+layer range, position, per-tensor dtype/shape/bytes). `import_slot` installs
+into a fresh slot of a compatible stage — every agreement check is
+content-derived, a refused handoff raises before touching receiver state,
+and a superset payload feeds each rank of a layer-split pair its own slice.
+`release_slot` zeroes the sender's slot after the acknowledged handoff.
+`HybridPipeline.install_handoff` runs the in-process pair path and exposes
+per-stage handoff bytes/duration in `status()`.
+
+The disaggregated-prefill contract: the payload is pure state, so the
+sender's first sampled token travels with the handoff — the receiver never
+re-runs the prompt and starts decoding from the installed position. CPU
+tests prove greedy-equal continuation (handoff vs sender vs recomputed
+control, byte-equal state). This is state-movement correctness on the CPU
+fixture; the live A30→A2 cell and cross-host transport are recorded
+separately in `docs/evidence/distributed/slot-handoff-606/README.md`, with
+the design-note arithmetic (per-prefix handoff bytes and break-even
+re-prefill rates) and without any throughput claim.
+
 ### Authenticated connected host sockets
 
 `host_tls.client_context` and `server_context` load an explicit trust CA and

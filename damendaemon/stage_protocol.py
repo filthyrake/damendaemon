@@ -8,12 +8,12 @@ execution or transport failure poisons the epoch and requires fresh workers.
 from dataclasses import dataclass
 
 MAGIC = 0x44414D4E
-VERSION = 5
+VERSION = 6
 # Reserved output payload for an output-stage exception with a usable transport.
 FAILED_TOKEN = -1
 MAX_SLOTS = 4
 HEADER_WORDS = 7 + 3 * MAX_SLOTS
-PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH, PREFILL_CHUNK, SWITCH = range(1, 9)
+PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH, PREFILL_CHUNK, SWITCH, KV_HANDOFF = range(1, 10)
 MAX_INTEGER = (1 << 63) - 1
 
 
@@ -49,7 +49,7 @@ def decode(words):
     magic, version, epoch, sequence, operation, rows, count = words[:7]
     if magic != MAGIC or version != VERSION:
         raise ValueError('unsupported stage control protocol')
-    if epoch < 1 or sequence < 1 or operation not in (PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH, PREFILL_CHUNK, SWITCH):
+    if epoch < 1 or sequence < 1 or operation not in (PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH, PREFILL_CHUNK, SWITCH, KV_HANDOFF):
         raise ValueError('invalid stage epoch, sequence or operation')
     if not 0 <= count <= MAX_SLOTS or rows < 0:
         raise ValueError('invalid stage shape')
@@ -140,6 +140,18 @@ class StageState:
                     or command.rows == self.model_index or any(self.lengths)
                     or self.epoch == MAX_INTEGER):
                 raise ValueError('invalid or busy stage model switch')
+        elif command.operation == KV_HANDOFF:
+            # A handoff INSTALLS a populated slot (rows tokens of transferred
+            # KV/conv/recurrent state) as a fresh generation: the receiver's
+            # slot must be empty and claim the next generation, exactly the
+            # fresh-slot rule of PREFILL, with position == rows (a handoff is
+            # never partial — the payload carries the whole populated prefix).
+            if len(command.entries) != 1 or not 1 <= command.rows <= self.context:
+                raise ValueError('invalid stage handoff shape')
+            slot, generation, position = command.entries[0]
+            if (self.lengths[slot] or generation != self.generations[slot] + 1
+                    or position != command.rows):
+                raise ValueError('occupied slot or stale stage handoff generation')
         elif command.rows != 0 or command.entries:
             raise ValueError('invalid stage stop or heartbeat record')
         self.pending = command
@@ -153,6 +165,12 @@ class StageState:
                 self.generations[slot] = generation
                 self.lengths[slot] = extent
             elif command.operation == PREFILL:
+                self.generations[slot] = generation
+                self.lengths[slot] = command.rows
+            elif command.operation == KV_HANDOFF:
+                # The receiving rank's cursor commits only in this commit
+                # path, i.e. only after the acknowledged round; position is
+                # rows by the begin validation.
                 self.generations[slot] = generation
                 self.lengths[slot] = command.rows
             elif command.operation == PREFILL_CHUNK:
