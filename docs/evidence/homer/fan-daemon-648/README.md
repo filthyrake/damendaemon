@@ -106,19 +106,43 @@ umr corroborates the same run: socket median 80.25 W during the load window,
 
 - `v2-shadow.log` — final passing cell, full v2 decision log
 - `umr.log` — 2 Hz independent observer (temp A/B, socket, gfx power, mW)
-- `load.log`, `d648-cell.sh`, `d648-load.py` — load generator + cell harness
+- `d648-cell.sh`, `load-live.log` (live cell), `d648-load.py` — load generator + cell harnesses
 - `blobdump.txt` — full `od -v` blob dump under load (layout derivation)
 - `daemon-parser-test.sh` — parser-vs-umr + degrade-path checks
 - `fw-burst-probe.py` — bursty-load probe that motivated the 3-of-5 window
+- `cell-live.log`, `v2-live.log`, `load-live.log`, `d648-live-cell.sh` — the
+  live real-fan cell (below)
+- `unit-dropin-v2.conf` — the production `ExecStart` drop-in (verbatim)
 
 Not retained: the two failing shadow logs were overwritten by relaunches;
 their observed failure signatures (od `*` word-misalignment; `fw=0` at
 ~97.8 W umr peak with blob socket stuck ~11–13 W; 57-word od output) are
 recorded above and in issue #648.
 
-## Remaining before production switch
+## Live fan cell + production switch (2026-10-26, same day)
 
-The real-fan (non-shadow) run and the systemd unit swap are deliberately not
-in this PR: flipping production control is a separate, user-approved step.
-This PR lands the qualified script + evidence so the switch is one unit-file
-change (`ExecStart` → `scripts/strix-fan-daemon-v2.sh`) away.
+The real-fan cell (`cell-live.log`, `v2-live.log`, `d648-live-cell.sh`,
+`unit-dropin-v2.conf`) ran v2 with **real EC writes**, production v1
+suspended for its ~5-minute duration and restarted by the teardown trap:
+
+- Baseline (v1): fans auto, 1051/1022/0 RPM at Tctl 39.9 °C.
+- v2 takeover: clean start, AUTO at Tctl 39.
+- **ENGAGED 12 s into the 100 s GEMM load**: socket 77,576 mW (3-of-5) →
+  all three fans `fixed` level 3; RPM 1051/1022/0 → **3180/3200/1190**
+  (fan 3 spun up from standstill); Tctl held ≤ 53 °C through the load.
+- **RELEASED** ~28 s after load end: 15,604 mW, 3 consecutive lows → AUTO;
+  RPM settling 2003/2213/610 at the cool-down snapshot, 1047/1019/0 at idle.
+- Teardown `PASS=1` (engage + release + auto all observed); v1 restarted
+  automatically; no cell processes left behind.
+
+**Production switch (user-approved)**: v2 installed at
+`/usr/local/sbin/strix-fan-daemon-v2.sh` (v1 left in place) and the
+`strix-fan-daemon.service` `ExecStart` redirected via a systemd drop-in
+(`unit-dropin-v2.conf`, `ExecStart=` reset + new path — the unit's own
+Restart=always fail-safe is unchanged). Verified post-swap: service
+`active` on the v2 script (journal shows the v2 banner, blob online, AUTO
+at Tctl 35 °C, clean heartbeats), fans auto at idle RPMs.
+
+**Rollback** (one command, fans hold on daemon death per the unit's
+fail-safe): `sudo rm /etc/systemd/system/strix-fan-daemon.service.d/v2.conf
+&& sudo systemctl daemon-reload && sudo systemctl restart strix-fan-daemon`.

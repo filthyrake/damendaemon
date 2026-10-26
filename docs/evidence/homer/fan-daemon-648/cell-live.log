@@ -1,0 +1,26 @@
+=== phase 0: baseline (v1 active) ===
+active
+fan=/sys/class/ec_su_axb35/fan1 mode=auto level=0 rpm=1051 fan=/sys/class/ec_su_axb35/fan2 mode=auto level=0 rpm=1022 fan=/sys/class/ec_su_axb35/fan3 mode=auto level=0 rpm=0 Tctl=39875
+=== phase 1: v1 stop, v2 real-mode takeover ===
+fan=/sys/class/ec_su_axb35/fan1 mode=auto level=0 rpm=1052 fan=/sys/class/ec_su_axb35/fan2 mode=auto level=0 rpm=1023 fan=/sys/class/ec_su_axb35/fan3 mode=auto level=0 rpm=0 Tctl=39125
+2026-10-26 12:05:37 strix-fan-daemon v2 starting: Tctl=/sys/class/hwmon/hwmon3/temp1_input curve=(75:2 79:3 82:4 85:5) fw=40000mW 3-of-5->3
+2026-10-26 12:05:37 gpu_metrics blob online (rev 3)
+2026-10-26 12:05:37 Tctl=39 gfx=39 control=39 -> AUTO
+=== phase 2: sustained GEMM 100s (expect ENGAGE level 3 + RPM jump) ===
+t+20s: fan=/sys/class/ec_su_axb35/fan1 mode=fixed level=3 rpm=3180 fan=/sys/class/ec_su_axb35/fan2 mode=fixed level=3 rpm=3208 fan=/sys/class/ec_su_axb35/fan3 mode=fixed level=3 rpm=1191 Tctl=51875
+t+40s: fan=/sys/class/ec_su_axb35/fan1 mode=fixed level=3 rpm=3180 fan=/sys/class/ec_su_axb35/fan2 mode=fixed level=3 rpm=3199 fan=/sys/class/ec_su_axb35/fan3 mode=fixed level=3 rpm=1194 Tctl=52500
+t+60s: fan=/sys/class/ec_su_axb35/fan1 mode=fixed level=3 rpm=3166 fan=/sys/class/ec_su_axb35/fan2 mode=fixed level=3 rpm=3199 fan=/sys/class/ec_su_axb35/fan3 mode=fixed level=3 rpm=1195 Tctl=53000
+load rc=0
+=== phase 3: cool-down 60s (expect RELEASE -> auto) ===
+fan=/sys/class/ec_su_axb35/fan1 mode=auto level=3 rpm=2003 fan=/sys/class/ec_su_axb35/fan2 mode=auto level=3 rpm=2213 fan=/sys/class/ec_su_axb35/fan3 mode=auto level=3 rpm=610 Tctl=37875
+2026-10-26 12:05:49 feedforward ENGAGED: socket 77576mW (3-of-5) — floor level 3
+2026-10-26 12:05:49 Tctl=51 gfx=51 control=51 socket=77576 -> level 3
+2026-10-26 12:06:36 heartbeat poll=30 Tctl=52 gfx=52 control=52 lvl=3 fw=1
+2026-10-26 12:07:28 feedforward RELEASED: socket 15604mW below threshold
+2026-10-26 12:07:28 Tctl=44 gfx=42 control=44 -> AUTO
+2026-10-26 12:07:36 heartbeat poll=60 Tctl=41 gfx=40 control=41 lvl=0 fw=0
+=== phase 4: teardown ===
+LIVE CELL PASS: engage+release+auto all observed
+fan=/sys/class/ec_su_axb35/fan1 mode=auto level=3 rpm=2005 fan=/sys/class/ec_su_axb35/fan2 mode=auto level=3 rpm=2202 fan=/sys/class/ec_su_axb35/fan3 mode=auto level=3 rpm=612 Tctl=37750
+v1 restarted: active
+PASS=1
