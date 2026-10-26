@@ -45,6 +45,25 @@ checks and clean child completion. The
 a test cutoff below idle temperature and killed a harmless owned child without
 GPU load or induced heat. Issue75 owns this bounded protection fix.
 
+## Fan daemon v2 (blob feedforward, shadow-qualified)
+
+`scripts/strix-fan-daemon-v2.sh` is the qualified successor candidate for the
+graded `strix-fan-daemon.service` (#648): the v1 Tctl curve plus SMC
+`gpu_metrics` blob inputs — dual-die control temperature
+(`max(Tctl, hottest die)`, the blob temps lead Tctl under load) and a socket
+power feedforward that floors fans at level 3 while power is sustained at or
+above 40 W (engage 3-of-last-5 polls, release 3 consecutive below — the
+blob's power field is a ~1 s SMC average, so bursty load oscillates across
+any threshold and consecutive-only engagement never fires). Any blob format
+surprise degrades silently to the v1 Tctl-only curve. The blob layout is
+pinned against `gpu_metrics_v3_0` (`average_socket_power` is a **u32 at byte
+112** — a u16 read wraps ≥ 40 W to < 16 W) and cross-validated against umr.
+Production v1 remains live; v2 is shadow-qualified only — the
+[cell evidence](evidence/homer/fan-daemon-648/README.md) records the full
+validation (engage ≤ 8 s at 78 W, release ~9 s after load end, idle never
+engages, degrade paths, v1 untouched). Switching production is a one-line
+unit change and a user-approved step.
+
 ## Shared-memory limits and the 32K failure
 
 The Q4 path passes [84 independent numerical checks at 4K](evidence/amd/qwen38-27b-q4-native-replay4096.json).
