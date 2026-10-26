@@ -1,0 +1,33 @@
+Fetching 4 files:   0%|          | 0/4 [00:00<?, ?it/s]Fetching 4 files: 100%|██████████| 4/4 [00:00<00:00, 1587.85it/s]
+[drift] upstream gate: layer=1 heads=8 rows=6
+Fetching 13 files:   0%|          | 0/13 [00:00<?, ?it/s]Fetching 13 files: 100%|██████████| 13/13 [00:00<00:00, 2484.21it/s]
+[drift] our gate: bias layers=[3, 7, 11, 15, 19, 23] keep=128
+[drift] prompt: 2067 tokens, article span [8, 2056)
+{
+ "model": "Qwen/Qwen3.5-2B",
+ "gate_checkpoint": "gate_step18000.pt",
+ "gate_layer": 1,
+ "prompt_tokens": 2067,
+ "article_span": [
+  8,
+  2056
+ ],
+ "keep": 128,
+ "upstream_commit": "6e51aac",
+ "components": {
+  "ln2_boundary": 0.0,
+  "branch_scores": 0.0,
+  "gate_bias": 0.0,
+  "selection_exact_match": true,
+  "selection_n": 128,
+  "kept_ratio": 0.0
+ },
+ "mechanism": {
+  "kept_tokens": 147,
+  "prompt_tokens": 2067,
+  "logits_finite": true,
+  "first_token": 198,
+  "decode_steps_finite": true
+ }
+}
+[drift] wrote drift.json
