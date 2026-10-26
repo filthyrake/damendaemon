@@ -1,5 +1,5 @@
 import unittest
-from damendaemon.stage_protocol import Command, StageState, decode, PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH, SWITCH, token_rows
+from damendaemon.stage_protocol import Command, StageState, decode, PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH, PREFILL_CHUNK, SWITCH, KV_HANDOFF, token_rows
 
 
 class StageProtocolTests(unittest.TestCase):
@@ -184,3 +184,48 @@ class ModelSwitchProtocolTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):state.commit(command)
         self.assertEqual((state.model_index,state.epoch),(0,1))
         self.assertTrue(state.failed)
+
+
+class SlotHandoffProtocolTests(unittest.TestCase):
+    def test_handoff_installs_populated_slot_as_fresh_generation(self):
+        state=StageState(1,512)
+        command=state.begin(Command(1,1,KV_HANDOFF,4,((0,1,4),)).encode())
+        self.assertEqual(command.entries,((0,1,4),))
+        state.commit(command)
+        self.assertEqual((state.lengths,state.generations,state.sequence),([4,0,0,0],[1,0,0,0],2))
+        # The installed slot decodes and chunk-continues like a prefilled one.
+        decode=Command(1,2,DECODE,1,((0,1,4),))
+        state.commit(state.begin(decode.encode()))
+        self.assertEqual(decode.operation,DECODE)
+        self.assertEqual(state.lengths[0],5)
+        chunk=Command(1,3,PREFILL_CHUNK,2,((0,1,5),))
+        state.commit(state.begin(chunk.encode()))
+        self.assertEqual(chunk.operation,PREFILL_CHUNK)
+        self.assertEqual(state.lengths[0],7)
+        # A second handoff needs the NEXT generation (stale claims refuse).
+        stale=Command(1,4,KV_HANDOFF,3,((0,1,3),))
+        with self.assertRaises(ValueError):state.begin(stale.encode())
+        state.commit(state.begin(Command(1,4,RELEASE,0,((0,1,7),)).encode()))
+        state.commit(state.begin(Command(1,5,KV_HANDOFF,3,((0,2,3),)).encode()))
+        self.assertEqual(state.lengths[0],3)
+
+    def test_handoff_rejects_partial_occupied_or_out_of_range(self):
+        for rows,entries in ((4,((0,0,4),)),(4,((0,2,4),)),(4,((0,1,3),)),
+                             (0,((0,1,0),)),(4,((0,1,4),(1,1,4))),
+                             (513,((0,1,513),))):
+            state=StageState(1,512)
+            with self.subTest(rows=rows,entries=entries),self.assertRaises(ValueError):
+                state.begin(Command(1,1,KV_HANDOFF,rows,entries).encode())
+            self.assertEqual((state.lengths,state.generations,state.sequence),([0]*4,[0]*4,1))
+            self.assertIsNone(state.pending)
+        # An occupied slot refuses a handoff (the fresh-slot rule of PREFILL).
+        state=StageState(1,512)
+        state.commit(state.begin(Command(1,1,PREFILL,2,((0,1,0),)).encode()))
+        with self.assertRaises(ValueError):
+            state.begin(Command(1,2,KV_HANDOFF,4,((0,2,4),)).encode())
+        self.assertEqual(state.lengths[0],2)
+
+    def test_previous_wire_version_cannot_silently_accept_handoff_protocol(self):
+        from damendaemon.stage_protocol import VERSION
+        words=Command(1,1,KV_HANDOFF,4,((0,1,4),)).encode();words[1]=VERSION-1
+        with self.assertRaisesRegex(ValueError,'protocol'):decode(words)

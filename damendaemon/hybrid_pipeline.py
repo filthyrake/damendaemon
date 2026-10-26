@@ -153,6 +153,28 @@ class HybridPipeline:
     def decode(self, token):
         return self.decode_batch([token], [0])
 
+    def install_handoff(self, payload, slot=0, generation=1):
+        """Install an exported populated-slot payload into every stage (#606).
+
+        The in-process pair path of the KV_HANDOFF protocol round: each stage
+        imports its layer slice (a superset payload covers the whole model),
+        then the pipeline cursor commits to the payload's position. The
+        receiving ranks' cursors commit only here — after every stage's
+        tensors are installed — mirroring the acknowledged-completion rule of
+        the channel path. Per-stage handoff telemetry lands in status().
+        """
+        from .slot_handoff import import_slot
+        with self.lock:
+            self._ready()
+            if (type(slot) is not int or not 0 <= slot < self.max_batch
+                    or self.lengths[slot]
+                    or type(generation) is not int or generation < 1):
+                raise ValueError('pipeline handoff needs an empty slot and a fresh generation')
+            reports = [import_slot(stage, slot, generation, payload)
+                       for stage in self.stages]
+            self.lengths[slot] = payload['metadata']['position']
+            return reports
+
     def decode_batch(self, tokens, slots, cancelled=None):
         with self.lock:
             self._ready()
@@ -169,6 +191,8 @@ class HybridPipeline:
     def status(self):
         with self.lock:
             return dict(failed=self.failed, closed=self.closed, lengths=list(self.lengths),
+                        handoffs=[getattr(stage, 'last_handoff', None)
+                                  for stage in self.stages],
                         stages=[dict(layer_start=s.layer_start, layer_end=s.layer_end,
                             closed=s.closed, required_memory_bytes=s.required_memory_bytes,
                             activation_workspace_bytes=s.stage_activation_workspace_bytes,
