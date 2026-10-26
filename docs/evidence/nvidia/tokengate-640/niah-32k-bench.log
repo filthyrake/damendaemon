@@ -1,0 +1,23 @@
+[bench] samples: val split (longbench_eval_split_niah32k_iso_v1.json)
+[bench] niah_kamradt_32k: 16 samples, 31733-32320 prompt tokens, arms: full + tokengate@K=[100, 500, 2000]
+Loading weights:   0%|          | 0/311 [00:00<?, ?it/s]Loading weights: 100%|██████████| 311/311 [00:00<00:00, 12915.65it/s]
+[bench] downloading checkpoint from hf.co/liana313/tokengate-niah-qwen3-1.7b ...
+Fetching 4 files:   0%|          | 0/4 [00:00<?, ?it/s]Fetching 4 files: 100%|██████████| 4/4 [00:00<00:00, 1795.70it/s]
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/311 [00:00<?, ?it/s]Loading weights: 100%|██████████| 311/311 [00:00<00:00, 11859.20it/s]
+[gate] loaded LoRA /home/damen/.cache/huggingface/hub/models--liana313--tokengate-niah-qwen3-1.7b/snapshots/3ef4d84ebd161a9700acced6e92f7cd5c50225ad/lora_step3000.pt (rank=16, alpha=32.0, targets=['self_attn.q_proj', 'self_attn.v_proj'], layers=0..27)
+[FlexAttention] patched 28 full-attention layers: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
+[gate] attention kernels: flex -> causal/bias = ('flex', 'flex')
+[FlexAttention] Warming up compilation...
+[FlexAttention] Warmup complete
+[gate] scoring branch (mlp): 25.17M params, fp32 storage, compute in the backbone dtype (3 CastLinears' bf16 copies frozen)
+[gate] ready (layer=1, d_model=2048)
+
+arm               K   acc(acc)   TTFT(ms)  speedup
+--------------------------------------------------
+full              -      1.000     2408.3    1.00x
+tokengate      full      1.000     2858.9    0.84x
+tokengate       100      1.000      190.7   12.63x
+tokengate       500      1.000      200.1   12.03x
+tokengate      2000      1.000      264.5    9.10x
+

@@ -1,0 +1,51 @@
+151a152,187
+> 
+> def _load_longbench_compat(subset: str, split: str):
+>     """load_dataset('THUDM/LongBench', ...) with a datasets>=5 fallback.
+> 
+>     datasets 5.x (upstream's own lock pins 5.1.0) dropped script-based
+>     datasets; LongBench ships its data as a plain data.zip of jsonl — load
+>     that directly. Single TEST split per the LongBench.py script, so any
+>     requested split maps to the same rows.
+>     """
+>     from datasets import load_dataset
+>     try:
+>         return load_dataset("THUDM/LongBench", subset, split=split)
+>     except RuntimeError as e:
+>         if "Dataset scripts are no longer supported" not in str(e):
+>             raise
+>         import json as _json
+>         import os as _os
+>         import urllib.request as _ur
+>         import zipfile as _zip
+>         zpath = _os.path.expanduser("~/.cache/tokengate/longbench/data.zip")
+>         if not _os.path.exists(zpath):
+>             _os.makedirs(_os.path.dirname(zpath), exist_ok=True)
+>             _ur.request.urlretrieve(
+>                 "https://huggingface.co/datasets/THUDM/LongBench/resolve/main/data.zip",
+>                 zpath)
+>         from datasets import Dataset
+>         rows = []
+>         with _zip.ZipFile(zpath) as z:
+>             with z.open(f"data/{subset}.jsonl") as f:
+>                 for line in f:
+>                     if line.strip():
+>                         rows.append(_json.loads(line))
+>         if not rows:
+>             raise RuntimeError(f"LongBench subset '{subset}' has no rows in data.zip")
+>         return Dataset.from_list(rows)
+> 
+165c201
+<     raw = load_dataset("THUDM/LongBench", subset, split=split)
+---
+>     raw = _load_longbench_compat(subset, split)
+112c112,113
+<     raw = load_dataset("THUDM/LongBench", subset, split=split)
+---
+>     from tokengate.datasets.dataset import _load_longbench_compat as _llc
+>     raw = _llc(subset, split)
+71c71,72
+<         raw = load_dataset("THUDM/LongBench", subset, split="test")
+---
+>         from tokengate.datasets.dataset import _load_longbench_compat as _llc
+>         raw = _llc(subset, "test")
