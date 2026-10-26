@@ -1,0 +1,232 @@
+{
+ "admission_refusal": {
+  "alive_after_requests": true,
+  "compute_apps": [
+   "790543, /home/damen/dllm-dev/venv/bin/python, 76 MiB"
+  ],
+  "context": 512,
+  "device_memory": {
+   "properties": {
+    "free": 6031605760,
+    "mig_total": 6241124352,
+    "multi_processor_count": 14,
+    "name": "NVIDIA A30 MIG 1g.6gb",
+    "total_memory": 6241124352,
+    "uuid": "70f6a991-a4d7-9984-c2a1-6c474445d53a"
+   },
+   "source": "torch",
+   "stderr": "",
+   "stdout_remainder": ""
+  },
+  "model": "gpt-oss-20b (MXFP4 native)",
+  "model_status": {
+   "closed": false,
+   "closing": false,
+   "context": 512,
+   "cuda_allocated_bytes": 0,
+   "cuda_devices": null,
+   "cuda_peak_allocated_bytes": 0,
+   "device": "cuda",
+   "gpu_model_limit": 1,
+   "hip_allocated_bytes": null,
+   "host_budget_bytes": 17179869184,
+   "host_cached_bytes": 0,
+   "host_model_limit": 2,
+   "models": [
+    {
+     "chat_template": {
+      "sha256": null,
+      "source": "checkpoint"
+     },
+     "executor_failed": false,
+     "gpu_packed_layout_overhead_bytes": 0,
+     "gpu_projection_cache_bytes": 0,
+     "host_weight_bytes": null,
+     "id": "a",
+     "kv_cache_bytes": null,
+     "kv_cache_mode": null,
+     "output_head_workspace_bytes": 0,
+     "partition": null,
+     "partition_rebind_count": null,
+     "pipeline": null,
+     "q4_marlin_abi": null,
+     "quantization": "none",
+     "residency": "disk",
+     "vision_gpu_weight_bytes": 0,
+     "vision_host_weight_bytes": 0,
+     "weight_streaming": null
+    }
+   ],
+   "mps_allocated_bytes": null,
+   "pending_executor_cleanup": 0,
+   "pending_pipeline_cleanup": 0,
+   "rocm_aotriton_experimental": null,
+   "xpu_allocated_bytes": null,
+   "xpu_peak_allocated_bytes": null,
+   "xpu_reserved_bytes": null
+  },
+  "requests": [
+   {
+    "error": "SystemExit(\"completion failed: {'error': 'model execution failed'}\")",
+    "ok": false,
+    "prompt": "The capital of France is"
+   }
+  ],
+  "serve_log": "/tmp/mig609/serve-slice-20b.log",
+  "serve_pid": 790543,
+  "slice_total_bytes": 6241124352
+ },
+ "clean_release": {
+  "compute_apps_after_terminate": [],
+  "note": "slice memory returns to the pre-serve baseline once the serve exits"
+ },
+ "inventory": {
+  "items": [
+   {
+    "capable_gpus": [
+     {
+      "current": "Enabled",
+      "index": "0",
+      "name": "NVIDIA A30",
+      "pending": "Enabled"
+     }
+    ],
+    "instances": [
+     "MIG 1g.6gb      Device  0: (UUID: MIG-c083756b-37b9-51b5-ac0e-6cdda07b784c)"
+    ],
+    "item": "mig",
+    "note": "read-only; enabling MIG is a device-state change requiring a maintenance window (#609 gate 3)",
+    "passed": true,
+    "supported": true
+   },
+   {
+    "blocking": [],
+    "gpus": [
+     {
+      "compute_mode": "Default",
+      "index": "0",
+      "name": "NVIDIA A30"
+     },
+     {
+      "compute_mode": "Default",
+      "index": "1",
+      "name": "NVIDIA A2"
+     }
+    ],
+    "item": "compute_mode",
+    "note": "default compute mode: co-tenancy is possible",
+    "passed": true
+   },
+   {
+    "control_binary": "/usr/bin/nvidia-cuda-mps-control",
+    "item": "mps",
+    "note": "control binary present; start nvidia-cuda-mps-control -d before the co-tenant processes",
+    "passed": true,
+    "server_processes": [],
+    "server_running": false
+   }
+  ],
+  "passed": true
+ },
+ "phase": "slice",
+ "positive": {
+  "alive_after_requests": true,
+  "compute_apps": [
+   "790194, /home/damen/dllm-dev/venv/bin/python, 1684 MiB"
+  ],
+  "device_memory": {
+   "properties": {
+    "free": 4345495552,
+    "mig_total": 6241124352,
+    "multi_processor_count": 14,
+    "name": "NVIDIA A30 MIG 1g.6gb",
+    "total_memory": 6241124352,
+    "uuid": "70f6a991-a4d7-9984-c2a1-6c474445d53a"
+   },
+   "source": "torch",
+   "stderr": "",
+   "stdout_remainder": ""
+  },
+  "greedy": [
+   {
+    "completion_tokens": 24,
+    "ok": true,
+    "prompt": "The capital of France is",
+    "text": " Paris.\nThe capital of France is Paris.\nThe capital of France is Paris.\nThe capital of France is"
+   },
+   {
+    "completion_tokens": 24,
+    "ok": true,
+    "prompt": "Water boils at a temperature of",
+    "text": " 100\u00b0C. If a person is standing on a hot day, what is the temperature of the water in"
+   },
+   {
+    "completion_tokens": 24,
+    "ok": true,
+    "prompt": "The three primary colors are",
+    "text": " red, green, and blue.\n\n<think>\n\n</think>\n\nYes, that is correct. In the context of light and"
+   }
+  ],
+  "model_status": {
+   "closed": false,
+   "closing": false,
+   "context": 2048,
+   "cuda_allocated_bytes": 0,
+   "cuda_devices": null,
+   "cuda_peak_allocated_bytes": 0,
+   "device": "cuda",
+   "gpu_model_limit": 1,
+   "hip_allocated_bytes": null,
+   "host_budget_bytes": 8589934592,
+   "host_cached_bytes": 0,
+   "host_model_limit": 2,
+   "models": [
+    {
+     "chat_template": {
+      "sha256": null,
+      "source": "checkpoint"
+     },
+     "executor_failed": false,
+     "gpu_packed_layout_overhead_bytes": 0,
+     "gpu_projection_cache_bytes": 0,
+     "host_weight_bytes": null,
+     "id": "a",
+     "kv_cache_bytes": null,
+     "kv_cache_mode": null,
+     "output_head_workspace_bytes": 0,
+     "partition": null,
+     "partition_rebind_count": null,
+     "pipeline": null,
+     "q4_marlin_abi": null,
+     "quantization": "none",
+     "residency": "disk",
+     "vision_gpu_weight_bytes": 0,
+     "vision_host_weight_bytes": 0,
+     "weight_streaming": null
+    }
+   ],
+   "mps_allocated_bytes": null,
+   "pending_executor_cleanup": 0,
+   "pending_pipeline_cleanup": 0,
+   "rocm_aotriton_experimental": null,
+   "xpu_allocated_bytes": null,
+   "xpu_peak_allocated_bytes": null,
+   "xpu_reserved_bytes": null
+  },
+  "serve_log": "/tmp/mig609/serve-slice.log",
+  "serve_pid": 790194
+ },
+ "slice_properties": {
+  "properties": {
+   "free": 6116409344,
+   "mig_total": 6241124352,
+   "multi_processor_count": 14,
+   "name": "NVIDIA A30 MIG 1g.6gb",
+   "total_memory": 6241124352,
+   "uuid": "70f6a991-a4d7-9984-c2a1-6c474445d53a"
+  },
+  "source": "torch",
+  "stderr": "",
+  "stdout_remainder": ""
+ }
+}

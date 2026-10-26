@@ -27,25 +27,44 @@ def nvidia_smi(*fields):
 
 
 def mig_inventory():
-    """MIG instances and slice geometry, or the honest unsupported reason."""
+    """MIG instances and slice geometry, or the honest unsupported reason.
+
+    Per-GPU: a MIG-capable GPU reports its mode; a consumer card reports
+    [N/A] for the same fields. The check is PER ROW — one consumer card
+    next to a MIG-capable GPU must not hide the capable GPU's slices
+    (the mixed A30+A2 host caught the whole-output 'N/A' shortcut lying).
+    """
     binary = shutil.which('nvidia-smi')
     if binary is None:
         return dict(item='mig', passed=True, supported=False,
                     note='nvidia-smi unavailable; MIG inventory skipped')
     import subprocess
-    query = subprocess.run([binary, '--query-gpu=name,mig.mode.current,mig.mode.pending',
-                            '--format=csv,noheader'], capture_output=True, text=True, timeout=20)
-    if query.returncode != 0 or 'N/A' in query.stdout:
+    query = subprocess.run([binary, '--query-gpu=index,name,mig.mode.current,mig.mode.pending',
+                            '--format=csv'], capture_output=True, text=True, timeout=20)
+    if query.returncode != 0:
         return dict(item='mig', passed=True, supported=False,
                     note='MIG not supported or not reportable on this GPU (consumer cards '
                          'report N/A); slice admission is an A30/data-center path')
-    supported = 'Enabled' in query.stdout
+    lines = [line for line in query.stdout.strip().splitlines() if line]
+    rows = [dict(zip(('index', 'name', 'current', 'pending'),
+                     (value.strip() for value in line.split(', '))))
+            for line in lines[1:]]
+    capable = [row for row in rows if row['current'] not in ('N/A', '[N/A]')]
+    if not capable:
+        return dict(item='mig', passed=True, supported=False,
+                    note='no MIG-capable GPU on this host (consumer cards report '
+                         'N/A); slice admission is an A30/data-center path')
     instances = []
-    if supported:
-        detail = subprocess.run([binary, 'mig', '-l'], capture_output=True, text=True, timeout=20)
-        instances = [line.strip() for line in detail.stdout.splitlines() if line.strip()]
-    return dict(item='mig', passed=True, supported=supported,
-                instances=instances,
+    if any(row['current'] == 'Enabled' for row in capable):
+        # nvidia-smi -L is the UNPRIVILEGED enumeration: it lists MIG device
+        # UUIDs per GPU (the mig -lgi listing requires root and would turn a
+        # read-only inventory into a permission failure).
+        detail = subprocess.run([binary, '-L'], capture_output=True, text=True, timeout=20)
+        instances = [line.strip() for line in detail.stdout.splitlines()
+                     if 'MIG' in line]
+    return dict(item='mig', passed=True,
+                supported=any(row['current'] == 'Enabled' for row in capable),
+                capable_gpus=capable, instances=instances,
                 note='read-only; enabling MIG is a device-state change requiring a '
                      'maintenance window (#609 gate 3)')
 
@@ -57,12 +76,12 @@ def compute_mode_inventory():
     the tool is unavailable — either way this is a disclosed skip, not a
     failed preflight: MIG and MPS treat a missing nvidia-smi the same way.
     """
-    rows = nvidia_smi('--query-gpu=index,name,compute_mode', '--format=csv,noheader')
-    if rows is None:
+    rows = nvidia_smi('--query-gpu=index,name,compute_mode', '--format=csv')
+    if rows is None or not rows:
         return dict(item='compute_mode', passed=True,
                     note='nvidia-smi unavailable; compute mode is an NVIDIA concept — '
                          'not applicable or unverifiable on this host')
-    blocking = [row for row in rows if row['compute_mode'] not in ('Default',)]
+    blocking = [row for row in rows if row['compute_mode'] not in ('Default', '[N/A]')]
     return dict(item='compute_mode', passed=True, gpus=rows,
                 note='Exclusive/Prohibited modes block a second damendaemon process or MPS'
                      if blocking else 'default compute mode: co-tenancy is possible',
@@ -73,7 +92,7 @@ def mps_inventory():
     """MPS control binary, running server, and per-process view."""
     control = shutil.which('nvidia-cuda-mps-control')
     processes = nvidia_smi('--query-compute-apps=pid,process_name,used_memory',
-                           '--format=csv,noheader') or []
+                           '--format=csv') or []
     mps_servers = [row for row in processes if 'mps' in row.get('process_name', '').lower()]
     return dict(item='mps', passed=True, control_binary=control,
                 server_running=bool(mps_servers), server_processes=mps_servers,

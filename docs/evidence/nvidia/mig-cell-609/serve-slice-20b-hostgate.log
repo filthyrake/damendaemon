@@ -1,0 +1,19 @@
+damendaemon listening on http://127.0.0.1:8396
+Traceback (most recent call last):
+  File "/tmp/mig609/damendaemon/server.py", line 331, in post_authorized
+    for event in generation:
+  File "/tmp/mig609/damendaemon/scheduler.py", line 301, in generate
+    raise request.error
+MemoryError: model exceeds configured host weight budget
+Worker traceback:
+  File "/tmp/mig609/damendaemon/scheduler.py", line 907, in _run_work
+    with self.runtime.session(first.alias) as (executor, tier, activation):
+  File "/usr/lib64/python3.11/contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "/tmp/mig609/damendaemon/runtime.py", line 433, in session
+    yield self._activate(alias)
+          ^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/mig609/damendaemon/runtime.py", line 347, in _activate
+    raise MemoryError("model exceeds configured host weight budget")
+

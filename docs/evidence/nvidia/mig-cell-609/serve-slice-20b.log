@@ -1,0 +1,29 @@
+damendaemon listening on http://127.0.0.1:8396
+Traceback (most recent call last):
+  File "/tmp/mig609/damendaemon/server.py", line 331, in post_authorized
+    for event in generation:
+  File "/tmp/mig609/damendaemon/scheduler.py", line 301, in generate
+    raise request.error
+MemoryError: insufficient GPU memory for weights, KV cache, and workspace reserve
+Worker traceback:
+  File "/tmp/mig609/damendaemon/scheduler.py", line 907, in _run_work
+    with self.runtime.session(first.alias) as (executor, tier, activation):
+  File "/usr/lib64/python3.11/contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "/tmp/mig609/damendaemon/runtime.py", line 433, in session
+    yield self._activate(alias)
+          ^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/mig609/damendaemon/runtime.py", line 396, in _activate
+    executor = make_executor(self.host[alias], self.use_graph, self.batch_size)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/mig609/damendaemon/runtime.py", line 684, in make_executor
+    return GptOssExecutor(model,use_graph,max_batch or 1,**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/mig609/damendaemon/gpt_oss.py", line 127, in __init__
+    super().__init__(model,use_graph,max_batch,kernels)
+  File "/tmp/mig609/damendaemon/batch.py", line 16, in __init__
+    super().__init__(model, use_graph=False, kernels=kernels, max_batch=max_batch)
+  File "/tmp/mig609/damendaemon/qwen2.py", line 522, in __init__
+    raise MemoryError("insufficient GPU memory for weights, KV cache, and workspace reserve")
+
