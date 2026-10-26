@@ -678,6 +678,38 @@ activation, unload and shutdown retry their cleanup before releasing host state
 or loading replacement executors. The original rebind error retains a cleanup
 failure note, and a partially rebound model is never published under an alias.
 
+## TokenGate gated prefill (experimental)
+
+`DAMENDAEMON_TOKEN_GATE=1` opts a hybrid executor into TokenGate-style gated
+prefill (#641, child B of the #639 evaluation epic): a prunable article span
+inside the prompt is scored at the gate layer's phase boundary, and layers
+above the gate process only the top-K scored article tokens plus every token
+outside the span. Configure with `DAMENDAEMON_TOKEN_GATE_LAYER` (gate layer
+index), `DAMENDAEMON_TOKEN_GATE_K` (default 128) and optionally
+`DAMENDAEMON_TOKEN_GATE_WEIGHTS` (an upstream `gate_step*.pt` checkpoint;
+without it a zero-initialized untrained gate is attached, which selects
+nothing and falls back to the standard prefill path byte-exactly).
+
+The surface is eager-only (`DAMENDAEMON_KERNELS=torch`, `--no-graph`) and
+needs a full executor; it is not a hybrid stage. Gate math runs in fp32
+against fp32-stored gate weights regardless of the backbone compute dtype.
+Chunked gated prefill is admission-compatible with `--prefill-chunk-size`:
+the article span validates against the whole prompt, and intermediate chunks
+defer phase 2 to the final one. Decode honors the gate through a per-layer
+hole mask and the upstream head-mean key-bias fold, with the paper's
+`r = log(m)/log(p)` query temperature.
+
+Component parity with the upstream implementation
+(`token-gate-llms/TokenGate` @ `6e51aac`, checkpoint
+`liana313/tokengate-niah-qwen3.5-2b` `gate_step18000.pt`) is drift-0.0 on
+all five gate components — LN2 boundary normalization, scoring branch,
+E2EGate bias, top-K selection (exact index sets) and the kept-ratio
+temperature — measured on real layer-1 boundary activations of
+Qwen/Qwen3.5-2B; see `docs/evidence/nvidia/tokengate-641/`. Upstream's own
+hybrid model-forward is broken as shipped (#640), so parity is component
+level, not model-forward level; end-to-end accuracy on hybrid checkpoints
+is unqualified until upstream fixes its inference path.
+
 ## Optional API authentication
 
 Set `DAMENDAEMON_API_KEY` for inference clients and a different `DAMENDAEMON_ADMIN_API_KEY`
