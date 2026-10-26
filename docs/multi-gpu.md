@@ -423,11 +423,13 @@ The disaggregated-prefill contract: the payload is pure state, so the
 sender's first sampled token travels with the handoff — the receiver never
 re-runs the prompt and starts decoding from the installed position. CPU
 tests prove greedy-equal continuation (handoff vs sender vs recomputed
-control, byte-equal state). This is state-movement correctness on the CPU
-fixture; the live A30→A2 cell and cross-host transport are recorded
-separately in `docs/evidence/distributed/slot-handoff-606/README.md`, with
-the design-note arithmetic (per-prefix handoff bytes and break-even
-re-prefill rates) and without any throughput claim.
+control, byte-equal state), and the live labnode3 cell proved the same
+token-for-token equality on the real A30→A30+A2 split pair (Qwen3.5-0.8B,
+guarded). Cross-host transport over the authenticated channel remains
+future scope; the design-note arithmetic (per-prefix handoff bytes and
+break-even re-prefill rates, no throughput claim) and the live cell's
+recorded telemetry are in
+`docs/evidence/distributed/slot-handoff-606/README.md`.
 
 ### Authenticated connected host sockets
 

@@ -1,8 +1,7 @@
-# KV/prefix handoff across ranks (#606) — design note, protocol, CPU cell
+# KV/prefix handoff across ranks (#606) — design note, protocol, CPU + live cells
 
-Issue #606. Branch `issue-606-kv-handoff`. Mac CPU-only implementation
-cell; no GPU qualification in this file. The live A30→A2 correctness cell is
-the follow-up PR in the same window.
+Issue #606. Branch `issue-606-kv-handoff`. CPU implementation cell plus the
+live labnode3 A30→A30+A2 correctness cell (gate 3), both below.
 
 ## Gate 1 — design note (arithmetic before building)
 
@@ -113,7 +112,7 @@ position.
   the handoff (the disaggregated-prefill contract).
 - Refusals: occupied target slot, tampered config/context/dtype/position,
   receiver layer range not covered by the payload, payload missing an
-  inventory tensor — all before receiver state is touched.
+  inventory tensor, empty inventory — all before receiver state is touched.
 - Protocol state machine (test_stage_protocol.py): handoff installs a fresh
   generation that then decodes and chunk-continues like a prefilled slot;
   stale/next-generation claims, partial handoffs (position != rows),
@@ -128,11 +127,42 @@ position.
 `test_slot_handoff`, `test_worker_daemon`, `test_hybrid_stage`,
 `test_host_tensor_channel` (Mac venv, torch 2.6 CPU).
 
+## Gate 3 — live cell (labnode3 A30 → A30+A2 in-process pair)
+
+Runner `handoff-cell-606.py` (this directory), executed under
+`scripts.experiments.guard_shared_cuda` with the ordered A30+A2 UUID pair;
+result in `handoff-cell.json`, guard report in `guard.json`, log in
+`cell.log`. Qwen3.5-0.8B unquantized (revision `2fc0636…`), context 512,
+max_batch 2, kernels `torch`, use_graph off; split pipeline stage 0 =
+layers [0,12) on the A30 (`cuda:0`), stage 1 = [12,24) on the A2
+(`cuda:1`); sender = single-device HybridExecutor on the A30; control =
+a second split pipeline recomputing the same prompt.
+
+- Pinned 64-token prompt; the sender's slot exported at the prompt-only
+  state BEFORE its own continuation advanced the live slot (export clones).
+- **Greedy-equal, token-for-token (12/12)**: the handoff pipeline's
+  continuation (decoding from the sender's first sampled token, `22287`)
+  equals the sender's own A30 continuation AND the recomputed control
+  pipeline. `sender_continuation_equals_handoff: true`,
+  `recomputed_control_equals_handoff: true`, `completed: true`, guard
+  `cleanup_complete: true`; both GPUs back to 0 MiB after the run.
+- Telemetry (real, recorded in the result JSON): export 20,545,536 bytes
+  over 42 tensors in 0.052 s; per-stage install 10,272,768 bytes over 21
+  tensors (half the layers each) in 0.0045 s / 0.0121 s; sender prefill
+  1.08 s; sender slot released after the acknowledged handoff (live
+  position 75 = 64 prompt + 11 decodes at release time).
+- Measured-vs-design-note delta, disclosed: the live export measured
+  20.5 MiB at 64 tokens (fp16 compute path), about half the fp16-scaled
+  capacity-formula estimate for the 0.8B fixture — the design note's
+  fixture table is conservative for the 0.8B; the 27B 32K FP32 figure
+  (4.000 GiB) reproduces the recorded #535/#70 cell and is the regime the
+  arithmetic was for.
+- Correctness cell only — no throughput claim; the total 11.6 s wall time
+  includes two model loads and four stage constructions, not a handoff
+  latency measurement.
+
 ## Honest boundary
 
-- No GPU qualification in this PR: the CPU fixture is 4 layers, fp32, and
-  proves state-movement correctness and protocol semantics only. The live
-  A30→A2 greedy-equal cell (gate 3) is the follow-up PR in this window.
 - Worker (`HostHybridWorker`) transport integration — a KV_HANDOFF arriving
   at a host worker — is not wired in this PR; the command would fail loudly
   at the execution branch. Cross-host handoff over the authenticated channel

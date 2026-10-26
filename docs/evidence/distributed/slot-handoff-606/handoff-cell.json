@@ -1,0 +1,116 @@
+{
+ "gate": "#606 gate 3 live handoff cell (in-process A30+A2 pair)",
+ "completed": true,
+ "devices": {
+  "a30": "GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+  "a2": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "sender": "cuda:0 (A30)",
+  "pipeline": [
+   "cuda:0 stage [0,12)",
+   "cuda:1 stage [12,24)"
+  ]
+ },
+ "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+ "layers": 24,
+ "split": 12,
+ "prompt_tokens": 64,
+ "greedy_tokens": 12,
+ "first_sampled_token": 22287,
+ "chains": {
+  "sender": [
+   22287,
+   58637,
+   85,
+   20344,
+   89,
+   58,
+   24094,
+   63,
+   64,
+   33,
+   66,
+   1847
+  ],
+  "handoff": [
+   22287,
+   58637,
+   85,
+   20344,
+   89,
+   58,
+   24094,
+   63,
+   64,
+   33,
+   66,
+   1847
+  ],
+  "recomputed": [
+   22287,
+   58637,
+   85,
+   20344,
+   89,
+   58,
+   24094,
+   63,
+   64,
+   33,
+   66,
+   1847
+  ]
+ },
+ "sender_continuation_equals_handoff": true,
+ "recomputed_control_equals_handoff": true,
+ "prefill_seconds": 1.0759965170000214,
+ "export": {
+  "export_bytes": 20545536,
+  "tensors": 42,
+  "export_seconds": 0.051801474997773767
+ },
+ "install": [
+  {
+   "import_bytes": 10272768,
+   "tensors": 21,
+   "import_seconds": 0.00448288500047056,
+   "slot": 0,
+   "generation": 1,
+   "position": 64
+  },
+  {
+   "import_bytes": 10272768,
+   "tensors": 21,
+   "import_seconds": 0.01214404399797786,
+   "slot": 0,
+   "generation": 1,
+   "position": 64
+  }
+ ],
+ "pipeline_status_handoffs": [
+  {
+   "import_bytes": 10272768,
+   "tensors": 21,
+   "import_seconds": 0.00448288500047056,
+   "slot": 0,
+   "generation": 1,
+   "position": 64
+  },
+  {
+   "import_bytes": 10272768,
+   "tensors": 21,
+   "import_seconds": 0.01214404399797786,
+   "slot": 0,
+   "generation": 1,
+   "position": 64
+  }
+ ],
+ "release": {
+  "slot": 0,
+  "released_position": 75
+ },
+ "total_seconds": 11.618326818999776,
+ "gpu_used_after": {
+  "GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a": "5797",
+  "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283": "3086"
+ }
+}
