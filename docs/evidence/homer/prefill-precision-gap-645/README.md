@@ -85,6 +85,44 @@ contractually. Gate 3 (package duty-cycle/thermal re-measure) and gate 4
 (one bounded 4K cell) follow only if gate 2 produces a contract that
 survives.
 
+## Gate-2 scoping cell: the single-dot packed kernel (2026-10-26, second PR)
+
+`scripts/experiments/prefill_single_dot_gap_645.py` — an experiment-local
+single-bf16-dot copy of the production kernel (packed weights and
+on-the-fly dequant kept, the 3-dot compensation dropped to 1 dot), the
+only residency-feasible candidate: dense bf16 weights alone (~54 GiB)
+exceed the whole 52.74 GiB Q4-32K admission, so a dense-bf16 prefill arm
+is dead at any qualified 32K residency. Results
+(`single-dot-gap.json`, same shapes/seeds as gate 1, fans fixed@5,
+restored after):
+
+| Shape | q4 comp (production) | q4 single-dot | q8 single-dot | dense bf16 |
+|---|---|---|---|---|
+| 0.8B chunk127 | 3.11 | **6.56** (2.11×) | 6.41 | 14.7 |
+| 0.8B prefill512 | 3.52 | **6.99** (1.99×) | 7.39 | 23.6 |
+| 27B chunk127 | 3.32 | **6.55** (1.97×) | 5.18 | 7.5 |
+| 27B prefill512 | 3.35 | **6.77** (2.02×) | 6.45 | 23.2 |
+
+Numerics (vs the FP32 dequantized-weight reference, deviation / output
+scale): the single-dot arms deviate a **uniform ~0.2% relative** at every
+shape and format (e.g. Q4 27B: 0.052 abs on a 22.1 output scale; Q8 27B:
+0.74 on 348.6) — the classic single-bf16-dot rounding (2⁻⁹). The
+production compensated path measures ~0.001–0.02% relative on the same
+data (gate 1) — the candidate is **10–100× less precise** by
+construction, and #601's evidence says deviations of this class flip
+near-tie argmaxes (head max_abs 2.62 flipped 1/10 rounds), so the
+#70/#535 exact-greedy replay contract cannot survive it.
+
+Verdict: **~2.0× uniform on prefill GEMMs** — a sub-2× GEMM-only gain
+(diluted further at whole-prefill level by attention/scan/state, which
+are not GEMMs) for a categorical numerics regression that would require
+re-qualifying the entire replay contract. Not worth it. The first
+attempt (`run.attempt1.log`, retained on HOMER) tripped the original
+0.5-abs sanity bound on the Q8 single-dot arm — the bound was written for
+layout bugs; the 0.2%-relative deviation is the genuine single-dot
+numerics, so the bound was re-scoped (5.0 abs, layout-bug guard) and the
+run re-executed in full.
+
 ## Honest boundary
 
 Synthetic weights, four GEMM shapes, one host, one thermal epoch. The

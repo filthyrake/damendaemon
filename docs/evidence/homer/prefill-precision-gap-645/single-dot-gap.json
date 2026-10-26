@@ -1,0 +1,147 @@
+{
+ "gate": "#645 gate-2 scoping: single-dot packed kernel",
+ "gpu": "Radeon 8060S Graphics",
+ "torch": "2.11.0a0+rocm7.11.0a20260106",
+ "shapes": [
+  {
+   "shape": "0.8b chunk127 mlp",
+   "m": 127,
+   "k": 1024,
+   "n": 3584,
+   "q8_compensated": {
+    "tops": 3.419,
+    "iters": 300,
+    "ms_per_call": 0.273
+   },
+   "q4_compensated": {
+    "tops": 3.112,
+    "iters": 300,
+    "ms_per_call": 0.3
+   },
+   "q8_single_dot": {
+    "tops": 6.411,
+    "iters": 300,
+    "ms_per_call": 0.145,
+    "ref_max_abs": 0.353279,
+    "ref_scale": 144.581
+   },
+   "q4_single_dot": {
+    "tops": 6.558,
+    "iters": 300,
+    "ms_per_call": 0.142,
+    "ref_max_abs": 0.023726,
+    "ref_scale": 9.181
+   },
+   "dense_bf16": {
+    "tops": 14.69,
+    "iters": 300,
+    "ms_per_call": 0.063
+   }
+  },
+  {
+   "shape": "0.8b prefill512 mlp",
+   "m": 512,
+   "k": 1024,
+   "n": 3584,
+   "q8_compensated": {
+    "tops": 3.565,
+    "iters": 300,
+    "ms_per_call": 1.054
+   },
+   "q4_compensated": {
+    "tops": 3.52,
+    "iters": 300,
+    "ms_per_call": 1.068
+   },
+   "q8_single_dot": {
+    "tops": 7.388,
+    "iters": 300,
+    "ms_per_call": 0.509,
+    "ref_max_abs": 0.383224,
+    "ref_scale": 165.29
+   },
+   "q4_single_dot": {
+    "tops": 6.993,
+    "iters": 300,
+    "ms_per_call": 0.537,
+    "ref_max_abs": 0.023726,
+    "ref_scale": 9.601
+   },
+   "dense_bf16": {
+    "tops": 23.608,
+    "iters": 300,
+    "ms_per_call": 0.159
+   }
+  },
+  {
+   "shape": "27b chunk127 mlp",
+   "m": 127,
+   "k": 5120,
+   "n": 17408,
+   "q8_compensated": {
+    "tops": 3.375,
+    "iters": 132,
+    "ms_per_call": 6.708
+   },
+   "q4_compensated": {
+    "tops": 3.321,
+    "iters": 132,
+    "ms_per_call": 6.816
+   },
+   "q8_single_dot": {
+    "tops": 5.181,
+    "iters": 132,
+    "ms_per_call": 4.37,
+    "ref_max_abs": 0.741198,
+    "ref_scale": 348.62
+   },
+   "q4_single_dot": {
+    "tops": 6.546,
+    "iters": 132,
+    "ms_per_call": 3.458,
+    "ref_max_abs": 0.051694,
+    "ref_scale": 22.091
+   },
+   "dense_bf16": {
+    "tops": 7.544,
+    "iters": 132,
+    "ms_per_call": 3.001
+   }
+  },
+  {
+   "shape": "27b prefill512 mlp",
+   "m": 512,
+   "k": 5120,
+   "n": 17408,
+   "q8_compensated": {
+    "tops": 3.417,
+    "iters": 32,
+    "ms_per_call": 26.708
+   },
+   "q4_compensated": {
+    "tops": 3.345,
+    "iters": 32,
+    "ms_per_call": 27.284
+   },
+   "q8_single_dot": {
+    "tops": 6.445,
+    "iters": 32,
+    "ms_per_call": 14.16,
+    "ref_max_abs": 0.861758,
+    "ref_scale": 361.27
+   },
+   "q4_single_dot": {
+    "tops": 6.772,
+    "iters": 32,
+    "ms_per_call": 13.478,
+    "ref_max_abs": 0.053406,
+    "ref_scale": 22.091
+   },
+   "dense_bf16": {
+    "tops": 23.236,
+    "iters": 32,
+    "ms_per_call": 3.928
+   }
+  }
+ ]
+}
