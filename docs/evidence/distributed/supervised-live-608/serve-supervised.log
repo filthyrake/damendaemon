@@ -1,0 +1,55 @@
+[E1025 22:01:03.552187148 TCPStore.cpp:277] [c10d] The server socket on 47849 has failed to bind. TORCHELASTIC_USE_AGENT_STORE is enabled so ignoring the error.
+damendaemon distributed listening on http://127.0.0.1:8400 (supervised)
+[rank0]:[E1025 22:01:40.744843357 ProcessGroupNCCL.cpp:730] [Rank 0] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=30, OpType=ALLREDUCE, NumelIn=1, NumelOut=1, Timeout(ms)=30000) ran for 30004 milliseconds before timing out.
+[rank0]:[E1025 22:01:40.746384210 ProcessGroupNCCL.cpp:2372] [PG ID 0 PG GUID 0(default_pg) Rank 0]  failure detected by watchdog at work sequence id: 30 PG status: last enqueued work: 30, last started work: -1 (), last completed work: 29
+[rank0]:[E1025 22:01:42.500085058 ProcessGroupNCCL.cpp:774] Stack trace of the failed collective: 
+#0 all_reduce from /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/distributed/distributed_c10d.py:3245
+#1 wrapper from /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/distributed/c10d_logger.py:83
+#2 begin from /tmp/g608/damendaemon/stage_transport.py:37
+#3 heartbeat from /tmp/g608/damendaemon/distributed.py:284
+#4 _run_owned from /tmp/g608/damendaemon/distributed_serving.py:364
+#5 run from /tmp/g608/damendaemon/distributed_serving.py:270
+#6 _supervised_run from /tmp/g608/damendaemon/distributed_supervisor.py:150
+#7 run from /usr/lib64/python3.11/threading.py:982
+#8 _bootstrap_inner from /usr/lib64/python3.11/threading.py:1045
+#9 _bootstrap from /usr/lib64/python3.11/threading.py:1002
+
+[rank0]:[E1025 22:01:42.500386337 ProcessGroupNCCL.cpp:2714] [PG ID 0 PG GUID 0(default_pg) Rank 0] First PG on this rank to signal dumping.
+[rank0]:[E1025 22:01:42.578945519 ProcessGroupNCCL.cpp:1964] [PG ID 0 PG GUID 0(default_pg) Rank 0] Received a dump signal due to a collective timeout from this local rank and we will try our best to dump the debug info. Last enqueued NCCL work: 30, last completed NCCL work: 29.This is most likely caused by incorrect usages of collectives, e.g., wrong sizes used across ranks, the order of collectives is not same for all ranks or the scheduled collective, for some reason, didn't run. Additionally, this can be caused by GIL deadlock or other reasons such as network errors or bugs in the communications library (e.g. NCCL), etc. 
+[rank0]:[E1025 22:01:42.579407313 ProcessGroupNCCL.cpp:1677] [PG ID 0 PG GUID 0(default_pg) Rank 0] ProcessGroupNCCL preparing to dump debug info. Include stack trace: 1, only active collectives: 0
+[rank0]:[E1025 22:02:42.500684623 ProcessGroupNCCL.cpp:791] [Rank 0] Some NCCL operations have failed or timed out. Due to the asynchronous nature of CUDA kernels, subsequent GPU operations might run on corrupted/incomplete data.
+[rank0]:[E1025 22:02:42.500829923 ProcessGroupNCCL.cpp:805] [Rank 0] To avoid data inconsistency, we are taking the entire process down.
+[rank0]:[E1025 22:02:42.502292605 ProcessGroupNCCL.cpp:2174] [PG ID 0 PG GUID 0(default_pg) Rank 0] Process group watchdog thread terminated with exception: [Rank 0] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=30, OpType=ALLREDUCE, NumelIn=1, NumelOut=1, Timeout(ms)=30000) ran for 30004 milliseconds before timing out.
+Exception raised from checkTimeout at /__w/pytorch/pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:733 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x7f8335d63bfd in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #1: c10::DistError::DistError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f8335d64bd2 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #2: c10::DistBackendError::DistBackendError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f8335d64d02 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #3: c10d::ProcessGroupNCCL::WorkNCCL::checkTimeout(std::optional<std::chrono::duration<long, std::ratio<1l, 1000l> > >) + 0x2b1 (0x7f8286750b41 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #4: c10d::ProcessGroupNCCL::Watchdog::runLoop() + 0x1541 (0x7f828675c931 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #5: c10d::ProcessGroupNCCL::Watchdog::run() + 0x157 (0x7f828675dd47 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #6: <unknown function> + 0xdbae4 (0x7f830aedbae4 in /lib64/libstdc++.so.6)
+frame #7: <unknown function> + 0x8b2ea (0x7f833728b2ea in /lib64/libc.so.6)
+frame #8: <unknown function> + 0x1103d0 (0x7f83373103d0 in /lib64/libc.so.6)
+
+terminate called after throwing an instance of 'c10::DistBackendError'
+  what():  [PG ID 0 PG GUID 0(default_pg) Rank 0] Process group watchdog thread terminated with exception: [Rank 0] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=30, OpType=ALLREDUCE, NumelIn=1, NumelOut=1, Timeout(ms)=30000) ran for 30004 milliseconds before timing out.
+Exception raised from checkTimeout at /__w/pytorch/pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:733 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x7f8335d63bfd in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #1: c10::DistError::DistError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f8335d64bd2 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #2: c10::DistBackendError::DistBackendError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f8335d64d02 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #3: c10d::ProcessGroupNCCL::WorkNCCL::checkTimeout(std::optional<std::chrono::duration<long, std::ratio<1l, 1000l> > >) + 0x2b1 (0x7f8286750b41 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #4: c10d::ProcessGroupNCCL::Watchdog::runLoop() + 0x1541 (0x7f828675c931 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #5: c10d::ProcessGroupNCCL::Watchdog::run() + 0x157 (0x7f828675dd47 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #6: <unknown function> + 0xdbae4 (0x7f830aedbae4 in /lib64/libstdc++.so.6)
+frame #7: <unknown function> + 0x8b2ea (0x7f833728b2ea in /lib64/libc.so.6)
+frame #8: <unknown function> + 0x1103d0 (0x7f83373103d0 in /lib64/libc.so.6)
+
+Exception raised from run at /__w/pytorch/pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:2180 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x7f8335d63bfd in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #1: c10::DistError::DistError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f8335d64bd2 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #2: c10::DistBackendError::DistBackendError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f8335d64d02 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #3: <unknown function> + 0x697922 (0x7f8285e97922 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #4: <unknown function> + 0xdbae4 (0x7f830aedbae4 in /lib64/libstdc++.so.6)
+frame #5: <unknown function> + 0x8b2ea (0x7f833728b2ea in /lib64/libc.so.6)
+frame #6: <unknown function> + 0x1103d0 (0x7f83373103d0 in /lib64/libc.so.6)
+
