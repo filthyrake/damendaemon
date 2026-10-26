@@ -1,0 +1,23 @@
+diff --git a/datasets/longbench-datasets/longbench_repobench_p/prepare.py b/datasets/longbench-datasets/longbench_repobench_p/prepare.py
+index a597fb1..ffb5667 100644
+--- a/datasets/longbench-datasets/longbench_repobench_p/prepare.py
++++ b/datasets/longbench-datasets/longbench_repobench_p/prepare.py
+@@ -41,8 +41,7 @@ def _raw(split: str):
+         lang = "python" if "python" in hf else "java"
+         # verification_mode=no_checks: the repobench java mirror's recorded split
+         # sizes don't match its cached metadata (benign HF quirk) — skip the check.
+-        ds = load_dataset(hf, split=split, trust_remote_code=True,
+-                          verification_mode="no_checks")
++        ds = load_dataset(hf, split=split, verification_mode="no_checks")
+         for i, ex in enumerate(ds):
+             nxt = (ex.get("next_line") or "").rstrip("\n")
+             cropped = ex.get("cropped_code") or ""
+@@ -67,5 +66,7 @@ load_val = longbench_eval_val_loader(SUBSET, DATASET, TASK)
+ 
+ 
+ if __name__ == "__main__":
++    import os
++    MODEL = os.environ.get("PREPARE_MODEL", "Qwen/Qwen3-1.7B")
+     prepare_dataset(dataset_name=DATASET, task_name=TASK,
+-                    load_train_fn=load_train, load_val_fn=load_val)
++                    load_train_fn=load_train, load_val_fn=load_val, model=MODEL)

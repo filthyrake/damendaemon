@@ -1,0 +1,8 @@
+398c398
+<     if getattr(layer, "layer_type", "full_attention") == "linear_attention":
+---
+>     if getattr(layer, "block_type", getattr(layer, "layer_type", "full_attention")) == "linear_attention":
+446c446
+<     if getattr(layer, "layer_type", "full_attention") != "linear_attention" \
+---
+>     if getattr(layer, "block_type", getattr(layer, "layer_type", "full_attention")) != "linear_attention" \
