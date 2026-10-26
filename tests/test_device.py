@@ -23,6 +23,34 @@ class DeviceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 require_gpu()
 
+    def test_cuda_admits_a_single_mig_slice_uuid(self):
+        """#609 gate 2: a MIG slice is admitted as a device (single-slice)."""
+        torch = SimpleNamespace(version=SimpleNamespace(cuda='13.0', hip=None),
+                                cuda=SimpleNamespace(is_available=lambda: True,
+                                                     device_count=lambda: 1,
+                                                     set_device=lambda index: None))
+        visible = 'MIG-c083756b-37b9-51b5-ac0e-6cdda07b784c'
+        with patch.dict('os.environ', {'DAMENDAEMON_DEVICE': 'cuda',
+                                       'CUDA_VISIBLE_DEVICES': visible}, clear=True), \
+             patch.dict('sys.modules', {'torch': torch}):
+            require_gpu()
+
+    def test_pipeline_count_rejects_mig_slices(self):
+        """Two-device admission still requires full GPU- UUIDs (no slice P2P)."""
+        torch = SimpleNamespace(version=SimpleNamespace(cuda='13.0', hip=None),
+                                cuda=SimpleNamespace(is_available=lambda: True,
+                                                     device_count=lambda: 2,
+                                                     set_device=lambda index: None))
+        visible = ('MIG-c083756b-37b9-51b5-ac0e-6cdda07b784c,'
+                   'GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283')
+        with patch.dict('os.environ', {'DAMENDAEMON_DEVICE': 'cuda',
+                                       'CUDA_VISIBLE_DEVICES': visible,
+                                       'DAMENDAEMON_EXPERIMENTAL_LAYER_SPLIT': '12'},
+                        clear=True), \
+             patch.dict('sys.modules', {'torch': torch}):
+            with self.assertRaisesRegex(ValueError, 'distinct GPU UUIDs'):
+                require_gpu()
+
     def test_mps_budget_excludes_driver_allocations(self):
         torch = SimpleNamespace(mps=SimpleNamespace(recommended_max_memory=lambda: 1000,
                                                      driver_allocated_memory=lambda: 800))

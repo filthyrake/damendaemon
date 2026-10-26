@@ -41,7 +41,15 @@ def require_gpu():
     visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
     count=len(pipeline_budgets) if pipeline_budgets is not None else 2 if split is not None else 1
     devices=visible.split(',')
-    if len(devices)!=count or len(set(devices))!=count or any(not value.startswith('GPU-') for value in devices):
+    # A MIG slice is admitted as a device (#609): its CUDA enumeration UUID
+    # is MIG-<uuid>. Explicit UUIDs stay mandatory (never bare indices), and
+    # slice admission is single-slice only — the two-rank distributed path
+    # still requires full GPU- UUIDs (slices have no P2P; the topology
+    # planner treats them as separate hosts).
+    if len(devices)!=count or len(set(devices))!=count or any(
+            not (value.startswith('GPU-') or value.startswith('MIG-'))
+            for value in devices) or (count > 1 and any(
+            not value.startswith('GPU-') for value in devices)):
         raise ValueError(f"set CUDA_VISIBLE_DEVICES to exactly {count} distinct GPU UUIDs")
     import torch
     if getattr(getattr(torch, 'version', None), 'hip', None):
