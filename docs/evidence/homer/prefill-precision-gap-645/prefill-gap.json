@@ -1,0 +1,119 @@
+{
+ "gate": "#645 gate 1 prefill GEMM gap",
+ "gpu": "Radeon 8060S Graphics",
+ "torch": "2.11.0a0+rocm7.11.0a20260106",
+ "shapes": [
+  {
+   "shape": "0.8b chunk127 mlp",
+   "m": 127,
+   "k": 1024,
+   "n": 3584,
+   "q8_compensated": {
+    "tops": 3.359,
+    "iters": 300,
+    "ms_per_call": 0.278,
+    "ref_max_abs": 0.000641
+   },
+   "q4_compensated": {
+    "tops": 3.047,
+    "iters": 300,
+    "ms_per_call": 0.306,
+    "ref_max_abs": 3.7e-05
+   },
+   "dense_f32": {
+    "tops": 0.911,
+    "iters": 300,
+    "ms_per_call": 1.023
+   },
+   "dense_bf16": {
+    "tops": 14.58,
+    "iters": 300,
+    "ms_per_call": 0.064
+   }
+  },
+  {
+   "shape": "0.8b prefill512 mlp",
+   "m": 512,
+   "k": 1024,
+   "n": 3584,
+   "q8_compensated": {
+    "tops": 3.506,
+    "iters": 300,
+    "ms_per_call": 1.072,
+    "ref_max_abs": 0.000641
+   },
+   "q4_compensated": {
+    "tops": 3.376,
+    "iters": 300,
+    "ms_per_call": 1.113,
+    "ref_max_abs": 4e-05
+   },
+   "dense_f32": {
+    "tops": 1.285,
+    "iters": 300,
+    "ms_per_call": 2.926
+   },
+   "dense_bf16": {
+    "tops": 22.482,
+    "iters": 300,
+    "ms_per_call": 0.167
+   }
+  },
+  {
+   "shape": "27b chunk127 mlp",
+   "m": 127,
+   "k": 5120,
+   "n": 17408,
+   "q8_compensated": {
+    "tops": 3.341,
+    "iters": 132,
+    "ms_per_call": 6.777,
+    "ref_max_abs": 0.005737
+   },
+   "q4_compensated": {
+    "tops": 3.333,
+    "iters": 132,
+    "ms_per_call": 6.792,
+    "ref_max_abs": 0.000282
+   },
+   "dense_f32": {
+    "tops": 0.366,
+    "iters": 132,
+    "ms_per_call": 61.79
+   },
+   "dense_bf16": {
+    "tops": 7.693,
+    "iters": 132,
+    "ms_per_call": 2.943
+   }
+  },
+  {
+   "shape": "27b prefill512 mlp",
+   "m": 512,
+   "k": 5120,
+   "n": 17408,
+   "q8_compensated": {
+    "tops": 3.158,
+    "iters": 32,
+    "ms_per_call": 28.899,
+    "ref_max_abs": 0.005737
+   },
+   "q4_compensated": {
+    "tops": 3.176,
+    "iters": 32,
+    "ms_per_call": 28.736,
+    "ref_max_abs": 0.000298
+   },
+   "dense_f32": {
+    "tops": 0.36,
+    "iters": 32,
+    "ms_per_call": 253.711
+   },
+   "dense_bf16": {
+    "tops": 23.024,
+    "iters": 32,
+    "ms_per_call": 3.964
+   }
+  }
+ ]
+}
