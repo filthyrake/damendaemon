@@ -29,6 +29,10 @@ Run on the 3090 host (guarded, power-capped):
   PYTHONPATH=<staged damendaemon> python token_gate_drift_641.py \
       --upstream /home/damen/tokengate-640 --out drift.json
 """
+if not __debug__:
+    raise RuntimeError('run the drift record under normal python, without -O: '
+                       'asserts gate the upstream loader contract')
+
 import argparse
 import json
 import math
