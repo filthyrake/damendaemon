@@ -49,11 +49,27 @@ def library():
 
 
 def eligible(config,context,max_batch=1):
-    expected=dict(model_type='qwen3_5_text',hidden_size=1024,num_hidden_layers=24,
-                  linear_key_head_dim=128,linear_value_head_dim=128,
-                  linear_num_key_heads=16,linear_num_value_heads=16)
-    return (all(config.get(key)==value for key,value in expected.items())
-            and 1<=context<=1024 and 1<=max_batch<=4)
+    # The qualified geometry set: the kernel is written against 16 linear
+    # heads of 128 key / 128 value channels, which the 0.8B and 2B Qwen3.5
+    # text backbones share exactly (hidden_size differs, but the scan never
+    # touches it). Each entry carries its own qualified context bound —
+    # the scan length checks cover up to that bound.
+    geometries = {
+        1024: 1024,  # Qwen3.5-0.8B text: unchanged — its qualified Apple
+                     # evidence (text+images, context 1024) is the bound;
+                     # >1024 on the 0.8B needs its own replay cell.
+        2048: 32768,  # Qwen3.5-2B text (#4: scan shapes shared with the 0.8B,
+                      # verified against the CPU oracle at lengths to 32K and
+                      # by chunked whole-model golden replays at 4096 and
+                      # 32768 on the pinned revision).
+    }
+    expected = dict(model_type='qwen3_5_text', num_hidden_layers=24,
+                    linear_key_head_dim=128, linear_value_head_dim=128,
+                    linear_num_key_heads=16, linear_num_value_heads=16)
+    if not all(config.get(key) == value for key, value in expected.items()):
+        return False
+    bound = geometries.get(config.get('hidden_size'))
+    return (bound is not None and 1 <= context <= bound and 1 <= max_batch <= 4)
 
 
 def scan(q,k,v,decay,beta,state,slots,reset):

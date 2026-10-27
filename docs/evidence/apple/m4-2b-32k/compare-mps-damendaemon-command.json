@@ -1,0 +1,29 @@
+{
+  "command": [
+    "/Users/damenknight/damendaemon/.venv-metal/bin/python",
+    "-m",
+    "damendaemon",
+    "serve",
+    "--device",
+    "mps",
+    "--context",
+    "4096",
+    "--port",
+    "54702",
+    "--batch-size",
+    "4",
+    "--model",
+    "a=/Users/damenknight/damendaemon/results/models/qwen35-2b"
+  ],
+  "device": "Apple M4 GPU",
+  "weights": "float32",
+  "unquantized_weight_dtype": "float32",
+  "kv": "float32",
+  "runtime_environment": {
+    "DAMENDAEMON_DEVICE": "mps",
+    "DAMENDAEMON_METAL_WEIGHT_DTYPE": "float32"
+  },
+  "context_per_slot": 4096,
+  "cpu_threads": 4,
+  "damendaemon_backend": "auto"
+}

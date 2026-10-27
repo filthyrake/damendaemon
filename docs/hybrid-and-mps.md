@@ -243,6 +243,28 @@ thermal, scheduling, and GPU submission effects need further attribution.
 The profiler and all before/after evidence remain available. CUDA graph
 metadata staging was unchanged throughout.
 
+## Apple M4, 32 GiB unified memory — Qwen3.5-2B text at 32K (#4)
+
+The 2B text backbone is qualified on this device beyond the original 0.8B
+cell: the Metal recurrent scan admits the 2B geometry (its linear-attention
+shapes are identical to the 0.8B's) with a 32768-context bound, and chunked
+prefill is admitted for the Apple eager path. Whole-model golden replays
+against same-machine CPU FP32 (torch 2.13.0 + transformers 5.19.0) pass all
+84 comparisons at context 4096 (unchunked and chunked) and 32768 (chunked,
+worst relative RMS 0.25%, greedy-exact). Memory at 32K: 3.92 GiB live MPS
+allocation against the 24.96 GiB recommended ceiling, process RSS 7.6 GiB.
+Serving goodput at 4096 (compare_mps protocol, thinking auto): 3.2 / 4.2 /
+7.6 aggregate tokens/s at concurrency 1 / 2 / 4; 32K chunked prefill
+measures 146 tokens/s and single-slot decode at 32K context 1.5 tokens/s —
+decode speed is open optimization work, not a claim.
+
+A chunked-prefill reset bug was found and fixed: the Metal scan received
+raw `prefill` as its reset flag, wiping the recurrent state on every chunk
+(latent since the scan shipped; MPS never ran chunked prefill before). The
+0.8B's own Apple bound stays 1024 until its own >1024 cell. 27B-class
+practical models do not fit this device's unified memory and remain lab-GPU
+scope. Full record: [evidence/apple/m4-2b-32k](evidence/apple/m4-2b-32k).
+
 ## Remaining scope
 
 Full parity is unfinished: quantization, paged KV, chunked prefill, prefix
