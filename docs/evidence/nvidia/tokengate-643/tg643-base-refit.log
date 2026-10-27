@@ -1,0 +1,39 @@
+[cell] loading base model
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 13923.87it/s]
+[FlexAttention] patched 6 full-attention layers: [3, 7, 11, 15, 19, 23]
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+[transformers] `chunk_gated_delta_rule` is falling back to its reference PyTorch implementation because `flash-linear-attention` is not installed. This is correct but much slower; install `flash-linear-attention` for the optimized kernel.
+[transformers] `causal_conv1d_update` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+[transformers] `fused_recurrent_gated_delta_rule` is falling back to its reference PyTorch implementation because `flash-linear-attention` is not installed. This is correct but much slower; install `flash-linear-attention` for the optimized kernel.
+[base] row 1/16 acc=1 ttft=3.13s
+[base] row 2/16 acc=1 ttft=3.53s
+[base] row 3/16 acc=1 ttft=3.00s
+[base] row 4/16 acc=1 ttft=2.99s
+[base] row 5/16 acc=1 ttft=2.99s
+[base] row 6/16 acc=1 ttft=2.99s
+[base] row 7/16 acc=1 ttft=3.02s
+[base] row 8/16 acc=1 ttft=3.00s
+[base] row 9/16 acc=1 ttft=3.00s
+[base] row 10/16 acc=1 ttft=2.99s
+[base] row 11/16 acc=1 ttft=3.00s
+[base] row 12/16 acc=1 ttft=3.02s
+[base] row 13/16 acc=1 ttft=2.95s
+[base] row 14/16 acc=1 ttft=3.01s
+[base] row 15/16 acc=1 ttft=2.97s
+[base] row 16/16 acc=1 ttft=3.00s
+[cell] loading hybrid gate checkpoint
+[tokengate] downloading checkpoint from hf.co/liana313/tokengate-niah-qwen3.5-2b ...
+Fetching 4 files:   0%|          | 0/4 [00:00<?, ?it/s]Fetching 4 files: 100%|██████████| 4/4 [00:00<00:00, 1495.30it/s]
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 13860.31it/s]
+[gate] loaded LoRA /home/damen/.cache/huggingface/hub/models--liana313--tokengate-niah-qwen3.5-2b/snapshots/b1fe3e72b9896efc821fbfa02a19fcded4de6d77/lora_step18000.pt (rank=16, alpha=32.0, targets=['self_attn.q_proj', 'self_attn.v_proj'], layers=3..23)
+[FlexAttention] patched 6 full-attention layers: [3, 7, 11, 15, 19, 23]
+[gate] attention kernels: flex -> causal/bias = ('flex', 'flex')
+[FlexAttention] Warming up compilation...
+[FlexAttention] Warmup complete
+[gate] scoring branch (mlp): 25.17M params, fp32 storage, compute in the backbone dtype (3 CastLinears' bf16 copies frozen)
+[gate] ready (layer=1, d_model=2048)
+
+[cell] summary (acc / mean TTFT s / peak alloc GiB)
+      base: acc=1.000 ttft=3.038s (1.00x) peak=7.56 GiB (1.00x)
+[cell] wrote /home/damen/tokengate-640/tg643-base-refit.json

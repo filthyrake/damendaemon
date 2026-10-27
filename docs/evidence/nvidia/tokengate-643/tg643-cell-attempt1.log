@@ -1,0 +1,9 @@
+[cell] loading base model
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights:  21%|██        | 67/320 [00:00<00:00, 668.16it/s]Loading weights:  67%|██████▋   | 213/320 [00:00<00:00, 1133.00it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 1158.27it/s]
+Traceback (most recent call last):
+  File "/home/damen/tokengate-640/tg643_cell.py", line 193, in <module>
+    main()
+  File "/home/damen/tokengate-640/tg643_cell.py", line 96, in main
+    base(ids.unsqueeze(0).cuda())
+         ^^^^^^^^^^^^^
+AttributeError: 'list' object has no attribute 'unsqueeze'
