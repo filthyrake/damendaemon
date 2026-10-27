@@ -102,6 +102,12 @@ class HybridExecutor:
             return True
         if accelerator == 'xpu' and self.fused is None:
             return True
+        if accelerator == 'mps' and self.fused is None and self.chunk_scan is None:
+            # Apple eager-torch path (#4): the per-chunk Metal/torch scan and
+            # the prefix_length attention/convolution state machinery are
+            # device-independent; qualified by chunked golden replays on the
+            # pinned 2B (see docs/evidence/apple/m4-2b-32k/README.md).
+            return True
         return ((accelerator == 'rocm' or admitted_a30_q4) and self.fused is not None
                 and self.chunk_scan is None)
 
@@ -498,7 +504,14 @@ class HybridExecutor:
             q, k = [a.repeat_interleave(self.lv//self.lk, dim=2) for a in (q, k)]
             q = q * (self.dk**-.5)
             if self.metal_scan is not None:
-                out=self.metal_scan(q,k,v,decay,beta,self.state[i],slots,prefill)
+                # Reset only on the FIRST chunk of a prompt: continuation
+                # chunks (prefix_length set) must accumulate the recurrent
+                # state, exactly like the torch fallback below. Passing raw
+                # `prefill` wiped the state on every chunk (#4 bug found by
+                # the chunked 4K golden replay: 13/84 slot-0 checks failed
+                # with ~0.2 relative RMS, greedy-preserving).
+                out=self.metal_scan(q,k,v,decay,beta,self.state[i],slots,
+                                    prefill and not prefix_length)
             else:
                 state = (torch.zeros_like(self.state[i].index_select(0, slots))
                          if prefill and not prefix_length else self.state[i].index_select(0, slots))

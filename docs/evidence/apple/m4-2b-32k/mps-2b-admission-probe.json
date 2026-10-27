@@ -1,0 +1,31 @@
+{
+ "model": "results/models/qwen35-2b",
+ "device": "mps",
+ "torch": "2.13.0",
+ "arms": [
+  {
+   "context": 2048,
+   "metal_scan": false,
+   "kv_quant": "none",
+   "prefill16_s": 1.661,
+   "decode_ok": true,
+   "alloc_gib": 3.676
+  },
+  {
+   "context": 4096,
+   "metal_scan": false,
+   "kv_quant": "none",
+   "prefill16_s": 0.262,
+   "decode_ok": true,
+   "alloc_gib": 3.77
+  },
+  {
+   "context": 8192,
+   "metal_scan": false,
+   "kv_quant": "none",
+   "prefill16_s": 0.2721,
+   "decode_ok": true,
+   "alloc_gib": 3.96
+  }
+ ]
+}
