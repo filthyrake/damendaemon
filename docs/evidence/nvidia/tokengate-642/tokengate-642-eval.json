@@ -1,0 +1,50 @@
+{
+ "model": "Qwen3.5-0.8B pinned r2fc0636 + #642 bounded gate",
+ "gate": "gate_step1200.pt",
+ "lora": "lora_step1200.pt",
+ "samples": 24,
+ "gen_tokens": 48,
+ "arms": {
+  "gated_k100": {
+   "acc": 0.0,
+   "correct": 0,
+   "ttft_s_mean": 1.6131328036244668,
+   "ttft_s_min": 1.5445672860005288,
+   "ttft_s_max": 1.786502748997009,
+   "peak_alloc_gib": 3.715798854827881
+  },
+  "gated_k500": {
+   "acc": 0.0,
+   "correct": 0,
+   "ttft_s_mean": 1.8972301365835544,
+   "ttft_s_min": 1.8465614020024077,
+   "ttft_s_max": 1.9865442249938496,
+   "peak_alloc_gib": 3.715798854827881
+  },
+  "gated_k1000": {
+   "acc": 0.0,
+   "correct": 0,
+   "ttft_s_mean": 2.2754902599993634,
+   "ttft_s_min": 2.204032053996343,
+   "ttft_s_max": 2.383599006003351,
+   "peak_alloc_gib": 3.715798854827881
+  },
+  "gated_k2000": {
+   "acc": 0.0,
+   "correct": 0,
+   "ttft_s_mean": 3.0176617248741118,
+   "ttft_s_min": 2.9437288209956023,
+   "ttft_s_max": 3.1302241619996494,
+   "peak_alloc_gib": 3.715798854827881
+  },
+  "full_context": {
+   "acc": 0.4166666666666667,
+   "correct": 10,
+   "ttft_s_mean": 13.598097862749455,
+   "ttft_s_min": 13.419137342003523,
+   "ttft_s_max": 13.79847906500072,
+   "peak_alloc_gib": 3.7772302627563477
+  }
+ },
+ "convention": "accuracy/drift comparison per the #23 pattern; pruned forwards are compared by accuracy, never byte-exactness"
+}
