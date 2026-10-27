@@ -1,0 +1,108 @@
+[cell] loading base model
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 13924.01it/s]
+[FlexAttention] patched 6 full-attention layers: [3, 7, 11, 15, 19, 23]
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+[transformers] `chunk_gated_delta_rule` is falling back to its reference PyTorch implementation because `flash-linear-attention` is not installed. This is correct but much slower; install `flash-linear-attention` for the optimized kernel.
+[transformers] `causal_conv1d_update` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+[transformers] `fused_recurrent_gated_delta_rule` is falling back to its reference PyTorch implementation because `flash-linear-attention` is not installed. This is correct but much slower; install `flash-linear-attention` for the optimized kernel.
+[base] row 1/16 acc=1 ttft=2.93s
+[base] row 2/16 acc=1 ttft=3.74s
+[W1027 09:27:08.102994820 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 16043212800 bytes (free: 304742400, total: 25351356416).
+[base] row 3/16 acc=1 ttft=3.59s
+[base] row 4/16 acc=1 ttft=2.97s
+[base] row 5/16 acc=1 ttft=2.96s
+[base] row 6/16 acc=1 ttft=2.97s
+[base] row 7/16 acc=1 ttft=3.01s
+[base] row 8/16 acc=1 ttft=3.00s
+[base] row 9/16 acc=1 ttft=3.00s
+[base] row 10/16 acc=1 ttft=2.99s
+[base] row 11/16 acc=1 ttft=2.99s
+[base] row 12/16 acc=1 ttft=3.02s
+[base] row 13/16 acc=1 ttft=2.95s
+[base] row 14/16 acc=1 ttft=3.01s
+[base] row 15/16 acc=1 ttft=2.97s
+[base] row 16/16 acc=1 ttft=3.00s
+[cell] loading hybrid gate checkpoint
+[tokengate] downloading checkpoint from hf.co/liana313/tokengate-niah-qwen3.5-2b ...
+Fetching 4 files:   0%|          | 0/4 [00:00<?, ?it/s]Fetching 4 files: 100%|██████████| 4/4 [00:00<00:00, 1666.89it/s]
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 12478.41it/s]
+[gate] loaded LoRA /home/damen/.cache/huggingface/hub/models--liana313--tokengate-niah-qwen3.5-2b/snapshots/b1fe3e72b9896efc821fbfa02a19fcded4de6d77/lora_step18000.pt (rank=16, alpha=32.0, targets=['self_attn.q_proj', 'self_attn.v_proj'], layers=3..23)
+[FlexAttention] patched 6 full-attention layers: [3, 7, 11, 15, 19, 23]
+[gate] attention kernels: flex -> causal/bias = ('flex', 'flex')
+[FlexAttention] Warming up compilation...
+[FlexAttention] Warmup complete
+[gate] scoring branch (mlp): 25.17M params, fp32 storage, compute in the backbone dtype (3 CastLinears' bf16 copies frozen)
+[gate] ready (layer=1, d_model=2048)
+[no-prune] row 1/16 acc=1 ttft=3.19s kept=100%
+[no-prune] row 2/16 acc=1 ttft=3.15s kept=100%
+[no-prune] row 3/16 acc=1 ttft=3.25s kept=100%
+[no-prune] row 4/16 acc=1 ttft=3.22s kept=100%
+[no-prune] row 5/16 acc=1 ttft=3.21s kept=100%
+[no-prune] row 6/16 acc=1 ttft=3.21s kept=100%
+[no-prune] row 7/16 acc=1 ttft=3.24s kept=100%
+[no-prune] row 8/16 acc=1 ttft=3.23s kept=100%
+[no-prune] row 9/16 acc=1 ttft=3.22s kept=100%
+[no-prune] row 10/16 acc=1 ttft=3.21s kept=100%
+[no-prune] row 11/16 acc=1 ttft=3.21s kept=100%
+[no-prune] row 12/16 acc=0 ttft=3.24s kept=100%
+[no-prune] row 13/16 acc=1 ttft=3.17s kept=100%
+[no-prune] row 14/16 acc=1 ttft=3.23s kept=100%
+[no-prune] row 15/16 acc=1 ttft=3.18s kept=100%
+[no-prune] row 16/16 acc=1 ttft=3.22s kept=100%
+[2000] row 1/16 acc=1 ttft=0.43s kept=56%
+[2000] row 2/16 acc=1 ttft=0.41s kept=89%
+[2000] row 3/16 acc=1 ttft=0.42s kept=70%
+[2000] row 4/16 acc=1 ttft=0.42s kept=90%
+[2000] row 5/16 acc=1 ttft=0.42s kept=70%
+[2000] row 6/16 acc=1 ttft=0.42s kept=70%
+[2000] row 7/16 acc=1 ttft=0.42s kept=70%
+[2000] row 8/16 acc=1 ttft=0.42s kept=89%
+[2000] row 9/16 acc=1 ttft=0.42s kept=67%
+[2000] row 10/16 acc=1 ttft=0.42s kept=70%
+[2000] row 11/16 acc=1 ttft=0.42s kept=91%
+[2000] row 12/16 acc=0 ttft=0.42s kept=70%
+[2000] row 13/16 acc=1 ttft=0.41s kept=70%
+[2000] row 14/16 acc=1 ttft=0.42s kept=67%
+[2000] row 15/16 acc=1 ttft=0.41s kept=89%
+[2000] row 16/16 acc=1 ttft=0.42s kept=89%
+[500] row 1/16 acc=1 ttft=0.31s kept=56%
+[500] row 2/16 acc=0 ttft=0.30s kept=56%
+[500] row 3/16 acc=1 ttft=0.31s kept=60%
+[500] row 4/16 acc=1 ttft=0.31s kept=80%
+[500] row 5/16 acc=1 ttft=0.31s kept=50%
+[500] row 6/16 acc=1 ttft=0.31s kept=70%
+[500] row 7/16 acc=1 ttft=0.31s kept=70%
+[500] row 8/16 acc=1 ttft=0.31s kept=89%
+[500] row 9/16 acc=1 ttft=0.30s kept=67%
+[500] row 10/16 acc=1 ttft=0.30s kept=70%
+[500] row 11/16 acc=1 ttft=0.30s kept=82%
+[500] row 12/16 acc=0 ttft=0.31s kept=50%
+[500] row 13/16 acc=1 ttft=0.30s kept=50%
+[500] row 14/16 acc=1 ttft=0.31s kept=67%
+[500] row 15/16 acc=1 ttft=0.30s kept=89%
+[500] row 16/16 acc=1 ttft=0.30s kept=89%
+[100] row 1/16 acc=0 ttft=0.29s kept=33%
+[100] row 2/16 acc=0 ttft=0.27s kept=56%
+[100] row 3/16 acc=1 ttft=0.28s kept=40%
+[100] row 4/16 acc=1 ttft=0.28s kept=60%
+[100] row 5/16 acc=1 ttft=0.28s kept=50%
+[100] row 6/16 acc=0 ttft=0.28s kept=50%
+[100] row 7/16 acc=1 ttft=0.28s kept=70%
+[100] row 8/16 acc=0 ttft=0.28s kept=56%
+[100] row 9/16 acc=1 ttft=0.28s kept=56%
+[100] row 10/16 acc=0 ttft=0.28s kept=30%
+[100] row 11/16 acc=1 ttft=0.28s kept=73%
+[100] row 12/16 acc=0 ttft=0.28s kept=20%
+[100] row 13/16 acc=1 ttft=0.27s kept=50%
+[100] row 14/16 acc=1 ttft=0.28s kept=67%
+[100] row 15/16 acc=0 ttft=0.28s kept=56%
+[100] row 16/16 acc=0 ttft=0.28s kept=44%
+
+[cell] summary (acc / mean TTFT s / peak alloc GiB)
+      base: acc=1.000 ttft=3.069s (1.00x) peak=18.97 GiB (1.00x)
+  no-prune: acc=0.938 ttft=3.211s (0.96x) peak=7.86 GiB (2.41x)
+      2000: acc=0.938 ttft=0.417s (7.35x) peak=7.27 GiB (2.61x)
+       500: acc=0.875 ttft=0.305s (10.06x) peak=7.27 GiB (2.61x)
+       100: acc=0.500 ttft=0.278s (11.04x) peak=7.27 GiB (2.61x)
+[cell] wrote /home/damen/tokengate-640/tg643-cell.json
