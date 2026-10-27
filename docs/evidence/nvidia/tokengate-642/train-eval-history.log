@@ -1,0 +1,60 @@
+  [no-compress eval [niah] example 1]  n_tok=15911  acc=1.00  F1=1.00
+  [no-compress eval [niah] example 2]  n_tok=15877  acc=1.00  F1=1.00
+  [no-compress eval [niah] example 3]  n_tok=16139  acc=1.00  F1=1.00
+  [no-compress eval [niah] example 4]  n_tok=16025  acc=1.00  F1=1.00
+  [no-compress eval [niah] example 5]  n_tok=15970  acc=1.00  F1=1.00
+  [no-compress eval [niah] example 6]  n_tok=16012  acc=1.00  F1=1.00
+  [no-compress eval [niah] example 7]  n_tok=16100  acc=1.00  F1=1.00
+  [no-compress eval [niah] example 8]  n_tok=16045  acc=1.00  F1=1.00
+  [no-compress eval [niah] example 9]  n_tok=16017  acc=1.00  F1=1.00
+  [no-compress eval [niah] example 10]  n_tok=15963  acc=1.00  F1=1.00
+  [no-compress eval [niah] example 11]  n_tok=16004  acc=1.00  F1=1.00
+  [no-compress eval [niah] example 12]  n_tok=16101  acc=1.00  F1=1.00
+  [no-compress eval [niah] example 13]  n_tok=15878  acc=1.00  F1=1.00
+  [no-compress eval [niah] example 14]  n_tok=16065  acc=1.00  F1=1.00
+  [no-compress eval [niah] example 15]  n_tok=15957  acc=1.00  F1=1.00
+  [no-compress eval [niah] example 16]  n_tok=15995  acc=1.00  F1=1.00
+  [no-compress eval [niah] example 17]  n_tok=16015  acc=1.00  F1=1.00
+  [no-compress eval [niah] example 18]  n_tok=15984  acc=1.00  F1=1.00
+  [no-compress eval [niah] example 19]  n_tok=16034  acc=1.00  F1=1.00
+  [no-compress eval [niah] example 20]  n_tok=16120  acc=1.00  F1=1.00
+  [no-compress eval [niah]]  n=50  acc=0.920  F1=0.920  loss=1.1381  (full context, no gate)
+  [no-compress eval [niah_heldout] example 1]  n_tok=15907  acc=1.00  F1=1.00
+  [no-compress eval [niah_heldout] example 2]  n_tok=15866  acc=1.00  F1=1.00
+  [no-compress eval [niah_heldout] example 3]  n_tok=16040  acc=1.00  F1=1.00
+  [no-compress eval [niah_heldout] example 4]  n_tok=16103  acc=1.00  F1=1.00
+  [no-compress eval [niah_heldout] example 5]  n_tok=15885  acc=1.00  F1=1.00
+  [no-compress eval [niah_heldout] example 6]  n_tok=16064  acc=1.00  F1=1.00
+  [no-compress eval [niah_heldout] example 7]  n_tok=16038  acc=1.00  F1=1.00
+  [no-compress eval [niah_heldout] example 8]  n_tok=16053  acc=1.00  F1=1.00
+  [no-compress eval [niah_heldout] example 9]  n_tok=16122  acc=1.00  F1=1.00
+  [no-compress eval [niah_heldout] example 10]  n_tok=15950  acc=1.00  F1=1.00
+  [no-compress eval [niah_heldout] example 11]  n_tok=16094  acc=1.00  F1=1.00
+  [no-compress eval [niah_heldout] example 12]  n_tok=16097  acc=1.00  F1=1.00
+  [no-compress eval [niah_heldout] example 13]  n_tok=15898  acc=1.00  F1=1.00
+  [no-compress eval [niah_heldout] example 14]  n_tok=16005  acc=1.00  F1=1.00
+  [no-compress eval [niah_heldout] example 15]  n_tok=15936  acc=1.00  F1=1.00
+  [no-compress eval [niah_heldout] example 16]  n_tok=15916  acc=1.00  F1=1.00
+  [no-compress eval [niah_heldout] example 17]  n_tok=16124  acc=1.00  F1=1.00
+  [no-compress eval [niah_heldout] example 18]  n_tok=16145  acc=0.00  F1=0.00
+  [no-compress eval [niah_heldout] example 19]  n_tok=16105  acc=1.00  F1=1.00
+  [no-compress eval [niah_heldout] example 20]  n_tok=15996  acc=1.00  F1=1.00
+  [no-compress eval [niah_heldout]]  n=150  acc=0.887  F1=0.887  loss=1.1473  (full context, no gate)
+  [eval/cat] step=0  K=2000  niah: acc=0.220 loss=4.7077 tok=2049/16016 art=2000/15967 (n=50), niah_heldout: acc=0.113 loss=5.2691 tok=2049/16029 art=2000/15980 (n=150)  (init)
+  [eval/cat] step=300  K=2000  niah: acc=0.000 loss=1.4936 tok=2049/16016 art=2000/15967 (n=50), niah_heldout: acc=0.007 loss=1.5599 tok=2049/16029 art=2000/15980 (n=150)  train_loss=0.1876
+  [swa eval/cat] step=300  K=2000  niah: acc=0.040 loss=1.3016, niah_heldout: acc=0.013 loss=1.3519
+  [eval/cat] step=600  K=2000  niah: acc=0.040 loss=0.8839 tok=2049/16016 art=2000/15967 (n=50), niah_heldout: acc=0.040 loss=0.9323 tok=2049/16029 art=2000/15980 (n=150)  train_loss=0.1215
+  [swa eval/cat] step=600  K=2000  niah: acc=0.060 loss=1.0627, niah_heldout: acc=0.047 loss=1.1214
+  [eval/cat] step=900  K=2000  niah: acc=0.160 loss=0.8254 tok=2049/16016 art=2000/15967 (n=50), niah_heldout: acc=0.153 loss=0.8519 tok=2049/16029 art=2000/15980 (n=150)  train_loss=0.0778
+  [swa eval/cat] step=900  K=2000  niah: acc=0.080 loss=0.7937, niah_heldout: acc=0.187 loss=0.7983
+  [eval/cat] step=1200  K=2000  niah: acc=0.480 loss=0.3157 tok=2049/16016 art=2000/15967 (n=50), niah_heldout: acc=0.587 loss=0.4682 tok=2049/16029 art=2000/15980 (n=150)  train_loss=0.0424
+  [swa eval/cat] step=1200  K=2000  niah: acc=0.240 loss=0.3938, niah_heldout: acc=0.327 loss=0.3928
+  [eval/cat] step=1500  K=2000  niah: acc=0.340 loss=0.5017 tok=2049/16016 art=2000/15967 (n=50), niah_heldout: acc=0.333 loss=0.6439 tok=2049/16029 art=2000/15980 (n=150)  train_loss=0.0153
+  [swa eval/cat] step=1500  K=2000  niah: acc=0.260 loss=0.4245, niah_heldout: acc=0.280 loss=0.4341
+  [eval/cat] step=1800  K=2000  niah: acc=0.580 loss=0.2504 tok=2049/16016 art=2000/15967 (n=50), niah_heldout: acc=0.467 loss=0.4588 tok=2049/16029 art=2000/15980 (n=150)  train_loss=0.0372
+  [swa eval/cat] step=1800  K=2000  niah: acc=0.260 loss=0.4099, niah_heldout: acc=0.320 loss=0.4799
+[train] Final gate saved to /home/damen/642-runs//home/damen/models/Qwen3.5-0.8B-r2fc0636/pretrain-v0-iso_niah-shad8d96c02-642-bounded-08b-l1d_lr=1e-4_randseed=0_num-epochs=2_p2lu_ll=all_lt=qv_opt=muon_wd=0.1_lora_lin_r16_a32_lt=2mod_mg_nds_shuf/baseline/L1/gate_final.pt
+[train] Final eval/cat  K=2000  niah: acc=0.280 loss=0.6408 tok=2049/16016 art=2000/15967 (n=50), niah_heldout: acc=0.260 loss=0.8113 tok=2049/16029 art=2000/15980 (n=150)
+[train] Final eval/ds   K=2000  niah_kamradt: acc=0.280, niah_kamradt_test: acc=0.260
+[train] Final SWA eval/cat  K=2000  niah: acc=0.340 loss=0.3482, niah_heldout: acc=0.420 loss=0.4307  (n=500 updates)
+[train] Final SWA eval/ds   K=2000  niah_kamradt: acc=0.340, niah_kamradt_test: acc=0.420
