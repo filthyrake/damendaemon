@@ -81,11 +81,17 @@ class XpuTests(unittest.TestCase):
 
     def test_opt_in_and_unsupported_features_rejected(self):
         for key, value in (('DAMENDAEMON_EXPERIMENTAL_XPU', '0'), ('ONEAPI_DEVICE_SELECTOR', 'opencl:cpu'),
-                           ('DAMENDAEMON_KERNELS', 'triton'), ('DAMENDAEMON_EXPERIMENTAL_LAYER_SPLIT', '12'),
+                           ('DAMENDAEMON_KERNELS', 'triton'),
                            ('DAMENDAEMON_KV_CACHE_TOKENS', '512'), ('DAMENDAEMON_SPECULATIVE_TOKENS', '4'),
                            ('DAMENDAEMON_PREFILL_GRAPHS', '1'), ('DAMENDAEMON_EXPERIMENTAL_VISION', '1')):
             with self.subTest(key=key), patch.dict('os.environ', {key: value}), self.assertRaises(ValueError):
                 xpu_policy.validate_environment()
+        # The layer-split rejection must point at the qualified alternative
+        # (#605 gate 2): an XPU rank joins fleets via the host-staged chain.
+        with patch.dict('os.environ', {'DAMENDAEMON_EXPERIMENTAL_LAYER_SPLIT': '12'}):
+            with self.assertRaisesRegex(ValueError, 'host-staged two-process chain') as raised:
+                xpu_policy.validate_environment()
+        self.assertIn('cross-vendor-cell-600', str(raised.exception))
 
     def test_model_rejection_precedes_tensor_and_tokenizer_loading(self):
         config = test_config.ConfigTests().config()

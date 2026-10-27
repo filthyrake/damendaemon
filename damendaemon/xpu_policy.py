@@ -11,10 +11,21 @@ def validate_environment():
         raise ValueError('Intel XPU requires ONEAPI_DEVICE_SELECTOR=level_zero:gpu')
     if os.environ.get('DAMENDAEMON_KERNELS', 'auto') not in ('auto', 'torch'):
         raise ValueError('Intel XPU currently requires eager torch kernels')
-    for name in ('DAMENDAEMON_EXPERIMENTAL_LAYER_SPLIT', 'DAMENDAEMON_KV_CACHE_TOKENS',
-                 'DAMENDAEMON_SPECULATIVE_TOKENS', 'DAMENDAEMON_PREFILL_GRAPHS', 'DAMENDAEMON_EXPERIMENTAL_VISION'):
+    unsupported = {
+        'DAMENDAEMON_EXPERIMENTAL_LAYER_SPLIT':
+            'Intel XPU does not join the single-process layer split (a process '
+            'cannot hold both vendors\' torch builds); an XPU rank participates '
+            'in fleets through the host-staged two-process chain, qualified in '
+            'docs/evidence/multi-gpu/cross-vendor-cell-600/ (#614)',
+        'DAMENDAEMON_KV_CACHE_TOKENS': 'Intel XPU does not support paged KV cache',
+        'DAMENDAEMON_SPECULATIVE_TOKENS': 'Intel XPU does not support speculative decoding',
+        'DAMENDAEMON_PREFILL_GRAPHS': 'Intel XPU has no graph capture API in the '
+                                      'qualified torch build (probed live, #605)',
+        'DAMENDAEMON_EXPERIMENTAL_VISION': 'Intel XPU does not support vision execution',
+    }
+    for name, reason in unsupported.items():
         if os.environ.get(name, '0') != '0':
-            raise ValueError(f'Intel XPU does not support {name}')
+            raise ValueError(f'{name}: {reason}')
 
 
 def validate_runtime(torch):
