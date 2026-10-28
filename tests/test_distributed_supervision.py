@@ -15,7 +15,11 @@ from damendaemon.distributed_supervised_builder import (remote_worker_pids,
                                                         teardown_supervised_pair)
 from damendaemon.distributed_supervisor import (DistributedSupervisor,
                                                 SupervisorRuntime, classify_failure)
-from damendaemon.stage_transport import PeerDeadlineExceeded, poll_works
+from damendaemon.stage_transport import (PeerDeadlineExceeded,
+                                          abort_dead_group_bounded,
+                                          abort_process_group_safely,
+                                          bounded_exchange,
+                                          poll_works)
 
 
 class FakeRuntime:
@@ -182,6 +186,90 @@ class PolledHeartbeatTest(unittest.TestCase):
         # supervisor classification stays pure string/chain based.
         error = PeerDeadlineExceeded('peer heartbeat timeout: polled')
         self.assertEqual(classify_failure(error), 'peer-dead')
+
+    def test_abort_process_group_safely_best_effort(self):
+        # Live-measured (2026-10-28): without the abort, the supervisor's
+        # destroy_process_group teardown froze the whole coordinator (GIL
+        # held) on an errored group. The helper must never raise itself.
+        with mock.patch('damendaemon.stage_transport._abort_process_group',
+                        return_value=None) as abort:
+            self.assertTrue(abort_process_group_safely())
+            abort.assert_called_once_with()
+        with mock.patch('damendaemon.stage_transport._abort_process_group',
+                        side_effect=RuntimeError('no group')):
+            self.assertFalse(abort_process_group_safely())
+        with mock.patch('damendaemon.stage_transport._abort_process_group',
+                        None):
+            self.assertFalse(abort_process_group_safely())
+
+    def test_bounded_exchange_returns_completed_result(self):
+        clock = {'now': 0.0}
+
+        def fake_sleep(_):
+            clock['now'] += 0.05
+
+        self.assertEqual(
+            bounded_exchange(lambda: 'ok', 5, poll_interval=0.05,
+                             clock=lambda: clock['now'], sleep=fake_sleep),
+            'ok')
+
+    def test_bounded_exchange_deadline_on_stuck_post(self):
+        # The live finding: the async collective POST itself can block when
+        # the peer just died — the bound must classify even then.
+        import threading as threading_module
+        stuck = threading_module.Event()
+        clock = {'now': 0.0}
+
+        def fake_sleep(_):
+            clock['now'] += 0.05
+
+        def blocked_post():
+            stuck.wait(10)  # simulate the NCCL lock; released after test
+
+        try:
+            with self.assertRaises(PeerDeadlineExceeded) as raised:
+                bounded_exchange(blocked_post, 1, poll_interval=0.05,
+                                 clock=lambda: clock['now'], sleep=fake_sleep)
+            self.assertIn('timeout', str(raised.exception))
+            self.assertEqual(classify_failure(raised.exception), 'peer-dead')
+        finally:
+            stuck.set()
+
+    def test_bounded_exchange_propagates_exchange_error(self):
+        def broken():
+            raise RuntimeError('collective failed')
+
+        with self.assertRaises(RuntimeError):
+            bounded_exchange(broken, 5)
+
+    def test_bounded_exchange_bounds(self):
+        with self.assertRaises(ValueError):
+            bounded_exchange(lambda: None, 0)
+        with self.assertRaises(ValueError):
+            bounded_exchange('not-callable', 5)
+
+    def test_abort_dead_group_bounded_leaks_hung_abort(self):
+        # Gen-2 live finding: the abort itself can block; the caller must
+        # not wait on it (the supervisor stayed 'serving' until the group
+        # watchdog killed the process). A hung abort returns False fast.
+        import threading as threading_module
+        release = threading_module.Event()
+        clock = {'started': time.monotonic()}
+
+        def hung_abort():
+            release.wait(30)
+
+        with mock.patch('damendaemon.stage_transport.'
+                        'abort_process_group_safely', side_effect=hung_abort):
+            try:
+                started = time.monotonic()
+                self.assertFalse(abort_dead_group_bounded(bound=0.3))
+                self.assertLess(time.monotonic() - started, 5)
+            finally:
+                release.set()
+        with mock.patch('damendaemon.stage_transport.'
+                        'abort_process_group_safely', return_value=True):
+            self.assertTrue(abort_dead_group_bounded(bound=5))
 
 
 class RemoteTeardownTest(unittest.TestCase):

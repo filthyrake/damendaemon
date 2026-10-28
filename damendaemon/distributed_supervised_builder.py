@@ -79,20 +79,25 @@ def supervised_builder(args, torch):
                              '--rendezvous-host and both NCCL interface names; '
                              'resident additional models are loopback-only '
                              '(the remote worker cannot mirror them)')
-        uuids = gpu_uuids(torch, count=1)
+        # Explicit coordinator device: required when other devices on this
+        # host are busy (enumeration would otherwise pick device 0), and it
+        # must bypass gpu_uuids entirely — enumerating here would initialize
+        # CUDA against the ambient device list before the builder narrows
+        # CUDA_VISIBLE_DEVICES, and torch caches that count (the #637
+        # loopback only passed because ambient count == 2 == visible).
+        coordinator_gpu = getattr(args, 'coordinator_gpu', None)
+        if coordinator_gpu:
+            if not coordinator_gpu.startswith('GPU-'):
+                raise ValueError('coordinator GPU must be an explicit UUID (GPU-...)')
+            uuids = [coordinator_gpu]
+        else:
+            uuids = gpu_uuids(torch, count=1)
     else:
         uuids = gpu_uuids(torch, count=2)
         # Loopback generation; the cross-host knobs stay unused empty strings
         # so the closure below keeps a single str-typed view of them.
         worker_gpu = worker_python = worker_repo = worker_model = ''
         rendezvous_host = coordinator_ifname = worker_ifname = ''
-    coordinator_gpu = getattr(args, 'coordinator_gpu', None)
-    if coordinator_gpu:
-        # Explicit coordinator device: required when other devices on this
-        # host are busy (enumeration would otherwise pick device 0).
-        if not coordinator_gpu.startswith('GPU-'):
-            raise ValueError('coordinator GPU must be an explicit UUID (GPU-...)')
-        uuids = [coordinator_gpu]
     additional = [tuple(entry.split('=', 1)) for entry in args.model]
     heartbeat_deadline = getattr(args, 'heartbeat_deadline', 10.0)
     executable = sys.executable
@@ -116,18 +121,29 @@ def supervised_builder(args, torch):
         if worker_host:
             env = dict(common, RANK='1', LOCAL_RANK='0',
                        CUDA_VISIBLE_DEVICES=worker_gpu,
-                       NCCL_SOCKET_IFNAME=worker_ifname)
-            # The remote worker consumes the same argv flags; its model path
-            # is the remote staging path and its python/repo are remote.
+                       NCCL_SOCKET_IFNAME=worker_ifname,
+                       NCCL_DEBUG='WARN')
+            # The remote worker is detached from the ssh session (nohup +
+            # setsid, output to a per-generation remote log): the ssh pipe
+            # only carries the spawn — NCCL talks host-to-host directly — so
+            # an ssh client death must not kill a serving worker, and the
+            # worker's output must not depend on the pipe staying open.
             assignments = ' '.join(f'{key}={value}'
                                    for key, value in sorted(env.items()))
+            worker_log = f'/tmp/{run_id}.worker.log'
+            # Env assignments must precede nohup/setsid: as a shell env-prefix
+            # they are exported into the command's environment; after nohup
+            # they would be parsed as arguments to the setsid program.
             remote_command = (f'cd {worker_repo} && PYTHONPATH={worker_repo} '
-                              f'{assignments} {worker_python} '
+                              f'{assignments} '
+                              f'nohup setsid {worker_python} '
                               f'-m damendaemon.distributed_worker {worker_model}'
                               f' --context {args.context}'
                               f' --quantization {args.quantization}'
                               f' --alias {args.alias}'
-                              f' --batch-size {args.batch_size}')
+                              f' --batch-size {args.batch_size}'
+                              f' > {worker_log} 2>&1 < /dev/null &'
+                              ' echo WORKER-SPAWNED')
             worker = subprocess.Popen(['ssh', worker_host, remote_command],
                                       start_new_session=True)
         else:
@@ -158,6 +174,16 @@ def supervised_builder(args, torch):
                                          heartbeat_deadline=heartbeat_deadline)
         except BaseException:
             worker.terminate()
+            if worker_host:
+                # The detached remote worker must not outlive a failed
+                # generation build: kill it by its run-id-verified PID.
+                for pid in remote_worker_pids(worker_host, run_id):
+                    try:
+                        subprocess.run(['ssh', worker_host, f'kill {pid}'],
+                                        capture_output=True, timeout=10,
+                                        check=False)
+                    except (OSError, subprocess.SubprocessError):
+                        pass
             raise
         pair.supervised_worker = worker
         pair.supervised_store = store

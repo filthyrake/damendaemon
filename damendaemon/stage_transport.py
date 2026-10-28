@@ -30,6 +30,97 @@ class PeerDeadlineExceeded(RuntimeError):
     """
 
 
+def bounded_exchange(exchange, deadline, *, poll_interval=0.05,
+                     clock=time.monotonic, sleep=time.sleep):
+    """Run exchange() under an absolute deadline, off the caller's thread.
+
+    Live-measured (2026-10-28, cross-host A2+3090 cell): when a peer dies,
+    the async collective POST itself can block inside the NCCL comm locks
+    (the watchdog stack showed the run thread inside the async_op=True
+    broadcast call), so a poll-only deadline never arms and the 30s group
+    watchdog terminates the coordinator. The exchange runs in a daemon
+    thread; if it does not RETURN within `deadline` the caller gets a
+    transport-marked PeerDeadlineExceeded and can abort the group, while
+    the stuck helper thread is abandoned (disclosed; the abort normally
+    releases it). A healthy exchange returns in microseconds.
+    """
+    if not callable(exchange):
+        raise ValueError('bounded exchange needs a callable')
+    if not 0 < deadline <= 600 or not 0 < poll_interval <= 10:
+        raise ValueError('invalid poll deadline or interval bounds')
+    import threading
+    outcome = {}
+    done = threading.Event()
+
+    def runner():
+        try:
+            outcome['result'] = exchange()
+        except BaseException as error:
+            outcome['error'] = error
+        finally:
+            done.set()
+
+    thread = threading.Thread(target=runner, daemon=True)
+    thread.start()
+    end = clock() + deadline
+    while not done.is_set():
+        if clock() >= end:
+            raise PeerDeadlineExceeded(
+                f'peer heartbeat timeout: the polled exchange did not '
+                f'return within {deadline:g}s (async collective post '
+                'blocked; connection/transport deadline exceeded)')
+        sleep(poll_interval)
+    if 'error' in outcome:
+        raise outcome['error']
+    return outcome.get('result')
+
+
+def abort_process_group_safely():
+    """Best-effort abort of this process's process groups.
+
+    Called only after a polled exchange has failed (deadline or collective
+    error): the group is unusable, and destroying it directly can hang in
+    NCCL teardown with in-flight or errored work — the abort clears the
+    registry so a later rejoin builds a fresh group in this process
+    (measured live 2026-10-28: without it, the supervisor's close path
+    froze the whole coordinator inside destroy_process_group, GIL held).
+    Returns True when the abort ran, False when unavailable or it raised.
+    """
+    if _abort_process_group is None:
+        return False
+    try:
+        _abort_process_group()
+        return True
+    except Exception:
+        return False
+
+
+def abort_dead_group_bounded(*, bound=5.0):
+    """Bounded abandonment of a dead group's abort.
+
+    Measured live (2026-10-28 cross-host cell, generation 2): the abort
+    itself can block in NCCL teardown locks while the run thread waits on
+    it — the supervisor state stayed 'serving' (lying /health) until the
+    30s group watchdog terminated the process. The abort runs in a daemon
+    thread with a `bound`-second join: the caller proceeds to raise
+    immediately either way. When the abort hangs it is abandoned (leaked
+    thread, disclosed) and the coordinator stays on the watchdog fuse —
+    bounded recovery with honest states; the outer process deadline
+    remains mandatory for that residual.
+    """
+    import threading
+    finished = []
+
+    def runner():
+        abort_process_group_safely()
+        finished.append(True)
+
+    thread = threading.Thread(target=runner, daemon=True)
+    thread.start()
+    thread.join(bound)
+    return bool(finished)
+
+
 def poll_works(works, deadline, *, poll_interval=0.05, clock=time.monotonic,
                sleep=time.sleep):
     """Wait for async collective handles without blocking past `deadline`.
@@ -98,67 +189,72 @@ class StageChannel:
                   sleep=time.sleep, dist_module=None):
         """Idle keep-alive exchange with a polled, non-blocking deadline.
 
-        Replicates the blocking PING path (begin + finish: header broadcast,
-        acknowledgement all_reduce, completion all_reduce) using async
-        collectives polled with `poll_works`, so a dead peer surfaces as a
-        catchable PeerDeadlineExceeded at `deadline` instead of the
-        process-fatal blocking wait at the group timeout (the #637 finding:
-        the NCCL watchdog took the whole coordinator down before the
-        supervisor's rejoin path could engage). The worker rank keeps its
-        blocking exchange — an async post on this side completes it fine.
-
-        On deadline: poison the state, abort the dead group's in-flight
-        work via torch's experimental `_abort_process_group` when present
-        (abort clears the process-group registry, letting a rejoin build a
-        fresh group in this process; without an abort, destroy/re-init can
-        hang on the abandoned collective), then raise. `deadline` must sit
-        below the process-group timeout so this side always classifies
-        first.
+        The ENTIRE exchange runs through `bounded_exchange`: when a peer
+        dies, the async collective post itself can block in NCCL comm
+        locks (measured live — the watchdog stack showed the run thread
+        inside the async_op=True broadcast post, so a poll-only deadline
+        never armed and the 30s group watchdog terminated the coordinator,
+        the #637 signature). With the bound, a peer that stops completing
+        heartbeats surfaces as a catchable PeerDeadlineExceeded at
+        `deadline` (keep it below the group timeout so this side always
+        classifies first), the state is poisoned and the dead group's
+        in-flight work aborted (clearing the process-group registry so a
+        rejoin builds a fresh group in this process). The worker rank keeps
+        its blocking exchange — an async post on this side completes it
+        fine. Mid-work peer death keeps the existing disclosed
+        process-fatal behavior; only the idle heartbeat is polled.
         """
         if self.rank != 0:
             raise ValueError('only coordinator sends heartbeats')
+        try:
+            bounded_exchange(
+                lambda: self._exchange_ping(deadline, poll_interval=poll_interval,
+                                            clock=clock, sleep=sleep,
+                                            dist_module=dist_module),
+                deadline, poll_interval=poll_interval, clock=clock, sleep=sleep)
+        except BaseException:
+            # Any failure (deadline, blocked post, failed collective) is a
+            # dead group: poison, then a BOUNDED abort (the abort itself
+            # was measured to block in teardown locks — a synchronous wait
+            # would leave the supervisor lying 'serving' until the group
+            # watchdog terminates the process), then raise.
+            self.state.poison()
+            abort_dead_group_bounded()
+            raise
+
+    def _exchange_ping(self, deadline, *, poll_interval, clock, sleep,
+                       dist_module):
+        """The PING begin+finish sequence on async collectives, polled."""
         distributed = dist if dist_module is None else dist_module
         command = Command(self.state.epoch, self.state.sequence, PING, 0, ())
         words = command.encode()
         works = []
-        try:
-            self.header.copy_(
-                torch.tensor(words, dtype=torch.int64, device='cuda'))
-            works.append(distributed.broadcast(self.header, 0, async_op=True))
-            poll_works(works, deadline, poll_interval=poll_interval,
-                      clock=clock, sleep=sleep)
-            accepted = self.state.begin(words)
-            self.acknowledgement.fill_(1)
-            works.append(
-                distributed.all_reduce(self.acknowledgement,
-                                       op=distributed.ReduceOp.MIN,
-                                       async_op=True))
-            poll_works(works, deadline, poll_interval=poll_interval,
-                       clock=clock, sleep=sleep)
-            torch.cuda.synchronize()
-            if self.acknowledgement.item() != 1:
-                raise RuntimeError('polled heartbeat acknowledgement failed')
-            self.state.commit(accepted)
-            self.acknowledgement.fill_(1)
-            works.append(
-                distributed.all_reduce(self.acknowledgement,
-                                       op=distributed.ReduceOp.MIN,
-                                       async_op=True))
-            poll_works(works, deadline, poll_interval=poll_interval,
-                       clock=clock, sleep=sleep)
-            if self.acknowledgement.item() != 1:
-                raise RuntimeError('polled heartbeat completion failed')
-        except PeerDeadlineExceeded:
-            self.state.poison()
-            if _abort_process_group is not None:
-                try:
-                    _abort_process_group()
-                except Exception:
-                    pass
-            raise
-        except BaseException:
-            self.state.poison()
-            raise
+        self.header.copy_(
+            torch.tensor(words, dtype=torch.int64, device='cuda'))
+        works.append(distributed.broadcast(self.header, 0, async_op=True))
+        poll_works(works, deadline, poll_interval=poll_interval,
+                  clock=clock, sleep=sleep)
+        accepted = self.state.begin(words)
+        self.acknowledgement.fill_(1)
+        works.append(
+            distributed.all_reduce(self.acknowledgement,
+                                   op=distributed.ReduceOp.MIN,
+                                   async_op=True))
+        poll_works(works, deadline, poll_interval=poll_interval,
+                   clock=clock, sleep=sleep)
+        torch.cuda.synchronize()
+        if self.acknowledgement.item() != 1:
+            raise RuntimeError('polled heartbeat acknowledgement failed')
+        self.state.commit(accepted)
+        self.acknowledgement.fill_(1)
+        works.append(
+            distributed.all_reduce(self.acknowledgement,
+                                   op=distributed.ReduceOp.MIN,
+                                   async_op=True))
+        poll_works(works, deadline, poll_interval=poll_interval,
+                   clock=clock, sleep=sleep)
+        if self.acknowledgement.item() != 1:
+            raise RuntimeError('polled heartbeat completion failed')
 
     def finish(self, command, *, success=True):
         try:
