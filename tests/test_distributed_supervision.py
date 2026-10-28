@@ -3,14 +3,19 @@ import threading
 import time
 import unittest
 from unittest import mock
+from types import SimpleNamespace
 
 import torch
 
 from damendaemon import fleet_preflight
 from damendaemon.distributed_agreement import (compare_payloads, session_payload,
                                                transport_identity)
+from damendaemon.distributed_supervised_builder import (remote_worker_pids,
+                                                        supervised_builder,
+                                                        teardown_supervised_pair)
 from damendaemon.distributed_supervisor import (DistributedSupervisor,
                                                 SupervisorRuntime, classify_failure)
+from damendaemon.stage_transport import PeerDeadlineExceeded, poll_works
 
 
 class FakeRuntime:
@@ -29,6 +34,10 @@ class FakeRuntime:
             raise TimeoutError('transport frame deadline exceeded')
         if outcome == 'nccl':
             raise RuntimeError('NCCL error: remote peer aborted')
+        if outcome == 'peer-dead-heartbeat':
+            raise PeerDeadlineExceeded(
+                'peer heartbeat timeout: polled NCCL exchange did not '
+                'complete within 10s deadline')
         if outcome == 'other':
             raise ValueError('logic bug')
         return 'clean'
@@ -121,6 +130,133 @@ class FakeWorker:
     def terminate(self):self.killed = True
 
 
+class FakeWork:
+    """CPU-bus stand-in for an async collective handle."""
+
+    def __init__(self, completed_after=0):
+        self.completed_after = completed_after
+        self.polls = 0
+
+    def is_completed(self):
+        self.polls += 1
+        return self.polls > self.completed_after
+
+
+class PolledHeartbeatTest(unittest.TestCase):
+    def test_poll_works_returns_when_all_complete(self):
+        clock = {'now': 0.0}
+        sleeps = []
+
+        def fake_sleep(_):
+            sleeps.append(clock['now'])
+            clock['now'] += 0.05
+
+        works = [FakeWork(completed_after=2), FakeWork(completed_after=0)]
+        poll_works(works, deadline=5, poll_interval=0.05,
+                   clock=lambda: clock['now'], sleep=fake_sleep)
+        self.assertGreater(works[0].polls, 2)
+
+    def test_poll_works_raises_peer_deadline_on_miss(self):
+        clock = {'now': 0.0}
+
+        def fake_sleep(_):
+            clock['now'] += 0.05
+
+        work = FakeWork(completed_after=10 ** 9)
+        with self.assertRaises(PeerDeadlineExceeded) as raised:
+            poll_works([work], deadline=5, poll_interval=0.05,
+                       clock=lambda: clock['now'], sleep=fake_sleep)
+        message = str(raised.exception)
+        self.assertIn('timeout', message)
+        # The classification chain must map it to a dead peer.
+        self.assertEqual(classify_failure(raised.exception), 'peer-dead')
+
+    def test_poll_works_bounds(self):
+        with self.assertRaises(ValueError):
+            poll_works([FakeWork()], deadline=0)
+        with self.assertRaises(ValueError):
+            poll_works([], deadline=1)
+
+    def test_peer_deadline_exception_is_transport_marked(self):
+        # The message deliberately carries a transport-timeout marker so the
+        # supervisor classification stays pure string/chain based.
+        error = PeerDeadlineExceeded('peer heartbeat timeout: polled')
+        self.assertEqual(classify_failure(error), 'peer-dead')
+
+
+class RemoteTeardownTest(unittest.TestCase):
+    def test_remote_worker_pids_environ_verifies_each_candidate(self):
+        # The remote kill must be PID-exact: candidates from the module name
+        # in the command line, then /proc environ must carry this
+        # generation's run id verbatim — a stale PID cannot pass.
+        def fake_run(command, capture_output, text, timeout, check):
+            self.assertEqual(command[:2], ['ssh', 'worker-box'])
+            script = command[2]
+            self.assertIn('TORCHELASTIC_RUN_ID=supervised-123-2', script)
+            self.assertIn('/proc/$pid/environ', script)
+            self.assertIn('pgrep -f damendaemon.distributed_worker', script)
+            return SimpleNamespace(stdout='4242\nbad\n', returncode=0)
+
+        with mock.patch('damendaemon.distributed_supervised_builder.'
+                        'subprocess.run', side_effect=fake_run):
+            pids = remote_worker_pids('worker-box', 'supervised-123-2')
+        self.assertEqual(pids, [4242])
+
+    def test_remote_worker_pids_swallows_transport_failure(self):
+        # A dead SSH path must not raise into the supervisor teardown.
+        def fake_run(*args, **kwargs):
+            raise OSError('ssh unreachable')
+
+        with mock.patch('damendaemon.distributed_supervised_builder.'
+                        'subprocess.run', side_effect=fake_run):
+            self.assertEqual(
+                remote_worker_pids('worker-box', 'supervised-123-2'), [])
+
+    def test_remote_teardown_kills_verified_pids_only(self):
+        kills = []
+
+        def fake_run(command, capture_output, text=False, timeout=None,
+                     check=False):
+            if 'pgrep' in command[2]:  # environ-verified probe
+                return SimpleNamespace(stdout='777\n', returncode=0)
+            kills.append(command)
+            return SimpleNamespace(stdout='', returncode=0)
+
+        pair = SimpleNamespace(supervised_remote=dict(host='worker-box',
+                                                      run_id='supervised-9-1'),
+                               supervised_worker=None,
+                               supervised_store=None)
+        with mock.patch('damendaemon.distributed_supervised_builder.'
+                        'subprocess.run', side_effect=fake_run):
+            teardown_supervised_pair(pair)
+        self.assertEqual(kills, [['ssh', 'worker-box', 'kill 777']])
+
+    def test_cross_host_builder_requires_every_knob(self):
+        args = SimpleNamespace(worker_host='worker-box', worker_gpu=None,
+                               worker_python=None, worker_repo=None,
+                               worker_model_path=None,
+                               rendezvous_host=None,
+                               coordinator_ifname=None, worker_ifname=None,
+                               model=[], heartbeat_deadline=10.0,
+                               path='/m', context=512, quantization='none',
+                               alias='model', batch_size=1, queue_size=8,
+                               queue_timeout=120, client_decode_turns=False)
+        with self.assertRaises(ValueError) as raised:
+            supervised_builder(args, torch)
+        self.assertIn('cross-host', str(raised.exception))
+        # Additional resident models cannot be mirrored on the remote.
+        args.model = ['extra=/m2']
+        args.worker_gpu = 'GPU-abc'
+        args.worker_python = '/p'
+        args.worker_repo = '/r'
+        args.rendezvous_host = '10.30.100.3'
+        args.coordinator_ifname = 'enp6s18'
+        args.worker_ifname = 'enp72s0'
+        with self.assertRaises(ValueError) as raised:
+            supervised_builder(args, torch)
+        self.assertIn('loopback-only', str(raised.exception))
+
+
 class SupervisorTest(unittest.TestCase):
     def make(self, behaviors, builds=None):
         pair, runtime = FakePair(), FakeRuntime(list(behaviors))
@@ -193,6 +329,27 @@ class SupervisorTest(unittest.TestCase):
         supervisor.start()
         self.assertTrue(self.wait_state(supervisor, {'peer-dead'}))
         self.assertEqual(classify_failure(ValueError('logic bug')), 'failed')
+
+    def test_polled_heartbeat_death_engages_rejoin(self):
+        # The #637 finding closed: a peer death on the idle heartbeat now
+        # surfaces as a catchable PeerDeadlineExceeded (the polled exchange
+        # never blocks on the dead group), so the supervisor classifies,
+        # keeps HTTP honest, and the operator rejoin reaches a fresh
+        # generation instead of the NCCL watchdog killing the process.
+        supervisor, pair, runtime = self.make(['peer-dead-heartbeat',
+                                               'clean-block'])
+        supervisor.start()
+        self.assertTrue(self.wait_state(supervisor, {'peer-dead'}))
+        self.assertIn('PeerDeadlineExceeded', supervisor.reason)
+        health = supervisor.runtime_proxy.health()
+        self.assertEqual(health[0], 503)
+        self.assertEqual(health[1]['status'], 'peer-dead')
+        self.assertTrue(supervisor.rejoinable())
+        initiated, detail = supervisor.runtime_proxy.rejoin()
+        self.assertTrue(initiated)
+        self.assertTrue(self.wait_state(supervisor, {'serving'}))
+        self.assertEqual(supervisor.generation, 2)
+        supervisor.close()
 
     def test_rejoin_rejected_while_serving(self):
         supervisor, pair, runtime = self.make(['clean-block'])

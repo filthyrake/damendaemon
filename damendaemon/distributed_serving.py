@@ -58,7 +58,7 @@ class DistributedRuntime:
     source_tier='gpu'
     kernel_backend='distributed-stage-graphs'
 
-    def __init__(self, pair, alias='model', queue_size=8, queue_timeout=120, *, client_decode_turns=False,interleaved_prefill=False,client_prefill_turns=False):
+    def __init__(self, pair, alias='model', queue_size=8, queue_timeout=120, *, client_decode_turns=False,interleaved_prefill=False,client_prefill_turns=False,heartbeat_deadline=None):
         if type(client_decode_turns) is not bool:raise ValueError('client decode turns must be boolean')
         if type(client_prefill_turns) is not bool or (client_prefill_turns and not interleaved_prefill):
             raise ValueError('client prefill turns require explicit interleaved prefill')
@@ -70,6 +70,8 @@ class DistributedRuntime:
         if not isinstance(alias,str) or not 1 <= len(alias) <= 128:raise ValueError('invalid model alias')
         if type(queue_size) is not int or not 1 <= queue_size <= 64:raise ValueError('queue size must be 1..64')
         if not 0 < queue_timeout <= 300:raise ValueError('queue timeout must be within 300 seconds')
+        if heartbeat_deadline is not None and not 1 <= heartbeat_deadline < 30:
+            raise ValueError('polled heartbeat deadline must be 1..29 seconds, below the 30s group timeout')
         self.pair,self.alias,self.queue_timeout=pair,alias,queue_timeout
         self.requests=DistributedAdmission(queue_size,queue_timeout)
         self.closed=threading.Event()
@@ -88,6 +90,7 @@ class DistributedRuntime:
         self.completed=0
         self.heartbeats=0
         self.client_decode_turns=client_decode_turns;self.decode_turns=ClientDecodeTurns()
+        self.heartbeat_deadline=heartbeat_deadline
         self.interleaved_prefill=interleaved_prefill;self.prefill_turn=0
         self.client_prefill_turns=client_prefill_turns;self.prefill_turns=ClientPrefillTurns()
         self.execution_lock=threading.Lock();self.owner=object()
@@ -361,7 +364,14 @@ class DistributedRuntime:
                 # A live slot can be idle because its consumer is backpressured.
                 # Keep the peer alive without advancing its state or busy spinning.
                 if now-last_control>=heartbeat_interval:
-                    self.pair.heartbeat();self.heartbeats+=1;last_control=time.monotonic()
+                    # Poll only when a supervised deadline is configured; the
+                    # legacy blocking call keeps its original signature (CPU-bus
+                    # peer mocks and the unsupervised path depend on it).
+                    if self.heartbeat_deadline is None:
+                        self.pair.heartbeat()
+                    else:
+                        self.pair.heartbeat(poll_deadline=self.heartbeat_deadline)
+                    self.heartbeats+=1;last_control=time.monotonic()
                 if active and not progressed:self.closed.wait(min(.01,heartbeat_interval))
         except BaseException as error:
             primary_error=error

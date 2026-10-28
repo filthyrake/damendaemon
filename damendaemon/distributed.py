@@ -277,11 +277,21 @@ class StagePair:
                           tuple((slot, self.state.generations[slot], self.state.lengths[slot]) for slot in slots))
         self.channel.finish(self.channel.begin(command))
 
-    def heartbeat(self):
-        """Keep an idle resident peer inside the bounded collective deadline."""
+    def heartbeat(self, poll_deadline=None):
+        """Keep an idle resident peer inside the bounded collective deadline.
+
+        `poll_deadline` switches the supervised path: the exchange runs on
+        async collectives polled with that deadline, so a dead peer raises
+        a catchable PeerDeadlineExceeded (with the group aborted for a
+        later rejoin) instead of blocking until the process-fatal NCCL
+        group timeout. None keeps the legacy blocking exchange.
+        """
         if self.rank != 0:raise ValueError('only coordinator sends heartbeats')
-        command = Command(self.state.epoch, self.state.sequence, PING, 0, ())
-        self.channel.finish(self.channel.begin(command))
+        if poll_deadline is None:
+            command = Command(self.state.epoch, self.state.sequence, PING, 0, ())
+            self.channel.finish(self.channel.begin(command))
+        else:
+            self.channel.poll_ping(poll_deadline)
 
     def stop(self):
         if self.rank != 0 or self.state is None or self.state.closed or self.state.failed:return
