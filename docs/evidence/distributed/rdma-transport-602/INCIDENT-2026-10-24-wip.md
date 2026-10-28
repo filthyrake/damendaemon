@@ -48,3 +48,30 @@ Both rank processes killed (labnode3 pid 806586 SIGTERM; desktop pid
 for resume: `/tmp/rdma602/` on labnode3 (code, rank0/rank1 jsons +
 console logs, crosshost-partial copy) and `/tmp/rdma602/` on the desktop
 (code, rank1.json). Rendezvous port 29500 free.
+
+---
+
+## RESOLUTION (2026-10-27, this branch) — see README.md for the full record
+
+Both open blockers are root-caused and fixed; the cross-host cell now
+passes on the A2 + 3090 pair (socket forced, full 16-cell grid, zero
+NCCL WARNs):
+
+1. **The round_trip "deadlock" was not a deadlock**: NCCL exchanged an
+   IPv6 link-local (`fe80::…`, one of labnode3's interface addresses —
+   docker bridges included) and the desktop's proxy connect failed
+   `Network is unreachable` with no IPv4 fallback; every P2P wait then
+   spun. Fix: `NCCL_SOCKET_IFNAME` pinned to the real NIC on both ranks.
+2. **The 0-byte transcripts had two causes**: NCCL logs to STDOUT, not
+   fd 2 (measured), and the pump-thread tee was fragile under
+   fork/NCCL-proxy. Fix: `ConsoleTranscript` — direct dup2 redirect of
+   fd 1 AND fd 2, no threads.
+3. New, related: torch 2.13.0+cu130's TCPStore binds an IPv6-only
+   wildcard even for numeric IPv4 rendezvous URLs — cross-host store
+   join requires a pre-bound AF_INET fd (`master_listen_fd`). The
+   incident's "poll for the listener" orchestration is retired in favor
+   of this fix plus a client retry window.
+4. The probe's unbounded waits are now deadline-wrapped
+   (`DeadlineWatchdog`); it live-fired once during debugging and
+   produced exactly the intended evidence (tracebacks in the transcript,
+   exit 70, no silent hang).

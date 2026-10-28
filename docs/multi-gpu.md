@@ -55,16 +55,29 @@ through the CPU rendezvous store before NCCL starts; unreported crashes and
 blocked preparation still need an outer process deadline. General worker
 supervision remains incomplete.
 No fleet host exposes an RDMA device, so RDMA and GPUDirect RDMA remain
-unqualified and socket transport stays the qualified default. The probe now
-captures the full NCCL debug transcript per rank and classifies it
-(`damendaemon.nccl_transport_evidence`): the selected transport is recorded
-from NCCL's own selection lines, and GPUDirect RDMA is recorded as
-`evidenced` only when NCCL's per-HCA capability line says so — a verified
-verdict machinery, not a verified endpoint. The parser's recognized line
-shapes are pinned to the fleet's actual build (format strings extracted
-from libnccl.so 2.29.7). When RDMA hardware lands, the first-run checklist
-is `docs/rdma-roce-first-run.md` and the qualification path is #602, which
-stays open as inventory-blocked until then.
+unqualified and socket transport stays the qualified default. The probe
+now captures the full NCCL debug transcript per rank (the process
+console — fd 1 AND fd 2; NCCL's C library logs to stdout, measured on
+2.29.7) and classifies it (`damendaemon.nccl_transport_evidence`): the
+selected transport is anchored on NCCL's per-channel data-path lines
+(`via NET/<net>/<n>`; the plugin `Using` lines are fallback-only — 2.29.7
+prints `NET/IB : Using [RO]` even on RDMA-less hosts), and GPUDirect
+RDMA is recorded as `evidenced` only when NCCL's per-HCA capability line
+says so — a verified verdict machinery, not a verified endpoint. The
+parser's recognized line shapes are pinned to the fleet's actual build
+(format strings extracted from libnccl.so 2.29.7). The machinery is
+validated end-to-end on a real cross-host socket cell (A2 + 3090, 2026-10-27,
+`docs/evidence/distributed/rdma-transport-602/`) including the
+deadline-watchdog outer bound and two fleet-root-caused fixes: the
+torch-2.13 TCPStore binds IPv6-only (cross-host rendezvous needs a
+pre-bound AF_INET fd via `master_listen_fd`), and NCCL exchanges IPv6
+link-locals without an IPv4 fallback (`NCCL_SOCKET_IFNAME` must be
+pinned to the real NIC on every rank). When RDMA hardware lands, the
+first-run checklist is `docs/rdma-roce-first-run.md` (it carries those
+three live-earned items); the qualification procedure for that day is
+written into `docs/evidence/distributed/rdma-transport-602/` and the
+machinery pass is #602 (PR #657) — a new issue opens when the hardware
+lands.
 
 ## Run a prompt across two workers
 

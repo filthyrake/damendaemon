@@ -11,7 +11,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from damendaemon.nccl_transport_evidence import (StderrTranscript,
+from damendaemon.nccl_transport_evidence import (DeadlineWatchdog,
+                                                 ConsoleTranscript,
                                                  parse_transport_evidence,
                                                  rdma_devices)
 
@@ -32,7 +33,7 @@ class ParseTransportEvidenceTests(unittest.TestCase):
             [IB_USING, GDR_ENABLED, CHANNEL_IB, 'NCCL INFO Init COMPLETE'])
         self.assertEqual(record['nccl_selected_transport'], 'ib')
         self.assertEqual(record['gpudirect_rdma'], 'evidenced')
-        self.assertEqual(record['ib_selection_lines'], [IB_USING, CHANNEL_IB])
+        self.assertEqual(record['ib_selection_lines'], [CHANNEL_IB, IB_USING])
         self.assertIn(GDR_ENABLED, record['gpudirect_lines'])
 
     def test_ib_selection_with_refused_gpudirect_is_not_available(self):
@@ -61,8 +62,33 @@ class ParseTransportEvidenceTests(unittest.TestCase):
         record = parse_transport_evidence([SOCKET_USING, CHANNEL_SOCKET])
         self.assertEqual(record['nccl_selected_transport'], 'socket')
         self.assertEqual(record['gpudirect_rdma'], 'not_applicable')
-        self.assertEqual(record['socket_selection_lines'], [SOCKET_USING,
-                                                            CHANNEL_SOCKET])
+        self.assertEqual(record['socket_selection_lines'], [CHANNEL_SOCKET,
+                                                            SOCKET_USING])
+
+    def test_real_socket_cell_transcript_is_socket_despite_ib_fallback_lines(self):
+        # Verbatim shape from the live 2026-10-27 cross-host socket cell:
+        # NCCL 2.29.7 with zero RDMA hardware STILL prints 'NET/IB : Using
+        # [RO]' (plugin fallback claim) beside 'No device found', while
+        # every data channel runs via NET/Socket — channels win.
+        record = parse_transport_evidence([
+            "dhcp:1:1 [0] NCCL INFO NET/Socket : Using [0]enp6s18:10.30.100.3<0>",
+            "dhcp:1:1 [0] NCCL INFO NET/IB : No device found.",
+            "dhcp:1:1 [0] NCCL INFO NET/IB : Using [RO]; OOB enp6s18:10.30.100.3<0>",
+            "dhcp:1:1 [0] NCCL INFO NET/Socket : GPU Direct RDMA Disabled for HCA 0 'enp6s18'",
+            "dhcp:1:1 [0] NCCL INFO Channel 00/0 : 1[0] -> 0[1] [receive] via NET/Socket/0",
+            "dhcp:1:1 [0] NCCL INFO Channel 01/0 : 0[1] -> 1[0] [send] via NET/Socket/0",
+        ])
+        self.assertEqual(record['nccl_selected_transport'], 'socket')
+        self.assertEqual(record['gpudirect_rdma'], 'not_applicable')
+
+    def test_plugin_using_lines_classify_only_without_channel_lines(self):
+        # No channel lines at all (transcript truncated before the grid):
+        # fall back to the plugin 'Using' claims.
+        record = parse_transport_evidence([SOCKET_USING,
+                                           "NCCL INFO NET/IB : Using [RO]; OOB x"])
+        self.assertEqual(record['nccl_selected_transport'], 'ib')
+        record = parse_transport_evidence([SOCKET_USING])
+        self.assertEqual(record['nccl_selected_transport'], 'socket')
 
     def test_empty_or_unrelated_transcript_is_unknown(self):
         for lines in ([], ['NCCL INFO Init COMPLETE'],
@@ -88,38 +114,75 @@ class ParseTransportEvidenceTests(unittest.TestCase):
         self.assertEqual(devices, [])
 
 
-class StderrTranscriptTests(unittest.TestCase):
+class ConsoleTranscriptTests(unittest.TestCase):
 
-    def test_tee_captures_fd2_writes_and_restores_stderr(self):
+    def test_redirect_captures_both_fds_and_restores_console(self):
         with tempfile.TemporaryDirectory() as directory:
             path = str(Path(directory) / 'transcript.log')
-            transcript = StderrTranscript(path)
+            transcript = ConsoleTranscript(path)
             transcript.install()
             with self.assertRaises(RuntimeError):
                 transcript.install()
-            marker = b'fd-level write beyond sys.stderr\n'
-            os.write(2, marker)               # how NCCL logs: the raw fd
             import sys
+            # fd 1 is NCCL's logging channel (measured, #602); fd 2 carries
+            # tracebacks. Both must land in the transcript.
+            stdout_marker = b'stdout fd-level write (NCCL channel)\n'
+            os.write(1, stdout_marker)
+            print('python stdout line', flush=True)
+            marker = b'fd-level write beyond sys.stderr\n'
+            os.write(2, marker)
             print('python-level line', file=sys.stderr)
-            stalled = transcript.close()
+            lines = transcript.close()
             with self.assertRaises(RuntimeError):
                 transcript.close()
-            self.assertFalse(stalled)
+            self.assertIsInstance(lines, list)
+            self.assertTrue(any(stdout_marker.rstrip() in line.encode()
+                                for line in lines))
+            self.assertTrue(any('python stdout line' in line for line in lines))
+            self.assertTrue(any(marker.rstrip() in line.encode()
+                                for line in lines))
+            self.assertTrue(any('python-level line' in line for line in lines))
+            # Both descriptors are restored and functional for later writes.
+            os.write(1, b'after-restore-1\n')
+            os.write(2, b'after-restore-2\n')
             content = Path(path).read_bytes()
-            self.assertIn(marker, content)
-            self.assertIn(b'python-level line', content)
-            # fd 2 is restored and functional for later writes.
-            os.write(2, b'after-restore\n')
             self.assertNotIn(b'after-restore', content)
 
     def test_failed_install_leaves_stderr_untouched(self):
         with self.assertRaises(ValueError):
-            StderrTranscript('')
-        transcript = StderrTranscript('/nonexistent-dir/transcript.log')
+            ConsoleTranscript('')
+        transcript = ConsoleTranscript('/nonexistent-dir/transcript.log')
         with self.assertRaises(OSError):
             transcript.install()
         with self.assertRaises(RuntimeError):
             transcript.close()
+
+
+class DeadlineWatchdogTests(unittest.TestCase):
+
+    def test_armed_watchdog_cancels_cleanly(self):
+        with tempfile.TemporaryDirectory() as directory:
+            transcript = ConsoleTranscript(str(Path(directory) / 't.log'))
+            transcript.install()
+            try:
+                watchdog = DeadlineWatchdog(60, 'test-cell')
+                with watchdog:
+                    pass  # cancelled on exit; nothing fires
+                self.assertFalse(watchdog.fired)
+            finally:
+                transcript.close()
+
+    def test_reuse_and_invalid_labels_are_refused(self):
+        watchdog = DeadlineWatchdog(60, 'first')
+        with watchdog:
+            pass
+        with self.assertRaises(RuntimeError):
+            with watchdog:  # already used once
+                pass
+        with self.assertRaises(ValueError):
+            DeadlineWatchdog(0, 'bad')
+        with self.assertRaises(ValueError):
+            DeadlineWatchdog(60, '')
 
 
 if __name__ == '__main__':

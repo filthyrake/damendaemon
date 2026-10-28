@@ -15,14 +15,15 @@ No transport is selected or forced here; no network is touched.
 """
 import os
 import re
-import threading
 
 # Substring markers, matched case-sensitively as NCCL prints them.
-IB_SELECTION_MARKERS = ('NET/IB : Using', 'via NET/IB/')
-SOCKET_SELECTION_MARKERS = ('NET/Socket : Using', 'via NET/Socket/')
 GPUDIRECT_LINE_MARKER = 'GPU Direct RDMA'
 GPUDIRECT_ENABLED_MARKERS = ('RDMA enabled', 'RDMA Enabled')
 GPUDIRECT_UNAVAILABLE_MARKERS = ('RDMA not available',)
+# Measured on the #602 socket cell (NCCL 2.29.7): the socket plugin prints
+# "GPU Direct RDMA Disabled for HCA 0 '<iface>'" — an explicit refused
+# verdict, distinct from the IB plugin's "not available" wording.
+GPUDIRECT_DISABLED_MARKERS = ('RDMA Disabled',)
 
 
 def rdma_devices():
@@ -41,10 +42,19 @@ def parse_transport_evidence(lines):
     itself shows: which network transport NCCL selected, and every
     GPUDirect RDMA verdict line it printed (per HCA; multiple HCAs may
     legitimately disagree — all matched lines are retained verbatim so
-    the per-HCA detail stays inspectable). Verdicts:
+    the per-HCA detail stays inspectable).
+
+    Transport classification is anchored on the per-channel data-path
+    lines ('via NET/IB/<n>' / 'via NET/Socket/<n>') when any exist: the
+    plugin 'Using' lines can appear for fallback/probe paths — measured on
+    the #602 socket cell, NCCL 2.29.7 prints BOTH 'NET/IB : No device
+    found.' AND 'NET/IB : Using [RO]; OOB ...' on a host with zero RDMA
+    hardware while every channel runs 'via NET/Socket/0'. Plugin 'Using'
+    lines are recorded and used only when no channel line exists. Verdicts:
 
     - gpudirect_rdma 'evidenced': NCCL reported an enabled-GPUDirect HCA.
-    - 'not_available': NCCL ran its GPUDirect check and every HCA refused.
+    - 'not_available': NCCL ran its GPUDirect check and every HCA refused
+      (or explicitly printed Disabled).
     - 'unknown' with an IB transport: the check line never appeared in
       this transcript (older/newer NCCL wording, or different SUBSYS) —
       absence is recorded as absence, never as failure or success.
@@ -59,21 +69,31 @@ def parse_transport_evidence(lines):
             or any(not isinstance(line, str) or '\0' in line or len(line) > 4096
                    for line in lines)):
         raise ValueError('invalid NCCL transcript lines')
-    selected_ib, selected_socket = [], []
+    channel_ib, channel_socket = [], []
+    plugin_ib, plugin_socket = [], []
     gpudirect_enabled, gpudirect_unavailable = [], []
     for line in lines:
-        if any(marker in line for marker in IB_SELECTION_MARKERS):
-            selected_ib.append(line)
-        if any(marker in line for marker in SOCKET_SELECTION_MARKERS):
-            selected_socket.append(line)
+        if 'via NET/IB/' in line:
+            channel_ib.append(line)
+        if 'via NET/Socket/' in line:
+            channel_socket.append(line)
+        if 'NET/IB : Using' in line:
+            plugin_ib.append(line)
+        if 'NET/Socket : Using' in line:
+            plugin_socket.append(line)
         if GPUDIRECT_LINE_MARKER in line:
             if any(marker in line for marker in GPUDIRECT_ENABLED_MARKERS):
                 gpudirect_enabled.append(line)
-            elif any(marker in line for marker in GPUDIRECT_UNAVAILABLE_MARKERS):
+            elif any(marker in line for marker in GPUDIRECT_UNAVAILABLE_MARKERS
+                     + GPUDIRECT_DISABLED_MARKERS):
                 gpudirect_unavailable.append(line)
-    if selected_ib:
+    if channel_ib:
         transport = 'ib'
-    elif selected_socket:
+    elif channel_socket:
+        transport = 'socket'
+    elif plugin_ib:
+        transport = 'ib'
+    elif plugin_socket:
         transport = 'socket'
     else:
         transport = 'unknown'
@@ -86,20 +106,31 @@ def parse_transport_evidence(lines):
     else:
         gpudirect = 'unknown'
     return dict(nccl_selected_transport=transport, gpudirect_rdma=gpudirect,
-                ib_selection_lines=selected_ib, socket_selection_lines=selected_socket,
+                ib_selection_lines=channel_ib + plugin_ib,
+                socket_selection_lines=channel_socket + plugin_socket,
                 gpudirect_lines=gpudirect_enabled + gpudirect_unavailable)
 
 
-class StderrTranscript:
-    """Tee the process's real stderr (fd 2) into a transcript file.
+class ConsoleTranscript:
+    """Redirect the process console (fd 1 and fd 2) into a transcript file.
 
-    NCCL's C library logs to file descriptor 2, below Python's sys.stderr,
-    so capturing its debug output needs the descriptor itself. Everything
-    already holding fd 2 (Python tracebacks, faulthandler, NCCL) keeps
-    printing to the console unchanged while the transcript accumulates.
-    Re-entrant install/close is refused; close() restores fd 2 first, then
-    the pump thread drains to EOF on its own. A failed install leaves
-    stderr untouched.
+    Measured on the fleet (torch 2.13.0+cu130 / NCCL 2.29.7, #602): NCCL's
+    C library logs to STDOUT (fd 1), Python tracebacks to stderr (fd 2) —
+    the earlier fd-2-only redirect captured neither NCCL line (reports read
+    'unknown' transport with the full grid green). This is a DIRECT
+    kernel-level redirect (dup2 of the transcript file onto fd 1 AND fd 2):
+    every writer holding either descriptor — prints, tracebacks,
+    faulthandler, NCCL, forked NCCL proxy processes — keeps writing
+    unchanged, now into the file. No pump thread by design: the earlier tee
+    (2026-10-24 WIP incident) produced 0-byte transcripts on Linux while
+    console passthrough worked — the fork/NCCL-proxy interaction with the
+    pump thread is the recorded suspect — and a dup2 redirect has no
+    userspace moving parts to break. The launcher's own nohup redirection
+    keeps an (empty) console log; the completed transcript is read back for
+    the report at close.
+
+    Re-entrant install/close is refused. A failed install leaves both
+    descriptors untouched.
     """
 
     def __init__(self, path):
@@ -107,65 +138,117 @@ class StderrTranscript:
             raise ValueError('transcript path required')
         self.path = path
         self._saved = None
-        self._file = None
-        self._reader = None
-        self._thread = None
 
     def install(self):
         if self._saved is not None:
-            raise RuntimeError('stderr transcript already installed')
-        file = open(self.path, 'wb', buffering=0)
+            raise RuntimeError('console transcript already installed')
+        file = open(self.path, 'wb')
         try:
-            reader, writer = os.pipe()
+            saved1 = os.dup(1)
             try:
-                # fd 2 must stay BLOCKING: NCCL and Python write to it
-                # synchronously, and a non-blocking pipe would error or
-                # drop output whenever the pump thread falls behind.
-                saved = os.dup(2)
+                saved2 = os.dup(2)
                 try:
-                    os.dup2(writer, 2)
+                    os.dup2(file.fileno(), 1)
+                    os.dup2(file.fileno(), 2)
                 except BaseException:
-                    os.close(saved)
+                    os.close(saved2)
                     raise
             except BaseException:
-                os.close(reader)
-                os.close(writer)
+                os.close(saved1)
                 raise
         except BaseException:
             file.close()
             raise
-        os.close(writer)
-        self._file, self._reader, self._saved = file, reader, saved
-
-        def pump():
-            while True:
-                try:
-                    chunk = os.read(reader, 65536)
-                except OSError:
-                    break
-                if not chunk:
-                    break
-                file.write(chunk)
-                try:
-                    os.write(saved, chunk)
-                except OSError:
-                    pass
-
-        self._thread = threading.Thread(target=pump, daemon=True)
-        self._thread.start()
+        file.close()  # fds 1/2 own the description now; drop our handle
+        self._saved = (saved1, saved2)
 
     def close(self):
-        """Restore fd 2 and finish the transcript; waits for the pump."""
+        """Restore fd 1/2 and return the captured transcript lines."""
         if self._saved is None:
-            raise RuntimeError('stderr transcript not installed')
-        saved = self._saved
-        reader = self._reader
-        file = self._file
+            raise RuntimeError('console transcript not installed')
+        saved1, saved2 = self._saved
+        self._saved = None
+        os.dup2(saved1, 1)
+        os.dup2(saved2, 2)
+        os.close(saved1)
+        os.close(saved2)
+        # Both descriptors are restored; the transcript is complete because
+        # every console writer was redirected through the same description.
+        with open(self.path, 'rb') as captured:
+            return captured.read().decode('utf-8', errors='replace').splitlines()
+
+
+class DeadlineWatchdog:
+    """Process-fatal outer deadline for unbounded C-level waits (#602).
+
+    torch's NCCL work.wait() and the collectives here have no per-call
+    deadline the process-group timeout reliably covers: the 2026-10-24
+    cross-host round_trip hang spun both ranks at 100% CPU for 77+
+    minutes with the 30 s group timeout never firing (recorded in the
+    #602 incident note — the same blocking-collective process-fatal gap
+    docs/multi-gpu.md records for supervision). This watchdog arms a
+    daemon thread per guarded region; at expiry it writes a labeled
+    marker and every thread's traceback to fd 2 (which, under
+    StderrTranscript, is the evidence transcript) and exits the process
+    with status 70 — a recorded deadline kill instead of a silent hang.
+    Incremental report writes mean the report on disk names the last
+    COMPLETED cell; the transcript names the stuck one.
+
+    Single-use; reuse, zero/negative budgets and empty labels are
+    refused. Context-manager form cancels cleanly on exit.
+    """
+
+    EXIT_STATUS = 70
+
+    def __init__(self, seconds, label):
+        if not isinstance(seconds, (int, float)) or seconds <= 0:
+            raise ValueError('deadline seconds must be positive')
+        if not isinstance(label, str) or not label:
+            raise ValueError('deadline label required')
+        self.seconds = seconds
+        self.label = label
+        self.fired = False
+        self._armed = False
+        self._done = False
+        import threading
+        self._cancel = threading.Event()
+        self._thread = None
+
+    def _fire(self):
+        self.fired = True
+        marker = (f'deadline-watchdog: {self.label} exceeded '
+                  f'{self.seconds}s; dumping tracebacks and exiting '
+                  f'{self.EXIT_STATUS}\n').encode()
+        try:
+            os.write(2, marker)
+            import faulthandler
+            import sys
+            faulthandler.dump_traceback(file=sys.stderr)
+        except BaseException:
+            pass
+        os._exit(self.EXIT_STATUS)
+
+    def __enter__(self):
+        if self._armed or self._done:
+            raise RuntimeError('watchdog is single-use')
+        self._armed = True
+        import threading
+
+        def countdown():
+            if self._cancel.wait(self.seconds):
+                return
+            self._fire()
+
+        self._thread = threading.Thread(target=countdown, daemon=True,
+                                        name=f'deadline-{self.label}')
+        self._thread.start()
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
         thread = self._thread
-        self._saved = self._reader = self._file = self._thread = None
-        os.dup2(saved, 2)
-        os.close(saved)
-        os.close(reader)  # no writer remains: pump drains to EOF and exits
-        thread.join(30)
-        file.close()
-        return thread.is_alive()  # True means the pump never drained
+        self._cancel.set()
+        if thread is not None:
+            thread.join(5)
+        self._armed = False
+        self._done = True
+        return False

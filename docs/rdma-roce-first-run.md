@@ -37,8 +37,26 @@ on a host without an RDMA device.
 - `NCCL_NET=IB` (what the probe's `--transport rdma` sets) — or
   `NCCL_NET=Socket` to force the socket control path for A/B comparison.
 - `NCCL_DEBUG=INFO`, `NCCL_DEBUG_SUBSYS=INIT,NET` (the probe sets both);
-  the probe captures fd 2 per rank to `<output>.nccl-debug.log` and
-  classifies it into the report (`transport_evidence`).
+  the probe captures the process console (fd 1 AND fd 2 — **NCCL's C
+  library logs to stdout**, measured on NCCL 2.29.7) per rank to
+  `<output>.nccl-debug.log` and classifies it into the report
+  (`transport_evidence`).
+- **`NCCL_SOCKET_IFNAME=<real-nic>` on every rank — measured first-run
+  requirement on this fleet (#602, 2026-10-27):** with it unset, NCCL
+  exchanged an IPv6 link-local `fe80::…` from the interface list
+  (labnode3 runs docker bridges) and the peer's proxy connect failed
+  `Network is unreachable` with no IPv4 fallback — every P2P op then
+  spins (the "cross-host round_trip deadlock" from the 2026-10-24
+  incident was exactly this). Pin labnode3 `enp6s18` / desktop `enp72s0`
+  (or the RDMA NIC when it lands).
+- **Rendezvous on torch 2.13.0+cu130 needs a v4 pre-bound fd:** this
+  build's TCPStore server binds an IPv6-only wildcard regardless of a
+  numeric IPv4 URL host (`ss -tln4` empty, `ss -tln6` listening; both
+  libuv and classic daemons, `?use_libuv=0` does not change it) — IPv4
+  peers get instant ECONNREFUSED and the store times out "1/2 clients
+  joined". The probe pre-binds an AF_INET listener and passes it via
+  TCPStore's `master_listen_fd`; any other cross-host rendezvous on this
+  build needs the same workaround.
 - Keep the SAME torch/NCCL build on every rank — cross-version groups fail
   with opaque `ncclSystemError` socket errors, not a version diagnostic.
 - NCCL listeners bind ephemeral ports; firewall rules must cover the
