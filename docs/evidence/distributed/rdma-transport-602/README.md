@@ -23,6 +23,13 @@ A2+3090 unlock (owner, 2026-10-27) makes both GPU hosts available for the
 SOCKET cross-host cell but cannot create an RDMA endpoint; #602's RDMA
 gates stay inventory-blocked, exactly as the issue body pre-declares.
 
+(Measured corollary, 2026-10-27: GitHub's hosted CI runners *do* expose
+RDMA — the contracts job's host reported `mlx5_0` from
+`/sys/class/infiniband`, which is how the first merge attempt's
+environment-dependent inventory assertion failed. The probe's
+`rdma_devices()` now takes an injectable sysfs root and its tests never
+assert host emptiness; the fleet inventory is this table, not the test.)
+
 ## Cross-host socket cell: PASSED (2026-10-27) — the machinery is real
 
 `scripts/probe_distributed_gpu.py`, rank 0 = labnode3 **A2**

@@ -26,10 +26,17 @@ GPUDIRECT_UNAVAILABLE_MARKERS = ('RDMA not available',)
 GPUDIRECT_DISABLED_MARKERS = ('RDMA Disabled',)
 
 
-def rdma_devices():
-    """Names of RDMA devices exposed to this worker; empty means none."""
+def rdma_devices(sysfs_root='/sys'):
+    """Names of RDMA devices exposed to this worker; empty means none.
+
+    `sysfs_root` is injectable for tests — the production path reads the
+    live `/sys`. Callers must NOT assume emptiness: CI runners can
+    legitimately expose RDMA hardware (a GitHub-hosted runner reported
+    `mlx5_0` on this test's first merge attempt, 2026-10-27); the honest
+    inventory is whatever this returns, fleet lab or not.
+    """
     try:
-        entries = os.listdir('/sys/class/infiniband')
+        entries = os.listdir(os.path.join(sysfs_root, 'class', 'infiniband'))
     except OSError:
         return []
     return sorted(name for name in entries if name)

@@ -106,12 +106,25 @@ class ParseTransportEvidenceTests(unittest.TestCase):
             parse_transport_evidence(['ok'] * 100001)
 
     def test_rdma_devices_reflects_this_host(self):
+        # Live-path sanity only: a list of strings, and matching whatever
+        # this host actually exposes (a CI runner may legitimately have
+        # RDMA hardware — one reported 'mlx5_0' on this test's first merge
+        # attempt — so emptiness is NOT asserted; the fleet inventory
+        # record lives in the evidence README, not here).
         devices = rdma_devices()
         self.assertIsInstance(devices, list)
         self.assertTrue(all(isinstance(name, str) for name in devices))
-        # No RDMA hardware exists in this fleet today; an empty inventory is
-        # the expected honest state, and the probe's RDMA gate relies on it.
-        self.assertEqual(devices, [])
+
+    def test_rdma_devices_with_injected_sysfs_root(self):
+        # Controlled-root behavior: devices are listed, sorted, and the
+        # missing-directory case is an honest empty list, not an error.
+        import tempfile
+        with tempfile.TemporaryDirectory() as root:
+            self.assertEqual(rdma_devices(sysfs_root=root), [])
+            os.makedirs(os.path.join(root, 'class', 'infiniband', 'mlx5_1'))
+            os.makedirs(os.path.join(root, 'class', 'infiniband', 'mlx5_0'))
+            self.assertEqual(rdma_devices(sysfs_root=root),
+                             ['mlx5_0', 'mlx5_1'])
 
 
 class ConsoleTranscriptTests(unittest.TestCase):
