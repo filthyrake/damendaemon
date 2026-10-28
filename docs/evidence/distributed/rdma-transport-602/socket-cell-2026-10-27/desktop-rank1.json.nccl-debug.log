@@ -1,0 +1,62 @@
+rocky10-desktop:1156535:1156535 [0] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+rocky10-desktop:1156535:1156535 [0] NCCL INFO cudaDriverVersion 13040
+rocky10-desktop:1156535:1156535 [0] NCCL INFO NCCL_SOCKET_IFNAME set to enp72s0
+rocky10-desktop:1156535:1156535 [0] NCCL INFO NCCL version 2.29.7+cuda13.2
+rocky10-desktop:1156535:1156535 [0] NCCL INFO NCCL git version stable b81d6a5a3
+rocky10-desktop:1156535:1156535 [0] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+rocky10-desktop:1156535:1156535 [0] NCCL INFO NET/Socket : Using [0]enp72s0:10.40.100.30<0>
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Initialized NET plugin Socket
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Assigned NET plugin Socket to comm
+rocky10-desktop:1156535:1156535 [0] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+rocky10-desktop:1156535:1156535 [0] NCCL INFO NET/IB : No device found.
+rocky10-desktop:1156535:1156535 [0] NCCL INFO NET/IB : Using [RO]; OOB enp72s0:10.40.100.30<0>
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Failed to initialize any GIN plugin
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Using network Socket
+rocky10-desktop:1156535:1156535 [0] NCCL INFO [Rank 1] ncclCommInitRankConfig comm 0x55e4af8434c0 rank 1 nranks 2 cudaDev 0 nvmlDev 0 busId 81000 commId 0xc4d1f81205fc7cff - Init START
+rocky10-desktop:1156535:1156535 [0] NCCL INFO RAS client listening socket at ::1<28028>
+rocky10-desktop:1156535:1156535 [0] NCCL INFO NET/Socket : GPU Direct RDMA Disabled for HCA 0 'enp72s0'
+rocky10-desktop:1156535:1156535 [0] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 0 is empty, ignoring. (GPU affinity =  ; CPU affinity = 0-63).
+rocky10-desktop:1156535:1156535 [0] NCCL INFO comm 0x55e4af8434c0 rank 1 nRanks 2 nNodes 2 localRanks 1 localRank 0 MNNVL 0
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Trees [0] -1/-1/-1->1->0 [1] 0/-1/-1->1->-1
+rocky10-desktop:1156535:1156535 [0] NCCL INFO P2P Chunksize set to 131072
+rocky10-desktop:1156535:1156535 [0] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0 isAllCudaP2p 1
+rocky10-desktop:1156535:1156608 [0] NCCL INFO [Proxy Service] Device 0 CPU core 42
+rocky10-desktop:1156535:1156609 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 59
+rocky10-desktop:1156535:1156535 [0] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+rocky10-desktop:1156535:1156535 [0] NCCL INFO threadThresholds 8/8/64 | 16/8/64 | 512 | 512
+rocky10-desktop:1156535:1156535 [0] NCCL INFO 2 coll channels, 2 collnet channels, 0 nvls channels, 2 p2p channels, 1 p2p channels per peer
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Symmetric VA size=24GB
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Symmetric memory is not supported. cuMemEnable 1, globalGinSupport 0, globalNicFused 0 cuMemGdrSupport 0
+rocky10-desktop:1156535:1156535 [0] NCCL INFO ncclCommInitRankConfig comm 0x55e4af8434c0 rank 1 nranks 2 cudaDev 0 nvmlDev 0 busId 81000 commId 0xc4d1f81205fc7cff - Init COMPLETE
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Init timings - ncclCommInitRankConfig: rank 1 nranks 2 total 0.24 (kernels 0.08, alloc 0.00, bootstrap 0.14, allgathers 0.01, topo 0.01, graphs 0.00, connections 0.00, rest 0.00)
+rank=1 operation=all_reduce bytes=4096
+rocky10-desktop:1156535:1156608 [0] NCCL INFO New proxy recv connection 0 from local rank 0, transport 2
+rocky10-desktop:1156535:1156611 [0] NCCL INFO [Proxy Progress] Device 0 CPU core 42
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Connected to proxy localRank 0 -> connection 0x7f608c004f90
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Channel 00/0 : 0[1] -> 1[0] [receive] via NET/Socket/0
+rocky10-desktop:1156535:1156608 [0] NCCL INFO New proxy recv connection 1 from local rank 0, transport 2
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Connected to proxy localRank 0 -> connection 0x7f608c005018
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Channel 01/0 : 0[1] -> 1[0] [receive] via NET/Socket/0
+rocky10-desktop:1156535:1156608 [0] NCCL INFO New proxy send connection 2 from local rank 0, transport 2
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Connected to proxy localRank 0 -> connection 0x7f608c0050a0
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Channel 00/0 : 1[0] -> 0[1] [send] via NET/Socket/0
+rocky10-desktop:1156535:1156608 [0] NCCL INFO New proxy send connection 3 from local rank 0, transport 2
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Connected to proxy localRank 0 -> connection 0x7f608c005128
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Channel 01/0 : 1[0] -> 0[1] [send] via NET/Socket/0
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Connected all rings, use ring PXN 0 GDR 0
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Connected all trees
+rank=1 operation=round_trip bytes=4096
+rocky10-desktop:1156535:1156608 [0] NCCL INFO New proxy recv connection 4 from local rank 0, transport 2
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Connected to proxy localRank 0 -> connection 0x7f608c0051b0
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Channel 01/1 : 0[1] -> 1[0] [receive] via NET/Socket/0/Shared
+rocky10-desktop:1156535:1156608 [0] NCCL INFO New proxy send connection 5 from local rank 0, transport 2
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Connected to proxy localRank 0 -> connection 0x7f608c005238
+rocky10-desktop:1156535:1156535 [0] NCCL INFO Channel 01/1 : 1[0] -> 0[1] [send] via NET/Socket/0/Shared
+rank=1 operation=all_reduce bytes=65536
+rank=1 operation=round_trip bytes=65536
+rank=1 operation=all_reduce bytes=1048576
+rank=1 operation=round_trip bytes=1048576
+rank=1 operation=all_reduce bytes=4194304
+rank=1 operation=round_trip bytes=4194304
+rocky10-desktop:1156535:1156535 [0] NCCL INFO comm 0x55e4af8434c0 rank 1 nranks 2 cudaDev 0 busId 81000 - Destroy COMPLETE
