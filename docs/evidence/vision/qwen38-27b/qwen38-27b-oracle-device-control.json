@@ -1,0 +1,932 @@
+{
+  "scope": "independent Transformers device arithmetic control",
+  "cases": [
+    {
+      "name": "square",
+      "checks": [
+        {
+          "stage": "patch",
+          "maximum": 1.0967254638671875e-05,
+          "relative_rms": 5.026473104408069e-07,
+          "reference_maximum": 7.8969831466674805
+        },
+        {
+          "stage": "positioned",
+          "maximum": 1.0967254638671875e-05,
+          "relative_rms": 5.005676371183654e-07,
+          "reference_maximum": 8.53853702545166
+        },
+        {
+          "stage": "block.0",
+          "maximum": 8.106231689453125e-06,
+          "relative_rms": 5.812674430671905e-07,
+          "reference_maximum": 5.548445224761963
+        },
+        {
+          "stage": "block.1",
+          "maximum": 9.179115295410156e-06,
+          "relative_rms": 1.3034773473918904e-06,
+          "reference_maximum": 6.364490985870361
+        },
+        {
+          "stage": "block.2",
+          "maximum": 9.298324584960938e-06,
+          "relative_rms": 1.6375084896935732e-06,
+          "reference_maximum": 14.849834442138672
+        },
+        {
+          "stage": "block.3",
+          "maximum": 9.5367431640625e-06,
+          "relative_rms": 1.8201603779743891e-06,
+          "reference_maximum": 19.016353607177734
+        },
+        {
+          "stage": "block.4",
+          "maximum": 1.9311904907226562e-05,
+          "relative_rms": 1.8984055714099668e-06,
+          "reference_maximum": 20.306608200073242
+        },
+        {
+          "stage": "block.5",
+          "maximum": 1.7881393432617188e-05,
+          "relative_rms": 2.0468514776439406e-06,
+          "reference_maximum": 18.959585189819336
+        },
+        {
+          "stage": "block.6",
+          "maximum": 2.0265579223632812e-05,
+          "relative_rms": 1.9689323380589485e-06,
+          "reference_maximum": 13.973504066467285
+        },
+        {
+          "stage": "block.7",
+          "maximum": 2.3603439331054688e-05,
+          "relative_rms": 1.954676008608658e-06,
+          "reference_maximum": 9.972825050354004
+        },
+        {
+          "stage": "block.8",
+          "maximum": 3.0994415283203125e-05,
+          "relative_rms": 2.023766001002514e-06,
+          "reference_maximum": 8.58466911315918
+        },
+        {
+          "stage": "block.9",
+          "maximum": 0.000213623046875,
+          "relative_rms": 1.3723907841267646e-06,
+          "reference_maximum": 192.9342498779297
+        },
+        {
+          "stage": "block.10",
+          "maximum": 0.000213623046875,
+          "relative_rms": 1.4770071175007615e-06,
+          "reference_maximum": 194.56005859375
+        },
+        {
+          "stage": "block.11",
+          "maximum": 0.000213623046875,
+          "relative_rms": 1.6090440340121859e-06,
+          "reference_maximum": 194.7613983154297
+        },
+        {
+          "stage": "block.12",
+          "maximum": 0.000213623046875,
+          "relative_rms": 1.9078249806625536e-06,
+          "reference_maximum": 195.05435180664062
+        },
+        {
+          "stage": "block.13",
+          "maximum": 0.000213623046875,
+          "relative_rms": 2.4096448214550037e-06,
+          "reference_maximum": 194.8748016357422
+        },
+        {
+          "stage": "block.14",
+          "maximum": 0.000213623046875,
+          "relative_rms": 3.185756895618397e-06,
+          "reference_maximum": 197.58139038085938
+        },
+        {
+          "stage": "block.15",
+          "maximum": 0.000213623046875,
+          "relative_rms": 3.6588635339285247e-06,
+          "reference_maximum": 202.18223571777344
+        },
+        {
+          "stage": "block.16",
+          "maximum": 0.000213623046875,
+          "relative_rms": 4.2994147406716365e-06,
+          "reference_maximum": 203.7097625732422
+        },
+        {
+          "stage": "block.17",
+          "maximum": 0.000213623046875,
+          "relative_rms": 4.545787760434905e-06,
+          "reference_maximum": 216.01275634765625
+        },
+        {
+          "stage": "block.18",
+          "maximum": 0.00025844573974609375,
+          "relative_rms": 5.21948504683678e-06,
+          "reference_maximum": 221.10711669921875
+        },
+        {
+          "stage": "block.19",
+          "maximum": 0.0003986358642578125,
+          "relative_rms": 4.5011429392616265e-06,
+          "reference_maximum": 229.13038635253906
+        },
+        {
+          "stage": "block.20",
+          "maximum": 0.000614166259765625,
+          "relative_rms": 3.878338247886859e-06,
+          "reference_maximum": 247.84495544433594
+        },
+        {
+          "stage": "block.21",
+          "maximum": 0.000545501708984375,
+          "relative_rms": 3.621471933001885e-06,
+          "reference_maximum": 260.0389099121094
+        },
+        {
+          "stage": "block.22",
+          "maximum": 0.00049591064453125,
+          "relative_rms": 3.1224615213432116e-06,
+          "reference_maximum": 273.2193603515625
+        },
+        {
+          "stage": "block.23",
+          "maximum": 0.00048828125,
+          "relative_rms": 3.9858946365711745e-06,
+          "reference_maximum": 277.9697570800781
+        },
+        {
+          "stage": "block.24",
+          "maximum": 0.000457763671875,
+          "relative_rms": 4.122232894587796e-06,
+          "reference_maximum": 281.5995788574219
+        },
+        {
+          "stage": "block.25",
+          "maximum": 0.0005044937133789062,
+          "relative_rms": 6.853711511212168e-06,
+          "reference_maximum": 258.0916748046875
+        },
+        {
+          "stage": "block.26",
+          "maximum": 0.20361328125,
+          "relative_rms": 1.2577804227476008e-05,
+          "reference_maximum": 6065.75048828125
+        },
+        {
+          "stage": "merged",
+          "maximum": 0.001720428466796875,
+          "relative_rms": 1.0510625543247443e-05,
+          "reference_maximum": 103.72029113769531
+        }
+      ]
+    },
+    {
+      "name": "landscape",
+      "checks": [
+        {
+          "stage": "patch",
+          "maximum": 8.58306884765625e-06,
+          "relative_rms": 6.178854619065532e-07,
+          "reference_maximum": 5.938872814178467
+        },
+        {
+          "stage": "positioned",
+          "maximum": 8.58306884765625e-06,
+          "relative_rms": 6.173244742058159e-07,
+          "reference_maximum": 8.653712272644043
+        },
+        {
+          "stage": "block.0",
+          "maximum": 9.5367431640625e-06,
+          "relative_rms": 6.464039756792772e-07,
+          "reference_maximum": 6.8671417236328125
+        },
+        {
+          "stage": "block.1",
+          "maximum": 8.58306884765625e-06,
+          "relative_rms": 1.1106232022939366e-06,
+          "reference_maximum": 4.640885829925537
+        },
+        {
+          "stage": "block.2",
+          "maximum": 9.5367431640625e-06,
+          "relative_rms": 1.2892704717160086e-06,
+          "reference_maximum": 5.6826395988464355
+        },
+        {
+          "stage": "block.3",
+          "maximum": 1.5020370483398438e-05,
+          "relative_rms": 1.4503930287901312e-06,
+          "reference_maximum": 9.347917556762695
+        },
+        {
+          "stage": "block.4",
+          "maximum": 2.47955322265625e-05,
+          "relative_rms": 1.470475694986817e-06,
+          "reference_maximum": 13.126511573791504
+        },
+        {
+          "stage": "block.5",
+          "maximum": 3.0517578125e-05,
+          "relative_rms": 1.577311081746302e-06,
+          "reference_maximum": 13.323007583618164
+        },
+        {
+          "stage": "block.6",
+          "maximum": 3.528594970703125e-05,
+          "relative_rms": 1.483011374148191e-06,
+          "reference_maximum": 10.157942771911621
+        },
+        {
+          "stage": "block.7",
+          "maximum": 3.0994415283203125e-05,
+          "relative_rms": 1.5091444538484211e-06,
+          "reference_maximum": 7.797375679016113
+        },
+        {
+          "stage": "block.8",
+          "maximum": 3.528594970703125e-05,
+          "relative_rms": 1.5445174312844756e-06,
+          "reference_maximum": 8.118709564208984
+        },
+        {
+          "stage": "block.9",
+          "maximum": 9.202957153320312e-05,
+          "relative_rms": 1.1278658575974987e-06,
+          "reference_maximum": 195.7960662841797
+        },
+        {
+          "stage": "block.10",
+          "maximum": 0.00014972686767578125,
+          "relative_rms": 1.3425956240098458e-06,
+          "reference_maximum": 197.52565002441406
+        },
+        {
+          "stage": "block.11",
+          "maximum": 0.00016117095947265625,
+          "relative_rms": 1.4190115962264827e-06,
+          "reference_maximum": 197.8367919921875
+        },
+        {
+          "stage": "block.12",
+          "maximum": 0.00016498565673828125,
+          "relative_rms": 1.5439240996784065e-06,
+          "reference_maximum": 198.2364044189453
+        },
+        {
+          "stage": "block.13",
+          "maximum": 0.00018310546875,
+          "relative_rms": 1.747573492139054e-06,
+          "reference_maximum": 198.2590789794922
+        },
+        {
+          "stage": "block.14",
+          "maximum": 0.0002288818359375,
+          "relative_rms": 1.8751374000203214e-06,
+          "reference_maximum": 200.61268615722656
+        },
+        {
+          "stage": "block.15",
+          "maximum": 0.00028228759765625,
+          "relative_rms": 1.994855438169907e-06,
+          "reference_maximum": 205.0623779296875
+        },
+        {
+          "stage": "block.16",
+          "maximum": 0.0002803802490234375,
+          "relative_rms": 2.06093272936414e-06,
+          "reference_maximum": 206.423583984375
+        },
+        {
+          "stage": "block.17",
+          "maximum": 0.0002970695495605469,
+          "relative_rms": 2.1330172330635833e-06,
+          "reference_maximum": 218.07664489746094
+        },
+        {
+          "stage": "block.18",
+          "maximum": 0.000370025634765625,
+          "relative_rms": 2.2009921849530656e-06,
+          "reference_maximum": 223.02999877929688
+        },
+        {
+          "stage": "block.19",
+          "maximum": 0.0003719329833984375,
+          "relative_rms": 1.7424265479348833e-06,
+          "reference_maximum": 231.44973754882812
+        },
+        {
+          "stage": "block.20",
+          "maximum": 0.000385284423828125,
+          "relative_rms": 1.3926539850217523e-06,
+          "reference_maximum": 249.1744384765625
+        },
+        {
+          "stage": "block.21",
+          "maximum": 0.000423431396484375,
+          "relative_rms": 1.3358014712139266e-06,
+          "reference_maximum": 261.21002197265625
+        },
+        {
+          "stage": "block.22",
+          "maximum": 0.00042819976806640625,
+          "relative_rms": 1.142604219239729e-06,
+          "reference_maximum": 274.414794921875
+        },
+        {
+          "stage": "block.23",
+          "maximum": 0.00042057037353515625,
+          "relative_rms": 1.3408418908511521e-06,
+          "reference_maximum": 278.8163757324219
+        },
+        {
+          "stage": "block.24",
+          "maximum": 0.00044727325439453125,
+          "relative_rms": 1.495542164775543e-06,
+          "reference_maximum": 283.4757385253906
+        },
+        {
+          "stage": "block.25",
+          "maximum": 0.0004520416259765625,
+          "relative_rms": 2.7246283025306184e-06,
+          "reference_maximum": 260.567626953125
+        },
+        {
+          "stage": "block.26",
+          "maximum": 0.08587646484375,
+          "relative_rms": 3.974701485276455e-06,
+          "reference_maximum": 5665.7041015625
+        },
+        {
+          "stage": "merged",
+          "maximum": 0.000583648681640625,
+          "relative_rms": 3.0201056233636336e-06,
+          "reference_maximum": 145.47935485839844
+        }
+      ]
+    },
+    {
+      "name": "resized",
+      "checks": [
+        {
+          "stage": "patch",
+          "maximum": 1.3828277587890625e-05,
+          "relative_rms": 5.073405304756307e-07,
+          "reference_maximum": 7.661879062652588
+        },
+        {
+          "stage": "positioned",
+          "maximum": 1.3828277587890625e-05,
+          "relative_rms": 5.061036745246383e-07,
+          "reference_maximum": 7.687391757965088
+        },
+        {
+          "stage": "block.0",
+          "maximum": 1.1920928955078125e-05,
+          "relative_rms": 5.821345325784932e-07,
+          "reference_maximum": 5.014883995056152
+        },
+        {
+          "stage": "block.1",
+          "maximum": 9.775161743164062e-06,
+          "relative_rms": 1.3269050214148592e-06,
+          "reference_maximum": 5.843780517578125
+        },
+        {
+          "stage": "block.2",
+          "maximum": 1.33514404296875e-05,
+          "relative_rms": 1.6875333130883519e-06,
+          "reference_maximum": 13.873573303222656
+        },
+        {
+          "stage": "block.3",
+          "maximum": 1.7642974853515625e-05,
+          "relative_rms": 1.9009663674296462e-06,
+          "reference_maximum": 17.596633911132812
+        },
+        {
+          "stage": "block.4",
+          "maximum": 1.9073486328125e-05,
+          "relative_rms": 1.9945505300711375e-06,
+          "reference_maximum": 18.925722122192383
+        },
+        {
+          "stage": "block.5",
+          "maximum": 2.0503997802734375e-05,
+          "relative_rms": 2.1639859824063024e-06,
+          "reference_maximum": 17.58909797668457
+        },
+        {
+          "stage": "block.6",
+          "maximum": 1.8596649169921875e-05,
+          "relative_rms": 2.0698694243037608e-06,
+          "reference_maximum": 13.030862808227539
+        },
+        {
+          "stage": "block.7",
+          "maximum": 1.5735626220703125e-05,
+          "relative_rms": 2.045688233920373e-06,
+          "reference_maximum": 9.247583389282227
+        },
+        {
+          "stage": "block.8",
+          "maximum": 1.621246337890625e-05,
+          "relative_rms": 2.0893060082016746e-06,
+          "reference_maximum": 7.608412265777588
+        },
+        {
+          "stage": "block.9",
+          "maximum": 0.00144195556640625,
+          "relative_rms": 3.6862738852505572e-06,
+          "reference_maximum": 349.68890380859375
+        },
+        {
+          "stage": "block.10",
+          "maximum": 0.00142669677734375,
+          "relative_rms": 3.645380729722092e-06,
+          "reference_maximum": 351.07647705078125
+        },
+        {
+          "stage": "block.11",
+          "maximum": 0.00142669677734375,
+          "relative_rms": 3.5925127122027334e-06,
+          "reference_maximum": 351.2525939941406
+        },
+        {
+          "stage": "block.12",
+          "maximum": 0.0014190673828125,
+          "relative_rms": 3.578541736715124e-06,
+          "reference_maximum": 351.5876159667969
+        },
+        {
+          "stage": "block.13",
+          "maximum": 0.0014190673828125,
+          "relative_rms": 3.552725956978975e-06,
+          "reference_maximum": 351.38360595703125
+        },
+        {
+          "stage": "block.14",
+          "maximum": 0.00138092041015625,
+          "relative_rms": 3.550915153027745e-06,
+          "reference_maximum": 353.4840393066406
+        },
+        {
+          "stage": "block.15",
+          "maximum": 0.0013580322265625,
+          "relative_rms": 3.5106068025925197e-06,
+          "reference_maximum": 357.542724609375
+        },
+        {
+          "stage": "block.16",
+          "maximum": 0.0013580322265625,
+          "relative_rms": 3.624266128099407e-06,
+          "reference_maximum": 359.0872802734375
+        },
+        {
+          "stage": "block.17",
+          "maximum": 0.001312255859375,
+          "relative_rms": 3.5742391446547117e-06,
+          "reference_maximum": 370.3759460449219
+        },
+        {
+          "stage": "block.18",
+          "maximum": 0.001312255859375,
+          "relative_rms": 3.6670226108981296e-06,
+          "reference_maximum": 375.4341125488281
+        },
+        {
+          "stage": "block.19",
+          "maximum": 0.0012969970703125,
+          "relative_rms": 3.0324849831231404e-06,
+          "reference_maximum": 383.7687683105469
+        },
+        {
+          "stage": "block.20",
+          "maximum": 0.0013427734375,
+          "relative_rms": 2.5424656087125186e-06,
+          "reference_maximum": 404.5702209472656
+        },
+        {
+          "stage": "block.21",
+          "maximum": 0.0013427734375,
+          "relative_rms": 2.3523607524111867e-06,
+          "reference_maximum": 416.9377746582031
+        },
+        {
+          "stage": "block.22",
+          "maximum": 0.001312255859375,
+          "relative_rms": 2.0102404505450977e-06,
+          "reference_maximum": 430.5335693359375
+        },
+        {
+          "stage": "block.23",
+          "maximum": 0.0013427734375,
+          "relative_rms": 2.4135752028087154e-06,
+          "reference_maximum": 435.7420654296875
+        },
+        {
+          "stage": "block.24",
+          "maximum": 0.001373291015625,
+          "relative_rms": 2.581504986665095e-06,
+          "reference_maximum": 440.9548034667969
+        },
+        {
+          "stage": "block.25",
+          "maximum": 0.00146484375,
+          "relative_rms": 4.088053174200468e-06,
+          "reference_maximum": 420.3490905761719
+        },
+        {
+          "stage": "block.26",
+          "maximum": 0.148193359375,
+          "relative_rms": 6.961402959859697e-06,
+          "reference_maximum": 5874.01171875
+        },
+        {
+          "stage": "merged",
+          "maximum": 0.000774383544921875,
+          "relative_rms": 4.4259991227590945e-06,
+          "reference_maximum": 121.39118194580078
+        }
+      ]
+    },
+    {
+      "name": "larger",
+      "checks": [
+        {
+          "stage": "patch",
+          "maximum": 9.059906005859375e-06,
+          "relative_rms": 6.167824722069781e-07,
+          "reference_maximum": 6.096158504486084
+        },
+        {
+          "stage": "positioned",
+          "maximum": 9.059906005859375e-06,
+          "relative_rms": 6.167983883642592e-07,
+          "reference_maximum": 8.714889526367188
+        },
+        {
+          "stage": "block.0",
+          "maximum": 8.106231689453125e-06,
+          "relative_rms": 6.451826379816339e-07,
+          "reference_maximum": 6.774940013885498
+        },
+        {
+          "stage": "block.1",
+          "maximum": 9.179115295410156e-06,
+          "relative_rms": 1.1090982070527389e-06,
+          "reference_maximum": 4.647893905639648
+        },
+        {
+          "stage": "block.2",
+          "maximum": 1.33514404296875e-05,
+          "relative_rms": 1.2927887382829795e-06,
+          "reference_maximum": 7.353776931762695
+        },
+        {
+          "stage": "block.3",
+          "maximum": 3.0517578125e-05,
+          "relative_rms": 1.4525591041092412e-06,
+          "reference_maximum": 11.896280288696289
+        },
+        {
+          "stage": "block.4",
+          "maximum": 4.673004150390625e-05,
+          "relative_rms": 1.458200586057501e-06,
+          "reference_maximum": 15.177444458007812
+        },
+        {
+          "stage": "block.5",
+          "maximum": 4.76837158203125e-05,
+          "relative_rms": 1.5609458614562755e-06,
+          "reference_maximum": 15.354516983032227
+        },
+        {
+          "stage": "block.6",
+          "maximum": 3.7789344787597656e-05,
+          "relative_rms": 1.4695749541715486e-06,
+          "reference_maximum": 12.220508575439453
+        },
+        {
+          "stage": "block.7",
+          "maximum": 3.892183303833008e-05,
+          "relative_rms": 1.4880910157444305e-06,
+          "reference_maximum": 10.157443046569824
+        },
+        {
+          "stage": "block.8",
+          "maximum": 3.9577484130859375e-05,
+          "relative_rms": 1.5297711115636048e-06,
+          "reference_maximum": 9.530065536499023
+        },
+        {
+          "stage": "block.9",
+          "maximum": 0.0009307861328125,
+          "relative_rms": 2.3297832285607e-06,
+          "reference_maximum": 297.33599853515625
+        },
+        {
+          "stage": "block.10",
+          "maximum": 0.00091552734375,
+          "relative_rms": 2.3352642983809346e-06,
+          "reference_maximum": 298.8080139160156
+        },
+        {
+          "stage": "block.11",
+          "maximum": 0.0009307861328125,
+          "relative_rms": 2.2986464500718284e-06,
+          "reference_maximum": 299.0948791503906
+        },
+        {
+          "stage": "block.12",
+          "maximum": 0.0009307861328125,
+          "relative_rms": 2.304195731994696e-06,
+          "reference_maximum": 299.462646484375
+        },
+        {
+          "stage": "block.13",
+          "maximum": 0.0009307861328125,
+          "relative_rms": 2.267769787067664e-06,
+          "reference_maximum": 299.4512634277344
+        },
+        {
+          "stage": "block.14",
+          "maximum": 0.00091552734375,
+          "relative_rms": 2.1595726593659492e-06,
+          "reference_maximum": 301.37939453125
+        },
+        {
+          "stage": "block.15",
+          "maximum": 0.00091552734375,
+          "relative_rms": 2.0978134216420585e-06,
+          "reference_maximum": 305.3001708984375
+        },
+        {
+          "stage": "block.16",
+          "maximum": 0.00091552734375,
+          "relative_rms": 2.120483713952126e-06,
+          "reference_maximum": 306.6677551269531
+        },
+        {
+          "stage": "block.17",
+          "maximum": 0.000885009765625,
+          "relative_rms": 2.1491005099960603e-06,
+          "reference_maximum": 317.4953308105469
+        },
+        {
+          "stage": "block.18",
+          "maximum": 0.000885009765625,
+          "relative_rms": 2.1338785245461622e-06,
+          "reference_maximum": 322.5727233886719
+        },
+        {
+          "stage": "block.19",
+          "maximum": 0.000885009765625,
+          "relative_rms": 1.698550136097765e-06,
+          "reference_maximum": 330.8262023925781
+        },
+        {
+          "stage": "block.20",
+          "maximum": 0.0009002685546875,
+          "relative_rms": 1.333121531388315e-06,
+          "reference_maximum": 350.8772888183594
+        },
+        {
+          "stage": "block.21",
+          "maximum": 0.00091552734375,
+          "relative_rms": 1.248844228030066e-06,
+          "reference_maximum": 363.37335205078125
+        },
+        {
+          "stage": "block.22",
+          "maximum": 0.00091552734375,
+          "relative_rms": 1.0634813634169404e-06,
+          "reference_maximum": 376.8013916015625
+        },
+        {
+          "stage": "block.23",
+          "maximum": 0.00091552734375,
+          "relative_rms": 1.2615259947779123e-06,
+          "reference_maximum": 381.8890075683594
+        },
+        {
+          "stage": "block.24",
+          "maximum": 0.0009307861328125,
+          "relative_rms": 1.333885165877291e-06,
+          "reference_maximum": 387.6803894042969
+        },
+        {
+          "stage": "block.25",
+          "maximum": 0.0009613037109375,
+          "relative_rms": 2.3000070541456807e-06,
+          "reference_maximum": 365.83489990234375
+        },
+        {
+          "stage": "block.26",
+          "maximum": 0.057373046875,
+          "relative_rms": 3.301795914012473e-06,
+          "reference_maximum": 5664.5244140625
+        },
+        {
+          "stage": "merged",
+          "maximum": 0.000614166259765625,
+          "relative_rms": 3.027598040716839e-06,
+          "reference_maximum": 120.51122283935547
+        }
+      ]
+    },
+    {
+      "name": "two-images",
+      "checks": [
+        {
+          "stage": "patch",
+          "maximum": 1.0967254638671875e-05,
+          "relative_rms": 5.931120199420548e-07,
+          "reference_maximum": 7.8969831466674805
+        },
+        {
+          "stage": "positioned",
+          "maximum": 1.0967254638671875e-05,
+          "relative_rms": 5.921037882217206e-07,
+          "reference_maximum": 8.653712272644043
+        },
+        {
+          "stage": "block.0",
+          "maximum": 9.5367431640625e-06,
+          "relative_rms": 6.518331474580918e-07,
+          "reference_maximum": 6.8671417236328125
+        },
+        {
+          "stage": "block.1",
+          "maximum": 1.0132789611816406e-05,
+          "relative_rms": 1.2065365808666684e-06,
+          "reference_maximum": 6.364490985870361
+        },
+        {
+          "stage": "block.2",
+          "maximum": 1.0728836059570312e-05,
+          "relative_rms": 1.4616952057622257e-06,
+          "reference_maximum": 14.849834442138672
+        },
+        {
+          "stage": "block.3",
+          "maximum": 2.288818359375e-05,
+          "relative_rms": 1.6649894405418308e-06,
+          "reference_maximum": 19.016353607177734
+        },
+        {
+          "stage": "block.4",
+          "maximum": 3.147125244140625e-05,
+          "relative_rms": 1.7258593061342253e-06,
+          "reference_maximum": 20.306608200073242
+        },
+        {
+          "stage": "block.5",
+          "maximum": 3.719329833984375e-05,
+          "relative_rms": 1.8705584352574078e-06,
+          "reference_maximum": 18.959585189819336
+        },
+        {
+          "stage": "block.6",
+          "maximum": 4.3392181396484375e-05,
+          "relative_rms": 1.7835393464338267e-06,
+          "reference_maximum": 13.973504066467285
+        },
+        {
+          "stage": "block.7",
+          "maximum": 3.9577484130859375e-05,
+          "relative_rms": 1.809466539270943e-06,
+          "reference_maximum": 9.972825050354004
+        },
+        {
+          "stage": "block.8",
+          "maximum": 4.3392181396484375e-05,
+          "relative_rms": 1.8806312027663807e-06,
+          "reference_maximum": 8.58466911315918
+        },
+        {
+          "stage": "block.9",
+          "maximum": 0.0003509521484375,
+          "relative_rms": 1.6968126601568656e-06,
+          "reference_maximum": 195.7960662841797
+        },
+        {
+          "stage": "block.10",
+          "maximum": 0.0003509521484375,
+          "relative_rms": 1.8437780227031908e-06,
+          "reference_maximum": 197.52565002441406
+        },
+        {
+          "stage": "block.11",
+          "maximum": 0.0003509521484375,
+          "relative_rms": 1.922722503877594e-06,
+          "reference_maximum": 197.8367919921875
+        },
+        {
+          "stage": "block.12",
+          "maximum": 0.0003509521484375,
+          "relative_rms": 2.130325356120011e-06,
+          "reference_maximum": 198.2364044189453
+        },
+        {
+          "stage": "block.13",
+          "maximum": 0.0003509521484375,
+          "relative_rms": 2.506590817574761e-06,
+          "reference_maximum": 198.2590789794922
+        },
+        {
+          "stage": "block.14",
+          "maximum": 0.0003509521484375,
+          "relative_rms": 3.005907274200581e-06,
+          "reference_maximum": 200.61268615722656
+        },
+        {
+          "stage": "block.15",
+          "maximum": 0.0003509521484375,
+          "relative_rms": 3.359842139616376e-06,
+          "reference_maximum": 205.0623779296875
+        },
+        {
+          "stage": "block.16",
+          "maximum": 0.0003509521484375,
+          "relative_rms": 3.8241755646595266e-06,
+          "reference_maximum": 206.423583984375
+        },
+        {
+          "stage": "block.17",
+          "maximum": 0.00040531158447265625,
+          "relative_rms": 4.020650976599427e-06,
+          "reference_maximum": 218.07664489746094
+        },
+        {
+          "stage": "block.18",
+          "maximum": 0.000507354736328125,
+          "relative_rms": 4.52136191597674e-06,
+          "reference_maximum": 223.02999877929688
+        },
+        {
+          "stage": "block.19",
+          "maximum": 0.00051116943359375,
+          "relative_rms": 3.801081447818433e-06,
+          "reference_maximum": 231.44973754882812
+        },
+        {
+          "stage": "block.20",
+          "maximum": 0.000732421875,
+          "relative_rms": 3.21731522490154e-06,
+          "reference_maximum": 249.1744384765625
+        },
+        {
+          "stage": "block.21",
+          "maximum": 0.00064849853515625,
+          "relative_rms": 3.050695340789389e-06,
+          "reference_maximum": 261.21002197265625
+        },
+        {
+          "stage": "block.22",
+          "maximum": 0.000644683837890625,
+          "relative_rms": 2.6364330096839694e-06,
+          "reference_maximum": 274.414794921875
+        },
+        {
+          "stage": "block.23",
+          "maximum": 0.00069427490234375,
+          "relative_rms": 3.395359726710012e-06,
+          "reference_maximum": 278.8163757324219
+        },
+        {
+          "stage": "block.24",
+          "maximum": 0.00067138671875,
+          "relative_rms": 3.5946652587881545e-06,
+          "reference_maximum": 283.4757385253906
+        },
+        {
+          "stage": "block.25",
+          "maximum": 0.0006227493286132812,
+          "relative_rms": 6.153819867904531e-06,
+          "reference_maximum": 260.567626953125
+        },
+        {
+          "stage": "block.26",
+          "maximum": 0.2548828125,
+          "relative_rms": 1.0513172128412407e-05,
+          "reference_maximum": 6065.75048828125
+        },
+        {
+          "stage": "merged",
+          "maximum": 0.0023365020751953125,
+          "relative_rms": 8.05416038929252e-06,
+          "reference_maximum": 145.47935485839844
+        }
+      ]
+    }
+  ],
+  "first_sha256": "20b2cc4b9f53de74e38c3e97ad04b5eaa55ab8dbfe75e77e71b92969147378cd",
+  "second_sha256": "455982074537275553631b38a5e38641c4d1290b6543ff4c043dd5e254bd94ed"
+}
