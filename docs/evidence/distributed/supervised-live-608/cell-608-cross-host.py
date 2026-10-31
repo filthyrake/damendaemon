@@ -25,7 +25,7 @@ MODEL = ('/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B/'
 WORKER_MODEL = ('/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B/'
                 'snapshots/060db6499f32faf8b98477b0a26969ef7d8b9987')
 A2 = 'GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283'
-RTX3090 = 'GPU-24ef3d4c-51dc-d004-4150-d6a70b05e069'
+WORKER_GPU = 'GPU-4adb9ddb-7bb3-189c-0fa2-51d67d1189ed'  # RTX A6000 (44.5 GiB; swapped for the 3090 2026-10-28)
 PORT = 8410
 OUT = '/tmp/g608x/cross-host-cell.json'
 LOG = '/tmp/g608x/serve-supervised.log'
@@ -125,7 +125,7 @@ def main():
          '--batch-size', '1', '--quantization', 'none',
          '--coordinator-gpu', A2,
          '--worker-host', WORKER_HOST,
-         '--worker-gpu', RTX3090,
+         '--worker-gpu', WORKER_GPU,
          '--worker-python', '/home/damen/3090-damendaemon/venv/bin/python',
          '--worker-repo', '/tmp/608fix',
          '--worker-model-path', WORKER_MODEL,
@@ -141,7 +141,7 @@ def main():
         record(dict(event='startup', health=healthy,
                            coordinator_pid=launcher.pid,
                            note='generation 1 cross-host pair up (A2 '
-                                'coordinator, 3090 worker over SSH); the '
+                                'coordinator, A6000 worker over SSH); the '
                                 'all_gather transport-version agreement '
                                 'passed at pair construction'))
         first = completion()

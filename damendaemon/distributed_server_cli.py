@@ -62,6 +62,19 @@ def main(argv=None):
     os.environ['DAMENDAEMON_DEVICE']='cuda'
     from .server import BoundedHTTPServer,handler_for
     if args.supervise:
+        # torch's experimental _abort_process_group — the recovery
+        # primitive the supervised rejoin depends on — is documented to
+        # require TORCH_NCCL_ASYNC_ERROR_HANDLING=0: with it on (default),
+        # the ProcessGroupNCCL watchdog races the supervisor and, in
+        # terminate mode, takes the entire process down on a dead group
+        # (measured live 2026-10-28: generations 1-2 classified and
+        # rejoined cleanly, then a stale generation-1 group's watchdog
+        # terminated the coordinator during generation 3's
+        # classification window). BLOCKING_WAIT=1 keeps blocking
+        # collectives raising at the process-group timeout, catchable,
+        # instead of depending on that watchdog.
+        os.environ.setdefault('TORCH_NCCL_ASYNC_ERROR_HANDLING', '0')
+        os.environ.setdefault('TORCH_NCCL_BLOCKING_WAIT', '1')
         from .distributed_supervised_builder import supervised_builder,teardown_supervised_pair
         from .distributed_supervisor import DistributedSupervisor
         import torch

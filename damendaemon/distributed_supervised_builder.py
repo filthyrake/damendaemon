@@ -115,7 +115,16 @@ def supervised_builder(args, torch):
         common = dict(WORLD_SIZE='2', MASTER_ADDR=store_host, MASTER_PORT=str(rendezvous_port),
                       TORCHELASTIC_USE_AGENT_STORE='true', TORCHELASTIC_RUN_ID=run_id,
                       TORCHELASTIC_RESTART_COUNT='0', DAMENDAEMON_DEVICE='cuda',
-                      DAMENDAEMON_QUANTIZATION=args.quantization)
+                      DAMENDAEMON_QUANTIZATION=args.quantization,
+                      # Match the coordinator's watchdog configuration (see
+                      # distributed_server_cli.py): the abort-based rejoin
+                      # needs ASYNC_ERROR_HANDLING off, and a worker whose
+                      # coordinator dies exits cleanly at the group timeout
+                      # via BLOCKING_WAIT instead of a watchdog abort storm.
+                      TORCH_NCCL_ASYNC_ERROR_HANDLING=os.environ.get(
+                          'TORCH_NCCL_ASYNC_ERROR_HANDLING', '0'),
+                      TORCH_NCCL_BLOCKING_WAIT=os.environ.get(
+                          'TORCH_NCCL_BLOCKING_WAIT', '1'))
         store = dist.TCPStore(store_host, rendezvous_port, world_size=None, is_master=True,
                               wait_for_workers=False, timeout=timedelta(seconds=30))
         if worker_host:

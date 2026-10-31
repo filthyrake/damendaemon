@@ -1,0 +1,21 @@
+{"event": "startup", "health": [200, {"status": "ok", "generation": 1}], "coordinator_pid": 3752603, "note": "generation 1 cross-host pair up (A2 coordinator, 3090 worker over SSH); the all_gather transport-version agreement passed at pair construction"}
+{"event": "completion", "generation": 1, "status": 200, "text": " Paris. It is the largest city in Europe and the second", "completion_tokens": 12}
+{"event": "remote_worker_pids", "generation": 1, "pids": [31641]}
+{"event": "kill", "generation": 1, "reason": "remote rank-1 SIGKILL", "killed": [31641]}
+{"event": "health_failed", "observed": [503, {"status": "peer-dead", "generation": 1, "reason": "generation 1: PeerDeadlineExceeded: peer heartbeat timeout: the polled exchange did not return within 10s (async collective post blocked; connection/transport deadline exceeded)", "rejoin": "POST /v1/distributed/rejoin"}], "seconds_from_kill_to_failed_state": 15.5, "coordinator_alive": true, "note": "THE fix claim: coordinator survived; peer-dead classified via the polled heartbeat inside its 10s deadline (heartbeat interval 5s), not the process-fatal 30s NCCL group timeout"}
+{"event": "failed_health_detail", "status": 503, "body": {"status": "peer-dead", "generation": 1, "reason": "generation 1: PeerDeadlineExceeded: peer heartbeat timeout: the polled exchange did not return within 10s (async collective post blocked; connection/transport deadline exceeded)", "rejoin": "POST /v1/distributed/rejoin"}}
+{"event": "rejoin", "generation": 2, "status": 202, "body": {"rejoin": true, "detail": "rejoining to generation 2; slots will be empty; admitted requests of the dead generation are not replayed"}}
+{"event": "health_after_rejoin", "observed": [200, {"status": "ok", "generation": 2}]}
+{"event": "completion", "generation": 2, "status": 200, "text": " 212 \u00b0F or 100 \u00b0", "completion_tokens": 12}
+{"event": "remote_worker_pids", "generation": 2, "pids": [32172], "note": "fresh remote worker process, distinct from generation 1: True"}
+{"event": "kill", "generation": 2, "reason": "second remote SIGKILL", "killed": [32172]}
+{"event": "health_failed", "observed": [503, {"status": "peer-dead", "generation": 2, "reason": "generation 2: PeerDeadlineExceeded: peer heartbeat timeout: the polled exchange did not return within 10s (async collective post blocked; connection/transport deadline exceeded)", "rejoin": "POST /v1/distributed/rejoin"}], "coordinator_alive": true}
+{"event": "rejoin", "generation": 3, "status": 202, "body": {"rejoin": true, "detail": "rejoining to generation 3; slots will be empty; admitted requests of the dead generation are not replayed"}}
+{"event": "health_after_rejoin", "observed": [200, {"status": "ok", "generation": 3}]}
+{"event": "completion", "generation": 3, "status": 200, "text": " red, green, and blue. When these colors are mixed", "completion_tokens": 12}
+{"event": "kill", "generation": 3, "reason": "third remote SIGKILL", "killed": [32688]}
+{"event": "health_failed", "observed": [503, {"status": "peer-dead", "generation": 3, "reason": "generation 3: PeerDeadlineExceeded: peer heartbeat timeout: the polled exchange did not return within 10s (async collective post blocked; connection/transport deadline exceeded)", "rejoin": null}], "coordinator_alive": true}
+{"event": "rejoin_refused_past_bound", "status": 409, "body": {"rejoin": false, "detail": "generation bound 3 exhausted; restart the service (terminal state, no automatic retry)"}, "note": "409 expected: generation bound 3 terminal; no automatic restart, no request replay"}
+{"event": "post_bound_remote_worker_check", "remote_pids_still_running": []}
+{"event": "final_coordinator_alive", "alive": false}
+{"report": "/tmp/g608x/cross-host-cell.json", "events": 20}

@@ -1,0 +1,112 @@
+WORKER-SPAWNED
+[E1030 19:04:46.124494225 TCPStore.cpp:277] [c10d] The server socket on 53269 has failed to bind. TORCHELASTIC_USE_AGENT_STORE is enabled so ignoring the error.
+damendaemon distributed listening on http://127.0.0.1:8410 (supervised)
+bash: line 1: 31641 Killed                  PYTHONPATH=/tmp/608fix CUDA_VISIBLE_DEVICES=GPU-4adb9ddb-7bb3-189c-0fa2-51d67d1189ed DAMENDAEMON_DEVICE=cuda DAMENDAEMON_QUANTIZATION=none LOCAL_RANK=0 MASTER_ADDR=10.30.100.3 MASTER_PORT=53269 NCCL_DEBUG=WARN NCCL_SOCKET_IFNAME=enp72s0 RANK=1 TORCHELASTIC_RESTART_COUNT=0 TORCHELASTIC_RUN_ID=supervised-3752603-1 TORCHELASTIC_USE_AGENT_STORE=true TORCH_NCCL_ASYNC_ERROR_HANDLING=0 TORCH_NCCL_BLOCKING_WAIT=1 WORLD_SIZE=2 nohup setsid /home/damen/3090-damendaemon/venv/bin/python -m damendaemon.distributed_worker /home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B/snapshots/060db6499f32faf8b98477b0a26969ef7d8b9987 --context 512 --quantization none --alias model --batch-size 1 > /tmp/supervised-3752603-1.worker.log 2>&1 < /dev/null
+[rank0]:[E1030 19:04:52.490485784 ProcessGroupNCCL.cpp:645] [Rank 0] Collective WorkNCCL(SeqNum=29, OpType=BROADCAST, NumelIn=19, NumelOut=19, Timeout(ms)=30000) raised the following async exception: NCCL error: remote process exited or there was a network error, NCCL version 2.29.7
+ncclRemoteError: A call failed possibly due to a network error or a remote process exiting prematurely.
+Last error:
+socketProgress: Connection closed by remote peer 10.40.100.30<37520>
+Exception raised from checkForNCCLErrorsInternal at /__w/pytorch/pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:2843 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x7f9353d63bfd in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #1: c10::DistError::DistError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f9353d64bd2 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #2: c10::DistBackendError::DistBackendError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f9353d64d02 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #3: c10d::ProcessGroupNCCL::checkForNCCLErrorsInternal(std::shared_ptr<c10d::NCCLComm>&) + 0x34e (0x7f92c834be3e in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #4: c10d::ProcessGroupNCCL::WorkNCCL::checkAndSetException() + 0x80 (0x7f92c83504b0 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #5: c10d::ProcessGroupNCCL::WorkNCCL::isCompleted() + 0x58 (0x7f92c83507a8 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #6: <unknown function> + 0xf58fdf (0x7f92f5d58fdf in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_python.so)
+frame #7: <unknown function> + 0x3f3aa5 (0x7f92f51f3aa5 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_python.so)
+<omitting python frames>
+frame #21: <unknown function> + 0x8b2ea (0x7f9378e8b2ea in /lib64/libc.so.6)
+frame #22: <unknown function> + 0x1103d0 (0x7f9378f103d0 in /lib64/libc.so.6)
+
+[rank0]:[E1030 19:04:52.494167643 ProcessGroupNCCL.cpp:645] [Rank 0] Collective WorkNCCL(SeqNum=30, OpType=ALLREDUCE, NumelIn=1, NumelOut=1, Timeout(ms)=30000) raised the following async exception: NCCL error: remote process exited or there was a network error, NCCL version 2.29.7
+ncclRemoteError: A call failed possibly due to a network error or a remote process exiting prematurely.
+Last error:
+socketProgress: Connection closed by remote peer 10.40.100.30<37520>
+Exception raised from checkForNCCLErrorsInternal at /__w/pytorch/pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:2843 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x7f9353d63bfd in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #1: c10::DistError::DistError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f9353d64bd2 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #2: c10::DistBackendError::DistBackendError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f9353d64d02 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #3: c10d::ProcessGroupNCCL::checkForNCCLErrorsInternal(std::shared_ptr<c10d::NCCLComm>&) + 0x34e (0x7f92c834be3e in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #4: c10d::ProcessGroupNCCL::WorkNCCL::checkAndSetException() + 0x80 (0x7f92c83504b0 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #5: c10d::ProcessGroupNCCL::WorkNCCL::isCompleted() + 0x58 (0x7f92c83507a8 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #6: <unknown function> + 0xf58fdf (0x7f92f5d58fdf in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_python.so)
+frame #7: <unknown function> + 0x3f3aa5 (0x7f92f51f3aa5 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_python.so)
+<omitting python frames>
+frame #21: <unknown function> + 0x8b2ea (0x7f9378e8b2ea in /lib64/libc.so.6)
+frame #22: <unknown function> + 0x1103d0 (0x7f9378f103d0 in /lib64/libc.so.6)
+
+WORKER-SPAWNED
+[E1030 19:05:07.390756602 TCPStore.cpp:277] [c10d] The server socket on 56199 has failed to bind. TORCHELASTIC_USE_AGENT_STORE is enabled so ignoring the error.
+bash: line 1: 32172 Killed                  PYTHONPATH=/tmp/608fix CUDA_VISIBLE_DEVICES=GPU-4adb9ddb-7bb3-189c-0fa2-51d67d1189ed DAMENDAEMON_DEVICE=cuda DAMENDAEMON_QUANTIZATION=none LOCAL_RANK=0 MASTER_ADDR=10.30.100.3 MASTER_PORT=56199 NCCL_DEBUG=WARN NCCL_SOCKET_IFNAME=enp72s0 RANK=1 TORCHELASTIC_RESTART_COUNT=0 TORCHELASTIC_RUN_ID=supervised-3752603-2 TORCHELASTIC_USE_AGENT_STORE=true TORCH_NCCL_ASYNC_ERROR_HANDLING=0 TORCH_NCCL_BLOCKING_WAIT=1 WORLD_SIZE=2 nohup setsid /home/damen/3090-damendaemon/venv/bin/python -m damendaemon.distributed_worker /home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B/snapshots/060db6499f32faf8b98477b0a26969ef7d8b9987 --context 512 --quantization none --alias model --batch-size 1 > /tmp/supervised-3752603-2.worker.log 2>&1 < /dev/null
+[rank0]:[E1030 19:05:13.462099248 ProcessGroupNCCL.cpp:645] [Rank 0] Collective WorkNCCL(SeqNum=29, OpType=BROADCAST, NumelIn=19, NumelOut=19, Timeout(ms)=30000) raised the following async exception: NCCL error: remote process exited or there was a network error, NCCL version 2.29.7
+ncclRemoteError: A call failed possibly due to a network error or a remote process exiting prematurely.
+Last error:
+socketProgress: Connection closed by remote peer 10.40.100.30<54648>
+Exception raised from checkForNCCLErrorsInternal at /__w/pytorch/pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:2843 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x7f9353d63bfd in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #1: c10::DistError::DistError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f9353d64bd2 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #2: c10::DistBackendError::DistBackendError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f9353d64d02 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #3: c10d::ProcessGroupNCCL::checkForNCCLErrorsInternal(std::shared_ptr<c10d::NCCLComm>&) + 0x34e (0x7f92c834be3e in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #4: c10d::ProcessGroupNCCL::WorkNCCL::checkAndSetException() + 0x80 (0x7f92c83504b0 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #5: c10d::ProcessGroupNCCL::WorkNCCL::isCompleted() + 0x58 (0x7f92c83507a8 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #6: <unknown function> + 0xf58fdf (0x7f92f5d58fdf in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_python.so)
+frame #7: <unknown function> + 0x3f3aa5 (0x7f92f51f3aa5 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_python.so)
+<omitting python frames>
+frame #21: <unknown function> + 0x8b2ea (0x7f9378e8b2ea in /lib64/libc.so.6)
+frame #22: <unknown function> + 0x1103d0 (0x7f9378f103d0 in /lib64/libc.so.6)
+
+[rank0]:[E1030 19:05:13.466598446 ProcessGroupNCCL.cpp:645] [Rank 0] Collective WorkNCCL(SeqNum=30, OpType=ALLREDUCE, NumelIn=1, NumelOut=1, Timeout(ms)=30000) raised the following async exception: NCCL error: remote process exited or there was a network error, NCCL version 2.29.7
+ncclRemoteError: A call failed possibly due to a network error or a remote process exiting prematurely.
+Last error:
+socketProgress: Connection closed by remote peer 10.40.100.30<54648>
+Exception raised from checkForNCCLErrorsInternal at /__w/pytorch/pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:2843 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x7f9353d63bfd in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #1: c10::DistError::DistError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f9353d64bd2 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #2: c10::DistBackendError::DistBackendError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f9353d64d02 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #3: c10d::ProcessGroupNCCL::checkForNCCLErrorsInternal(std::shared_ptr<c10d::NCCLComm>&) + 0x34e (0x7f92c834be3e in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #4: c10d::ProcessGroupNCCL::WorkNCCL::checkAndSetException() + 0x80 (0x7f92c83504b0 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #5: c10d::ProcessGroupNCCL::WorkNCCL::isCompleted() + 0x58 (0x7f92c83507a8 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #6: <unknown function> + 0xf58fdf (0x7f92f5d58fdf in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_python.so)
+frame #7: <unknown function> + 0x3f3aa5 (0x7f92f51f3aa5 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_python.so)
+<omitting python frames>
+frame #21: <unknown function> + 0x8b2ea (0x7f9378e8b2ea in /lib64/libc.so.6)
+frame #22: <unknown function> + 0x1103d0 (0x7f9378f103d0 in /lib64/libc.so.6)
+
+WORKER-SPAWNED
+[E1030 19:05:28.304445206 TCPStore.cpp:277] [c10d] The server socket on 33847 has failed to bind. TORCHELASTIC_USE_AGENT_STORE is enabled so ignoring the error.
+bash: line 1: 32688 Killed                  PYTHONPATH=/tmp/608fix CUDA_VISIBLE_DEVICES=GPU-4adb9ddb-7bb3-189c-0fa2-51d67d1189ed DAMENDAEMON_DEVICE=cuda DAMENDAEMON_QUANTIZATION=none LOCAL_RANK=0 MASTER_ADDR=10.30.100.3 MASTER_PORT=33847 NCCL_DEBUG=WARN NCCL_SOCKET_IFNAME=enp72s0 RANK=1 TORCHELASTIC_RESTART_COUNT=0 TORCHELASTIC_RUN_ID=supervised-3752603-3 TORCHELASTIC_USE_AGENT_STORE=true TORCH_NCCL_ASYNC_ERROR_HANDLING=0 TORCH_NCCL_BLOCKING_WAIT=1 WORLD_SIZE=2 nohup setsid /home/damen/3090-damendaemon/venv/bin/python -m damendaemon.distributed_worker /home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B/snapshots/060db6499f32faf8b98477b0a26969ef7d8b9987 --context 512 --quantization none --alias model --batch-size 1 > /tmp/supervised-3752603-3.worker.log 2>&1 < /dev/null
+[rank0]:[E1030 19:05:34.413358781 ProcessGroupNCCL.cpp:645] [Rank 0] Collective WorkNCCL(SeqNum=29, OpType=BROADCAST, NumelIn=19, NumelOut=19, Timeout(ms)=30000) raised the following async exception: NCCL error: remote process exited or there was a network error, NCCL version 2.29.7
+ncclRemoteError: A call failed possibly due to a network error or a remote process exiting prematurely.
+Last error:
+socketProgress: Connection closed by remote peer 10.40.100.30<39370>
+Exception raised from checkForNCCLErrorsInternal at /__w/pytorch/pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:2843 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x7f9353d63bfd in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #1: c10::DistError::DistError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f9353d64bd2 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #2: c10::DistBackendError::DistBackendError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f9353d64d02 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #3: c10d::ProcessGroupNCCL::checkForNCCLErrorsInternal(std::shared_ptr<c10d::NCCLComm>&) + 0x34e (0x7f92c834be3e in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #4: c10d::ProcessGroupNCCL::WorkNCCL::checkAndSetException() + 0x80 (0x7f92c83504b0 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #5: c10d::ProcessGroupNCCL::WorkNCCL::isCompleted() + 0x58 (0x7f92c83507a8 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #6: <unknown function> + 0xf58fdf (0x7f92f5d58fdf in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_python.so)
+frame #7: <unknown function> + 0x3f3aa5 (0x7f92f51f3aa5 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_python.so)
+<omitting python frames>
+frame #19: <unknown function> + 0x8b2ea (0x7f9378e8b2ea in /lib64/libc.so.6)
+frame #20: <unknown function> + 0x1103d0 (0x7f9378f103d0 in /lib64/libc.so.6)
+
+[rank0]:[E1030 19:05:34.416863796 ProcessGroupNCCL.cpp:645] [Rank 0] Collective WorkNCCL(SeqNum=30, OpType=ALLREDUCE, NumelIn=1, NumelOut=1, Timeout(ms)=30000) raised the following async exception: NCCL error: remote process exited or there was a network error, NCCL version 2.29.7
+ncclRemoteError: A call failed possibly due to a network error or a remote process exiting prematurely.
+Last error:
+socketProgress: Connection closed by remote peer 10.40.100.30<39370>
+Exception raised from checkForNCCLErrorsInternal at /__w/pytorch/pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:2843 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x7f9353d63bfd in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #1: c10::DistError::DistError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f9353d64bd2 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #2: c10::DistBackendError::DistBackendError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f9353d64d02 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libc10.so)
+frame #3: c10d::ProcessGroupNCCL::checkForNCCLErrorsInternal(std::shared_ptr<c10d::NCCLComm>&) + 0x34e (0x7f92c834be3e in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #4: c10d::ProcessGroupNCCL::WorkNCCL::checkAndSetException() + 0x80 (0x7f92c83504b0 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #5: c10d::ProcessGroupNCCL::WorkNCCL::isCompleted() + 0x58 (0x7f92c83507a8 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_cuda.so)
+frame #6: <unknown function> + 0xf58fdf (0x7f92f5d58fdf in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_python.so)
+frame #7: <unknown function> + 0x3f3aa5 (0x7f92f51f3aa5 in /home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/lib/libtorch_python.so)
+<omitting python frames>
+frame #19: <unknown function> + 0x8b2ea (0x7f9378e8b2ea in /lib64/libc.so.6)
+frame #20: <unknown function> + 0x1103d0 (0x7f9378f103d0 in /lib64/libc.so.6)
+

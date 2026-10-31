@@ -1,4 +1,5 @@
 import json
+import os
 import threading
 import time
 import unittest
@@ -6,7 +7,6 @@ from unittest import mock
 from types import SimpleNamespace
 
 import torch
-
 from damendaemon import fleet_preflight
 from damendaemon.distributed_agreement import (compare_payloads, session_payload,
                                                transport_identity)
@@ -343,6 +343,24 @@ class RemoteTeardownTest(unittest.TestCase):
         with self.assertRaises(ValueError) as raised:
             supervised_builder(args, torch)
         self.assertIn('loopback-only', str(raised.exception))
+
+    def test_supervised_cli_configures_nccl_watchdog_env(self):
+        # The abort-based rejoin requires the ProcessGroupNCCL watchdog off
+        # (torch's own _abort_process_group contract): the supervised CLI
+        # must set both env vars before constructing the supervisor. The
+        # invalid cross-host knobs fail the builder AFTER the env is set,
+        # so the contract is pinned without a GPU.
+        from damendaemon import distributed_server_cli
+        with mock.patch.dict('os.environ', {}, clear=False):
+            os.environ.pop('TORCH_NCCL_ASYNC_ERROR_HANDLING', None)
+            os.environ.pop('TORCH_NCCL_BLOCKING_WAIT', None)
+            with self.assertRaises(ValueError):
+                distributed_server_cli.main(
+                    ['/m', '--supervise', '--worker-host', 'worker-box',
+                     '--port', '0'])
+            self.assertEqual(os.environ.get('TORCH_NCCL_ASYNC_ERROR_HANDLING'),
+                             '0')
+            self.assertEqual(os.environ.get('TORCH_NCCL_BLOCKING_WAIT'), '1')
 
 
 class SupervisorTest(unittest.TestCase):
