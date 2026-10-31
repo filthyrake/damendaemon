@@ -42,11 +42,18 @@ def process_identity(pid):
 
 
 class Probe:
-    def __init__(self, uuids, service=None, incumbent=None, allow_busy=False, gpu_reserve_mib=2560):
+    def __init__(self, uuids, service=None, incumbent=None, allow_busy=False,
+                 gpu_reserve_mib=2560, thermal_limit_c=65):
         if isinstance(uuids, str):
             uuids = [uuids]
         self.uuids, self.service, self.incumbent = uuids, service, incumbent
         self.gpu_reserve_mib = gpu_reserve_mib
+        # The fleet default (65C) is calibrated for the shared A30 lab hosts.
+        # A dedicated-host card with a higher documented thermal envelope
+        # (e.g. the desktop RTX A6000: hardware slowdown 95C, shutdown 98C)
+        # may run its normal full-load temperature above that default — the
+        # limit is parameterized with an explicit opt-in, never silently.
+        self.thermal_limit_c = thermal_limit_c
         self.identity = process_identity(incumbent) if incumbent is not None else None
         self.allow_busy = allow_busy
 
@@ -65,8 +72,9 @@ class Probe:
                 text=True, timeout=2).stdout
             identity, temperature, free = [part.strip() for part in output.strip().split(',')]
             temperature, free = int(temperature), int(free)
-            if identity != uuid or not 0 <= temperature < 65:
-                raise RuntimeError('GPU identity or temperature gate failed')
+            if identity != uuid or not 0 <= temperature < self.thermal_limit_c:
+                raise RuntimeError(f'GPU identity or temperature gate failed '
+                                   f'(limit {self.thermal_limit_c}C, saw {temperature}C)')
             if free < (4096 if startup else self.gpu_reserve_mib):
                 raise MemoryError('GPU reserve gate failed')
             devices.append(dict(uuid=uuid, temperature_c=temperature, gpu_free_mib=free))
@@ -138,6 +146,11 @@ def main():
     parser.add_argument('--gpu-reserve-mib', type=int, default=2560,
                         help='steady-state free-memory floor per GPU; lower only for '
                              'near-capacity experiments on hosts with no incumbent workload')
+    parser.add_argument('--thermal-limit-c', type=int, default=65,
+                        help='GPU temperature gate ceiling in C; the 65C default is '
+                             'calibrated for the shared A30 lab hosts — a dedicated-host '
+                             'card with a higher documented thermal envelope (e.g. the '
+                             'A6000: hardware slowdown 95C) may opt in up to 90')
     parser.add_argument('--timeout', type=int, default=60)
     parser.add_argument('--report', type=Path, required=True)
     parser.add_argument('command', nargs=argparse.REMAINDER)
@@ -145,6 +158,8 @@ def main():
     command = args.command[1:] if args.command[:1] == ['--'] else args.command
     if not command or not 1 <= args.timeout <= 1800:
         parser.error('command and timeout 1..1800 required')
+    if not 60 <= args.thermal_limit_c <= 90:
+        parser.error('thermal limit must be 60..90 C (fleet default 65; opt-in only)')
     if args.service is None and args.incumbent_pid is not None:
         parser.error('--service is required with --incumbent-pid')
     if args.service is not None and args.incumbent_pid is None:
@@ -159,6 +174,7 @@ def main():
         report = dict(gpu_uuids=args.gpu, incumbent_pid=args.incumbent_pid,
                       incumbent_service=args.service,
                       gpu_reserve_mib=args.gpu_reserve_mib,
+                      thermal_limit_c=args.thermal_limit_c,
                       timeout_seconds=args.timeout, isolation=False, allow_busy=args.allow_busy)
         PASSTHROUGH = ('DAMENDAEMON_PIPELINE_EMPTY_CACHE', 'DAMENDAEMON_PREFILL_CHUNK_COOLDOWN_S',
                        'DAMENDAEMON_TRITON_PREFILL_GEMM', 'DAMENDAEMON_QWEN3_PRECISION')
@@ -167,7 +183,7 @@ def main():
                    OMP_NUM_THREADS='1', MKL_NUM_THREADS='1', DAMENDAEMON_SHARED_CUDA_GUARD='1')
         try:
             passed = run(command, Probe(args.gpu, args.service, args.incumbent_pid, args.allow_busy,
-                                        args.gpu_reserve_mib),
+                                        args.gpu_reserve_mib, args.thermal_limit_c),
                          args.timeout, report, env)
         except Exception as error:
             passed = False
