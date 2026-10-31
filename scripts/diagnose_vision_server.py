@@ -16,7 +16,12 @@ def status(self):
         active=[block for segment in snapshot['segments'] for block in segment['blocks']
                 if block['state']=='active_allocated']
         Path('results/qwen35-http-retained-allocations.json').write_text(json.dumps(active,indent=2)+'\n')
-        if all(any('getNewWorkspace' in frame.get('name','') for frame in block.get('frames',[])) for block in active):
+        # torch >=2.13 emits persistent cuBLAS workspaces via the C++
+        # setWorkspaceForHandle path, older builds via getNewWorkspace
+        # (#575; same identification as verify_vision_service.py).
+        if all(any('getNewWorkspace' in frame.get('name','')
+                   or 'setWorkspaceForHandle' in frame.get('name','')
+                   for frame in block.get('frames',[])) for block in active):
             result['diagnostic_cublas_workspace_bytes']=sum(block['size'] for block in active)
     return result
 

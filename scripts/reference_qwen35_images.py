@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import torch
@@ -17,8 +18,10 @@ def main():
     parser.add_argument('--output',required=True)
     parser.add_argument('--long-context',action='store_true',help='near-1024-token image prompt for recurrent-state validation')
     parser.add_argument('--text-quantization',choices=('none','q8_0'),default='none')
+    parser.add_argument('--device',choices=('cuda','cpu'),default='cuda',
+                        help='host for the reference forward passes (cpu: no GPU needed, #50 27B full-model reference)')
     args=parser.parse_args()
-    torch.set_num_threads(4)
+    torch.set_num_threads(4 if args.device=='cuda' else min(64,os.cpu_count() or 4))
     torch.backends.cuda.matmul.allow_tf32=False
     torch.backends.cudnn.allow_tf32=False
     fixture=torch.load(args.vision_reference,weights_only=True)
@@ -38,7 +41,8 @@ def main():
             values=module.weight.detach().float().numpy()
             restored=dequantize(quantize(values,GGMLQuantizationType.Q8_0),GGMLQuantizationType.Q8_0)
             module.weight=torch.nn.Parameter(torch.from_numpy(restored).half(),requires_grad=False)
-    reference.cuda()
+    reference.cuda() if args.device=='cuda' else reference.cpu()
+    forward_device=torch.device(args.device)
     artifact=dict(model=path,cases=[],vision_dtype='float32',text_dtype='float16',steps=8,
                   text_quantization=args.text_quantization,
                   vision_weight_policy='loaded FP16 then promoted to FP32',
@@ -70,9 +74,9 @@ def main():
                 _,h,w=case['grids'][image]
                 tokens.extend([token]*(h*w//4));image+=1
             else:tokens.append(token)
-        ids=torch.tensor([tokens],device='cuda')
-        image_args=dict(pixel_values=case['pixel_values'].cuda(),
-            image_grid_thw=torch.tensor(case['grids'],device='cuda')) if case['grids'] else {}
+        ids=torch.tensor([tokens],device=forward_device)
+        image_args=dict(pixel_values=case['pixel_values'].to(forward_device),
+            image_grid_thw=torch.tensor(case['grids'],device=forward_device)) if case['grids'] else {}
         reference.model.rope_deltas=None
         result=reference(input_ids=ids,**image_args,
             mm_token_type_ids=(ids==248056).int(),use_cache=True,logits_to_keep=1)
@@ -82,7 +86,7 @@ def main():
         for _ in range(8):
             token=target.argmax().item()
             entry['decode_tokens'].append(token)
-            result=reference(input_ids=torch.tensor([[token]],device='cuda'),
+            result=reference(input_ids=torch.tensor([[token]],device=forward_device),
                 past_key_values=result.past_key_values,use_cache=True,logits_to_keep=1)
             target=result.logits[:,-1].float().cpu()
             entry['targets'].append(target)

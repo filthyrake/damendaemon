@@ -46,6 +46,10 @@ def read_vision_config(path):
         # Qwen3.5-2B: deeper encoder, same head dimension (64).
         dict(depth=24,hidden_size=1024,intermediate_size=4096,num_heads=16,
              out_hidden_size=2048,**base),
+        # Qwen3.8-27B: same encoder family, head dimension 72 (#50; oracle
+        # transformers-5.18.0 CPU-FP32/CUDA pair 2026-10-31, PR #661).
+        dict(depth=27,hidden_size=1152,intermediate_size=4304,num_heads=16,
+             out_hidden_size=5120,**base),
     )
     if (config.get('model_type')!='qwen3_5' or not isinstance(c,dict)
             or not any(all(type(c.get(k)) is type(v) and c[k]==v for k,v in g.items())
@@ -71,10 +75,16 @@ def vision_gates(depth):
     device-spread population (the reference stack's own reproducibility
     floor at this depth): 3x worst spread RMS 2.205e-04 -> 7e-04; 3x worst
     spread element-relative 5.350e-04 -> 2e-03, same 0.02 floor.
+
+    Depth 27 (Qwen3.8-27B): the #575-method calibration was measured
+    (PR #661, 2026-10-31): worst oracle device-spread RMS 1.26e-05 and
+    worst element-relative 4.2e-05 — an order of magnitude below the
+    depth-24 population. The depth-24 bounds therefore carry over with
+    ~50x margin; no relaxation, no recalibration.
     """
     if depth == 12:
         return dict(relative_rms=1e-4,max_absolute_floor=.02,max_absolute_element_relative=5e-4)
-    if depth == 24:
+    if depth in (24,27):
         return dict(relative_rms=7e-4,max_absolute_floor=.02,max_absolute_element_relative=2e-3)
     raise ValueError('no calibrated vision gate for encoder depth %r' % (depth,))
 

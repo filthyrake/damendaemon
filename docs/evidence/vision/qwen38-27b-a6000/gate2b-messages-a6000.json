@@ -1,0 +1,413 @@
+{
+  "passed": true,
+  "scope": "experimental multimodal computation; not serving qualification",
+  "graph": false,
+  "kernel_backend": "triton-hybrid+q8_0",
+  "batch_capacity": 3,
+  "inline_messages": true,
+  "text_quantization": "q8_0",
+  "device": "NVIDIA RTX A6000",
+  "model": "/home/damen/models/Qwen3.8-27B-1d4bf0f2",
+  "reference_model": "/home/damen/models/Qwen3.8-27B-1d4bf0f2",
+  "torch": "2.13.0+cu130",
+  "checks": [
+    {
+      "label": "square:prefill",
+      "relative_rms": 0.0038857196923345327,
+      "max_absolute": 0.06627368927001953,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:prefill",
+      "relative_rms": 0.0031400618609040976,
+      "max_absolute": 0.03930377960205078,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:prefill",
+      "relative_rms": 0.006930292118340731,
+      "max_absolute": 0.10065507888793945,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:0",
+      "relative_rms": 0.0020434714388102293,
+      "max_absolute": 0.04400062561035156,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:0",
+      "relative_rms": 0.00130440853536129,
+      "max_absolute": 0.03273773193359375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:0",
+      "relative_rms": 0.0014556738315150142,
+      "max_absolute": 0.035264015197753906,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:1",
+      "relative_rms": 0.001559972413815558,
+      "max_absolute": 0.038997650146484375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:1",
+      "relative_rms": 0.0009279100922867656,
+      "max_absolute": 0.028064727783203125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:1",
+      "relative_rms": 0.0011595073156058788,
+      "max_absolute": 0.054111480712890625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:2",
+      "relative_rms": 0.002767532132565975,
+      "max_absolute": 0.04214835166931152,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:2",
+      "relative_rms": 0.002598669845610857,
+      "max_absolute": 0.04706692695617676,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:2",
+      "relative_rms": 0.002086356980726123,
+      "max_absolute": 0.04082679748535156,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:3",
+      "relative_rms": 0.0015300720697268844,
+      "max_absolute": 0.03926658630371094,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:3",
+      "relative_rms": 0.0011806944385170937,
+      "max_absolute": 0.026845932006835938,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:3",
+      "relative_rms": 0.0014948848402127624,
+      "max_absolute": 0.02574920654296875,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:4",
+      "relative_rms": 0.0013311711372807622,
+      "max_absolute": 0.03458595275878906,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:4",
+      "relative_rms": 0.001004909980110824,
+      "max_absolute": 0.021587133407592773,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:4",
+      "relative_rms": 0.0011548222973942757,
+      "max_absolute": 0.02290666103363037,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:5",
+      "relative_rms": 0.001845699967816472,
+      "max_absolute": 0.037014007568359375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:5",
+      "relative_rms": 0.0011334237642586231,
+      "max_absolute": 0.020717620849609375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:5",
+      "relative_rms": 0.0012433254159986973,
+      "max_absolute": 0.021138429641723633,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:6",
+      "relative_rms": 0.00206850771792233,
+      "max_absolute": 0.040198326110839844,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:6",
+      "relative_rms": 0.0008621178567409515,
+      "max_absolute": 0.017332077026367188,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:6",
+      "relative_rms": 0.0009371995110996068,
+      "max_absolute": 0.023914337158203125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:7",
+      "relative_rms": 0.0016905638622120023,
+      "max_absolute": 0.04463458061218262,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:7",
+      "relative_rms": 0.0011238306760787964,
+      "max_absolute": 0.027368783950805664,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:7",
+      "relative_rms": 0.0011351567227393389,
+      "max_absolute": 0.021150588989257812,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:prefill",
+      "relative_rms": 0.005502945277839899,
+      "max_absolute": 0.07164382934570312,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:prefill",
+      "relative_rms": 0.004867881536483765,
+      "max_absolute": 0.07787084579467773,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:prefill",
+      "relative_rms": 0.0037672724574804306,
+      "max_absolute": 0.04961204528808594,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:0",
+      "relative_rms": 0.0011083765421062708,
+      "max_absolute": 0.017792344093322754,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:0",
+      "relative_rms": 0.0015989468665793538,
+      "max_absolute": 0.03299224376678467,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:0",
+      "relative_rms": 0.0018836650997400284,
+      "max_absolute": 0.034352660179138184,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:1",
+      "relative_rms": 0.0017201242735609412,
+      "max_absolute": 0.021072983741760254,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:1",
+      "relative_rms": 0.001367954071611166,
+      "max_absolute": 0.03965640068054199,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:1",
+      "relative_rms": 0.0015174038708209991,
+      "max_absolute": 0.031818389892578125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:2",
+      "relative_rms": 0.0010289485799148679,
+      "max_absolute": 0.017599105834960938,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:2",
+      "relative_rms": 0.0022588015999644995,
+      "max_absolute": 0.03549003601074219,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:2",
+      "relative_rms": 0.001827925443649292,
+      "max_absolute": 0.02834320068359375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:3",
+      "relative_rms": 0.0006286338903009892,
+      "max_absolute": 0.022368431091308594,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:3",
+      "relative_rms": 0.0013170021120458841,
+      "max_absolute": 0.02430891990661621,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:3",
+      "relative_rms": 0.001571639790199697,
+      "max_absolute": 0.033843994140625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:4",
+      "relative_rms": 0.0007930668070912361,
+      "max_absolute": 0.018367290496826172,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:4",
+      "relative_rms": 0.0008510429179295897,
+      "max_absolute": 0.02799701690673828,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:4",
+      "relative_rms": 0.0016954225720837712,
+      "max_absolute": 0.04582405090332031,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:5",
+      "relative_rms": 0.0008523887954652309,
+      "max_absolute": 0.016439437866210938,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:5",
+      "relative_rms": 0.000800233450718224,
+      "max_absolute": 0.01929926872253418,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:5",
+      "relative_rms": 0.0016646801959723234,
+      "max_absolute": 0.033542633056640625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:6",
+      "relative_rms": 0.0007611070177517831,
+      "max_absolute": 0.016399383544921875,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:6",
+      "relative_rms": 0.0011157053522765636,
+      "max_absolute": 0.022859573364257812,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:6",
+      "relative_rms": 0.0014652644749730825,
+      "max_absolute": 0.03553962707519531,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:7",
+      "relative_rms": 0.00115602882578969,
+      "max_absolute": 0.025484085083007812,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:7",
+      "relative_rms": 0.0011332834837958217,
+      "max_absolute": 0.021515369415283203,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:7",
+      "relative_rms": 0.0012054474791511893,
+      "max_absolute": 0.023477554321289062,
+      "greedy_match": true,
+      "passed": true
+    }
+  ],
+  "reference_sha256": "473d308b2234e856255362b7601078ca927af0835a0f0dcbda32aff127f3ae40",
+  "sources": {
+    "damendaemon/qwen2.py": "1a186044c00b2cb5d63a9bab44112f560c104f9ae1e5c45a8c056c869cd7d15d",
+    "damendaemon/quantization.py": "a0f94f01f5ab5c17c87b4afcc2fac5f3bd4102a3fb70fda2d542e7d218a91736",
+    "damendaemon/vision_qwen35.py": "4a67fae41cfca8c57e9f1fe939cc1185f098e975d39b70049369c9f876e2875a",
+    "damendaemon/vision_inputs.py": "578406a74491a34ab431859647b755ce7773a7b455c4fd0b40a6e88daff5e73b",
+    "damendaemon/vision_positions.py": "f5ca7930aa22b73192bcdeec55fab7f072c6143ec273d9ff3e10eaa164f5da54",
+    "damendaemon/hybrid.py": "9d7bb3a0cf5d7288d97bacc4f8cbd1db4866ff7a48b7157346cabb30fb4e8d0d",
+    "damendaemon/hybrid_metal.py": "692b74865bc69dd7c2bebf7dd39731183ac63d91e3708c1f661765592f6e632b",
+    "damendaemon/quantized_metal.py": "506be7a877c48f379fc69f0be8c4dbfc01ab5fdbc6c7417c49bbd59ab21675ec",
+    "damendaemon/vision_hybrid.py": "34331caca3f73458d12cca8d4c058209c0db51602239de33abab2bb6fa350c07",
+    "damendaemon/vision_model.py": "387acbffe0e3b77c7d342e446d01f79e1c793b6d3d642c0a9a1cdf2cc03a7ec0",
+    "damendaemon/vision_messages.py": "46129a2b90f86f7dc764afffa437a0455b5c19c1c18631f6fb61ec245853cd3d",
+    "scripts/experiments/vision_qwen35.py": "0bd222828c1c2d43cb69b3a984bb04f92eff1d408c6735fff38a3d84fca89f78"
+  },
+  "changed_image_control": {
+    "same_tokens": true,
+    "native_logit_difference": 1.3186302185058594,
+    "reference_logit_difference": 1.28515625
+  }
+}

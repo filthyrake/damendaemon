@@ -17,7 +17,7 @@ tuning and qualification are deferred. The current acceptance gates live in
 |---|---|---|---|
 | Qwen2 / Llama-style dense | Qwen2.5, SmolLM2 | NVIDIA A2, Apple M4 | Exact tested sizes/revisions in the evidence |
 | Qwen3 dense | 0.6B, 1.7B | NVIDIA A2, Apple M4 | CUDA accurate FP32 arithmetic policy is required for the stricter long-context proof |
-| Qwen3.5 hybrid | 0.8B, 2B text backbone; experimental 0.8B and 2B still images | NVIDIA A2, NVIDIA A30, Apple M4 | Image HTTP is opt-in, context <=1024, at most four slots; A30 qualified for both image geometries (#579); Apple images support FP16/Q8 text; 2B text on Apple qualified to 32768 context with the Metal scan and chunked prefill (#4); 0.8B Apple text remains context <=1024; no hybrid MoE |
+| Qwen3.5 hybrid | 0.8B, 2B text backbone; experimental 0.8B and 2B still images; Qwen3.8-27B full multimodal (Q8_0 text) | NVIDIA A2, NVIDIA A30, NVIDIA RTX A6000, AMD Radeon 8060S (HOMER), Apple M4 | Image HTTP is opt-in, context <=1024, at most four slots; A30 qualified for both image geometries (#579); 8060S qualified 0.8B (2026-10-25); A6000 qualified the 27B (2026-10-31); Apple images support FP16/Q8 text; 2B text on Apple qualified to 32768 context with the Metal scan and chunked prefill (#4); 0.8B Apple text remains context <=1024; no hybrid MoE |
 | Llama / SentencePiece GGUF | Published TinyLlama 1.1B Chat Q4_K_M | NVIDIA A2 | Model/layout/serving and model swapping through 2048 context |
 | Llama 3.2 | 1B Instruct mirror | NVIDIA A2, Apple M4 | Scaled RoPE; tested contexts differ by device |
 | Gemma 3 text | 270M IT mirror | NVIDIA A2, Apple M4 | Text architecture only; separate precision policy |
