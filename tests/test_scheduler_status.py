@@ -27,6 +27,30 @@ class SchedulerStatusTests(unittest.TestCase):
     def generate(self, alias):
         return list(self.runtime.generate(alias, [{'content': 'private prompt'}], 2))
 
+    def test_models_status_is_readable_while_queue_is_full_and_generation_active(self):
+        # #664: /v1/models/status went through the request queue, so with a
+        # single admission slot held by an active request the observability
+        # endpoint 503'd for the whole generation. It must serve the
+        # registry snapshot directly instead.
+        with patch('damendaemon.scheduler.Runtime', FakeRuntime):
+            runtime = BatchedRuntime({'a': 'a'}, batch_size=1, queue_size=1)
+        self.addCleanup(runtime.close)
+        self.addCleanup(runtime.runtime.executor.release.set)
+        executor = runtime.runtime.executor
+        with ThreadPoolExecutor(2) as pool:
+            active = pool.submit(lambda: list(runtime.generate('a', [{'content': 'p'}], 2)))
+            try:
+                self.assertTrue(executor.entered.wait(2))
+                # The single admission slot is held by the active request.
+                self.assertFalse(runtime.admission.acquire(blocking=False))
+                with ThreadPoolExecutor(1) as poller:
+                    snapshot = poller.submit(runtime.manage, 'status').result(2)
+                self.assertEqual(snapshot, {'done': 'status'})
+                self.assertEqual(runtime.runtime.groups, ['a'])
+            finally:
+                executor.release.set()
+            active.result(3)
+
     def wait_queued(self, count):
         deadline = time.monotonic()+2
         while time.monotonic() < deadline:

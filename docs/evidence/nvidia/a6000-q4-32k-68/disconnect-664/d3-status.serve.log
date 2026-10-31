@@ -1,0 +1,38 @@
+UNQUALIFIED A6000 Q4 context probe (issue #68 re-scope): production admission is unchanged.
+damendaemon listening on http://127.0.0.1:8132
+[W1031 15:53:24.083116114 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 228589568 bytes (free: 13959168, total: 47750578176).
+[W1031 15:53:40.025904416 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 318767104 bytes (free: 181731328, total: 47750578176).
+[W1031 15:53:54.497538161 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 392167424 bytes (free: 39124992, total: 47750578176).
+[W1031 15:54:05.222599140 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 450887680 bytes (free: 372572160, total: 47750578176).
+[W1031 15:54:16.505786589 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 501219328 bytes (free: 479526912, total: 47750578176).
+[W1031 15:54:26.504772226 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 547356672 bytes (free: 148176896, total: 47750578176).
+[W1031 15:54:35.147755586 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 591396864 bytes (free: 357892096, total: 47750578176).
+[W1031 15:54:44.427774815 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 631242752 bytes (free: 380960768, total: 47750578176).
+[W1031 15:54:53.216750359 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 668991488 bytes (free: 106233856, total: 47750578176).
+[W1031 15:55:01.461109992 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 702545920 bytes (free: 137691136, total: 47750578176).
+[W1031 15:55:10.867260851 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 738197504 bytes (free: 167051264, total: 47750578176).
+[W1031 15:55:18.690048566 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 769654784 bytes (free: 544538624, total: 47750578176).
+Fatal Python error: Aborted
+
+Thread 0x00007f16f23546c0 (most recent call first):
+  File "/usr/lib64/python3.12/threading.py", line 355 in wait
+  File "/tmp/664fix/damendaemon/scheduler.py", line 878 in _run_work
+  File "/tmp/664fix/damendaemon/scheduler.py", line 858 in _work
+  File "/usr/lib64/python3.12/threading.py", line 1012 in run
+  File "/usr/lib64/python3.12/threading.py", line 1075 in _bootstrap_inner
+  File "/usr/lib64/python3.12/threading.py", line 1032 in _bootstrap
+
+Current thread 0x00007f17d90d1e80 (most recent call first):
+  File "/usr/lib64/python3.12/selectors.py", line 415 in select
+  File "/usr/lib64/python3.12/socketserver.py", line 297 in handle_request
+  File "/tmp/664fix/damendaemon/server.py", line 479 in serve
+  File "/tmp/664fix/damendaemon/cli.py", line 284 in main
+  File "/tmp/664fix/damendaemon/__main__.py", line 5 in <module>
+  File "<frozen runpy>", line 88 in _run_code
+  File "<frozen runpy>", line 229 in run_module
+  File "/tmp/664fix/scripts/experiments/hybrid_q4_a6000_probe.py", line 79 in main
+  File "/tmp/664fix/scripts/experiments/hybrid_q4_a6000_probe.py", line 83 in <module>
+  File "<frozen runpy>", line 88 in _run_code
+  File "<frozen runpy>", line 198 in _run_module_as_main
+
+Extension modules: markupsafe._speedups, numpy._core._multiarray_umath, numpy.linalg._umath_linalg, torch._C, torch._C._dynamo.autograd_compiler, torch._C._dynamo.eval_frame, torch._C._dynamo.guards, torch._C._dynamo.utils, torch._C._fft, torch._C._linalg, torch._C._nested, torch._C._nn, torch._C._sparse, torch._C._special, cuda.bindings._internal.utils, cuda.bindings._internal.driver, cuda.bindings.cydriver, cuda.bindings.driver, cuda.bindings._internal.runtime_ptds, cuda.bindings._internal.runtime, cuda.bindings.cyruntime, cuda.bindings.runtime, numpy.random._common, numpy.random.bit_generator, numpy.random._bounded_integers, numpy.random._pcg64, numpy.random._generator, numpy.random._mt19937, numpy.random._philox, numpy.random._sfc64, numpy.random.mtrand, cuda_utils (total: 32)

@@ -177,7 +177,23 @@ class BatchedRuntime:
 
     def manage(self, action, model=None, path=None, release_host=False, quantization=None, chat_template=None):
         from .management import command
-        return self._submit(command(action, model, path, release_host, quantization, chat_template))
+        options = command(action, model, path, release_host, quantization, chat_template)
+        if action == 'status':
+            # #664: the observability endpoint must stay readable while
+            # requests generate. Runtime._status() is a registry-lock
+            # snapshot that needs neither the GPU worker nor the request
+            # queue; routing status through _submit made /v1/models/status
+            # return 503 for the whole span of an active generation group
+            # (and immediately whenever the request queue was full), which
+            # blinded monitoring during exactly the long generations where
+            # it matters. Mutating commands keep the ordered worker path.
+            # A residency switch racing the snapshot iteration is reported
+            # as retryable busy instead of blocking the caller.
+            try:
+                return self.runtime._status()
+            except RuntimeError:
+                raise BusyError('model status snapshot raced a residency change; retry')
+        return self._submit(options)
 
     def embed(self, alias, inputs, encoding_format="float", dimensions=None):
         from .embeddings import options

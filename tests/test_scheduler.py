@@ -60,6 +60,8 @@ class FakeRuntime:
         self.groups = []
     def model_ids(self):
         return list(self.models)
+    def _status(self):
+        return {'done': 'status'}
     def manage(self, **options):
         self.groups.append('control:'+options['action'])
         return {'done': options['action']}
@@ -133,15 +135,15 @@ class SchedulerTests(unittest.TestCase):
         with ThreadPoolExecutor(3) as pool:
             first=pool.submit(lambda:list(self.generate('a',count=4)))
             self.assertTrue(self.executor.entered.wait(2))
-            control=pool.submit(self.runtime.manage,'status')
+            control=pool.submit(self.runtime.manage,'load','a')
             self.wait_pending(1)
             last=pool.submit(lambda:list(self.generate('a',count=2)))
             self.wait_pending(2)
             self.executor.release.set()
             first.result(3)
-            self.assertEqual(control.result(3),{'done':'status'})
+            self.assertEqual(control.result(3),{'done':'load'})
             last.result(3)
-        self.assertEqual(self.runtime.runtime.groups,['a','control:status','a'])
+        self.assertEqual(self.runtime.runtime.groups,['a','control:load','a'])
 
     def test_short_backend_selection_fails_without_stranding_request(self):
         self.executor.release.set()
@@ -179,7 +181,7 @@ class SchedulerTests(unittest.TestCase):
                 target = 'damendaemon.scheduler.copy.deepcopy' if path == 'copy' else 'damendaemon.scheduler.Pending'
                 with patch(target, side_effect=RuntimeError('injected preparation failure')):
                     with self.assertRaisesRegex(RuntimeError, 'preparation failure'):
-                        if path == 'command-pending': self.runtime.manage('status')
+                        if path == 'command-pending': self.runtime.manage('load','a')
                         else: list(self.generate())
                 acquired = 0
                 try:
@@ -197,7 +199,7 @@ class SchedulerTests(unittest.TestCase):
             for _ in range(4):
                 self.assertTrue(self.runtime.admission.acquire(blocking=False))
                 acquired.append(True)
-            with self.assertRaises(BusyError):self.runtime.manage('status')
+            with self.assertRaises(BusyError):self.runtime.manage('load','a')
         finally:
             for _ in acquired:self.runtime.admission.release()
         self.assertEqual(self.runtime.manage('status'),{'done':'status'})
@@ -219,14 +221,18 @@ class SchedulerTests(unittest.TestCase):
         self.assertNotIn('control:unload', self.runtime.runtime.groups)
         self.assertEqual(self.runtime.manage('status'), {'done': 'status'})
 
-    def test_status_has_short_wait_even_when_generation_queue_timeout_is_long(self):
+    def test_status_reads_immediately_even_when_generation_queue_timeout_is_long(self):
+        # #664: status is a direct registry snapshot, not a queued command —
+        # it must return while a generation holds the worker and must not
+        # wait out the (long) queue timeout. Mutating commands keep the
+        # ordered queue path.
         self.runtime.queue_timeout = 120
         with ThreadPoolExecutor(2) as pool:
             active = pool.submit(lambda: list(self.generate(count=2)))
             self.assertTrue(self.executor.entered.wait(2))
-            queued = pool.submit(self.runtime.manage, 'status')
-            with self.assertRaises(BusyError):
-                queued.result(2)
+            snapshot = self.runtime.manage('status')
+            self.assertEqual(snapshot, {'done': 'status'})
+            self.assertEqual(self.runtime.runtime.groups, ['a'])
             self.assertFalse(self.executor.release.is_set())
             self.executor.release.set()
             active.result(3)
@@ -250,10 +256,11 @@ class SchedulerTests(unittest.TestCase):
                     release.set()
                 self.assertEqual(future.result(1), {'done': 'unload'})
 
-    def test_http_status_returns_busy_during_prefill_then_recovers(self):
+    def test_http_status_is_readable_during_prefill_and_after(self):
+        # #664: /v1/models/status serves the lock-safe snapshot during an
+        # active generation instead of 503ing for its whole span.
         from http.server import ThreadingHTTPServer
         import json
-        from urllib.error import HTTPError
         from urllib.request import urlopen
         from damendaemon.server import handler_for
         self.runtime.queue_timeout = .05
@@ -266,17 +273,15 @@ class SchedulerTests(unittest.TestCase):
                 active = pool.submit(lambda: list(self.generate(count=2)))
                 try:
                     self.assertTrue(self.executor.entered.wait(2))
-                    with self.assertRaises(HTTPError) as error:
-                        urlopen(url, timeout=2)
-                    self.assertEqual(error.exception.code, 503)
-                    self.assertEqual(json.load(error.exception), {'error': 'model management is busy'})
-                    error.exception.close()
+                    with urlopen(url, timeout=2) as response:
+                        self.assertEqual(json.load(response), {'done': 'status'})
                 finally:
                     self.executor.release.set()
                 active.result(3)
             with urlopen(url, timeout=2) as response:
                 self.assertEqual(json.load(response), {'done': 'status'})
-            self.assertEqual(self.runtime.runtime.groups, ['a', 'control:status'])
+            # The snapshot bypasses the worker: no control:status group.
+            self.assertEqual(self.runtime.runtime.groups, ['a'])
         finally:
             server.shutdown()
             server.server_close()
@@ -635,13 +640,13 @@ class ChunkedSchedulerTests(unittest.TestCase):
         with ThreadPoolExecutor(3) as pool:
             first=pool.submit(self.generate,'abcdef',2)
             self.assertTrue(self.executor.entered.wait(2))
-            control=pool.submit(self.runtime.manage,'status')
+            control=pool.submit(self.runtime.manage,'load','a')
             self.wait_pending(1)
             last=pool.submit(self.generate,'ab',2)
             self.wait_pending(2)
             self.executor.release.set()
             first.result(3);control.result(3);last.result(3)
-        self.assertEqual(self.runtime.runtime.groups,['a','control:status','a'])
+        self.assertEqual(self.runtime.runtime.groups,['a','control:load','a'])
 
     def test_partial_cancellation_reuses_slot_without_emitting(self):
         with ThreadPoolExecutor(1) as pool:

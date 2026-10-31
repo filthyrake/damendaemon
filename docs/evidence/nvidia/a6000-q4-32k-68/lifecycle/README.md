@@ -1,5 +1,16 @@
 # A6000 Q4 32K lifecycle cells — reuse PASSES, cancellation FAILS (#68, 2026-10-31)
 
+> **Correction (2026-10-31, #664 diagnosis — see
+> `../disconnect-664/README.md`):** the cancellation cells' "zombie
+> slot" and "server wedge" conclusions below were measurement
+> artifacts. Instrumented reruns show disconnect detection and slot
+> release complete within ≤5 s (all post-close probes admitted in
+> 0.5 s); the 503s were single attempts fired inside the short
+> detection window, and the "dead status endpoint" was the (now-fixed)
+> status-route defect, not a wedged server. The OOM-warning storm is
+> pre-existing near-capacity 32K behavior, present in the passing
+> C1/C2 cells' logs as well. The reuse cells' verdicts are unaffected.
+
 The final #68 gate-order items after the C-series (C1 PR #659, C-series PR #660):
 reuse and cancellation, one bounded guarded attempt per cell, all pre-declared
 on #68 before launch. Runner: `scripts/experiments/hybrid_q4_32k_lifecycle_gate_a6000.py`
