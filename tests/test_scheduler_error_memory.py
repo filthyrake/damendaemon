@@ -26,7 +26,9 @@ class SchedulerErrorMemoryTests(unittest.TestCase):
             runtime=BatchedRuntime({'a':'fixture'})
             try:
                 retained=None
-                try:runtime.manage('status')
+                # #664: status is served as a direct snapshot, so the worker
+                # command path is exercised with a mutating command.
+                try:runtime.manage('unload','a')
                 except ExceptionGroup as error:retained=error
                 self.assertIsNotNone(retained)
                 self.assertEqual(runtime.manage('status'),{'done':'status'})

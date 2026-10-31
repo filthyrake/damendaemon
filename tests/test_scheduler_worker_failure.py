@@ -25,7 +25,7 @@ class SchedulerWorkerFailureTests(unittest.TestCase):
                 def generate(): return list(runtime.generate('a', [{'content': 'ok'}], 1))
                 with patch.object(target, method, side_effect=fail), \
                         patch('threading.excepthook'), ThreadPoolExecutor(2) as pool:
-                    first = pool.submit(generate if operation == 'generation' else lambda: runtime.manage('status'))
+                    first = pool.submit(generate if operation == 'generation' else lambda: runtime.manage('load', 'a'))
                     second = None
                     try:
                         self.assertTrue(entered.wait(2))
