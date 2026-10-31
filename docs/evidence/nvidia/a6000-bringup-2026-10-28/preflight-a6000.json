@@ -1,0 +1,101 @@
+{
+  "items": [
+    {
+      "item": "torch",
+      "passed": true,
+      "torch": "2.13.0+cu130",
+      "build": "cuda",
+      "cuda": "13.0",
+      "hip": null,
+      "nccl": "2.29.7",
+      "note": "record this report and compare with the peer's before rendezvous; mixed torch/NCCL builds fail with opaque socket errors \u2014 align venvs first (gate 4 finding)"
+    },
+    {
+      "item": "gpus",
+      "passed": true,
+      "devices": [
+        {
+          "index": 0,
+          "name": "NVIDIA RTX A6000",
+          "uuid": "4adb9ddb-7bb3-189c-0fa2-51d67d1189ed",
+          "total_gib": 44.47,
+          "free_gib": 44.21
+        }
+      ],
+      "note": "two-rank distributed-run needs two distinct explicit GPU UUIDs"
+    },
+    {
+      "item": "mig",
+      "passed": true,
+      "supported": false,
+      "note": "no MIG-capable GPU on this host (consumer cards report N/A); slice admission is an A30/data-center path"
+    },
+    {
+      "item": "compute_mode",
+      "passed": true,
+      "gpus": [
+        {
+          "index": "0",
+          "name": "NVIDIA RTX A6000",
+          "compute_mode": "Default"
+        }
+      ],
+      "note": "default compute mode: co-tenancy is possible",
+      "blocking": []
+    },
+    {
+      "item": "mps",
+      "passed": true,
+      "control_binary": "/usr/bin/nvidia-cuda-mps-control",
+      "server_running": false,
+      "server_processes": [],
+      "note": "control binary present; start nvidia-cuda-mps-control -d before the co-tenant processes"
+    },
+    {
+      "item": "topology",
+      "passed": true,
+      "devices": [
+        {
+          "index": 0,
+          "name": "NVIDIA RTX A6000",
+          "uuid": "4adb9ddb-7bb3-189c-0fa2-51d67d1189ed",
+          "pci_bus_id": "0000:81:00.0",
+          "numa_node": null,
+          "local_cpulist": "0-63",
+          "note": "NUMA-flat machine (sysfs node -1): no cross-socket staging cost"
+        }
+      ],
+      "peer_matrix": [],
+      "nvlink": {
+        "nvlink_present": false,
+        "links": []
+      },
+      "pcie_links": {
+        "0": {
+          "pcie_link_width": "16",
+          "pcie_link_gen": "4"
+        }
+      },
+      "virtualization": {
+        "virtualized": false,
+        "markers": [],
+        "note": null
+      },
+      "nics": [
+        {
+          "interface": "eno1",
+          "numa_node": null
+        },
+        {
+          "interface": "enp72s0",
+          "numa_node": null
+        },
+        {
+          "interface": "wlp70s0",
+          "numa_node": null
+        }
+      ]
+    }
+  ],
+  "passed": true
+}

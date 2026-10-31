@@ -54,6 +54,11 @@ Failed requests are not resumed. Reported preparation failures now propagate
 through the CPU rendezvous store before NCCL starts; unreported crashes and
 blocked preparation still need an outer process deadline. General worker
 supervision remains incomplete.
+Fleet topology note (2026-10-28): the desktop's RTX 3090 was replaced by an
+RTX A6000 (44.47 GiB, UUID-pinned in the live cells since); the A6000
+serves 27B Q8 single-card — the first single-GPU 27B in the fleet
+(`evidence/nvidia/a6000-bringup-2026-10-28/`). Historical 3090 records
+below are unchanged; live topology statements carry the A6000.
 No fleet host exposes an RDMA device, so RDMA and GPUDirect RDMA remain
 unqualified and socket transport stays the qualified default. The probe
 now captures the full NCCL debug transcript per rank (the process
