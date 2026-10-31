@@ -10,15 +10,16 @@ def enabled():
 
 
 def eligible(config):
-    text=(config.get('model_type')=='qwen3_5_text'
-          and config.get('num_hidden_layers')==24)
-    # Qualified geometries: 0.8B (1024-wide) and 2B (2048-wide), per #573/#575.
-    return text and config.get('hidden_size') in (1024,2048)
+    text=config.get('model_type')=='qwen3_5_text'
+    # Qualified text geometries: 0.8B and 2B (24-layer, 1024/2048-wide,
+    # #573/#575) and Qwen3.8-27B (64-layer, 5120-wide; #50 A6000
+    # encoder/full-model/service cells, 2026-10-31).
+    return text and (config.get('num_hidden_layers'),config.get('hidden_size')) in ((24,1024),(24,2048),(64,5120))
 
 
 def validate_model(config, context):
     if not eligible(config) or context > 1024:
-        raise ValueError('image execution currently requires the qualified 1024-wide or 2048-wide Qwen3.5 text geometry and context <=1024')
+        raise ValueError('image execution currently requires the qualified 24-layer 1024/2048-wide or 64-layer 5120-wide Qwen3.5 text geometry and context <=1024')
 
 
 def validate_execution(model,max_batch):
@@ -35,7 +36,13 @@ def validate_execution(model,max_batch):
         supported=(torch.cuda.is_available()
                    and torch.cuda.get_device_name()=='Radeon 8060S Graphics')
     else:
+        # NVIDIA RTX A6000 admitted on merit (#50, 2026-10-31): encoder
+        # 150/150 checks at worst rel RMS 2.04e-05 against the pinned
+        # transformers-5.18.0 CPU FP32 reference, same depth-24-carried
+        # gates; full-model image and HTTP service gates recorded in
+        # docs/evidence/vision/qwen38-27b-a6000/. Same context/slot limits
+        # and opt-in as every other device.
         supported=(torch.backends.mps.is_available() if device=='mps'
-                   else torch.cuda.is_available() and torch.cuda.get_device_name() in ('NVIDIA A2','NVIDIA A30'))
+                  else torch.cuda.is_available() and torch.cuda.get_device_name() in ('NVIDIA A2','NVIDIA A30','NVIDIA RTX A6000'))
     if not supported or not 1<=max_batch<=4 or model.max_context>1024:
-        raise ValueError('experimental vision serving requires NVIDIA A2, NVIDIA A30, AMD Radeon 8060S (HOMER) or Apple MPS, context <=1024, and at most four slots')
+        raise ValueError('experimental vision serving requires NVIDIA A2, NVIDIA A30, NVIDIA RTX A6000, AMD Radeon 8060S (HOMER) or Apple MPS, context <=1024, and at most four slots')

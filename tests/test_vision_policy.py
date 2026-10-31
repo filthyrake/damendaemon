@@ -36,5 +36,24 @@ class VisionPolicyTests(unittest.TestCase):
                 make_executor(model,max_batch=4)
             constructor.assert_not_called()
 
+    def test_cuda_admits_only_the_qualified_nvidia_devices(self):
+        model=SimpleNamespace(config={'model_type':'qwen3_5_text'},max_context=1024,
+                              vision_weights=object(),scales={"quantized":object()})
+        # The qualified A6000 is admitted by name (#50, 2026-10-31).
+        with patch.dict(os.environ,{'DAMENDAEMON_DEVICE':'cuda'}), \
+                patch('torch.cuda.is_available',return_value=True), \
+                patch('torch.cuda.get_device_name',return_value='NVIDIA RTX A6000'), \
+                patch('damendaemon.vision_hybrid.VisionHybridExecutor') as constructor:
+            make_executor(model,max_batch=4)
+            constructor.assert_called_once()
+        # Any other NVIDIA device keeps the explicit error; nothing is executed.
+        with patch.dict(os.environ,{'DAMENDAEMON_DEVICE':'cuda'}), \
+                patch('torch.cuda.is_available',return_value=True), \
+                patch('torch.cuda.get_device_name',return_value='NVIDIA GeForce RTX 5090'), \
+                patch('damendaemon.vision_hybrid.VisionHybridExecutor') as constructor:
+            with self.assertRaisesRegex(ValueError,'A6000'):
+                make_executor(model,max_batch=4)
+            constructor.assert_not_called()
+
 
 if __name__=='__main__':unittest.main()

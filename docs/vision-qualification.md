@@ -2,9 +2,13 @@
 
 Tracked in GitHub issue #50. Experimental still-image HTTP serving is now
 opt-in for Qwen3.5-0.8B AND Qwen3.5-2B on NVIDIA A2 (FP16/Q8 text), NVIDIA
-A30 (#579, see "NVIDIA A30 image serving" below), and Apple
-M4 (FP16/Q8 text), with per-depth calibrated intermediate gates (#571 depth
-12, #575 depth 24; see `evidence/vision/qwen35-2b-admission-README.md`). See the
+A30 (#579, see "NVIDIA A30 image serving" below), AMD Radeon 8060S
+(HOMER, 2026-10-25, 0.8B), and Apple
+M4 (FP16/Q8 text), plus the full multimodal Qwen3.8-27B (Q8_0 text) on the
+NVIDIA RTX A6000 (2026-10-31, see "Qwen3.8-27B image serving" below), with
+per-depth calibrated intermediate gates (#571 depth
+12, #575 depth 24, #50 depth 27 carries the depth-24 bounds; see
+`evidence/vision/qwen35-2b-admission-README.md`). See the
 final section for current scope and lifecycle evidence. Earlier sections record
 the qualification sequence, including the intermediate numerical limits (the
 block-11 absolute gate was miscalibrated and is resolved by calibration in
@@ -227,8 +231,11 @@ and actual HTTP measurements. Keep the intermediate encoder limitations visible.
 
 ## Opt-in HTTP serving
 
-`DAMENDAEMON_EXPERIMENTAL_VISION=1` activates this backend for the qualified Qwen3.5
-1024-wide, 24-layer geometry. Execution is restricted to NVIDIA A2, context at
+`DAMENDAEMON_EXPERIMENTAL_VISION=1` activates this backend for the qualified
+Qwen3.5 text geometries (24-layer 1024/2048-wide, and the 64-layer 5120-wide
+Qwen3.8-27B backbone). Execution is restricted to the qualified devices
+(NVIDIA A2, NVIDIA A30, NVIDIA RTX A6000, AMD Radeon 8060S on HOMER, Apple
+MPS), context at
 most 1024, and at most four slots. Other text-model geometries retain their
 normal execution. Install the `vision` extra for PNG/JPEG decoding. HTTP retains
 its 1 MiB request limit; content validation does not decode pixels on HTTP
@@ -402,3 +409,38 @@ disabled; the compensated Triton product backend is unchanged
 geometry admission, context/slot limits and the opt-in requirement are
 unchanged. The service gates were executed with exactly this policy. Other
 devices remain unqualified; unsupported devices keep the explicit error.
+
+## Qwen3.8-27B image serving on the NVIDIA RTX A6000 (#50, 2026-10-31)
+
+The qualified set is extended to the full multimodal Qwen3.8-27B checkpoint
+(64-layer 5120-wide qwen3_5_text backbone, Q8_0 text, depth-27/1152-wide ViT
+projecting to the text width) on the desktop NVIDIA RTX A6000 (44.5 GiB), with
+all gates unchanged. The depth-27 encoder carries the depth-24-calibrated
+bounds — the #575-method calibration measured the 27B oracle device spread an
+order of magnitude BELOW the 2B population (worst RMS 1.26e-05 vs 1.16e-04),
+so no relaxation and no recalibration (PR #661).
+
+- Encoder intermediate gates: **150/150 checks passed**, worst relative RMS
+  2.04e-05 vs the 7e-04 gate (`gate1-enc-a6000.json`), compensated CUDA
+  backend.
+- Full-model image gate: **54/54 checks passed**, worst RMS 6.93e-03 (gate
+  0.01), greedy agreement everywhere, changed-image controls healthy — both
+  the raw-fixture path and the inline-PNG `--messages` path with the
+  `vision_policy` admission active (`gate2-model-a6000.json`,
+  `gate2b-messages-a6000.json`).
+- Real HTTP service gate: **20/20 lifecycle checks** on the plain production
+  serve command (`gate3-svc-a6000-final.json`); peak allocation 32.1 GiB
+  across the cycle; persistent 8,519,680-byte cuBLAS workspace after full
+  unload identified via the torch-2.13 `setWorkspaceForHandle` frames and
+  disclosed (same finding as the A30's 17 MiB); no unexplained growth.
+- Evidence: `evidence/vision/qwen38-27b-a6000/` (all gate + guard reports,
+  allocator trace) and `evidence/vision/qwen38-27b/` (oracle + calibration).
+  The independent reference stack: transformers 5.18.0, golden full-model
+  reference generated on the desktop CPU (Q8_0-restored FP16 text + FP32
+  vision) — the FP16 whole-model reference does not fit the 44.5 GiB card.
+
+`vision_policy` admits the 64-layer 5120-wide geometry (exact pairing) and
+`NVIDIA RTX A6000` by name; `vision_qwen35.read_vision_config` enumerates the
+depth-27 encoder geometry. Thresholds, context ≤1024, ≤4 slots and the opt-in
+are unchanged. FP16-text 27B images, long-context vision (#60) and vision
+concurrency beyond four slots remain unqualified.
