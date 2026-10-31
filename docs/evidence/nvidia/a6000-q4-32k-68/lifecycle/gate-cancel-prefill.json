@@ -1,0 +1,1239 @@
+{
+  "baseline_allocated_bytes": 26163703808,
+  "batch": 2,
+  "c1_reference": "docs/evidence/nvidia/a6000-q4-32k-68/ gate-attempt5-PASSED.json",
+  "c2_reference": "docs/evidence/nvidia/a6000-q4-32k-68/concurrency/ gate-c2.json",
+  "chunk": 127,
+  "completed": false,
+  "context": 32768,
+  "device": "GPU-4adb9ddb-7bb3-189c-0fa2-51d67d1189ed",
+  "executor_rescope": "A6000 (issue #68, 2026-10-28)",
+  "gate": "32K cancel-prefill lifecycle",
+  "graphs": false,
+  "model": "/home/damen/models/Qwen3.8-27B-1d4bf0f2",
+  "model_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "output_limit": 512,
+  "precision": "compensated",
+  "prompt_tokens": 32256,
+  "quantization": "q4_0",
+  "rounds": {
+    "cancel_round": {
+      "slots": {
+        "0": {
+          "admitted_seconds": 308.1632379670009,
+          "disconnected_seconds": 398.1633100649997,
+          "error": null,
+          "first_output_seconds": null,
+          "output_chars": 0,
+          "output_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "total_seconds": 398.16340410799967,
+          "usage": null
+        },
+        "1": {
+          "admitted_seconds": 310.67265352899994,
+          "disconnected_seconds": null,
+          "error": null,
+          "first_output_seconds": 310.67269734599904,
+          "output_chars": 3018,
+          "output_digest": "15267f8223c1a7b8a6cbed4029dd967eae79caed456a167d12afd46084323c61",
+          "output_preview": " over the lazy dog while the repository records every bounded qualification cell",
+          "total_seconds": 596.6497289040017,
+          "usage": {
+            "completion_tokens": 512,
+            "prompt_tokens": 32256,
+            "total_tokens": 32768
+          }
+        }
+      }
+    },
+    "followup_after_cancel": {
+      "value": {
+        "admitted_seconds": 155.32821094700193,
+        "disconnected_seconds": null,
+        "error": null,
+        "first_output_seconds": 155.32825034599955,
+        "output_chars": 380,
+        "output_digest": "7314a274e4c3e604bf9dfb38f4371e6f7f12158c9856c7c661329753826e9e7a",
+        "output_preview": " over the lazy dog while the repository records every bounded qualification cell",
+        "total_seconds": 184.8242388180006,
+        "usage": {
+          "completion_tokens": 64,
+          "prompt_tokens": 32256,
+          "total_tokens": 32320
+        }
+      }
+    },
+    "release_probe": {
+      "value": {
+        "admitted_seconds": null,
+        "disconnected_seconds": null,
+        "error": "HTTP Error 503: Service Unavailable",
+        "first_output_seconds": null,
+        "output_chars": 0,
+        "output_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "total_seconds": 0.0012086579990864266,
+        "usage": null
+      }
+    },
+    "warmup": {
+      "value": {
+        "admitted_seconds": 166.5316336700016,
+        "disconnected_seconds": null,
+        "error": null,
+        "first_output_seconds": 166.53168302500126,
+        "output_chars": 4,
+        "output_digest": "fe0663fd13cdb08743dca3d2d5d1168762556ea36f77d8ab6009306d12a6f351",
+        "output_preview": " the",
+        "total_seconds": 166.53191159199923,
+        "usage": {
+          "completion_tokens": 1,
+          "prompt_tokens": 512,
+          "total_tokens": 513
+        }
+      }
+    }
+  },
+  "slot_prompt_digests": {
+    "0": "31836e963e26cd642684d7bce9c778132376800375c2b09917612a5d398be727",
+    "1": "0c5a48f783f9c2b1ef60d83839b6ce81f70e335180360334fcb73c5d6bcbe810"
+  },
+  "statuses": {
+    "after_cancel_round": {
+      "closed": false,
+      "closing": false,
+      "context": 32768,
+      "cuda_allocated_bytes": 26163703808,
+      "cuda_devices": null,
+      "cuda_peak_allocated_bytes": 29236748800,
+      "device": "cuda",
+      "gpu_model_limit": 1,
+      "hip_allocated_bytes": null,
+      "host_budget_bytes": 42949672960,
+      "host_cached_bytes": 16961796096,
+      "host_model_limit": 1,
+      "models": [
+        {
+          "chat_template": {
+            "sha256": null,
+            "source": "checkpoint"
+          },
+          "executor_failed": false,
+          "gpu_packed_layout_overhead_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "host_weight_bytes": 16961796096,
+          "id": "qwen38",
+          "kv_cache_bytes": 8589934592,
+          "kv_cache_mode": "none",
+          "output_head_workspace_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "pipeline": null,
+          "q4_marlin_abi": null,
+          "quantization": "q4_0",
+          "residency": "gpu",
+          "vision_gpu_weight_bytes": 0,
+          "vision_host_weight_bytes": 0,
+          "weight_streaming": null
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "pending_executor_cleanup": 0,
+      "pending_pipeline_cleanup": 0,
+      "rocm_aotriton_experimental": null,
+      "xpu_allocated_bytes": null,
+      "xpu_peak_allocated_bytes": null,
+      "xpu_reserved_bytes": null
+    },
+    "after_followup": {
+      "closed": false,
+      "closing": false,
+      "context": 32768,
+      "cuda_allocated_bytes": 26163703808,
+      "cuda_devices": null,
+      "cuda_peak_allocated_bytes": 29236748800,
+      "device": "cuda",
+      "gpu_model_limit": 1,
+      "hip_allocated_bytes": null,
+      "host_budget_bytes": 42949672960,
+      "host_cached_bytes": 16961796096,
+      "host_model_limit": 1,
+      "models": [
+        {
+          "chat_template": {
+            "sha256": null,
+            "source": "checkpoint"
+          },
+          "executor_failed": false,
+          "gpu_packed_layout_overhead_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "host_weight_bytes": 16961796096,
+          "id": "qwen38",
+          "kv_cache_bytes": 8589934592,
+          "kv_cache_mode": "none",
+          "output_head_workspace_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "pipeline": null,
+          "q4_marlin_abi": null,
+          "quantization": "q4_0",
+          "residency": "gpu",
+          "vision_gpu_weight_bytes": 0,
+          "vision_host_weight_bytes": 0,
+          "weight_streaming": null
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "pending_executor_cleanup": 0,
+      "pending_pipeline_cleanup": 0,
+      "rocm_aotriton_experimental": null,
+      "xpu_allocated_bytes": null,
+      "xpu_peak_allocated_bytes": null,
+      "xpu_reserved_bytes": null
+    },
+    "after_warmup": {
+      "closed": false,
+      "closing": false,
+      "context": 32768,
+      "cuda_allocated_bytes": 26163703808,
+      "cuda_devices": null,
+      "cuda_peak_allocated_bytes": 26234452992,
+      "device": "cuda",
+      "gpu_model_limit": 1,
+      "hip_allocated_bytes": null,
+      "host_budget_bytes": 42949672960,
+      "host_cached_bytes": 16961796096,
+      "host_model_limit": 1,
+      "models": [
+        {
+          "chat_template": {
+            "sha256": null,
+            "source": "checkpoint"
+          },
+          "executor_failed": false,
+          "gpu_packed_layout_overhead_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "host_weight_bytes": 16961796096,
+          "id": "qwen38",
+          "kv_cache_bytes": 8589934592,
+          "kv_cache_mode": "none",
+          "output_head_workspace_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "pipeline": null,
+          "q4_marlin_abi": null,
+          "quantization": "q4_0",
+          "residency": "gpu",
+          "vision_gpu_weight_bytes": 0,
+          "vision_host_weight_bytes": 0,
+          "weight_streaming": null
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "pending_executor_cleanup": 0,
+      "pending_pipeline_cleanup": 0,
+      "rocm_aotriton_experimental": null,
+      "xpu_allocated_bytes": null,
+      "xpu_peak_allocated_bytes": null,
+      "xpu_reserved_bytes": null
+    }
+  },
+  "suffix_prompt_digest": "8f446303628fc0a1810f6e46888f7fa03c72b111fcb4619634f82678d8b098e9",
+  "timeline": [
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31572.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31587.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31602.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31617.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31632.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31647.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31662.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31677.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31692.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31707.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31722.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31737.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31752.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31767.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31782.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31797.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31812.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31827.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31842.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31857.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31872.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31887.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31902.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31917.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31932.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 2,
+        "admission_semaphore": 0,
+        "admitted_total": 4,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 2,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 2
+      },
+      "t": 31947.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 1,
+        "admission_semaphore": 1,
+        "admitted_total": 5,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 4,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 1
+      },
+      "t": 31962.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 1,
+        "admission_semaphore": 1,
+        "admitted_total": 6,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 5,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 1
+      },
+      "t": 31978.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 1,
+        "admission_semaphore": 1,
+        "admitted_total": 7,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 6,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 1
+      },
+      "t": 31994.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 1,
+        "admission_semaphore": 1,
+        "admitted_total": 8,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 7,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 1
+      },
+      "t": 32010.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 1,
+        "admission_semaphore": 1,
+        "admitted_total": 9,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 8,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 1
+      },
+      "t": 32026.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 1,
+        "admission_semaphore": 1,
+        "admitted_total": 10,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 9,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 1
+      },
+      "t": 32042.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 1,
+        "admission_semaphore": 1,
+        "admitted_total": 11,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 10,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 1
+      },
+      "t": 32058.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 1,
+        "admission_semaphore": 1,
+        "admitted_total": 12,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 11,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 1
+      },
+      "t": 32074.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 1,
+        "admission_semaphore": 1,
+        "admitted_total": 13,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 12,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 1
+      },
+      "t": 32090.8
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 1,
+        "admission_semaphore": 1,
+        "admitted_total": 14,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 13,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 1
+      },
+      "t": 32106.9
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 1,
+        "admission_semaphore": 1,
+        "admitted_total": 15,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 14,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 1
+      },
+      "t": 32122.9
+    },
+    {
+      "models": {
+        "error": "HTTP Error 503: Service Unavailable"
+      },
+      "scheduler": {
+        "admission_outstanding": 1,
+        "admission_semaphore": 1,
+        "admitted_total": 16,
+        "batch_capacity": 2,
+        "client_decode_turns": false,
+        "client_prefill_turns": false,
+        "closed": false,
+        "drained": false,
+        "draining": false,
+        "oldest_queued_seconds": 0,
+        "queue_capacity": 2,
+        "queue_timeout_seconds": 600.0,
+        "queued_commands": 0,
+        "queued_generation_requests": 0,
+        "released_total": 15,
+        "worker_busy": true,
+        "worker_owned_commands": 0,
+        "worker_owned_generation_requests": 1
+      },
+      "t": 32138.9
+    }
+  ],
+  "torch": "2.13.0+cu130",
+  "verdict": {
+    "cancelled_kv_released": true,
+    "disconnect_recorded": true,
+    "early_release_probe": false,
+    "followup_within_gates": true,
+    "survivor_within_gates": true
+  }
+}
