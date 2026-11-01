@@ -310,7 +310,18 @@ class HybridExecutor:
             self.metal_scan=scan
             self.kernel_backend+='+metal-scan'
         if model.scales and self.fused is None and self.metal_scan is None:
-            if self.device != 'xpu':
+            # Packed projections dispatch through the Triton Q8/Q4 kernels
+            # (quantized_kernels) inside Linear regardless of the executor's
+            # fused selection, so eager-torch CUDA executors qualify when
+            # those kernels import — XPU eager uses quantized_torch instead.
+            # #668 quantized streaming (and its resident parity controls) run
+            # exactly this surface; refusal everywhere else is unchanged.
+            if self.device == 'cuda':
+                try:
+                    from . import quantized_kernels  # noqa: F401 — admission probe
+                except ImportError:
+                    raise ValueError('hybrid packed weights on eager CUDA require the Triton projection kernels')
+            elif self.device != 'xpu':
                 raise ValueError('hybrid packed weights require native GPU or qualified Apple Metal kernels')
         self.chunk_scan = None
         prefill_backend = os.environ.get('DAMENDAEMON_HYBRID_PREFILL', 'scan')

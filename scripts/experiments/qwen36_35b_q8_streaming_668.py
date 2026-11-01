@@ -42,6 +42,8 @@ import sys
 import time
 from pathlib import Path
 
+import torch
+
 from scripts.experiments.q5_cuda_oracle import require_guard
 
 SNAPSHOT = '/home/damen/models/Qwen_Qwen3.6-35B-A3B'
@@ -163,7 +165,7 @@ def main():
         raise RuntimeError('packed scales did not stream with the fixed set')
     streamed_checks = run_pass(streamed, tokenizer, reference)
     streamed_spec, _, _ = streamed.spec_decode(reference[0]['ids'], 6)
-    streamed_status = streamed.status()
+    streamed_status = streamed.offload.status()
     report.update(stream=dict(
         peak_live_weight_bytes=streamed_status['peak_live_weight_bytes'],
         planned_peak_weight_bytes=streamed_status['planned_peak_weight_bytes'],
@@ -176,6 +178,10 @@ def main():
     torch.cuda.reset_peak_memory_stats()
 
     # ── phase 2: resident control ───────────────────────────────────
+    # The offload opt-in is env-based and read at construction; pop it so
+    # the control genuinely runs resident (identical load, identical eager
+    # torch kernels — parity is exactness, not drift).
+    del os.environ['DAMENDAEMON_EXPERIMENTAL_HYBRID_OFFLOAD']
     resident = HybridExecutor(model, use_graph=False, max_batch=1, kernels='torch')
     if resident.offload is not None:
         raise RuntimeError('resident control unexpectedly streams')
