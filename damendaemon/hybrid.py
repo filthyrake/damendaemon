@@ -346,9 +346,10 @@ class HybridExecutor:
             from .layer_stream import plan
             # The streamed partition covers the main layers plus the MTP
             # virtual layer when the draft head is loaded (its mtp.* fixed
-            # tensors stay resident per plan()).
+            # tensors stay resident per plan()). Packed scales are part of
+            # the plan payload: peak_bytes prices weights and scales.
             streamed_layers = c['num_hidden_layers'] + (1 if 'mtp.fc' in model.weights else 0)
-            layout = plan(model.weights, streamed_layers)
+            layout = plan(model.weights, streamed_layers, model.scales)
             device_weight_bytes = layout.peak_bytes
         # Eager output logits explicitly promote the full output head to FP32.
         # Streaming must budget that temporary in addition to resident weights.
@@ -376,7 +377,8 @@ class HybridExecutor:
         if streaming:
             from .layer_stream import LayerWeightStore
             self.offload = LayerWeightStore(model.weights, layout,
-                lambda tensor, device=self.device: tensor.to(device), synchronize, empty_cache)
+                lambda tensor, device=self.device: tensor.to(device), synchronize, empty_cache,
+                scales=model.scales)
             self.w = self.offload.resident
         else:
             copies = {}
@@ -392,8 +394,14 @@ class HybridExecutor:
             projection = projection_q4 = None
             if self.hybrid_precision == 'compensated':
                 from .compensated_q8 import projection, projection_q4
-            self.linear = Linear(self.w, model.scales, self.device, F.linear,
+            # Streaming owns every device scale copy in the weight store; the
+            # Linear starts unbound and _rebind_streamed_scales points its
+            # id()-keyed lookups at the currently resident tensors (#668
+            # quantized streaming). Resident executors bind at construction.
+            self.linear = Linear(self.w, {} if streaming else model.scales, self.device, F.linear,
                                  q8_projection=projection, q4_projection=projection_q4)
+            if streaming:
+                self._rebind_streamed_scales()
         self.kv, self.conv, self.state = {}, {}, {}
         # Q8_0 KV storage cuts the FP32 cache to roughly a quarter of its bytes
         # (plus 1/32-scale FP16 overhead); values are dequantized to compute
@@ -820,11 +828,31 @@ class HybridExecutor:
             x = self._run_layer(x, i, positions, slots, prefill, prefix_length)
         return x
 
+    def _rebind_streamed_scales(self):
+        """Repoint the packed Linear's id()-keyed scale bindings at the
+        tensors currently resident (#668 quantized streaming). The weight
+        store owns every device scale copy; the binding dict is replaced
+        wholesale so entries for released tensors never linger (device ids
+        are addresses and can be reused after release), and the packed
+        decode cache is dropped for the same reason."""
+        scales = self.offload.resident_scales
+        self.linear.scales = {id(self.w[name]): scales[name]
+                              for name in self.w if name in scales}
+        self.linear.packed_cache.clear()
+
+    def _activate_streamed(self, layer):
+        """Activate a streamed layer, then refresh packed-scale bindings —
+        the single chokepoint every streamed activation must pass through
+        (a missed rebind fails loudly as an id() miss in Linear lookups)."""
+        self.offload.activate(layer)
+        if self.offload.resident_scales:
+            self._rebind_streamed_scales()
+
     def _run_layer(self, x, i, positions, slots, prefill, prefix_length):
         """One full decoder layer: mixer half then MLP half."""
         from .device import selected_accelerator
         if self.offload is not None:
-            self.offload.activate(i)
+            self._activate_streamed(i)
         if selected_accelerator() == 'rocm':
             from .rocm_policy import require_host_headroom
             require_host_headroom()
@@ -963,7 +991,7 @@ class HybridExecutor:
             x = self._run_layer(x, i, positions, slots, prefill, prefix_length)
         from .device import selected_accelerator
         if self.offload is not None:
-            self.offload.activate(gate_layer)
+            self._activate_streamed(gate_layer)
         if selected_accelerator() == 'rocm':
             from .rocm_policy import require_host_headroom
             require_host_headroom()
@@ -1239,7 +1267,7 @@ class HybridExecutor:
         final norm + shared head. Writes the MTP KV; returns logits only when
         `collect` (prefill evaluations fill KV and discard output)."""
         if self.offload is not None:
-            self.offload.activate(self.mtp_layer)
+            self._activate_streamed(self.mtp_layer)
         w = self.w
         parts = [self.norm(e, w['mtp.pre_e']), self.norm(h_prev, w['mtp.pre_h'])]
         if self.mtp_concat == 'hidden_first':
