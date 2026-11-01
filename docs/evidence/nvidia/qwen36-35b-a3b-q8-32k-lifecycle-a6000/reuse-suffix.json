@@ -1,0 +1,287 @@
+{
+  "baseline_allocated_bytes": 38098691072,
+  "batch": 1,
+  "c_series_reference": "docs/evidence/nvidia/qwen36-35b-a3b-q8-32k-concurrency-a6000/ (PR #671)",
+  "completed": true,
+  "context": 32768,
+  "device": "GPU-4adb9ddb-7bb3-189c-0fa2-51d67d1189ed",
+  "gate": "32K reuse-suffix lifecycle (MoE serve)",
+  "graphs": false,
+  "model": "/home/damen/models/Qwen_Qwen3.6-35B-A3B",
+  "model_revision": "995ad96eacd98c81ed38be0c5b274b04031597b0",
+  "output_limit": 512,
+  "precision": "float16",
+  "prompt_tokens": 32256,
+  "q8_gate_reference": "docs/evidence/nvidia/qwen36-35b-a3b-q8-a6000/ (PR #670)",
+  "quantization": "q8_0",
+  "rounds": {
+    "request_1": {
+      "value": {
+        "admitted_seconds": 7.767729512997903,
+        "disconnected_seconds": null,
+        "error": null,
+        "first_output_seconds": 7.767770755992387,
+        "output_chars": 3020,
+        "output_digest": "3a02b8ce24eb8618c99b4a2a74f68ce3ea10d9f1683023c7cc1fa1571479001e",
+        "output_preview": " jumps over the lazy dog while the repository records every bounded qualificatio",
+        "total_seconds": 155.20648530199833,
+        "usage": {
+          "completion_tokens": 512,
+          "prompt_tokens": 32256,
+          "total_tokens": 32768
+        }
+      },
+      "variant": 0
+    },
+    "request_2": {
+      "value": {
+        "admitted_seconds": 7.965802117993007,
+        "disconnected_seconds": null,
+        "error": null,
+        "first_output_seconds": 7.965859364994685,
+        "output_chars": 3037,
+        "output_digest": "a9f7858544dbfa4ed96599249fa1b3018430cdcd8f860f59b7812f4121750690",
+        "output_preview": " every bounded qualification cell with evidence and pins. The quick brown fox ju",
+        "total_seconds": 156.23890188799123,
+        "usage": {
+          "completion_tokens": 512,
+          "prompt_tokens": 32256,
+          "total_tokens": 32768
+        }
+      },
+      "variant": "suffix"
+    },
+    "request_3": {
+      "value": {
+        "admitted_seconds": 7.9479021440056385,
+        "disconnected_seconds": null,
+        "error": null,
+        "first_output_seconds": 7.947943107006722,
+        "output_chars": 3037,
+        "output_digest": "a9f7858544dbfa4ed96599249fa1b3018430cdcd8f860f59b7812f4121750690",
+        "output_preview": " every bounded qualification cell with evidence and pins. The quick brown fox ju",
+        "total_seconds": 156.30228141500265,
+        "usage": {
+          "completion_tokens": 512,
+          "prompt_tokens": 32256,
+          "total_tokens": 32768
+        }
+      },
+      "variant": "suffix"
+    },
+    "warmup": {
+      "value": {
+        "admitted_seconds": 122.19743337899854,
+        "disconnected_seconds": null,
+        "error": null,
+        "first_output_seconds": 122.19748629000969,
+        "output_chars": 4,
+        "output_digest": "fe0663fd13cdb08743dca3d2d5d1168762556ea36f77d8ab6009306d12a6f351",
+        "output_preview": " the",
+        "total_seconds": 122.1975993829983,
+        "usage": {
+          "completion_tokens": 1,
+          "prompt_tokens": 512,
+          "total_tokens": 513
+        }
+      }
+    }
+  },
+  "serve": "production damendaemon serve (no probe wrapper, whole prefill)",
+  "slot_prompt_digests": {
+    "0": "31836e963e26cd642684d7bce9c778132376800375c2b09917612a5d398be727",
+    "1": "0c5a48f783f9c2b1ef60d83839b6ce81f70e335180360334fcb73c5d6bcbe810"
+  },
+  "statuses": {
+    "after_request_1": {
+      "closed": false,
+      "closing": false,
+      "context": 32768,
+      "cuda_allocated_bytes": 38098691072,
+      "cuda_devices": null,
+      "cuda_peak_allocated_bytes": 43260331520,
+      "device": "cuda",
+      "gpu_model_limit": 1,
+      "hip_allocated_bytes": null,
+      "host_budget_bytes": 42949672960,
+      "host_cached_bytes": 37325015552,
+      "host_model_limit": 1,
+      "models": [
+        {
+          "chat_template": {
+            "sha256": null,
+            "source": "checkpoint"
+          },
+          "executor_failed": false,
+          "gpu_packed_layout_overhead_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "host_weight_bytes": 37325015552,
+          "id": "qwen36moe",
+          "kv_cache_bytes": 671088640,
+          "kv_cache_mode": "none",
+          "output_head_workspace_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "pipeline": null,
+          "q4_marlin_abi": null,
+          "quantization": "q8_0",
+          "residency": "gpu",
+          "vision_gpu_weight_bytes": 0,
+          "vision_host_weight_bytes": 0,
+          "weight_streaming": null
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "pending_executor_cleanup": 0,
+      "pending_pipeline_cleanup": 0,
+      "rocm_aotriton_experimental": null,
+      "xpu_allocated_bytes": null,
+      "xpu_peak_allocated_bytes": null,
+      "xpu_reserved_bytes": null
+    },
+    "after_request_2": {
+      "closed": false,
+      "closing": false,
+      "context": 32768,
+      "cuda_allocated_bytes": 38098691072,
+      "cuda_devices": null,
+      "cuda_peak_allocated_bytes": 43260331520,
+      "device": "cuda",
+      "gpu_model_limit": 1,
+      "hip_allocated_bytes": null,
+      "host_budget_bytes": 42949672960,
+      "host_cached_bytes": 37325015552,
+      "host_model_limit": 1,
+      "models": [
+        {
+          "chat_template": {
+            "sha256": null,
+            "source": "checkpoint"
+          },
+          "executor_failed": false,
+          "gpu_packed_layout_overhead_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "host_weight_bytes": 37325015552,
+          "id": "qwen36moe",
+          "kv_cache_bytes": 671088640,
+          "kv_cache_mode": "none",
+          "output_head_workspace_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "pipeline": null,
+          "q4_marlin_abi": null,
+          "quantization": "q8_0",
+          "residency": "gpu",
+          "vision_gpu_weight_bytes": 0,
+          "vision_host_weight_bytes": 0,
+          "weight_streaming": null
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "pending_executor_cleanup": 0,
+      "pending_pipeline_cleanup": 0,
+      "rocm_aotriton_experimental": null,
+      "xpu_allocated_bytes": null,
+      "xpu_peak_allocated_bytes": null,
+      "xpu_reserved_bytes": null
+    },
+    "after_request_3": {
+      "closed": false,
+      "closing": false,
+      "context": 32768,
+      "cuda_allocated_bytes": 38098691072,
+      "cuda_devices": null,
+      "cuda_peak_allocated_bytes": 43260331520,
+      "device": "cuda",
+      "gpu_model_limit": 1,
+      "hip_allocated_bytes": null,
+      "host_budget_bytes": 42949672960,
+      "host_cached_bytes": 37325015552,
+      "host_model_limit": 1,
+      "models": [
+        {
+          "chat_template": {
+            "sha256": null,
+            "source": "checkpoint"
+          },
+          "executor_failed": false,
+          "gpu_packed_layout_overhead_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "host_weight_bytes": 37325015552,
+          "id": "qwen36moe",
+          "kv_cache_bytes": 671088640,
+          "kv_cache_mode": "none",
+          "output_head_workspace_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "pipeline": null,
+          "q4_marlin_abi": null,
+          "quantization": "q8_0",
+          "residency": "gpu",
+          "vision_gpu_weight_bytes": 0,
+          "vision_host_weight_bytes": 0,
+          "weight_streaming": null
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "pending_executor_cleanup": 0,
+      "pending_pipeline_cleanup": 0,
+      "rocm_aotriton_experimental": null,
+      "xpu_allocated_bytes": null,
+      "xpu_peak_allocated_bytes": null,
+      "xpu_reserved_bytes": null
+    },
+    "after_warmup": {
+      "closed": false,
+      "closing": false,
+      "context": 32768,
+      "cuda_allocated_bytes": 38098691072,
+      "cuda_devices": null,
+      "cuda_peak_allocated_bytes": 38180718080,
+      "device": "cuda",
+      "gpu_model_limit": 1,
+      "hip_allocated_bytes": null,
+      "host_budget_bytes": 42949672960,
+      "host_cached_bytes": 37325015552,
+      "host_model_limit": 1,
+      "models": [
+        {
+          "chat_template": {
+            "sha256": null,
+            "source": "checkpoint"
+          },
+          "executor_failed": false,
+          "gpu_packed_layout_overhead_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "host_weight_bytes": 37325015552,
+          "id": "qwen36moe",
+          "kv_cache_bytes": 671088640,
+          "kv_cache_mode": "none",
+          "output_head_workspace_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "pipeline": null,
+          "q4_marlin_abi": null,
+          "quantization": "q8_0",
+          "residency": "gpu",
+          "vision_gpu_weight_bytes": 0,
+          "vision_host_weight_bytes": 0,
+          "weight_streaming": null
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "pending_executor_cleanup": 0,
+      "pending_pipeline_cleanup": 0,
+      "rocm_aotriton_experimental": null,
+      "xpu_allocated_bytes": null,
+      "xpu_peak_allocated_bytes": null,
+      "xpu_reserved_bytes": null
+    }
+  },
+  "suffix_prompt_digest": "8f446303628fc0a1810f6e46888f7fa03c72b111fcb4619634f82678d8b098e9",
+  "verdict": {
+    "all_within_gates": true,
+    "suffix_changed_output": true,
+    "suffix_repeat_identical": true
+  }
+}
