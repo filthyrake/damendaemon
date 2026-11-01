@@ -196,7 +196,24 @@ def request(slot, prompt_ids, max_tokens, results: dict, *, cancel_after=None,
 
 
 def release_probe(name, prompt_ids, results: dict):
-    request(name, prompt_ids, 1, results)
+    """A tiny request sent right after a client disconnect, retried until
+    admitted (bounded ~10 s): a 503 inside the disconnect-detection window
+    (~3 s measured on this stack, #668 diag 2026-11-01) is the still-holding
+    request rejecting on the full queue — the measurement is the delay
+    until first admission. A zombie slot never admits and exhausts the
+    attempts; the recorded attempts count discloses the release delay."""
+    value = None
+    for attempt in range(10):
+        holder = {}
+        request(name, prompt_ids, 1, holder)
+        value = holder.get(name) or {}
+        value['probe_attempts'] = attempt + 1
+        if not value.get('error'):
+            break
+        if '503' not in str(value.get('error')):
+            break
+        time.sleep(1.0)
+    results[name] = value
 
 
 def followup_ok(result):
