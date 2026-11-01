@@ -1,0 +1,154 @@
+{
+ "version": 1,
+ "cells": [
+  {
+   "id": "qwen38-27b-vision-a6000-numeric",
+   "issue": "https://github.com/filthyrake/damendaemon/issues/50",
+   "availability": "implemented",
+   "identity": {
+    "model_repository": "Qwen3.8-27B local snapshot /home/damen/models/Qwen3.8-27B-1d4bf0f2",
+    "model_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+    "checkpoint_sha256": "97fcdd74503a9f45da1369fd04c1059fdad983a5bb023444b2f574018c84f1da",
+    "tokenizer_sha256": "cad7b72258009568f48b173c63dab36b161a80efacef293625a96c1d7bba9f34",
+    "precision": "Q8_0 text + FP32 vision, compensated-cuda-vision backend, TF32 off",
+    "hardware": "NVIDIA RTX A6000 44.5 GiB (GPU-4adb9ddb-7bb3-189c-0fa2-51d67d1189ed), driver 615.71.09, torch 2.13.0+cu130",
+    "topology": "single host, single GPU, vision model, batch capacity 3",
+    "context": 1024,
+    "prompt_tokens": 185,
+    "output_tokens": 8,
+    "concurrency": 1,
+    "prompts_sha256": "38270bae4ce25eac42b62d809387b144c141aee5d816d6f67db25c6752e6992a",
+    "eos_policy": "greedy continuation, no sampler; logits parity plus greedy agreement over 8 decode steps"
+   },
+   "implementation_commit": "2675f873e5bd2d61d581484a2ea816c9c4ce1194",
+   "reason": "Full-model numeric gates (#662): 54/54 checks vs the pinned transformers-5.18.0 CPU FP32 oracle reference (golden digest 473d308b..., retained off-repo), worst relative RMS 6.93e-03 vs the 0.01 gate with greedy agreement on every check, including inverted/reversed changed-image controls; encoder gate 150/150 at 2.04e-05 vs 7e-04. Six-case suite, prompt sizes 21-185 tokens; prompt_tokens pins the largest case. prompts_sha256 binds the case-generating source digests plus the golden reference digest recorded in gate2-model-a6000.json. checkpoint/tokenizer sha256 are sorted set digests of the snapshot's model shards/config and tokenizer artifacts. Still-image scope at context 1024; long-context vision is not qualified here.",
+   "comparators": [],
+   "numerical": {
+    "result": "pass",
+    "scope": "actual_hardware",
+    "method": "independent_reference",
+    "identity": {
+     "model_repository": "Qwen3.8-27B local snapshot /home/damen/models/Qwen3.8-27B-1d4bf0f2",
+     "model_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+     "checkpoint_sha256": "97fcdd74503a9f45da1369fd04c1059fdad983a5bb023444b2f574018c84f1da",
+     "tokenizer_sha256": "cad7b72258009568f48b173c63dab36b161a80efacef293625a96c1d7bba9f34",
+     "precision": "Q8_0 text + FP32 vision, compensated-cuda-vision backend, TF32 off",
+     "hardware": "NVIDIA RTX A6000 44.5 GiB (GPU-4adb9ddb-7bb3-189c-0fa2-51d67d1189ed), driver 615.71.09, torch 2.13.0+cu130",
+     "topology": "single host, single GPU, vision model, batch capacity 3",
+     "context": 1024,
+     "prompt_tokens": 185,
+     "output_tokens": 8,
+     "concurrency": 1,
+     "prompts_sha256": "38270bae4ce25eac42b62d809387b144c141aee5d816d6f67db25c6752e6992a",
+     "eos_policy": "greedy continuation, no sampler; logits parity plus greedy agreement over 8 decode steps"
+    },
+    "evidence": [
+     {"path": "docs/evidence/vision/qwen38-27b-a6000/gate2-model-a6000.json", "sha256": "ee51253148d57adadd384b9ab80548d832dd02899cb4bd1ee6c37aae31f87485"},
+     {"path": "docs/evidence/vision/qwen38-27b-a6000/gate2b-messages-a6000.json", "sha256": "7866a47cc309d0e52282db3c297d94ff5afa912561bead5a713fa4136f159215"},
+     {"path": "docs/evidence/vision/qwen38-27b-a6000/gate1-enc-a6000.json", "sha256": "d0dc91ac45b8ada0b9baf079fd6f71421dc5579141275010c26877d34793e74c"},
+     {"path": "docs/evidence/vision/qwen38-27b-a6000/README.md", "sha256": "b198de798d3a9ea57e01e6775a0c303c27bd5c37c6e4b29eef519928ff8d0e61"}
+    ]
+   }
+  },
+  {
+   "id": "qwen38-27b-vision-a6000-service",
+   "issue": "https://github.com/filthyrake/damendaemon/issues/50",
+   "availability": "implemented",
+   "identity": {
+    "model_repository": "Qwen3.8-27B local snapshot /home/damen/models/Qwen3.8-27B-1d4bf0f2",
+    "model_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+    "checkpoint_sha256": "97fcdd74503a9f45da1369fd04c1059fdad983a5bb023444b2f574018c84f1da",
+    "tokenizer_sha256": "cad7b72258009568f48b173c63dab36b161a80efacef293625a96c1d7bba9f34",
+    "precision": "Q8_0 text + FP32 vision, triton-hybrid+q8_0 kernel backend",
+    "hardware": "NVIDIA RTX A6000 44.5 GiB (GPU-4adb9ddb-7bb3-189c-0fa2-51d67d1189ed), driver 615.71.09, torch 2.13.0+cu130",
+    "topology": "single host, single GPU, damendaemon HTTP vision service, two model aliases, host budget 63 GiB",
+    "context": 1024,
+    "prompt_tokens": 185,
+    "output_tokens": 8,
+    "concurrency": 4,
+    "prompts_sha256": "38270bae4ce25eac42b62d809387b144c141aee5d816d6f67db25c6752e6992a",
+    "eos_policy": "greedy continuation, no sampler; streamed token observation"
+   },
+   "implementation_commit": "2675f873e5bd2d61d581484a2ea816c9c4ce1194",
+   "reason": "HTTP service lifecycle gate (#662): 20/20 checks on the real endpoint - independent cases, warm requests, four-way concurrent generation, streaming content+usage, disconnect recovery with a changed image, malformed-input recovery, second model alias, host restore, disk reload after release, repeat release with no allocation growth; peak cuda allocation 32.1 GiB. Suite exercises concurrency 1 through 4; concurrency pins the four-way maximum and prompt_tokens the largest case. The single disclosed retained allocation (8,519,680-byte cuBLAS workspace, setWorkspaceForHandle-framed) is recorded in the same evidence. The state machine reports lifecycle-only passes as implemented_unvalidated; the gate record below is the pass attestation.",
+   "comparators": [],
+   "lifecycle": {
+    "result": "pass",
+    "scope": "actual_hardware",
+    "method": "endpoint_lifecycle",
+    "identity": {
+     "model_repository": "Qwen3.8-27B local snapshot /home/damen/models/Qwen3.8-27B-1d4bf0f2",
+     "model_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+     "checkpoint_sha256": "97fcdd74503a9f45da1369fd04c1059fdad983a5bb023444b2f574018c84f1da",
+     "tokenizer_sha256": "cad7b72258009568f48b173c63dab36b161a80efacef293625a96c1d7bba9f34",
+     "precision": "Q8_0 text + FP32 vision, triton-hybrid+q8_0 kernel backend",
+     "hardware": "NVIDIA RTX A6000 44.5 GiB (GPU-4adb9ddb-7bb3-189c-0fa2-51d67d1189ed), driver 615.71.09, torch 2.13.0+cu130",
+     "topology": "single host, single GPU, damendaemon HTTP vision service, two model aliases, host budget 63 GiB",
+     "context": 1024,
+     "prompt_tokens": 185,
+     "output_tokens": 8,
+     "concurrency": 4,
+     "prompts_sha256": "38270bae4ce25eac42b62d809387b144c141aee5d816d6f67db25c6752e6992a",
+     "eos_policy": "greedy continuation, no sampler; streamed token observation"
+    },
+    "evidence": [
+     {"path": "docs/evidence/vision/qwen38-27b-a6000/gate3-svc-a6000-final.json", "sha256": "3ecb8dbfb52ec62500bf846d3954a0fde2b34bac9b2172546c9ed425d26f2f75"},
+     {"path": "docs/evidence/vision/qwen38-27b-a6000/qwen35-http-retained-allocations.json", "sha256": "9b76aedfc7ad2d898aeaf85b2f4f1496b45425cf6f72b1134b93148be767f576"},
+     {"path": "docs/evidence/vision/qwen38-27b-a6000/README.md", "sha256": "b198de798d3a9ea57e01e6775a0c303c27bd5c37c6e4b29eef519928ff8d0e61"}
+    ]
+   }
+  },
+  {
+   "id": "qwen38-27b-hybrid-32k-lifecycle",
+   "issue": "https://github.com/filthyrake/damendaemon/issues/68",
+   "availability": "implemented",
+   "identity": {
+    "model_repository": "Qwen3.8-27B local snapshot /home/damen/models/Qwen3.8-27B-1d4bf0f2",
+    "model_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+    "checkpoint_sha256": "97fcdd74503a9f45da1369fd04c1059fdad983a5bb023444b2f574018c84f1da",
+    "tokenizer_sha256": "cad7b72258009568f48b173c63dab36b161a80efacef293625a96c1d7bba9f34",
+    "precision": "Q4_0 compensated hybrid executor",
+    "hardware": "NVIDIA RTX A6000 44.5 GiB (GPU-4adb9ddb-7bb3-189c-0fa2-51d67d1189ed), driver 615.71.09, torch 2.13.0+cu130",
+    "topology": "single host, single GPU, eager executor (no CUDA graphs), 2 slots, 127-token prefill chunks, HTTP service",
+    "context": 32768,
+    "prompt_tokens": 32256,
+    "output_tokens": 512,
+    "concurrency": 2,
+    "prompts_sha256": "d57d0a893b4d2bf90f3acf970235ad965528a88e359a88b5795cf797477b7b56",
+    "eos_policy": "greedy; 512-token output limit; first-EOS cut"
+   },
+   "implementation_commit": "d036db791a2526a92f39454cf3fec8535761368a",
+   "reason": "32K Q4 long-context lifecycle cells on the real HTTP service: C2 concurrency PASSED within all time/memory gates at 2 slots (first output 308.1/310.6 s, 805 s total, peak 27.23 GiB); C4 measured out on time gates (throughput-bound, not memory-bound); reuse-identical and reuse-suffix cells PASSED (identical prompts fully re-prefill with zero stale-state contamination; a changed suffix changes the output; repeats identical); mid-decode client disconnects release admission/KV/slot within 5 s with survivors unaffected; /v1/models/status readable 100/100 polls during an active 32K generation after the #665 fix. prompts_sha256 binds the recorded per-slot prompt digests in gate-c2.json. No independent numerical reference exists at 32K, so no numerical gate; the state machine reports this lifecycle-only pass as implemented_unvalidated - the gate record below is the pass attestation.",
+   "comparators": [],
+   "lifecycle": {
+    "result": "pass",
+    "scope": "actual_hardware",
+    "method": "endpoint_lifecycle",
+    "identity": {
+     "model_repository": "Qwen3.8-27B local snapshot /home/damen/models/Qwen3.8-27B-1d4bf0f2",
+     "model_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+     "checkpoint_sha256": "97fcdd74503a9f45da1369fd04c1059fdad983a5bb023444b2f574018c84f1da",
+     "tokenizer_sha256": "cad7b72258009568f48b173c63dab36b161a80efacef293625a96c1d7bba9f34",
+     "precision": "Q4_0 compensated hybrid executor",
+     "hardware": "NVIDIA RTX A6000 44.5 GiB (GPU-4adb9ddb-7bb3-189c-0fa2-51d67d1189ed), driver 615.71.09, torch 2.13.0+cu130",
+     "topology": "single host, single GPU, eager executor (no CUDA graphs), 2 slots, 127-token prefill chunks, HTTP service",
+     "context": 32768,
+     "prompt_tokens": 32256,
+     "output_tokens": 512,
+     "concurrency": 2,
+     "prompts_sha256": "d57d0a893b4d2bf90f3acf970235ad965528a88e359a88b5795cf797477b7b56",
+     "eos_policy": "greedy; 512-token output limit; first-EOS cut"
+    },
+    "evidence": [
+     {"path": "docs/evidence/nvidia/a6000-q4-32k-68/concurrency/README.md", "sha256": "ca9f2fd76783e580b38588b6d32e72edd8cd6f7376c1de25caeadb77a3f48021"},
+     {"path": "docs/evidence/nvidia/a6000-q4-32k-68/concurrency/gate-c2.json", "sha256": "349350f1a4eb653ea873ddee6e372323623cfbe6603a6f6b74c87b238e65ce24"},
+     {"path": "docs/evidence/nvidia/a6000-q4-32k-68/lifecycle/README.md", "sha256": "07a4225f46114453859194473569e681b44da3b1f84ac7acce103fcc75037c0e"},
+     {"path": "docs/evidence/nvidia/a6000-q4-32k-68/lifecycle/gate-reuse-identical.json", "sha256": "680318fae2147bc2c517c6fa96321d114d9206c8041bebe2178d22bcef092d5b"},
+     {"path": "docs/evidence/nvidia/a6000-q4-32k-68/lifecycle/gate-reuse-suffix.json", "sha256": "beec73ca4607ca09214262fe341866466c83390e031e1fa8527acb04b7f3e6c1"},
+     {"path": "docs/evidence/nvidia/a6000-q4-32k-68/disconnect-664/README.md", "sha256": "432deeab4f2c47e6f45118f1d27d2217e172b6eacbd6db4ea2a6e1edd7190943"},
+     {"path": "docs/evidence/nvidia/a6000-q4-32k-68/disconnect-664/d3-status-fixed.json", "sha256": "71c56ee9c771d59960722634727628154add513e66c06c9d1cb7275b62cc6f0f"}
+    ]
+   }
+  }
+ ]
+}

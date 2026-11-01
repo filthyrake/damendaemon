@@ -6,6 +6,8 @@ are supporting evidence snapshots, not a task tracker or benchmark runner.
 ```sh
 python -m scripts.evaluate_qualification_scorecard \
   docs/evidence/qualification/current-software.json --evidence-root .
+python -m scripts.evaluate_qualification_scorecard \
+  docs/evidence/qualification/a6000-hardware.json --evidence-root .
 ```
 
 The current software snapshot links pushed implementations. Its unresolved
@@ -63,6 +65,41 @@ Production-scale arithmetic, checkpoint quality, physical multi-GPU/multi-host
 transfer, practical contexts and concurrency/swap/soak SLOs still need
 their own pinned evidence. Any remaining command lifecycle bug is tracked in
 GitHub; a software snapshot is not a claim that no bugs remain.
+
+## A6000 hardware snapshot (2026-10-31)
+
+`a6000-hardware.json` is a separate version-1 snapshot attaching the desktop
+A6000's measured cells as pinned hardware attestations — it does not modify
+the software snapshot above:
+
+- `qwen38-27b-vision-a6000-numeric` (#50): **numerical_pass** — 54/54
+  full-model checks (worst relative RMS 6.93e-03 vs the 0.01 gate, greedy
+  agreement) against the pinned transformers-5.18.0 CPU FP32 oracle, plus the
+  150/150 encoder gate at 2.04e-05; six-case still-image suite at
+  context ≤1024.
+- `qwen38-27b-vision-a6000-service` (#50): lifecycle gate **pass** — 20/20
+  HTTP service checks (four-way concurrency, streaming, disconnect and
+  malformed-input recovery, host restore, disk reload, no release-growth);
+  peak allocation 32.1 GiB. Reported by the state machine as
+  implemented_unvalidated because the lifecycle state requires a numerical
+  gate first (the numeric cell above carries the same model's numerical
+  pass at its own concurrency-1 workload identity); the gate record inside
+  the cell is the pass attestation.
+- `qwen38-27b-hybrid-32k-lifecycle` (#68): lifecycle gate **pass** — 32K Q4
+  hybrid cells on the real HTTP service: C2 concurrency PASS at 2 slots
+  (first output 308.1/310.6 s, peak 27.23 GiB), reuse-identical and
+  reuse-suffix PASS, disconnect release ≤5 s, status readable mid-generation
+  after #665. No independent numerical reference exists at 32K, so the cell
+  carries no numerical gate and the state machine reports it as
+  implemented_unvalidated; the gate record is the pass attestation.
+
+Identity conventions in this snapshot: `checkpoint_sha256`/`tokenizer_sha256`
+are sorted set digests over the local snapshot's model-shard/config and
+tokenizer artifacts; `prompts_sha256` binds the recorded per-prompt digests
+(#68 corpus) or the case-generating source digests plus the golden reference
+digest (#50 suite). No measurement records are attached — none of the
+retained cells meets the 12-metric warmed ABBA contract; performance and
+competitive verdicts remain open.
 
 ## Version 1 records
 
