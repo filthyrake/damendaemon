@@ -92,6 +92,24 @@ the software snapshot above:
   after #665. No independent numerical reference exists at 32K, so the cell
   carries no numerical gate and the state machine reports it as
   implemented_unvalidated; the gate record is the pass attestation.
+- `qwen36-35b-moe-a6000-numeric` (#668): **numerical_pass** — first
+  full-model hardware gate of the hybrid MoE executor (Qwen3.6-35B-A3B,
+  qwen3_5_moe, Q8_0 packed expert projections): 5/5 prefill argmax and 5/5
+  token-exact 12-token greedy streams vs the independent eager
+  Transformers 5.20.1 BF16 CPU reference, worst logit rel-RMS 0.1139
+  (accuracy/drift per the #23 convention); 34.8 GiB packed weights with
+  live-asserted packed state. The first run's greedy mismatch was a
+  harness-side first-token duplication (realignment proved exact
+  agreement); documented and re-run clean (PR #670).
+- `qwen36-35b-moe-a6000-lifecycle` (#668): lifecycle gate **pass** — 32K Q8
+  MoE cells: C1/C2/C4 concurrency ALL PASS (4 concurrent 32K users, 9.42
+  tok/s aggregate, every request ≤ 225 s, peak 42.35 GiB; slot-0 prompt and
+  output digests byte-identical across cells), plus production-serve
+  lifecycle (reuse-identical/reuse-suffix byte-exact, cancel-decode and
+  cancel-prefill at batch 2 with ~3 s disconnect release measured — the
+  first probe "failure" was the probe firing inside the detection window,
+  not a defect; PR #671/#672). Lifecycle-only state per the same
+  implemented_unvalidated convention; the gate record is the attestation.
 
 Identity conventions in this snapshot: `checkpoint_sha256`/`tokenizer_sha256`
 are sorted set digests over the local snapshot's model-shard/config and
