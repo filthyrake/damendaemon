@@ -99,6 +99,10 @@ class LayerStreamTests(unittest.TestCase):
         env = {'DAMENDAEMON_DEVICE': 'cuda', 'DAMENDAEMON_EXPERIMENTAL_HYBRID_OFFLOAD': '1', 'DAMENDAEMON_KERNELS': 'torch'}
         with patch.dict('os.environ', env, clear=True):
             validate(config, 'none', 2048, 4)
+            # Family admission is structural: the MoE text surface shares the
+            # streamed geometry and is admitted identically.
+            moe = {**config, 'model_type': 'qwen3_5_moe_text', 'num_experts': 4}
+            validate(moe, 'none', 2048, 4)
             for overrides in ({'DAMENDAEMON_DEVICE':'rocm'}, {'DAMENDAEMON_DEVICE':'xpu'}, {'DAMENDAEMON_KERNELS':'auto'},
                               {'DAMENDAEMON_HYBRID_PRECISION':'float32'}, {'DAMENDAEMON_EXPERIMENTAL_VISION':'1'}):
                 with patch.dict('os.environ', overrides), self.assertRaises(ValueError):
@@ -107,6 +111,22 @@ class LayerStreamTests(unittest.TestCase):
                 validate(config, 'none', 512, use_graph=True)
             with self.assertRaises(ValueError):
                 validate(config, 'q8_0', 512)
+            # Admission follows the family rule, not a name: a non-hybrid
+            # decoder is refused whatever its name.
+            with self.assertRaises(ValueError):
+                validate({**config, 'model_type': 'qwen3'}, 'none', 512)
+
+    def test_plan_partitions_head_modules_and_virtual_layers(self):
+        # Head-module tensors (mtp.*) carry no layer index: fixed-resident.
+        # The MTP virtual layer streams like any other layer.
+        weights = {**self.weights(), 'mtp.fc': torch.ones(8, 8),
+                   'mtp.norm': torch.ones(8), '2.a': torch.ones(4, 4)}
+        layout = plan(weights, 3)
+        self.assertEqual(set(layout.fixed), {'embed', 'head', 'norm', 'mtp.fc', 'mtp.norm'})
+        self.assertEqual(layout.layer_bytes, (80, 160, 64))
+        # A head module without the streaming surface is still rejected.
+        with self.assertRaises(ValueError):
+            plan({'mtp.fc': torch.ones(8, 8), '0.a': torch.ones(4, 4)}, 1)
 
     def test_real_eager_arithmetic_matches_resident_weights(self):
         # Reuse the small real hybrid tensor fixture, never a GPU mock benchmark.
@@ -163,3 +183,55 @@ class LayerStreamTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'actual CPU'):
             LayerWeightStore(weights, layout, copy, Mock(), Mock())
         copy.assert_not_called()
+
+
+class LayerStreamMoeTests(unittest.TestCase):
+    """Streaming parity for the MoE surface (#668 family extension): the
+    streamed executor must match the resident executor exactly on identical
+    weights — the offload path is arithmetic-transparent by construction."""
+
+    def test_streamed_moe_matches_resident_moe(self):
+        from damendaemon.hybrid import HybridExecutor
+        from tests.test_hybrid_moe import HybridMoeMtpTests
+        fixture = HybridMoeMtpTests()
+        fixture.setUp()
+        try:
+            from types import SimpleNamespace
+            fp32 = fixture._model({'DAMENDAEMON_HYBRID_MTP': '1',
+                                   'DAMENDAEMON_HYBRID_MTP_CONCAT': 'embed_first'})
+            # Streaming is a production FP16 surface: mirror the dense
+            # streaming fixture — fp16 source weights, fp16 eager compute.
+            weights = {name: value.half() for name, value in fp32.weights.items()}
+            weights['head'] = weights['embed']
+            model = SimpleNamespace(config=fp32.config, max_context=64, weights=weights,
+                                     scales={}, quantization='none',
+                                     bytes=sum(t.numel()*t.element_size() for t in
+                                              {id(t):t for t in weights.values()}.values()))
+            base = {'DAMENDAEMON_DEVICE': 'cuda', 'DAMENDAEMON_KERNELS': 'torch',
+                    'DAMENDAEMON_HYBRID_MTP': '1'}
+            with patch.dict('os.environ', base, clear=False), \
+                    patch('damendaemon.hybrid.selected_device', return_value='cpu'), \
+                    patch('damendaemon.hybrid.empty_cache'), patch('damendaemon.hybrid.synchronize'), \
+                    patch('damendaemon.hybrid.available_memory', return_value=2**40):
+                resident = HybridExecutor(model, use_graph=False, max_batch=2, kernels='torch')
+                with patch.dict('os.environ', DAMENDAEMON_EXPERIMENTAL_HYBRID_OFFLOAD='1'):
+                    streamed = HybridExecutor(model, use_graph=False, max_batch=2, kernels='torch')
+            self.assertIsNotNone(streamed.offload)
+            # The streamed peak is the fixed set plus the largest layer,
+            # strictly below the fully resident footprint.
+            self.assertLess(streamed.offload.layout.peak_bytes, model.bytes)
+            for prompt in ([1, 2, 3, 4], [5, 6, 7]):
+                torch.testing.assert_close(streamed.prefill(prompt), resident.prefill(prompt),
+                                           rtol=0, atol=0)
+                for token in (8, 9):
+                    torch.testing.assert_close(streamed.decode(token), resident.decode(token),
+                                               rtol=0, atol=0)
+            # MTP composition: the draft head streams its virtual layer and
+            # the spec stream still equals plain greedy exactly.
+            plain_out, _, _ = streamed.spec_decode([1, 2, 3, 4], 6)
+            resident_ref = fixture._plain_greedy(resident, [1, 2, 3, 4], 6)
+            self.assertEqual(plain_out, resident_ref)
+            streamed.close()
+            self.assertEqual(streamed.offload.resident_bytes, 0)
+        finally:
+            fixture.doCleanups()

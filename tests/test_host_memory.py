@@ -43,7 +43,12 @@ class HostMemoryTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             path = Path(directory)
             _, tensors = fixture(path)
-            expected = sum(t.numel()*12 for t in tensors.values())
+            # The pop-based loader never holds source + full converted copy:
+            # the budget is the whole source plus the LARGEST single-tensor
+            # fp32 conversion transient (the worst conversion direction).
+            # The fixture writes F32 sources (4 B/elem).
+            expected = (sum(t.numel()*t.element_size() for t in tensors.values())
+                        + max(t.numel()*4 for t in tensors.values()))
             with patch.object(host_memory, 'require_headroom') as check:
                 self.assertEqual(host_memory.admit_checkpoint([path/'model.safetensors']), expected)
                 check.assert_called_once_with(expected)

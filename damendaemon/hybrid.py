@@ -344,7 +344,11 @@ class HybridExecutor:
         layout = None
         if streaming:
             from .layer_stream import plan
-            layout = plan(model.weights, c['num_hidden_layers'])
+            # The streamed partition covers the main layers plus the MTP
+            # virtual layer when the draft head is loaded (its mtp.* fixed
+            # tensors stay resident per plan()).
+            streamed_layers = c['num_hidden_layers'] + (1 if 'mtp.fc' in model.weights else 0)
+            layout = plan(model.weights, streamed_layers)
             device_weight_bytes = layout.peak_bytes
         # Eager output logits explicitly promote the full output head to FP32.
         # Streaming must budget that temporary in addition to resident weights.
@@ -1234,6 +1238,8 @@ class HybridExecutor:
         the virtual-index full-attention MoE layer (own KV), then the MTP
         final norm + shared head. Writes the MTP KV; returns logits only when
         `collect` (prefill evaluations fill KV and discard output)."""
+        if self.offload is not None:
+            self.offload.activate(self.mtp_layer)
         w = self.w
         parts = [self.norm(e, w['mtp.pre_e']), self.norm(h_prev, w['mtp.pre_h'])]
         if self.mtp_concat == 'hidden_first':
