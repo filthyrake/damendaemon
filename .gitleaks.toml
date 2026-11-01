@@ -1,0 +1,9 @@
+# Qualification scorecards pin 64-hex sha256 digest attestations under
+# *_sha256 keys (docs/evidence/qualification/*.json).  Gitleaks' generic
+# API-key heuristic flags them; they are public integrity pins, not secrets.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Qualification scorecard sha256 digest pins are not secrets"
+regexes = ['''(?i)sha256"?\s*:\s*"[0-9a-f]{64}"''']
