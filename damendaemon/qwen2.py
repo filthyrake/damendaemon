@@ -181,12 +181,11 @@ class ModelWeights:
             else:
                 # qwen3_5_text and qwen3_5_moe_text share the hybrid loader;
                 # the MoE branch carries the transcribed expert/shared tensor
-                # surface (#668).
+                # surface (#668). Packed Q8/Q4 expert projections are
+                # implemented (quantization.prepare packs the 3-D stacks
+                # rowwise per expert); the executor dequantizes expert slices
+                # and routes the shared projections through the packed Linear.
                 if c['model_type'] == 'qwen3_5_moe_text':
-                    if self.quantization != 'none':
-                        raise ValueError('quantized qwen3.5-MoE loads are not '
-                                         'implemented yet (#668 cell 2: explicit '
-                                         'packed projections for expert slices)')
                     from .hybrid_moe_checkpoint import audit_names
                     audit_names(read_config(self.path / 'config.json'), state.keys())
                 from .hybrid import load_weights

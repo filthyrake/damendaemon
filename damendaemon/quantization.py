@@ -85,8 +85,23 @@ def prepare(weights, quantization=None):
                 from .rocm_policy import require_host_headroom
                 require_host_headroom()
             weight = weights[name]
-            if weight.ndim == 2 and name != 'embed':
+            if weight.ndim == 2 and name != 'embed' \
+                    and not name.endswith(('.router', '.shared_expert_gate')):
+                # Routers and the [1, hidden] shared-expert combine gate stay
+                # high precision: routing is selection semantics (top-k on
+                # FP32 softmax) and the combine gate is a per-token sigmoid —
+                # both are pinned exact in the MoE contract (#668).
                 weights[name], scales[name] = pack(weight)
+            elif weight.ndim == 3 and name.endswith(('.experts_gate_up', '.experts_down')):
+                # Packed qwen3.5-MoE expert stacks (#668 cell 2): flatten the
+                # stacked per-expert matrices [E, rows, width] to one packed
+                # 2-D matrix, then restore the 3-D view. Packing is rowwise
+                # with 32-value blocks, so slicing whole expert rows off the
+                # packed tensor yields a valid packed matrix per expert.
+                experts, rows, width = weight.shape
+                data, expert_scales = pack(weight.reshape(experts*rows, width))
+                weights[name] = data.view(experts, rows, -1)
+                scales[name] = expert_scales.view(experts, rows, -1)
     return scales
 
 
