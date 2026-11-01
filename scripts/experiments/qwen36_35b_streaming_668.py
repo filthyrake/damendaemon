@@ -125,7 +125,7 @@ def main():
 
     try:
         for row, text in zip(reference, PROMPTS):
-            ids = tokenizer.encode(text).ids
+            ids = tokenizer.encode(text, add_special_tokens=False).ids
             if ids != row['ids']:
                 raise ValueError(f'prompt tokenization drifted from the pinned reference: {text[:30]}')
             t0 = time.perf_counter()
