@@ -1,0 +1,75 @@
+{
+  "batch": 1,
+  "cell2_reference": "docs/evidence/nvidia/qwen36-35b-a3b-q8-a6000/ (PR #670)",
+  "completed": true,
+  "context": 32768,
+  "device": "GPU-4adb9ddb-7bb3-189c-0fa2-51d67d1189ed",
+  "gate": "32K C1 concurrency (direct executor)",
+  "graphs": false,
+  "kernels": "triton-hybrid+q8_0",
+  "kv_cache_bytes": 671088640,
+  "model": "/home/damen/models/Qwen_Qwen3.6-35B-A3B",
+  "model_revision": "995ad96eacd98c81ed38be0c5b274b04031597b0",
+  "output_limit": 512,
+  "phases": {
+    "allocator_after_warmup_gib": 35.527249813079834,
+    "allocator_current_gib": 35.48402166366577,
+    "allocator_peak_gib": 40.29117393493652,
+    "decode": {
+      "aggregate_tokens_per_second": 3.4891814961227205,
+      "per_slot_tokens_per_second": 3.4891814961227205,
+      "seconds": 146.73928557999898,
+      "steps": 511
+    },
+    "decode_progress": {
+      "seconds": 110.16494520199194,
+      "steps": 384
+    },
+    "prefill": {
+      "seconds": [
+        7.814399306997075
+      ],
+      "total": 7.814399306997075
+    },
+    "warmup": {
+      "seconds": 2.772297299001366
+    }
+  },
+  "precision": "float16",
+  "prompt_tokens": 32256,
+  "quantization": "q8_0",
+  "slot_prompt_digests": [
+    "31836e963e26cd642684d7bce9c778132376800375c2b09917612a5d398be727"
+  ],
+  "slots": {
+    "slot0": {
+      "first_token": 33075,
+      "output_ids_digest": "cc380b42989fab04228416f5923152fc83a9cb119874b7eb888296ac3c9db747",
+      "output_preview_ids": [
+        33075,
+        888,
+        279,
+        15217,
+        5388,
+        1345,
+        279,
+        12182,
+        7189,
+        1396,
+        59056,
+        43555,
+        2691,
+        440,
+        5721,
+        321
+      ],
+      "output_tokens": 512,
+      "passed": true,
+      "prefill_seconds": 7.814399306997075,
+      "request_seconds": 154.55368488699605
+    }
+  },
+  "torch": "2.13.0+cu130",
+  "weight_gib": 34.761629581451416,
+  "weight_load_seconds": 116.86598159901041
+}
