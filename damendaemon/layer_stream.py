@@ -17,8 +17,17 @@ def enabled():
 def validate(config, quantization, context, batch=1, use_graph=False, kernels=None):
     if not enabled():
         return
+    # Admission is structural, not name-locked: any HybridExecutor text
+    # family member shares the streamed geometry (fixed embed/head/norm +
+    # per-layer weight partitions driven by offload.activate). The dense
+    # and MoE surfaces both qualify under this rule; the context bound
+    # stays anchored to the streaming qualification, not the family name.
+    # Quantization is refused for a structural reason, not policy: the
+    # packed Linear keys scale copies by host-tensor id(), which layer
+    # streaming's device copies invalidate (wiring it is follow-up work).
+    family = ('qwen3_5_text', 'qwen3_5_moe_text')
     if (os.environ.get('DAMENDAEMON_DEVICE', 'cuda') != 'cuda'
-            or config.get('model_type') != 'qwen3_5_text'
+            or config.get('model_type') not in family
             or quantization != 'none' or use_graph
             or (kernels or os.environ.get('DAMENDAEMON_KERNELS', 'auto')) != 'torch'
             or os.environ.get('DAMENDAEMON_HYBRID_PRECISION', 'float16') != 'float16'
@@ -46,6 +55,11 @@ class WeightPlan:
 
 
 def plan(weights, layer_count):
+    """Partition weights into always-resident fixed tensors and per-layer
+    streamed groups. Fixed is structural — every non-layer-indexed tensor
+    (embed/head/norm, and heads like the MTP module's mtp.*) stays
+    resident; the requirement is the streaming surface itself (embed,
+    head, norm), not an exact set of names."""
     if type(layer_count) is not int or layer_count <= 0:
         raise ValueError('invalid streamed layer count')
     fixed, layers = [], [[] for _ in range(layer_count)]
@@ -56,10 +70,16 @@ def plan(weights, layer_count):
             fixed.append(name)
         else:
             prefix, separator, _ = name.partition('.')
-            if not separator or not prefix.isascii() or not prefix.isdecimal() or not 0 <= int(prefix) < layer_count:
+            if separator and prefix.isascii() and prefix.isdecimal() and 0 <= int(prefix) < layer_count:
+                layers[int(prefix)].append(name)
+            elif name.startswith('mtp.'):
+                # Head-module weights carry no layer index: resident, like
+                # the shared embeddings — small enough to keep fixed and
+                # exercised every streamed layer that consults them.
+                fixed.append(name)
+            else:
                 raise ValueError(f'unrecognized streamed weight: {name}')
-            layers[int(prefix)].append(name)
-    if set(fixed) != {'embed', 'head', 'norm'} or any(not names for names in layers):
+    if not {'embed', 'head', 'norm'} <= set(fixed) or any(not names for names in layers):
         raise ValueError('streaming requires fixed weights and every layer')
     fixed_ids = {id(weights[name]) for name in fixed}
     def size(names, excluded=()):
