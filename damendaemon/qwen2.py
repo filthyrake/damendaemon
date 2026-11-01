@@ -54,10 +54,13 @@ def weight_bytes(path,quantization=None):
         raise ValueError('GPT-OSS uses checkpoint-native MXFP4; conversion is unsupported')
     element_bytes = 4 if config['model_type'] in ('starcoder2','gpt2','gpt_neox','bloom') else 2
     total, embedding, has_head = 0, None, False
+    include_mtp = (os.environ.get('DAMENDAEMON_HYBRID_MTP') == '1'
+                   and os.environ.get('DAMENDAEMON_HYBRID_MTP_DROP') != '1'
+                   and config['model_type'] == 'qwen3_5_moe_text')
     for file in weight_files(path):
         with safe_open(str(file), framework="pt", device="cpu") as reader:
             for key in reader.keys():
-                if key.startswith('mtp.'):
+                if key.startswith('mtp.') and not include_mtp:
                     continue
                 if key.startswith('model.visual.'):
                     if include_vision:
@@ -165,10 +168,15 @@ class ModelWeights:
                 self.weight_cache_status = 'hit'
                 return
         state = {}
+        # MTP tensors (#668 MTP cell) join the state only under the explicit
+        # load opt-in — default loads stay byte- and host-memory-identical.
+        include_mtp = (os.environ.get('DAMENDAEMON_HYBRID_MTP') == '1'
+                       and os.environ.get('DAMENDAEMON_HYBRID_MTP_DROP') != '1'
+                       and c['model_type'] == 'qwen3_5_moe_text')
         for candidate in files:
             with safe_open(str(candidate), framework="pt", device="cpu") as reader:
                 for key in reader.keys():
-                    if not key.startswith(('model.visual.', 'mtp.')):
+                    if not key.startswith('model.visual.') and (include_mtp or not key.startswith('mtp.')):
                         if offload:
                             # Recheck before faulting in each source tensor.
                             header = reader.get_slice(key)
