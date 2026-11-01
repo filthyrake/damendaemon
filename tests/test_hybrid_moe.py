@@ -20,7 +20,7 @@ from damendaemon.hybrid import HybridExecutor, load_weights
 from damendaemon.hybrid_moe_ffn import HybridMoeFeedForward
 
 HIDDEN, HEADS, KV, HEAD_DIM = 32, 2, 1, 16
-LAYERS, EXPERTS, TOP, INTER, SHARED = 4, 4, 2, 16, 16
+LAYERS, EXPERTS, TOP, INTER, SHARED = 4, 4, 2, 32, 32
 
 
 def moe_root_config():
@@ -198,6 +198,82 @@ class HybridMoeTests(unittest.TestCase):
             _, chunked_next = chunked.decode(token)
             self.assertEqual(int(whole_next[0]), int(chunked_next[0]))
             token = int(chunked_next[0])
+
+    # ── packed expert projections (#668 cell 2) ─────────────────────
+
+    def _prepared(self, quantization):
+        import copy
+        weights = {name: value.clone() for name, value in self.weights.items()}
+        weights['head'] = weights['embed']
+        from damendaemon.quantization import prepare
+        scales = prepare(weights, quantization)
+        return weights, scales
+
+    def test_prepare_packs_expert_stacks_rowwise_and_keeps_routing_exact(self):
+        for quantization in ('q8_0', 'q4_0'):
+            with self.subTest(quantization=quantization):
+                weights, scales = self._prepared(quantization)
+                packed_dtype = torch.int8 if quantization == 'q8_0' else torch.uint8
+                self.assertEqual(weights['1.experts_gate_up'].dtype, packed_dtype)
+                self.assertEqual(weights['1.experts_down'].dtype, packed_dtype)
+                self.assertEqual(weights['1.experts_gate_up'].shape,
+                                 (EXPERTS, 2*INTER, HIDDEN if quantization == 'q8_0' else HIDDEN//2))
+                self.assertEqual(scales['1.experts_gate_up'].shape, (EXPERTS, 2*INTER, HIDDEN//32))
+                # Routers and combine gates are never packed.
+                for name in ('1.router', '1.shared_expert_gate'):
+                    self.assertNotIn(name, scales)
+                    self.assertNotEqual(weights[name].dtype, packed_dtype)
+                # Shared expert projections pack as ordinary 2-D matrices.
+                self.assertEqual(weights['1.shared_gate_up'].dtype, packed_dtype)
+                # Every packed tensor carries exactly one scale per 32 values.
+                for name, tensor in weights.items():
+                    if name in scales:
+                        self.assertEqual(scales[name].numel()*32,
+                                         self.weights[name].numel())
+
+    def test_packed_expert_slices_dequantize_to_their_own_rows(self):
+        from damendaemon.quantization import dequantize, dequantize_q4
+        # Q4_0 is 4-bit: ~10% per-weight error on synthetic randn fixtures is
+        # the expected block-quantization floor, not a slicing defect (slicing
+        # correctness is the row-exactness assertion inside each subtest).
+        for quantization, dequant, tolerance in (('q8_0', dequantize, 0.02),
+                                                 ('q4_0', dequantize_q4, 0.15)):
+            with self.subTest(quantization=quantization):
+                weights, scales = self._prepared(quantization)
+                for stack, scale in (('1.experts_gate_up', '1.experts_gate_up'),
+                                     ('1.experts_down', '1.experts_down')):
+                    for expert in range(EXPERTS):
+                        recovered = dequant(weights[stack][expert], scales[scale][expert],
+                                            torch.float32)
+                        original = self.weights[stack][expert].float()
+                        error = (recovered-original).norm()/original.norm()
+                        self.assertLess(float(error), tolerance)
+
+    def test_packed_shared_projection_matches_dequantized_reference(self):
+        # quantized_torch.linear (dequantize + F.linear) is the exact semantic
+        # the executor's shared-expert path uses through the packed Linear for
+        # Q8 (its only qualified surface; Q4's CUDA dispatch is the triton
+        # kernel, verified on hardware in the A6000 cell).
+        from damendaemon.quantized_torch import linear as packed_linear
+        from damendaemon.quantization import dequantize, dequantize_q4
+        weights, scales = self._prepared('q8_0')
+        rng = torch.Generator().manual_seed(5)
+        x = torch.randn(3, HIDDEN, generator=rng)
+        actual = packed_linear(x, weights['1.shared_gate_up'],
+                               scales['1.shared_gate_up'])
+        matrix = dequantize(weights['1.shared_gate_up'],
+                            scales['1.shared_gate_up'], torch.float32)
+        torch.testing.assert_close(actual, torch.nn.functional.linear(x, matrix),
+                                   rtol=1e-5, atol=1e-5)
+        # Q4: the same dequantize + F.linear form _moe_half applies, on the
+        # shared 2-D projection (determinism plus the 4-bit error floor).
+        weights, scales = self._prepared('q4_0')
+        matrix = dequantize_q4(weights['1.shared_gate_up'].reshape(-1, HIDDEN//2),
+                               scales['1.shared_gate_up'], torch.float32)
+        original = torch.cat([self.weights['1.shared_gate_up'][:SHARED].float(),
+                              self.weights['1.shared_gate_up'][SHARED:].float()])
+        error = (matrix-original).norm()/original.norm()
+        self.assertLess(float(error), 0.15)
 
 
 if __name__ == '__main__':

@@ -189,11 +189,13 @@ class HybridExecutor:
         # qwen3.5-MoE FFN geometry (#668): None on dense checkpoints.
         self.moe_experts = c.get('num_experts')
         self.moe_top_k = c.get('num_experts_per_tok')
-        if self.moe_experts is not None:
-            if model.scales:
-                raise ValueError('quantized qwen3.5-MoE execution is not '
-                                 'implemented yet (#668 cell 2: explicit packed '
-                                 'projections for expert slices)')
+        if self.moe_experts is not None and model.scales:
+            # Packed expert projections (#668 cell 2): the 3-D stacks are
+            # packed rowwise per expert (quantization.prepare), and the
+            # packed Linear carries their device scale copies keyed by the
+            # full-stack tensor identity. _moe_half slices expert rows and
+            # dequantizes; the shared projections go through self.linear.
+            pass
         selected = kernels or os.environ.get('DAMENDAEMON_KERNELS', 'auto')
         if selected not in ('auto', 'triton', 'torch'):
             raise ValueError('kernels must be auto, torch, or triton')
@@ -755,6 +757,14 @@ class HybridExecutor:
         its per-token combine gate. ``select_experts`` carries the exact
         selection policy; the per-expert loop mirrors the host reference's
         accumulation order for parity.
+
+        Packed weights (#668 cell 2): the 3-D expert stacks are Q8/Q4-packed
+        rowwise per expert; each expert's packed rows and scale rows are
+        sliced and dequantized to the compute dtype (the same dequantize +
+        F.linear semantics as quantized_torch, correctness-first — kernel
+        dispatch for slices is throughput territory). The router and the
+        combine gate are never packed (selection/gating exactness); the
+        shared expert's 2-D projections run through the packed Linear.
         """
         from .expert_selection import select_experts
         n, length, hidden = x.shape
@@ -765,18 +775,36 @@ class HybridExecutor:
                                                 scoring='softmax', renormalize=True)
         output = torch.zeros_like(flat)
         gate_up, down = w[f'{i}.experts_gate_up'], w[f'{i}.experts_down']
-        for expert in range(self.moe_experts):
-            rows, slots = (selected == expert).nonzero(as_tuple=True)
-            if rows.numel() == 0:
-                continue
-            gate, up = F.linear(flat[rows], gate_up[expert]).chunk(2, -1)
-            activated = (F.silu(gate.float())*up.float()).to(flat.dtype)
-            contribution = F.linear(activated, down[expert])
-            output.index_add_(0, rows, contribution * coefficients[rows, slots].unsqueeze(-1).to(flat.dtype))
+        if gate_up.dtype in (torch.int8, torch.uint8):
+            from .quantization import dequantize, dequantize_q4
+            packed_scales = self.linear.scales
+            gate_up_scales, down_scales = packed_scales[id(gate_up)], packed_scales[id(down)]
+            dequant = dequantize if gate_up.dtype is torch.int8 else dequantize_q4
+            for expert in range(self.moe_experts):
+                rows, slots = (selected == expert).nonzero(as_tuple=True)
+                if rows.numel() == 0:
+                    continue
+                gate, up = F.linear(flat[rows], dequant(gate_up[expert],
+                                                        gate_up_scales[expert],
+                                                        flat.dtype)).chunk(2, -1)
+                activated = (F.silu(gate.float())*up.float()).to(flat.dtype)
+                contribution = F.linear(activated, dequant(down[expert],
+                                                           down_scales[expert],
+                                                           flat.dtype))
+                output.index_add_(0, rows, contribution * coefficients[rows, slots].unsqueeze(-1).to(flat.dtype))
+        else:
+            for expert in range(self.moe_experts):
+                rows, slots = (selected == expert).nonzero(as_tuple=True)
+                if rows.numel() == 0:
+                    continue
+                gate, up = F.linear(flat[rows], gate_up[expert]).chunk(2, -1)
+                activated = (F.silu(gate.float())*up.float()).to(flat.dtype)
+                contribution = F.linear(activated, down[expert])
+                output.index_add_(0, rows, contribution * coefficients[rows, slots].unsqueeze(-1).to(flat.dtype))
         combine = torch.sigmoid(F.linear(flat.float(), w[f'{i}.shared_expert_gate'].float()))
-        gate, up = F.linear(flat, w[f'{i}.shared_gate_up']).chunk(2, -1)
+        gate, up = self.linear(flat, w[f'{i}.shared_gate_up']).chunk(2, -1)
         activated = (F.silu(gate.float())*up.float()).to(flat.dtype)
-        shared = F.linear(activated, w[f'{i}.shared_down'])
+        shared = self.linear(activated, w[f'{i}.shared_down'])
         output = output + shared * combine.to(flat.dtype)
         return x + output.reshape(n, length, hidden)
 
