@@ -78,10 +78,22 @@ def weight_bytes(path,quantization=None):
                     total += math.prod(shape)*(1 if key.endswith(('_blocks','_scales')) else
                         4 if len(shape)==1 or key.endswith('_bias') or reader.get_slice(key).get_dtype()=='F32' else 2)
                     continue
-                if quantized and len(shape) == 2 and not is_embedding and shape[1] % 32 == 0:
+                if quantized and len(shape) == 3 and key.endswith(('.mlp.experts.gate_up_proj', '.mlp.experts.down_proj')) \
+                        and shape[2] % 32 == 0:
+                    # qwen3.5-MoE fused expert stacks (#668): packed rowwise per
+                    # expert exactly like a 2-D matrix of shape [E*rows, width]
+                    # (quantization.prepare flattens then restores the 3-D view).
+                    total += (math.prod(shape)//(2 if quantization=='q4_0' else 1)
+                              + 2 * math.prod(shape[:2]) * (shape[2] // 32))
+                    continue
+                if quantized and len(shape) == 2 and not is_embedding and shape[1] % 32 == 0 \
+                        and not key.endswith(('.mlp.gate.weight', '.mlp.shared_expert_gate.weight')):
+                    # The router (mlp.gate.weight) and the shared-expert combine
+                    # gate stay high precision in prepare() (selection/gating
+                    # exactness), so the estimate must not discount them.
                     total += math.prod(shape)//(2 if quantization=='q4_0' else 1) + 2 * shape[0] * (shape[1] // 32)
                 else:
-                    tensor_bytes=4 if config['model_type']=='qwen3_5_text' and len(shape)==1 else element_bytes
+                    tensor_bytes=4 if config['model_type'] in ('qwen3_5_text','qwen3_5_moe_text') and len(shape)==1 else element_bytes
                     total += tensor_bytes * math.prod(shape)
     if quantized and embedding is not None and not has_head:
         if config.get('tie_word_embeddings'):

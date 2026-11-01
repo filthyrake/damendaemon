@@ -1,0 +1,229 @@
+{
+  "baseline_allocated_bytes": 38098691072,
+  "batch": 1,
+  "c_series_reference": "docs/evidence/nvidia/qwen36-35b-a3b-q8-32k-concurrency-a6000/ (PR #671)",
+  "completed": false,
+  "context": 32768,
+  "device": "GPU-4adb9ddb-7bb3-189c-0fa2-51d67d1189ed",
+  "gate": "32K cancel-decode lifecycle (MoE serve)",
+  "graphs": false,
+  "model": "/home/damen/models/Qwen_Qwen3.6-35B-A3B",
+  "model_revision": "995ad96eacd98c81ed38be0c5b274b04031597b0",
+  "output_limit": 512,
+  "precision": "float16",
+  "prompt_tokens": 32256,
+  "q8_gate_reference": "docs/evidence/nvidia/qwen36-35b-a3b-q8-a6000/ (PR #670)",
+  "quantization": "q8_0",
+  "rounds": {
+    "cancel_round": {
+      "slots": {
+        "0": {
+          "admitted_seconds": 7.786661840000306,
+          "disconnected_seconds": 12.816545665002195,
+          "error": null,
+          "first_output_seconds": 7.786703213001601,
+          "output_chars": 110,
+          "output_digest": "c0d4667fd0b430867ef2d9d0b5de93fc163fb5189b4b1891e6ec23f5d8894beb",
+          "output_preview": " jumps over the lazy dog while the repository records every bounded qualificatio",
+          "total_seconds": 12.816615012008697,
+          "usage": null
+        }
+      }
+    },
+    "followup_after_cancel": {
+      "value": {
+        "admitted_seconds": null,
+        "disconnected_seconds": null,
+        "error": "HTTP Error 503: Service Unavailable",
+        "first_output_seconds": null,
+        "output_chars": 0,
+        "output_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "total_seconds": 0.004364041000371799,
+        "usage": null
+      }
+    },
+    "release_probe": {
+      "value": {
+        "admitted_seconds": null,
+        "disconnected_seconds": null,
+        "error": "HTTP Error 503: Service Unavailable",
+        "first_output_seconds": null,
+        "output_chars": 0,
+        "output_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "total_seconds": 0.001143934001447633,
+        "usage": null
+      }
+    },
+    "warmup": {
+      "value": {
+        "admitted_seconds": 122.89178030799667,
+        "disconnected_seconds": null,
+        "error": null,
+        "first_output_seconds": 122.89181728499534,
+        "output_chars": 4,
+        "output_digest": "fe0663fd13cdb08743dca3d2d5d1168762556ea36f77d8ab6009306d12a6f351",
+        "output_preview": " the",
+        "total_seconds": 122.89192258600087,
+        "usage": {
+          "completion_tokens": 1,
+          "prompt_tokens": 512,
+          "total_tokens": 513
+        }
+      }
+    }
+  },
+  "serve": "production damendaemon serve (no probe wrapper, whole prefill)",
+  "slot_prompt_digests": {
+    "0": "31836e963e26cd642684d7bce9c778132376800375c2b09917612a5d398be727",
+    "1": "0c5a48f783f9c2b1ef60d83839b6ce81f70e335180360334fcb73c5d6bcbe810"
+  },
+  "statuses": {
+    "after_cancel_round": {
+      "closed": false,
+      "closing": false,
+      "context": 32768,
+      "cuda_allocated_bytes": 38099717632,
+      "cuda_devices": null,
+      "cuda_peak_allocated_bytes": 43260331520,
+      "device": "cuda",
+      "gpu_model_limit": 1,
+      "hip_allocated_bytes": null,
+      "host_budget_bytes": 42949672960,
+      "host_cached_bytes": 37325015552,
+      "host_model_limit": 1,
+      "models": [
+        {
+          "chat_template": {
+            "sha256": null,
+            "source": "checkpoint"
+          },
+          "executor_failed": false,
+          "gpu_packed_layout_overhead_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "host_weight_bytes": 37325015552,
+          "id": "qwen36moe",
+          "kv_cache_bytes": 671088640,
+          "kv_cache_mode": "none",
+          "output_head_workspace_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "pipeline": null,
+          "q4_marlin_abi": null,
+          "quantization": "q8_0",
+          "residency": "gpu",
+          "vision_gpu_weight_bytes": 0,
+          "vision_host_weight_bytes": 0,
+          "weight_streaming": null
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "pending_executor_cleanup": 0,
+      "pending_pipeline_cleanup": 0,
+      "rocm_aotriton_experimental": null,
+      "xpu_allocated_bytes": null,
+      "xpu_peak_allocated_bytes": null,
+      "xpu_reserved_bytes": null
+    },
+    "after_followup": {
+      "closed": false,
+      "closing": false,
+      "context": 32768,
+      "cuda_allocated_bytes": 38099732992,
+      "cuda_devices": null,
+      "cuda_peak_allocated_bytes": 43260331520,
+      "device": "cuda",
+      "gpu_model_limit": 1,
+      "hip_allocated_bytes": null,
+      "host_budget_bytes": 42949672960,
+      "host_cached_bytes": 37325015552,
+      "host_model_limit": 1,
+      "models": [
+        {
+          "chat_template": {
+            "sha256": null,
+            "source": "checkpoint"
+          },
+          "executor_failed": false,
+          "gpu_packed_layout_overhead_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "host_weight_bytes": 37325015552,
+          "id": "qwen36moe",
+          "kv_cache_bytes": 671088640,
+          "kv_cache_mode": "none",
+          "output_head_workspace_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "pipeline": null,
+          "q4_marlin_abi": null,
+          "quantization": "q8_0",
+          "residency": "gpu",
+          "vision_gpu_weight_bytes": 0,
+          "vision_host_weight_bytes": 0,
+          "weight_streaming": null
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "pending_executor_cleanup": 0,
+      "pending_pipeline_cleanup": 0,
+      "rocm_aotriton_experimental": null,
+      "xpu_allocated_bytes": null,
+      "xpu_peak_allocated_bytes": null,
+      "xpu_reserved_bytes": null
+    },
+    "after_warmup": {
+      "closed": false,
+      "closing": false,
+      "context": 32768,
+      "cuda_allocated_bytes": 38098691072,
+      "cuda_devices": null,
+      "cuda_peak_allocated_bytes": 38180718080,
+      "device": "cuda",
+      "gpu_model_limit": 1,
+      "hip_allocated_bytes": null,
+      "host_budget_bytes": 42949672960,
+      "host_cached_bytes": 37325015552,
+      "host_model_limit": 1,
+      "models": [
+        {
+          "chat_template": {
+            "sha256": null,
+            "source": "checkpoint"
+          },
+          "executor_failed": false,
+          "gpu_packed_layout_overhead_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "host_weight_bytes": 37325015552,
+          "id": "qwen36moe",
+          "kv_cache_bytes": 671088640,
+          "kv_cache_mode": "none",
+          "output_head_workspace_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "pipeline": null,
+          "q4_marlin_abi": null,
+          "quantization": "q8_0",
+          "residency": "gpu",
+          "vision_gpu_weight_bytes": 0,
+          "vision_host_weight_bytes": 0,
+          "weight_streaming": null
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "pending_executor_cleanup": 0,
+      "pending_pipeline_cleanup": 0,
+      "rocm_aotriton_experimental": null,
+      "xpu_allocated_bytes": null,
+      "xpu_peak_allocated_bytes": null,
+      "xpu_reserved_bytes": null
+    }
+  },
+  "suffix_prompt_digest": "8f446303628fc0a1810f6e46888f7fa03c72b111fcb4619634f82678d8b098e9",
+  "timeline": [],
+  "verdict": {
+    "cancelled_kv_released": true,
+    "disconnect_after_first_output": true,
+    "early_release_probe": false,
+    "followup_within_gates": false,
+    "partial_output_recorded": true
+  }
+}
