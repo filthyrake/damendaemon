@@ -112,6 +112,60 @@ class TokenGateTests(unittest.TestCase):
             self.assertTrue(torch.isfinite(logits).all())
             token = int(next_ids[0])
 
+    # ── property: phase-2 is layer-complete (#642 residual fix) ───────────
+
+    def test_gated_phase2_carries_every_mlp_half(self):
+        """Every phase-2 layer above the gate must run its MLP sublayer.
+
+        The #642 residual root cause: _gated_phase2 applied only the mixer
+        for each layer above the gate, a uniform ~68% hidden-state
+        divergence from upstream's full-layer phase-2 (their pruned forward
+        runs attention/linear + MLP, and the MLP is rowwise so kept-row MLP
+        values are identical).  gated_prefill must match a manual reference
+        that runs the same boundary/selection/bias with FULL layers — and
+        must NOT match the MLP-less variant.
+        """
+        from damendaemon.token_gate import TokenGate
+        prompt = [1, 4, 2, 7, 5, 3, 8, 6, 9, 11, 12, 13, 14, 15]
+        start, end, keep = 2, 13, 3
+        gated = self.executor(keep=keep)
+        self._train_branch(gated.gate, seed=5)
+        logits = gated.gated_prefill(prompt, 0, start, end, keep)
+
+        ids = torch.tensor([prompt])
+        positions = torch.arange(len(prompt))[None]
+        slots = torch.tensor([0])
+        boundary = gated.forward_boundary(gated.embedding(ids), positions, slots, True)
+        scores = gated.gate.score_tokens(boundary, gated.w['1.norm2'], gated.eps)
+        article = torch.zeros(len(prompt), dtype=torch.bool)
+        article[start:end] = True
+        kept_article = gated.gate.select(scores, article, keep)
+        non_article = torch.arange(len(prompt))[~article]
+        kept = torch.sort(torch.cat((non_article, kept_article))).values
+        bias = gated.gate.bias(scores, article)[0][kept]
+        ratio = TokenGate.kept_ratio(kept)
+
+        def reference(with_mlp):
+            x = boundary.index_select(1, kept)
+            x = gated._mlp_half(x, 1)         # the gate layer's MLP half
+            for i in range(2, gated.layer_end):
+                if gated.c['layer_types'][i] == 'linear_attention':
+                    h = gated.norm(x, gated.w[f'{i}.norm1'])
+                    x = x + gated.linear_attention(h, i, slots, True, 0)
+                else:
+                    row = gated.gate.bias_layers.index(i)
+                    h = gated.norm(x, gated.w[f'{i}.norm1'])
+                    x = x + gated._gated_attention(h, i, kept, slots, ratio,
+                                                   bias[:, row])
+                if with_mlp:
+                    x = gated._mlp_half(x, i)
+            return gated.output_logits(x[:, -1])
+
+        torch.testing.assert_close(logits, reference(True), rtol=2e-5, atol=2e-6)
+        broken = reference(False)
+        self.assertGreater(float((logits.float() - broken.float()).norm()
+                                 / logits.float().norm().clamp_min(1e-9)), 0.1)
+
     # ── property 4: chunked gated prefill equals whole gated prefill ───────
 
     def test_chunked_gated_equals_whole_gated(self):
@@ -244,16 +298,28 @@ class TokenGateTests(unittest.TestCase):
         self.assertTrue(bool((ratio <= 1.0).all()))
         self.assertTrue(bool((ratio[1:] > 0).all()))
 
-    def test_decode_fold_is_head_mean_of_key_ratio_bias(self):
+    def test_fold_bias_scales_per_head_bias_by_head_mean_gamma_at_key_ratio(self):
         gate = TokenGate({'num_hidden_layers': 4, 'hidden_size': 8, 'intermediate_size': 16,
                          'layer_types': ['linear_attention', 'full_attention',
                                         'linear_attention', 'full_attention'],
                          'num_attention_heads': 2}, 1, [3], 2, 2)
-        bias = torch.arange(3*2*2, dtype=torch.float32).reshape(3, 2, 2)
+        gate.attn_scale = torch.tensor([[0.3, -0.4], [0.1, 0.2]])
+        bias = torch.arange(3 * 2 * 2, dtype=torch.float32).reshape(3, 2, 2)  # (keys, rows, heads)
         kept = torch.tensor([0, 1, 2])
-        fold = gate.decode_fold(bias, kept)
-        self.assertEqual(fold.shape, (3, 2))
-        self.assertTrue(torch.allclose(fold, bias.mean(-1)))
+        fold = gate.fold_bias(bias, kept)
+        self.assertEqual(fold.shape, (3, 2, 2))
+        gamma = torch.nn.functional.softplus(torch.tensor([[0.3, -0.4], [0.1, 0.2]]))
+        ratio = TokenGate.kept_ratio(kept).view(-1, 1, 1)
+        # per-head bias preserved; the scalar per (key, row) is the head-mean
+        # gamma times the key's own kept ratio (upstream _phase2_q_bias /
+        # decode_phase2_layer_tensors)
+        expected = bias * (gamma.mean(-1, keepdim=True) * ratio)
+        torch.testing.assert_close(fold, expected)
+        # key_scale is that scalar for a single bias row
+        scale = gate.key_scale(1, torch.tensor([0, 5]))
+        self.assertEqual(scale.shape, (2,))
+        torch.testing.assert_close(
+            scale, gamma[1].mean() * TokenGate.kept_ratio(torch.tensor([0, 5])))
 
 
 if __name__ == '__main__':

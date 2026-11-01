@@ -104,6 +104,11 @@ Three controls isolate every number (probe scripts archived alongside):
    integration (temperature/fold/KV-position semantics), not in the gate
    math. This is the open input to #639's go/no-go and blocks any serving
    claim (#642 was scoped to training + records, not serving).
+   **RESOLVED 2026-10-31 — see [`residual-fix/`](residual-fix/README.md):
+   the divergence was phase-2 missing every MLP sublayer above the gate
+   (plus a decode-fold head-collapse; both ours). After the fix our gated
+   executor scores 5/24 at K=2000 — matching upstream's harness exactly —
+   with the full-context control unchanged at 10/24.**
 
 ## Upstream bugs found and patched this cell (ledger, cumulative with #640)
 

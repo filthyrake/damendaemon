@@ -1,0 +1,32 @@
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights:  90%|█████████ | 288/320 [00:00<00:00, 2876.67it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 2942.20it/s]
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+[transformers] `chunk_gated_delta_rule` is falling back to its reference PyTorch implementation because `flash-linear-attention` is not installed. This is correct but much slower; install `flash-linear-attention` for the optimized kernel.
+[FlexAttention] patched 6 full-attention layers: [3, 7, 11, 15, 19, 23]
+upstream kept 2013 positions this run (bisect had 2013)
+split gate MLP: True
+upstream first token: 271 '\n\n'
+ours-forced first token: 220 ' '
+layer  2 linear_attention rel-rms   0.6820  up_norm       68.6
+layer  3 full_attention   rel-rms   0.7574  up_norm       84.4
+layer  4 linear_attention rel-rms   0.8736  up_norm       81.7
+layer  5 linear_attention rel-rms   0.9017  up_norm       82.8
+layer  6 linear_attention rel-rms   0.9084  up_norm       90.6
+layer  7 full_attention   rel-rms   0.8902  up_norm      100.4
+layer  8 linear_attention rel-rms   0.9318  up_norm       92.7
+layer  9 linear_attention rel-rms   0.9938  up_norm       89.6
+layer 10 linear_attention rel-rms   1.0786  up_norm       84.8
+layer 11 full_attention   rel-rms   1.0403  up_norm      105.6
+layer 12 linear_attention rel-rms   1.0585  up_norm      106.1
+layer 13 linear_attention rel-rms   1.0833  up_norm      112.7
+layer 14 linear_attention rel-rms   0.9941  up_norm      134.0
+layer 15 full_attention   rel-rms   0.9671  up_norm      182.5
+layer 16 linear_attention rel-rms   0.9413  up_norm      208.3
+layer 17 linear_attention rel-rms   0.8887  up_norm      231.3
+layer 18 linear_attention rel-rms   0.8558  up_norm      250.4
+layer 19 full_attention   rel-rms   0.8687  up_norm      313.9
+layer 20 linear_attention rel-rms   0.8763  up_norm      347.0
+layer 21 linear_attention rel-rms   0.8388  up_norm      397.5
+layer 22 linear_attention rel-rms   0.9081  up_norm      414.5
+layer 23 full_attention   rel-rms   0.9645  up_norm      581.4
+boundary rel-rms: 0.00713696051388979
+wrote /tmp/g642r/layerwise.json

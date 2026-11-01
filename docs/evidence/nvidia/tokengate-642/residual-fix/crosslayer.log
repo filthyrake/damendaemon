@@ -1,0 +1,30 @@
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights:  70%|███████   | 224/320 [00:00<00:00, 2231.47it/s]Loading weights: 100%|██████████| 320/320 [00:00<00:00, 2535.28it/s]
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+[transformers] `chunk_gated_delta_rule` is falling back to its reference PyTorch implementation because `flash-linear-attention` is not installed. This is correct but much slower; install `flash-linear-attention` for the optimized kernel.
+[FlexAttention] patched 6 full-attention layers: [3, 7, 11, 15, 19, 23]
+upstream kept 2013 positions; first token 271 '\n\n'
+[cross] computing our layer-2 forwards...
+[cross] ours-on-ours done
+[cross] chunk_scan active: False | metal_scan: False
+[cross] ours-on-upstream done
+[cross] fallback-on-upstream done
+{
+ "n_kept": 2013,
+ "boundary_rms": 0.00713696051388979,
+ "layer2_rms": 0.6819725632667542,
+ "ours_layer2_on_up_boundary": 0.681951642036438,
+ "fallback_layer2_on_up_boundary": 0.681951642036438,
+ "chunk_scan_active": false,
+ "up_layer2_on_ours_boundary": null,
+ "up_layer2_on_ours_vs_ours": null,
+ "profile": {
+  "overall": 0.007095529697835445,
+  "article_mean": 0.007093034218996763,
+  "suffix_mean": 0.007479469757527113,
+  "first100": 0.007459040265530348,
+  "last100_art": 0.006870161276310682,
+  "max_row": 0.014984559267759323,
+  "argmax_row": 380
+ }
+}
+wrote /tmp/g642r/crosslayer.json and /tmp/g642r/crosslayer.pt
