@@ -62,12 +62,15 @@ def main():
             ids = tokenizer(text, add_special_tokens=False)['input_ids']
             with torch.inference_mode():
                 logits = model(torch.tensor([ids])).logits[0, -1].float()
+                # generate's first new token IS the last-position argmax, so the
+                # greedy stream is exactly the new tokens — no manual prepend
+                # (prepending duplicates t0 and shifts every comparison by one)
                 generated = model.generate(
-                    torch.tensor([ids]), max_new_tokens=GEN_TOKENS - 1,
+                    torch.tensor([ids]), max_new_tokens=GEN_TOKENS,
                     do_sample=False, num_beams=1,
                     pad_token_id=tokenizer.eos_token_id)[0, len(ids):].tolist()
             reference.append(dict(ids=ids, logits=logits.cpu(),
-                                 greedy=[int(logits.argmax())] + generated))
+                                 greedy=generated))
         print(f'[ref] {len(reference)} prompts in {time.perf_counter()-t0:.0f}s',
               flush=True)
         torch.save(reference, args.reference)
