@@ -93,6 +93,17 @@ class LayerStreamTests(unittest.TestCase):
                 plan({**self.weights(), **change}, 2)
         with self.assertRaises(ValueError):
             plan(self.weights(), 3)
+        # Packed tensors admit structurally when a scale is supplied for the
+        # same name, and the plan prices the scale with its weight (#668
+        # quantized streaming): int8 '0.a' (16 bytes) + its fp16 scale
+        # (32 bytes) + the unpacked fp32 '0.b' (16 bytes) = 64.
+        packed = {**self.weights(), '0.a': torch.ones(4, 4, dtype=torch.int8)}
+        scales = {'0.a': torch.ones(4, 4, dtype=torch.float16)}
+        layout = plan(packed, 2, scales)
+        self.assertEqual(layout.layer_bytes[0], 16 + 32 + 16)
+        # A packed tensor whose scale is missing is not a streamable weight.
+        with self.assertRaises(ValueError):
+            plan({**packed, '1.a': torch.ones(8, 4, dtype=torch.int8)}, 2, scales)
 
     def test_policy_rejects_graphs_packing_other_devices_and_precision(self):
         config = {'model_type': 'qwen3_5_text', 'max_position_embeddings': 32768}
@@ -109,8 +120,13 @@ class LayerStreamTests(unittest.TestCase):
                     validate(config, 'none', 512)
             with self.assertRaises(ValueError):
                 validate(config, 'none', 512, use_graph=True)
+            # Packed Q8/Q4 stream structurally (scales ride with their
+            # weights); anything else is refused.
+            validate(config, 'q8_0', 512)
+            validate(moe, 'q8_0', 512)
+            validate(config, 'q4_0', 512)
             with self.assertRaises(ValueError):
-                validate(config, 'q8_0', 512)
+                validate(config, 'e5m2', 512)
             # Admission follows the family rule, not a name: a non-hybrid
             # decoder is refused whatever its name.
             with self.assertRaises(ValueError):
@@ -235,3 +251,70 @@ class LayerStreamMoeTests(unittest.TestCase):
             self.assertEqual(streamed.offload.resident_bytes, 0)
         finally:
             fixture.doCleanups()
+
+
+class LayerStreamQuantizedTests(unittest.TestCase):
+    """Q8 scale streaming (#668 quantized streaming): packed weights stream
+    their scales with the same alias/pop discipline as the weights, and the
+    executor's rebind pattern tracks brand-new device identities after every
+    activation. Full executor parity runs on the A6000 — packed eager is a
+    native-GPU surface by policy."""
+
+    def test_scales_stream_and_rebind_tracks_fresh_identities(self):
+        embed = torch.ones(3, 4, dtype=torch.float16)
+        weights = {'embed': embed, 'head': embed, 'norm': torch.ones(4, dtype=torch.float16),
+                   '0.a': torch.ones(4, 4, dtype=torch.int8), '0.b': torch.ones(4),
+                   '1.a': torch.ones(8, 4, dtype=torch.int8)}
+        scales = {'head': torch.ones(3, 4, dtype=torch.float16),
+                  '0.a': torch.ones(4, 4, dtype=torch.float16),
+                  '1.a': torch.ones(8, 4, dtype=torch.float16)}
+        layout = plan(weights, 2, scales)
+        # The plan prices scales with their weights: fixed = embed+norm
+        # (24+16... in fp16: embed 24, norm 16, head aliased) + head scale 24;
+        # layers carry their int8 weights plus fp16 scale rows.
+        self.assertEqual(layout.fixed_bytes,
+                         3*4*2 + 4*2 + 3*4*2)  # embed, norm, head scale (head aliased)
+        store = LayerWeightStore(weights, layout, lambda tensor: tensor.clone(),
+                                lambda: None, lambda: None, scales=scales)
+        # Fixed set: head's scale streams with it at construction.
+        self.assertEqual(set(store.resident_scales), {'head'})
+        binding = {}
+        def rebind():
+            # The executor's _rebind_streamed_scales pattern, verbatim.
+            binding.clear()
+            binding.update({id(store.resident[name]): store.resident_scales[name]
+                            for name in store.resident if name in store.resident_scales})
+        rebind()
+        store.activate(0)
+        rebind()
+        self.assertEqual(set(store.resident_scales), {'head', '0.a'})
+        self.assertEqual(set(binding), {id(store.resident[name])
+                                       for name in ('head', '0.a') if name in store.resident_scales})
+        layer0_identity = id(store.resident['0.a'])
+        head_identity = id(store.resident['head'])
+        store.activate(1)
+        rebind()
+        self.assertEqual(set(store.resident_scales), {'head', '1.a'})
+        self.assertEqual(set(binding), {id(store.resident['head']), id(store.resident['1.a'])})
+        # Clone copies give every activation brand-new layer identities and
+        # the wholesale rebind drops the stale ones (device ids are addresses
+        # and can be reused after release — lingering keys mis-bind). Fixed
+        # tensors keep their identity by design.
+        self.assertNotIn(layer0_identity, binding)
+        self.assertIn(head_identity, binding)
+        # Release drops layer scales with layer weights; accounting prices
+        # both. copied_bytes is cumulative transfer volume: fixed once, each
+        # activation re-copies its layer (0 twice: 16+16+32 each pass).
+        store.activate(0)
+        self.assertEqual(set(store.resident_scales), {'head', '0.a'})
+        # The plan peak is the fixed set plus the LARGEST layer; reaching it
+        # requires activating layer 1 (96 bytes vs layer 0's 64).
+        store.activate(1)
+        self.assertEqual(store.peak_live_bytes, layout.peak_bytes)
+        expected_copied = (3*4*2 + 4*2          # embed (head aliased), norm
+                           + 3*4*2              # head scale
+                           + 2*(4*4 + 4*4 + 4*4*2)   # layer 0 twice: int8, fp32 b, fp16 scale
+                           + 2*(8*4 + 8*4*2))   # layer 1 twice: int8 weight + fp16 scale
+        self.assertEqual(store.copied_bytes, expected_copied)
+        store.close()
+        self.assertEqual(store.resident_scales, {})
