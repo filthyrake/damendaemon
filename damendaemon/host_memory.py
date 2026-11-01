@@ -36,13 +36,18 @@ def require_headroom(pending_bytes=0):
 
 
 def admit_checkpoint(files):
-    """Check source pages plus conservative conversion/cat copies using headers.
+    """Check source pages plus the largest conversion transient using headers.
 
-    Each source element allows two additional FP32 elements for destination and
-    conversion/concatenation temporaries. This deliberately overestimates FP16
-    storage and tied weights; it is not an exact peak or allocator guarantee.
+    The hybrid loader consumes the source dict as it converts (take() pops
+    each tensor before converting), so the host peak is the declining source
+    plus the largest single conversion/concatenation transient — never the
+    source plus a full model copy. The estimate charges the full source
+    (worst case: nothing popped yet) plus the largest single-tensor fp32
+    transient (worst conversion direction), which stays conservative for
+    per-tensor temporaries while reflecting the pop-based path. Deliberately
+    an overestimate of the actual allocator peak; not a reservation.
     """
-    source = converted = 0
+    source = transient = 0
     for file in files:
         with safe_open(str(file), framework='pt', device='cpu') as reader:
             for name in reader.keys():
@@ -54,6 +59,6 @@ def admit_checkpoint(files):
                     raise ValueError('hybrid offload requires floating-point checkpoint weights')
                 count = math.prod(header.get_shape())
                 source += count * (4 if dtype == 'F32' else 2)
-                converted += count * 8
-    require_headroom(source + converted)
-    return source + converted
+                transient = max(transient, count * 4)
+    require_headroom(source + transient)
+    return source + transient
