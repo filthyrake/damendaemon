@@ -276,5 +276,30 @@ class HybridMoeTests(unittest.TestCase):
         self.assertLess(float(error), 0.15)
 
 
+class HybridMoeServeAdmissionTests(unittest.TestCase):
+    """The serve path dispatches MoE text through the hybrid executor (#668)."""
+
+    def _model(self, vision):
+        from types import SimpleNamespace as NS
+        config = moe_root_config()['text_config']
+        return NS(config=dict(config), vision_weights=NS(bytes=8) if vision else None,
+                  quantization='q8_0', max_context=512)
+
+    def test_make_executor_routes_moe_text_through_hybrid(self):
+        from damendaemon import runtime
+        with patch('damendaemon.hybrid.HybridExecutor') as construct:
+            executor = runtime.make_executor(self._model(vision=False),
+                                             use_graph=False, max_batch=1)
+        self.assertIs(executor, construct.return_value)
+        construct.assert_called_once()
+
+    def test_make_executor_refuses_a_vision_moe_model(self):
+        # The transcribed contract excludes the MoE snapshot's visual
+        # tensors; vision weights on a MoE model are a loading defect.
+        from damendaemon import runtime
+        with self.assertRaisesRegex(ValueError, 'does not carry vision weights'):
+            runtime.make_executor(self._model(vision=True), use_graph=False)
+
+
 if __name__ == '__main__':
     unittest.main()

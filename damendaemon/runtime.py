@@ -697,11 +697,19 @@ def make_executor(model, use_graph=True, max_batch=None, **kwargs):
         if kwargs.pop('fuse_projections', True) is False:
             raise ValueError('Gemma requires fused projections')
         return GemmaExecutor(model, use_graph, max_batch or 1, **kwargs)
-    if model.config['model_type'] == 'qwen3_5_text':
+    if model.config['model_type'] in ('qwen3_5_text', 'qwen3_5_moe_text'):
         from .hybrid import HybridExecutor
         if kwargs.pop('fuse_projections', True) is False:
             raise ValueError('unfused projection mode is not available for hybrid execution')
         if getattr(model,'vision_weights',None) is not None:
+            # Vision companions stay dense-text-only for now: the MoE
+            # checkpoint's visual tensors are excluded by contract (#668),
+            # so a MoE model here would be a loading defect, not a
+            # vision cell.
+            if model.config['model_type'] == 'qwen3_5_moe_text':
+                raise ValueError('qwen3_5_moe_text does not carry vision weights '
+                                 'in the transcribed contract; refusing to build '
+                                 'a vision MoE executor')
             from .vision_policy import validate_execution
             validate_execution(model,max_batch or 1)
             from .vision_hybrid import VisionHybridExecutor
