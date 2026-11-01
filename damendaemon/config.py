@@ -137,7 +137,7 @@ def decoder_config(config):
         return starcoder_config(config)
     if config.get('model_type') == 'gemma3_text':
         return gemma_config(config)
-    if config.get('model_type') in ('qwen3_5', 'qwen3_5_text'):
+    if config.get('model_type') in ('qwen3_5', 'qwen3_5_text', 'qwen3_5_moe', 'qwen3_5_moe_text'):
         return hybrid_config(config)
     c = dict(config)
     kind = c.get('model_type')
@@ -214,23 +214,40 @@ def olmoe_config(config):
 
 
 def hybrid_config(config):
-    """Validate the dense, text-only Qwen3.5 backbone before allocating weights."""
+    """Validate the dense or MoE text-only Qwen3.5 backbone before allocating weights."""
     text = config.get('text_config', config)
     if not isinstance(text, dict):raise ValueError('hybrid text configuration must be an object')
     c = dict(text)
-    if c.get('model_type') != 'qwen3_5_text':
+    if c.get('model_type') not in ('qwen3_5_text', 'qwen3_5_moe_text'):
         raise ValueError('Qwen3.5 requires a text backbone configuration')
-    if config.get('quantization_config') or c.get('quantization_config') or c.get('num_experts', 0):
-        raise ValueError('quantized and MoE hybrid checkpoints are not supported')
+    moe = c.get('model_type') == 'qwen3_5_moe_text'
+    if moe:
+        # The MoE text contract (#668): routed fused experts plus a gated
+        # shared expert replace the dense FFN (hybrid_moe_checkpoint /
+        # hybrid_moe_ffn pin the tensor surface and routing semantics).
+        for key in ('num_experts', 'num_experts_per_tok', 'moe_intermediate_size',
+                    'shared_expert_intermediate_size'):
+            if type(c.get(key)) is not int or c[key] <= 0:
+                raise ValueError(f'{key} must be a positive integer for Qwen3.5-MoE')
+        if c['num_experts_per_tok'] > c['num_experts']:
+            raise ValueError('active experts cannot exceed the expert count')
+        if c.get('mamba_ssm_dtype', 'float32') != 'float32':
+            raise ValueError('Qwen3.5-MoE requires float32 SSM state storage')
+    if config.get('quantization_config') or c.get('quantization_config'):
+        raise ValueError('quantized hybrid checkpoints are not supported')
+    if not moe and c.get('num_experts', 0):
+        raise ValueError('MoE hybrid checkpoints require the qwen3_5_moe_text model type')
     rope = c.get('rope_parameters', {})
     if (not isinstance(rope, dict) or rope.get('rope_type') != 'default' or c.get('hidden_act') != 'silu'
             or c.get('attention_bias', False) or c.get('mlp_bias', False)
             or not c.get('attn_output_gate', False)):
         raise ValueError('unsupported hybrid attention, activation, or rotary configuration')
-    for key in ('hidden_size', 'intermediate_size', 'num_hidden_layers', 'num_attention_heads',
+    geometry = ('hidden_size', 'num_hidden_layers', 'num_attention_heads',
                 'num_key_value_heads', 'head_dim', 'vocab_size', 'max_position_embeddings',
                 'linear_num_key_heads', 'linear_num_value_heads', 'linear_key_head_dim',
-                'linear_value_head_dim', 'linear_conv_kernel_dim'):
+                'linear_value_head_dim', 'linear_conv_kernel_dim')
+    geometry += ('intermediate_size',) if not moe else ()
+    for key in geometry:
         if type(c.get(key)) is not int or c[key] <= 0:
             raise ValueError(f'{key} must be a positive integer')
     layers = c.get('layer_types', [])

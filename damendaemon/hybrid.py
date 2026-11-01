@@ -35,7 +35,16 @@ def load_weights(state, config):
     # Multimodal checkpoints wrap the text backbone in language_model.
     prefix = 'model.language_model.' if 'model.language_model.embed_tokens.weight' in state else 'model.'
     from .hybrid_checkpoint_contract import validate
-    validate(state,config,prefix)
+    if not config.get('num_experts'):
+        validate(state,config,prefix)
+    else:
+        # The MoE tensor inventory is audited against the transcribed
+        # qwen3.5-MoE contract (hybrid_moe_checkpoint) — either by ModelWeights
+        # before this call or by the required-name takes below.
+        dense_only = [name for name in state
+                     if name.startswith(prefix) and f'.mlp.gate_proj.weight' in name]
+        if dense_only:
+            raise ValueError('qwen3.5-MoE checkpoints cannot carry dense FFN tensors')
     w = {}
     from .layer_stream import enabled as offload_enabled
     from .host_memory import require_headroom
@@ -59,12 +68,36 @@ def load_weights(state, config):
     w['norm'] = take('norm.weight', torch.float32) + 1
     w['head'] = w['embed'] if config['tie_word_embeddings'] else convert(state.pop('lm_head.weight'), torch.float16)
     if config['tie_word_embeddings']:state.pop('lm_head.weight',None)
+    moe = config.get('num_experts') or 0
     for i, kind in enumerate(config['layer_types']):
         layer = f'layers.{i}.'
         w[f'{i}.norm1'] = take(layer+'input_layernorm.weight', torch.float32) + 1
         w[f'{i}.norm2'] = take(layer+'post_attention_layernorm.weight', torch.float32) + 1
-        w[f'{i}.gate_up'] = concatenate([take(layer+f'mlp.{name}_proj.weight') for name in ('gate', 'up')])
-        w[f'{i}.down'] = take(layer+'mlp.down_proj.weight')
+        if moe:
+            # Transcribed qwen3.5-MoE FFN surface (#668, hybrid_moe_checkpoint):
+            # router, fused 3-D expert stacks, dense shared expert and the
+            # [1, hidden] sigmoid combine gate. Shape checks mirror the
+            # contract so direct test loads fail loudly on mismatched states.
+            experts, inter = moe, config['moe_intermediate_size']
+            shared = config['shared_expert_intermediate_size']
+            hidden = config['hidden_size']
+            def moe_take(name, shape, dtype=torch.float16):
+                tensor = take(layer + name, dtype)
+                if tuple(tensor.shape) != shape:
+                    raise ValueError(f'qwen3.5-MoE tensor shape mismatch: {name} '
+                                     f'{tuple(tensor.shape)} != {shape}')
+                return tensor
+            w[f'{i}.router'] = moe_take('mlp.gate.weight', (experts, hidden))
+            w[f'{i}.experts_gate_up'] = moe_take('mlp.experts.gate_up_proj', (experts, 2 * inter, hidden))
+            w[f'{i}.experts_down'] = moe_take('mlp.experts.down_proj', (experts, hidden, inter))
+            w[f'{i}.shared_gate_up'] = concatenate([
+                moe_take(f'mlp.shared_expert.{name}_proj.weight', (shared, hidden))
+                for name in ('gate', 'up')])
+            w[f'{i}.shared_down'] = moe_take('mlp.shared_expert.down_proj.weight', (hidden, shared))
+            w[f'{i}.shared_expert_gate'] = moe_take('mlp.shared_expert_gate.weight', (1, hidden), torch.float32)
+        else:
+            w[f'{i}.gate_up'] = concatenate([take(layer+f'mlp.{name}_proj.weight') for name in ('gate', 'up')])
+            w[f'{i}.down'] = take(layer+'mlp.down_proj.weight')
         if kind == 'full_attention':
             w[f'{i}.qkv'] = concatenate([take(layer+f'self_attn.{name}_proj.weight') for name in ('q', 'k', 'v')])
             w[f'{i}.o'] = take(layer+'self_attn.o_proj.weight')
@@ -153,6 +186,14 @@ class HybridExecutor:
         self.lk, self.lv = c['linear_num_key_heads'], c['linear_num_value_heads']
         self.dk, self.dv = c['linear_key_head_dim'], c['linear_value_head_dim']
         self.conv_width = 2*self.lk*self.dk+self.lv*self.dv
+        # qwen3.5-MoE FFN geometry (#668): None on dense checkpoints.
+        self.moe_experts = c.get('num_experts')
+        self.moe_top_k = c.get('num_experts_per_tok')
+        if self.moe_experts is not None:
+            if model.scales:
+                raise ValueError('quantized qwen3.5-MoE execution is not '
+                                 'implemented yet (#668 cell 2: explicit packed '
+                                 'projections for expert slices)')
         selected = kernels or os.environ.get('DAMENDAEMON_KERNELS', 'auto')
         if selected not in ('auto', 'triton', 'torch'):
             raise ValueError('kernels must be auto, torch, or triton')
@@ -691,6 +732,8 @@ class HybridExecutor:
 
     def _mlp_half(self, x, i):
         """The MLP sublayer of one decoder layer: a + MLP(LN2(a))."""
+        if f'{i}.router' in self.w:
+            return self._moe_half(x, i)
         gate_up = self.linear(self.norm(x, self.w[f'{i}.norm2']), self.w[f'{i}.gate_up'])
         if self.fused:
             activated = self.dense_fused.swiglu(gate_up.reshape(-1, gate_up.shape[-1]), True)
@@ -699,6 +742,43 @@ class HybridExecutor:
             gate, up = gate_up.chunk(2, -1)
             activated = (F.silu(gate.float())*up.float()).to(self.compute_dtype)
         return x + self.linear(activated, self.w[f'{i}.down'])
+
+    def _moe_half(self, x, i):
+        """The qwen3.5-MoE FFN sublayer (#668): routed fused experts plus a
+        sigmoid-gated shared expert.
+
+        Routing semantics are pinned to the eager reference (hybrid_moe_ffn /
+        Transformers 5.20.2 ``Qwen3_5MoeSparseMoeBlock``): FP32 softmax over
+        router logits, top-k on the probabilities, unconditional
+        renormalization of the selected weights, contributions weighted after
+        each expert's down projection, shared expert scaled by the sigmoid of
+        its per-token combine gate. ``select_experts`` carries the exact
+        selection policy; the per-expert loop mirrors the host reference's
+        accumulation order for parity.
+        """
+        from .expert_selection import select_experts
+        n, length, hidden = x.shape
+        w = self.w
+        flat = self.norm(x, w[f'{i}.norm2']).reshape(-1, hidden)
+        logits = F.linear(flat.float(), w[f'{i}.router'].float())
+        coefficients, selected = select_experts(logits, self.moe_top_k,
+                                                scoring='softmax', renormalize=True)
+        output = torch.zeros_like(flat)
+        gate_up, down = w[f'{i}.experts_gate_up'], w[f'{i}.experts_down']
+        for expert in range(self.moe_experts):
+            rows, slots = (selected == expert).nonzero(as_tuple=True)
+            if rows.numel() == 0:
+                continue
+            gate, up = F.linear(flat[rows], gate_up[expert]).chunk(2, -1)
+            activated = (F.silu(gate.float())*up.float()).to(flat.dtype)
+            contribution = F.linear(activated, down[expert])
+            output.index_add_(0, rows, contribution * coefficients[rows, slots].unsqueeze(-1).to(flat.dtype))
+        combine = torch.sigmoid(F.linear(flat.float(), w[f'{i}.shared_expert_gate'].float()))
+        gate, up = F.linear(flat, w[f'{i}.shared_gate_up']).chunk(2, -1)
+        activated = (F.silu(gate.float())*up.float()).to(flat.dtype)
+        shared = F.linear(activated, w[f'{i}.shared_down'])
+        output = output + shared * combine.to(flat.dtype)
+        return x + output.reshape(n, length, hidden)
 
     def output_logits(self, hidden):
         normalized = self.norm(hidden, self.w['norm'])
