@@ -1,0 +1,45 @@
+{
+  "completed": true,
+  "context": 32768,
+  "device": "GPU-4adb9ddb-7bb3-189c-0fa2-51d67d1189ed",
+  "exactness": {
+    "spec_embed_first": {
+      "long": true,
+      "short0": true,
+      "short1": true,
+      "short2": true,
+      "short3": true,
+      "short4": true
+    },
+    "spec_hidden_first": {
+      "long": true,
+      "short0": true,
+      "short1": true,
+      "short2": true,
+      "short3": true,
+      "short4": true
+    }
+  },
+  "gate": "MTP speculative decode (#668 MTP cell)",
+  "model": "/home/damen/models/Qwen_Qwen3.6-35B-A3B",
+  "model_revision": "995ad96eacd98c81ed38be0c5b274b04031597b0",
+  "phases": {
+    "plain": {
+      "exit_code": 0,
+      "output": "mtp-gate2-plain.json",
+      "seconds": 300.2056310159969
+    },
+    "spec_embed_first": {
+      "exit_code": 0,
+      "output": "mtp-gate2-spec_embed_first.json",
+      "seconds": 320.3341446870036
+    },
+    "spec_hidden_first": {
+      "exit_code": 0,
+      "output": "mtp-gate2-spec_hidden_first.json",
+      "seconds": 314.0434610969969
+    }
+  },
+  "quantization": "q8_0",
+  "torch": "2.13.0+cu130"
+}
