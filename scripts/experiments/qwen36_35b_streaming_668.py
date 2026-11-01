@@ -30,6 +30,12 @@ import argparse
 import hashlib
 import json
 import os
+# The shared-CUDA guard strips DAMENDAEMON_* env vars (hermetic child env,
+# PASSTHROUGH allowlist only) — the streaming opt-in must be set in-process
+# before any damendaemon import, exactly like the cell-2 gate runner's
+# DAMENDAEMON_QUANTIZATION.
+os.environ['DAMENDAEMON_EXPERIMENTAL_HYBRID_OFFLOAD'] = '1'
+os.environ['DAMENDAEMON_KERNELS'] = 'torch'
 import subprocess
 import sys
 import time
