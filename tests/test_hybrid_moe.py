@@ -35,6 +35,7 @@ def moe_root_config():
         'linear_conv_kernel_dim': 4,
         'num_experts': EXPERTS, 'num_experts_per_tok': TOP,
         'moe_intermediate_size': INTER, 'shared_expert_intermediate_size': SHARED,
+        'mtp_num_hidden_layers': 1, 'mtp_use_dedicated_embeddings': False,
         'layer_types': ['linear_attention']*3+['full_attention'],
         'hidden_act': 'silu', 'attn_output_gate': True, 'rms_norm_eps': 1.e-6,
         'rope_parameters': {'rope_type': 'default', 'rope_theta': 10000000.,
@@ -66,6 +67,32 @@ def moe_tensors(rng):
                 'o_proj.weight': (HIDDEN, HEADS*HEAD_DIM),
                 'q_norm.weight': (HEAD_DIM,), 'k_norm.weight': (HEAD_DIM,)}.items()})
     return {'model.language_model.'+name: torch.randn(shape, generator=rng)*.08
+            for name, shape in shapes.items()}
+
+
+def mtp_tensors(rng):
+    """Raw mtp.* tensors on the synthetic snapshot (the transcribed Qwen3.6
+    MTP surface: fc over two pre-normed inputs, one full-attention MoE layer,
+    final norm; embeddings and head shared with the main model)."""
+    shapes = {'fc.weight': (HIDDEN, 2*HIDDEN),
+              'pre_fc_norm_embedding.weight': (HIDDEN,),
+              'pre_fc_norm_hidden.weight': (HIDDEN,), 'norm.weight': (HIDDEN,),
+              'layers.0.input_layernorm.weight': (HIDDEN,),
+              'layers.0.post_attention_layernorm.weight': (HIDDEN,)}
+    shapes.update({'layers.0.self_attn.'+name: shape for name, shape in {
+        'q_proj.weight': (2*HEADS*HEAD_DIM, HIDDEN),
+        'k_proj.weight': (KV*HEAD_DIM, HIDDEN), 'v_proj.weight': (KV*HEAD_DIM, HIDDEN),
+        'o_proj.weight': (HIDDEN, HEADS*HEAD_DIM),
+        'q_norm.weight': (HEAD_DIM,), 'k_norm.weight': (HEAD_DIM,)}.items()})
+    shapes.update({'layers.0.mlp.'+name: shape for name, shape in {
+        'gate.weight': (EXPERTS, HIDDEN),
+        'experts.gate_up_proj': (EXPERTS, 2*INTER, HIDDEN),
+        'experts.down_proj': (EXPERTS, HIDDEN, INTER),
+        'shared_expert.gate_proj.weight': (SHARED, HIDDEN),
+        'shared_expert.up_proj.weight': (SHARED, HIDDEN),
+        'shared_expert.down_proj.weight': (HIDDEN, SHARED),
+        'shared_expert_gate.weight': (1, HIDDEN)}.items()})
+    return {'mtp.'+name: torch.randn(shape, generator=rng)*.08
             for name, shape in shapes.items()}
 
 
@@ -299,6 +326,132 @@ class HybridMoeServeAdmissionTests(unittest.TestCase):
         from damendaemon import runtime
         with self.assertRaisesRegex(ValueError, 'does not carry vision weights'):
             runtime.make_executor(self._model(vision=True), use_graph=False)
+
+
+class HybridMoeMtpTests(unittest.TestCase):
+    """The transcribed MTP draft head (#668 MTP cell).
+
+    Load-bearing property: spec_decode's emitted stream is BY CONSTRUCTION the
+    main model's greedy argmax chain — every draft is verified against the
+    main head — so speculative and plain greedy must agree exactly on the
+    same weights, regardless of draft quality or concat order.
+    """
+
+    def setUp(self):
+        self.config = decoder_config(moe_root_config())
+
+    def _state(self):
+        state = moe_tensors(torch.Generator().manual_seed(123))
+        state.update(mtp_tensors(torch.Generator().manual_seed(456)))
+        return state
+
+    def _model(self, env):
+        # CPU execution env mirrors HybridMoeTests (the xpu policy forces the
+        # float32 precision path; selected_device is patched to cpu below).
+        environment = {'DAMENDAEMON_DEVICE': 'xpu', 'DAMENDAEMON_EXPERIMENTAL_XPU': '1',
+                       'DAMENDAEMON_EXPERIMENTAL_VISION': '0', **env}
+        with patch.dict('os.environ', environment, clear=False):
+            weights = load_weights(self._state(), self.config)
+        weights = {name: value.float() for name, value in weights.items()}
+        weights['head'] = weights['embed']
+        return SimpleNamespace(config=self.config, max_context=64, weights=weights,
+                                scales={}, quantization='none',
+                                bytes=sum(t.numel()*t.element_size() for t in
+                                          {id(t):t for t in weights.values()}.values()))
+
+    def _executor(self, env):
+        model = self._model(env)
+        # The precision policy reads env at construction — keep the CPU
+        # fixture env active through HybridExecutor.__init__.
+        environment = {'DAMENDAEMON_DEVICE': 'xpu', 'DAMENDAEMON_EXPERIMENTAL_XPU': '1',
+                       'DAMENDAEMON_EXPERIMENTAL_VISION': '0', **env}
+        with patch.dict('os.environ', environment, clear=False), \
+                patch('damendaemon.hybrid.selected_device', return_value='cpu'), \
+                patch('damendaemon.xpu_policy.validate_model', lambda *a, **k: None), \
+                patch('damendaemon.hybrid.empty_cache'), \
+                patch('damendaemon.hybrid.available_memory', return_value=2**40):
+            return HybridExecutor(model, use_graph=False, max_batch=2, kernels='torch')
+
+    def test_mtp_load_requires_explicit_opt_in(self):
+        with self.assertRaisesRegex(ValueError, 'DAMENDAEMON_HYBRID_MTP'):
+            self._model({'DAMENDAEMON_HYBRID_MTP_DROP': '0'})
+
+    def test_mtp_drop_env_skips_the_head(self):
+        model = self._model({'DAMENDAEMON_HYBRID_MTP': '1',
+                             'DAMENDAEMON_HYBRID_MTP_DROP': '1'})
+        self.assertNotIn('mtp.fc', model.weights)
+        executor = self._executor({'DAMENDAEMON_HYBRID_MTP': '1',
+                                   'DAMENDAEMON_HYBRID_MTP_DROP': '1'})
+        self.assertIsNone(executor.mtp_layer)
+
+    def test_mtp_load_transcribes_the_virtual_layer(self):
+        model = self._model({'DAMENDAEMON_HYBRID_MTP': '1'})
+        for name in ('mtp.fc', 'mtp.pre_e', 'mtp.pre_h', 'mtp.norm',
+                     f'{LAYERS}.router', f'{LAYERS}.qkv', f'{LAYERS}.o',
+                     f'{LAYERS}.experts_gate_up', f'{LAYERS}.shared_expert_gate'):
+            self.assertIn(name, model.weights)
+        # Nothing left untranscribed.
+        executor = self._executor({'DAMENDAEMON_HYBRID_MTP': '1'})
+        self.assertEqual(executor.mtp_layer, LAYERS)
+        self.assertIn(executor.mtp_layer, executor.kv)
+        # The layer-types table is NOT extended: main forwards stay 0..N-1.
+        self.assertEqual(len(executor.c['layer_types']), LAYERS)
+
+    def test_mtp_refuses_dedicated_embeddings(self):
+        config = decoder_config(moe_root_config())
+        config['mtp_use_dedicated_embeddings'] = True
+        state = self._state()
+        environment = {'DAMENDAEMON_DEVICE': 'xpu', 'DAMENDAEMON_EXPERIMENTAL_XPU': '1',
+                       'DAMENDAEMON_EXPERIMENTAL_VISION': '0', 'DAMENDAEMON_HYBRID_MTP': '1'}
+        with patch.dict('os.environ', environment, clear=False):
+            with self.assertRaisesRegex(ValueError, 'dedicated embeddings'):
+                load_weights(state, config)
+
+    def _plain_greedy(self, executor, prompt, count):
+        logits = executor.prefill(prompt, 0)
+        token = int(logits[0].float().argmax())
+        output = [token]
+        for _ in range(count - 1):
+            logits, next_ids = executor.decode(token)
+            token = int(next_ids[0])
+            output.append(token)
+        return output
+
+    def test_spec_decode_matches_plain_greedy_exactly(self):
+        prompt = [1, 2, 3, 7, 11, 5, 42, 9]
+        count = 24
+        plain = self._executor({'DAMENDAEMON_HYBRID_MTP': '1',
+                                'DAMENDAEMON_HYBRID_MTP_DROP': '1'})
+        expected = self._plain_greedy(plain, prompt, count)
+        for order in ('embed_first', 'hidden_first'):
+            spec = self._executor({'DAMENDAEMON_HYBRID_MTP': '1',
+                                   'DAMENDAEMON_HYBRID_MTP_CONCAT': order})
+            output, accepted, steps = spec.spec_decode(prompt, count)
+            self.assertEqual(output, expected,
+                             f'spec stream diverged from plain greedy ({order})')
+            self.assertEqual(len(output), count)
+            self.assertLessEqual(accepted, steps)
+            self.assertLessEqual(steps, count - 1)
+
+    def test_spec_decode_requires_the_head(self):
+        plain = self._executor({'DAMENDAEMON_HYBRID_MTP': '1',
+                                'DAMENDAEMON_HYBRID_MTP_DROP': '1'})
+        with self.assertRaisesRegex(ValueError, 'MTP draft head'):
+            plain.spec_decode([1, 2, 3], 4)
+
+    def test_mtp_concat_order_changes_draft_logits(self):
+        # The fc input order is a real semantic choice (upstream drops mtp.*
+        # at load, so no eager reference pins it); with random weights the
+        # two orders must produce different draft logits — the A6000 gate
+        # measures agreement on real weights to pin the order.
+        logits = {}
+        for order in ('embed_first', 'hidden_first'):
+            spec = self._executor({'DAMENDAEMON_HYBRID_MTP': '1',
+                                   'DAMENDAEMON_HYBRID_MTP_CONCAT': order})
+            spec.prefill([1, 2, 3, 7], 0)
+            hidden = spec._last_hidden
+            logits[order] = spec.mtp_propose(hidden, 5, 4, 0)[0]
+        self.assertFalse(torch.allclose(logits['embed_first'], logits['hidden_first']))
 
 
 if __name__ == '__main__':

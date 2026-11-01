@@ -116,6 +116,72 @@ def load_weights(state, config):
             # meta-tensor planning has no data to validate.
             if not w[f'{i}.A'].is_meta and not torch.isfinite(w[f'{i}.A'].exp()).all():
                 raise ValueError('nonfinite hybrid decay rates: A_log overflows')
+    if moe and state.get('mtp.fc.weight') is not None:
+        # MTP head transcription (#668 MTP cell). Upstream Transformers
+        # ignores mtp.* at load (_keys_to_ignore_on_load_unexpected), so
+        # there is no eager inference reference to pin to: the semantics
+        # are transcribed structurally (DeepSeek-V3 MTP as carried by the
+        # Qwen3.6 layout) and qualified by the only property that is
+        # load-bearing for correctness — the MTP head is a DRAFT whose
+        # proposals are always verified against the main model's greedy
+        # argmax, so the emitted stream is exact regardless of head
+        # quality (the A6000 gate measures exactness and acceptance).
+        # Opt-in: default loads stay byte- and memory-identical.
+        if os.environ.get('DAMENDAEMON_HYBRID_MTP') != '1':
+            raise ValueError('this checkpoint carries MTP tensors; set '
+                             'DAMENDAEMON_HYBRID_MTP=1 to load the draft head '
+                             '(or DAMENDAEMON_HYBRID_MTP_DROP=1 to skip it)')
+        if os.environ.get('DAMENDAEMON_HYBRID_MTP_DROP') == '1':
+            for name in [k for k in state if k.startswith('mtp.')]:
+                state.pop(name)
+        else:
+            if config.get('mtp_num_hidden_layers') != 1:
+                raise ValueError('only single-layer MTP heads are transcribed')
+            if config.get('mtp_use_dedicated_embeddings', False):
+                raise ValueError('MTP heads with dedicated embeddings are unsupported '
+                                '(this checkpoint shares the main embeddings/head)')
+            hidden = config['hidden_size']
+            inter, shared = config['moe_intermediate_size'], config['shared_expert_intermediate_size']
+            experts = moe
+            def mtp_take(name, shape, dtype=torch.float16):
+                tensor = convert(state.pop('mtp.' + name), dtype)
+                if tuple(tensor.shape) != shape:
+                    raise ValueError(f'MTP tensor shape mismatch: {name} '
+                                     f'{tuple(tensor.shape)} != {shape}')
+                return tensor
+            w['mtp.fc'] = mtp_take('fc.weight', (hidden, 2 * hidden))
+            w['mtp.pre_e'] = mtp_take('pre_fc_norm_embedding.weight', (hidden,), torch.float32) + 1
+            w['mtp.pre_h'] = mtp_take('pre_fc_norm_hidden.weight', (hidden,), torch.float32) + 1
+            w['mtp.norm'] = mtp_take('norm.weight', (hidden,), torch.float32) + 1
+            # The MTP block is a full-attention MoE layer identical in shape
+            # to a main full-attention layer — transcribed under the virtual
+            # index N so the existing attention/FFN/quantization machinery
+            # applies without duplication.
+            layer = f'layers.0.'
+            n = config['num_hidden_layers']
+            w[f'{n}.norm1'] = mtp_take(layer + 'input_layernorm.weight', (hidden,), torch.float32) + 1
+            w[f'{n}.norm2'] = mtp_take(layer + 'post_attention_layernorm.weight', (hidden,), torch.float32) + 1
+            w[f'{n}.qkv'] = concatenate([mtp_take(layer + f'self_attn.{name}_proj.weight',
+                                                  (2 * config['num_attention_heads'] * config['head_dim']
+                                                   if name == 'q' else config['num_key_value_heads']
+                                                   * config['head_dim'], hidden))
+                                         for name in ('q', 'k', 'v')])
+            w[f'{n}.o'] = mtp_take(layer + 'self_attn.o_proj.weight',
+                                   (hidden, config['num_attention_heads'] * config['head_dim']))
+            for name in ('q', 'k'):
+                w[f'{n}.{name}_norm'] = mtp_take(layer + f'self_attn.{name}_norm.weight',
+                                                 (config['head_dim'],), torch.float32) + 1
+            w[f'{n}.router'] = mtp_take(layer + 'mlp.gate.weight', (experts, hidden))
+            w[f'{n}.experts_gate_up'] = mtp_take(layer + 'mlp.experts.gate_up_proj', (experts, 2 * inter, hidden))
+            w[f'{n}.experts_down'] = mtp_take(layer + 'mlp.experts.down_proj', (experts, hidden, inter))
+            w[f'{n}.shared_gate_up'] = concatenate([
+                mtp_take(layer + f'mlp.shared_expert.{name}_proj.weight', (shared, hidden))
+                for name in ('gate', 'up')])
+            w[f'{n}.shared_down'] = mtp_take(layer + 'mlp.shared_expert.down_proj.weight', (hidden, shared))
+            w[f'{n}.shared_expert_gate'] = mtp_take(layer + 'mlp.shared_expert_gate.weight', (1, hidden), torch.float32)
+            remaining = [name for name in state if name.startswith('mtp.')]
+            if remaining:
+                raise ValueError(f'untranscribed MTP tensors: {sorted(remaining)}')
     return w
 
 
@@ -381,6 +447,29 @@ class HybridExecutor:
             else:
                 self.conv[i] = torch.zeros((max_batch, self.conv_width, c['linear_conv_kernel_dim']), dtype=self.compute_dtype, device=self.device)
                 self.state[i] = torch.zeros((max_batch, self.lv, self.dk, self.dv), dtype=torch.float32, device=self.device)
+        # MTP draft head (#668 MTP cell): the transcribed virtual layer N
+        # (damendaemon/hybrid.py load_weights) holds its full-attention MoE
+        # weights. The layer-types table is deliberately NOT extended — main
+        # forwards stay 0..layer_end-1; the MTP layer runs only through
+        # mtp_propose/_mtp_prefill with eager masked attention (the fused
+        # decode kernel has no hole mask; one layer, correctness-first).
+        # Opt-in via the load-time DAMENDAEMON_HYBRID_MTP gate.
+        self.mtp_layer = None
+        if 'mtp.fc' in self.w:
+            if use_graph:
+                raise ValueError('the MTP draft head requires eager decode (no CUDA graphs)')
+            if self.gate is not None:
+                raise ValueError('the MTP draft head is not qualified with token gating')
+            if self.kv_quant != 'none':
+                raise ValueError('the MTP draft head is not qualified with quantized KV')
+            if _layer_range is not None:
+                raise ValueError('the MTP draft head is a full-executor surface, not a hybrid stage')
+            self.mtp_layer = c['num_hidden_layers']
+            self.mtp_concat = os.environ.get('DAMENDAEMON_HYBRID_MTP_CONCAT', 'embed_first')
+            if self.mtp_concat not in ('embed_first', 'hidden_first'):
+                raise ValueError('DAMENDAEMON_HYBRID_MTP_CONCAT must be embed_first or hidden_first')
+            self.kv[self.mtp_layer] = torch.zeros((2, max_batch, self.kh, self.context, self.dim),
+                                                  dtype=self.compute_dtype, device=self.device)
         # Gate-3 accounting (#535): resident KV bytes per mode, reported in
         # /v1/models/status. The quantized pair counts int8 data plus FP16
         # scales; the plain cache counts its compute-dtype bytes.
@@ -675,11 +764,15 @@ class HybridExecutor:
         return self.linear(out.reshape(n, length, -1).to(self.compute_dtype), w[f'{i}.o'])
 
     @torch.inference_mode()
-    def forward(self, ids, positions, slots, prefill, prefix_length=0, return_logits=True):
+    def forward(self, ids, positions, slots, prefill, prefix_length=0, return_logits=True,
+                return_hidden=False):
         if self.gate is not None and not prefill:
             self._gate_decode_step(slots, positions)
-        return self.forward_embeddings(self.embedding(ids),positions,slots,prefill,
-                                       prefix_length, return_logits)
+        result = self.forward_embeddings(self.embedding(ids),positions,slots,prefill,
+                                         prefix_length, return_logits)
+        if return_hidden:
+            return result, self._last_hidden
+        return result
 
     def _gate_decode_step(self, slots, positions):
         """A decoded token is never pruned: mark its position valid in every
@@ -699,6 +792,10 @@ class HybridExecutor:
     def forward_embeddings(self, x, positions, slots, prefill, prefix_length=0, return_logits=True):
         """Shared text backbone after token or image/text embedding assembly."""
         x = self.forward_layers(x, positions, slots, prefill, prefix_length)
+        # The pre-final-norm residual of the last position — the MTP draft
+        # head's hidden input (#668); captured only when requested so the
+        # ordinary decode path keeps its exact allocation behavior.
+        self._last_hidden = x[:, -1:].detach() if getattr(self, 'mtp_layer', None) is not None else None
         return self.output_logits(x[:, -1]) if return_logits else None
 
     def forward_layers(self, x, positions, slots, prefill, prefix_length=0,
@@ -1123,3 +1220,138 @@ class HybridExecutor:
         result = self.decode_batch([token], [0])
         self.length = self.lengths[0]
         return result
+
+    # ── MTP draft head (#668 MTP cell) ───────────────────────────────
+    # Semantics transcribed structurally (DeepSeek-V3 MTP as carried by the
+    # Qwen3.6 layout; upstream Transformers drops mtp.* at load, so no eager
+    # inference reference exists). The head is a DRAFT: proposals are always
+    # verified against the main model's greedy argmax, so the emitted stream
+    # is exact regardless of head quality — the gates measure exactly that
+    # (spec == non-spec greedy) plus the acceptance rate.
+
+    def _mtp_layer_forward(self, h_prev, e, positions, slots, collect):
+        """One MTP block evaluation: fc over the two pre-normed inputs, then
+        the virtual-index full-attention MoE layer (own KV), then the MTP
+        final norm + shared head. Writes the MTP KV; returns logits only when
+        `collect` (prefill evaluations fill KV and discard output)."""
+        w = self.w
+        parts = [self.norm(e, w['mtp.pre_e']), self.norm(h_prev, w['mtp.pre_h'])]
+        if self.mtp_concat == 'hidden_first':
+            parts.reverse()
+        x = self.linear(torch.cat(parts, -1), w['mtp.fc'])
+        i = self.mtp_layer
+        h = self.norm(x, w[f'{i}.norm1'])
+        n, length, _ = h.shape
+        qkv = self.linear(h, w[f'{i}.qkv'])
+        q, k, v = qkv.split((2*self.heads*self.dim, self.kh*self.dim, self.kh*self.dim), -1)
+        q, gate = q.view(n, length, self.heads, 2*self.dim).chunk(2, -1)
+        k, v = [a.view(n, length, self.kh, self.dim) for a in (k, v)]
+        q = self.rotate(self.norm(q, w[f'{i}.q_norm'], torch.float32), positions)
+        k = self.rotate(self.norm(k, w[f'{i}.k_norm'], torch.float32), positions)
+        ck, cv = self.kv[i].unbind(0)
+        ck[slots[:, None], :, positions, :] = k
+        cv[slots[:, None], :, positions, :] = v
+        end = int(positions.max()) + 1
+        # Eager masked attention with the architectural hole: the MTP block
+        # never sees a predecessor for the first token, so position 0 has no
+        # MTP key. The fused decode kernel has no mask support — eager only.
+        keys = self.arange[:end]
+        allowed = (keys.view(1, -1) <= positions.view(n, length, 1)) & (keys.view(1, -1) >= 1)
+        out = scaled_attention(q.transpose(1, 2), ck.index_select(0, slots)[:, :, :end],
+                               cv.index_select(0, slots)[:, :, :end],
+                               attn_mask=allowed.view(n, 1, length, end), enable_gqa=True)
+        out = out.transpose(1, 2).float()*gate.float().sigmoid()
+        x = x + self.linear(out.reshape(n, length, -1).to(self.compute_dtype), w[f'{i}.o'])
+        x = self._mlp_half(x, i)
+        if not collect:
+            return None
+        normalized = self.norm(x, w['mtp.norm'])
+        head = w['head']
+        if head.dtype in (torch.int8, torch.uint8):
+            return self.linear(normalized.float(), head)
+        if self.fused:
+            return self.fused.output_head(normalized, head)
+        return F.linear(normalized.float(), head.float())
+
+    def _mtp_prefill(self, hiddens, tokens, slot, chunk=512):
+        """Fill the MTP KV over the prompt: the block input at absolute
+        position j (1..L-1) is (h_{j-1}, emb(token_j)); outputs discarded."""
+        device = self.device
+        ids = torch.tensor([tokens], device=device)
+        emb_all = self.embedding(ids)
+        slots = torch.tensor([slot], device=device)
+        for start in range(1, len(tokens), chunk):
+            end = min(start + chunk, len(tokens))
+            positions = torch.arange(start, end, device=device)[None]
+            self._mtp_layer_forward(hiddens[:, start-1:end-1], emb_all[:, start:end],
+                                   positions, slots, collect=False)
+
+    def mtp_propose(self, hidden, token, position, slot):
+        """Draft proposal for `position`+1 from (h_{position-1}, emb(token at
+        `position`)) evaluated at `position`."""
+        e = self.embedding(torch.tensor([[token]], device=self.device))
+        return self._mtp_layer_forward(hidden, e,
+                                       torch.tensor([[position]], device=self.device),
+                                       torch.tensor([slot], device=self.device), collect=True)
+
+    @torch.inference_mode()
+    def decode_with_hidden(self, token, slot):
+        """One eager main decode step returning (logits, final hidden); the
+        MTP loop's primitive. Bookkeeping mirrors decode_batch at batch 1."""
+        position = self.lengths[slot]
+        if position <= 0 or position >= self.context:
+            raise ValueError('batch cache is empty or exhausted')
+        logits, hidden = self.forward(
+            torch.tensor([[token]], device=self.device),
+            torch.tensor([[position]], device=self.device),
+            torch.tensor([slot], device=self.device), False, return_hidden=True)
+        self.lengths[slot] += 1
+        self.length = self.lengths[0]
+        return logits, hidden
+
+    @torch.inference_mode()
+    def spec_decode(self, tokens, count, slot=0):
+        """Greedy self-speculative decode with the MTP draft head.
+
+        One main decode step per iteration verifies the previous MTP draft
+        against the main argmax; on acceptance the draft is emitted together
+        with the main token (two tokens per step — the MTP block runs on the
+        already-computed main hidden, no extra main forward). The emitted
+        stream is BY CONSTRUCTION the main model's greedy argmax chain:
+        every appended token is an argmax of main logits at its position.
+        Returns (output_ids, accepted, main_steps)."""
+        if self.mtp_layer is None:
+            raise ValueError('spec_decode requires the MTP draft head')
+        if (not tokens or len(tokens) + count > self.context
+                or not 0 <= slot < self.max_batch or type(count) is not int or count <= 0
+                or set(tokens) & set(self.c.get('multimodal_token_ids', []))):
+            raise ValueError('invalid speculative decode request')
+        device = self.device
+        ids = torch.tensor([tokens], device=device)
+        positions = torch.arange(len(tokens), device=device)[None]
+        slots = torch.tensor([slot], device=device)
+        x = self.forward_layers(self.embedding(ids), positions, slots, True)
+        logits = self.output_logits(x[:, -1])
+        self.lengths[slot] = len(tokens)
+        self.length = self.lengths[0]
+        self._mtp_prefill(x, tokens, slot)
+        output, accepted, steps = [], 0, 0
+        pending = int(logits[0].float().argmax())
+        output.append(pending)
+        if count == 1:
+            return output, accepted, steps
+        draft = int(self.mtp_propose(x[:, -1:], pending, len(tokens), slot)[0].float().argmax())
+        while len(output) < count:
+            steps += 1
+            logits, hidden = self.decode_with_hidden(pending, slot)
+            truth = int(logits[0].float().argmax())
+            if truth == draft:
+                accepted += 1
+            output.append(truth)
+            if len(output) >= count:
+                break
+            pending = truth
+            # The next draft evaluates (h at the consumed position, emb of the
+            # token it now predicts) at that token's own position.
+            draft = int(self.mtp_propose(hidden, truth, self.lengths[slot], slot)[0].float().argmax())
+        return output, accepted, steps
