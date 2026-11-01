@@ -54,11 +54,11 @@ GPU_FLOOR_MIB = 40000
 HOST_FLOOR_BYTES = 100 * 1024**3
 
 PROMPTS = [
-    'The quick brown fox jumps over the lazy dog.',
-    'A repository records every bounded qualification cell with evidence.',
-    'Hybrid linear attention mixes with full attention every few layers.',
-    'The measurement is the gate; the gate is not the measurement.',
-    'Greedy decoding deterministically selects the argmax token at each step, which is precisely what verification requires.',
+    'The capital of France is',
+    'One two three four five',
+    'Water boils at a temperature of',
+    'The largest planet in the solar system is',
+    'def add(a, b):\n    return',
 ]
 
 
