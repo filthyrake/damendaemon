@@ -1,0 +1,16 @@
+[ref] loading HF reference (CPU BF16)...
+Loading weights:   0%|          | 0/693 [00:00<?, ?it/s]Loading weights: 100%|██████████| 693/693 [00:00<00:00, 11957.35it/s]
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+[transformers] `chunk_gated_delta_rule` is falling back to its reference PyTorch implementation because `flash-linear-attention` is not installed. This is correct but much slower; install `flash-linear-attention` for the optimized kernel.
+[transformers] `causal_conv1d_update` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+[transformers] `fused_recurrent_gated_delta_rule` is falling back to its reference PyTorch implementation because `flash-linear-attention` is not installed. This is correct but much slower; install `flash-linear-attention` for the optimized kernel.
+[ref] 5 prompts in 41s
+[cand] loading damendaemon q8_0 on CUDA...
+[cand] weights 34.8 GiB in 115s; cache=disabled
+[cand] executor up; backend triton-hybrid+q8_0; peak 34.9 GiB
+[gate] 5tok rms 0.0382 argmax True greedy True
+[gate] 5tok rms 0.0326 argmax True greedy True
+[gate] 6tok rms 0.0323 argmax True greedy True
+[gate] 8tok rms 0.0343 argmax True greedy True
+[gate] 9tok rms 0.1139 argmax True greedy True
+[gate] worst rel-RMS 0.1139; argmax True; greedy True; wrote /tmp/g668/q8-gate-v2.json
