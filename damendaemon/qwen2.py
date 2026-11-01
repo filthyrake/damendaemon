@@ -163,7 +163,7 @@ class ModelWeights:
                             require_headroom(math.prod(header.get_shape()) *
                                              (4 if header.get_dtype() == 'F32' else 2))
                         state[key] = reader.get_tensor(key)
-        if c["model_type"] in ("qwen3_5_text", "gemma3_text", "starcoder2", "olmoe", "gpt2", "gpt_neox", "bloom", "gpt_oss"):
+        if c["model_type"] in ("qwen3_5_text", "qwen3_5_moe_text", "gemma3_text", "starcoder2", "olmoe", "gpt2", "gpt_neox", "bloom", "gpt_oss"):
             if c['model_type'] == 'gpt_oss':
                 from .gpt_oss import load_weights
             elif c['model_type'] == 'bloom':
@@ -179,6 +179,16 @@ class ModelWeights:
             elif c["model_type"] == "gemma3_text":
                 from .gemma import load_weights
             else:
+                # qwen3_5_text and qwen3_5_moe_text share the hybrid loader;
+                # the MoE branch carries the transcribed expert/shared tensor
+                # surface (#668).
+                if c['model_type'] == 'qwen3_5_moe_text':
+                    if self.quantization != 'none':
+                        raise ValueError('quantized qwen3.5-MoE loads are not '
+                                         'implemented yet (#668 cell 2: explicit '
+                                         'packed projections for expert slices)')
+                    from .hybrid_moe_checkpoint import audit_names
+                    audit_names(read_config(self.path / 'config.json'), state.keys())
                 from .hybrid import load_weights
             self.finalize_weights(load_weights(state, c))
             if cache is not None:
