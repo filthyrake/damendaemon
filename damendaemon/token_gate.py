@@ -30,7 +30,8 @@ Mechanism (mirroring upstream semantics exactly):
 
 Decode keeps upstream's fold: the hole mask excludes never-written KV
 positions, the query uses its own s_eff, and the per-key bias enters as
-the head-mean folded additive term.
+the per-head folded additive term — b_j[l,h] scaled by the row's
+head-mean gamma at the key's own ratio.
 """
 import math
 import os
@@ -237,15 +238,30 @@ class TokenGate:
         """Effective per-(row, head) softmax temperature softplus(sigma)."""
         return F.softplus(self.attn_scale[row])
 
-    def decode_fold(self, bias, kept_positions):
-        """Per-key folded additive term for decode (upstream's head-mean).
+    def key_scale(self, row, kept_positions):
+        """Per-key additive-bias scale for a bias row (upstream semantics).
 
-        The phase-2 key j contributes mean_h s_eff(r_j) * b_j[l,h] — the
-        key's own ratio r_j times the head-mean bias — constant through
-        decode, so it is folded into the additive mask once per prefill.
+        Upstream `_phase2_q_bias` / `decode_phase2_layer_tensors` scale the
+        per-head key bias by head-mean s_eff at the key's own ratio:
+        ``sb_j = mean_h(gamma_row_h) * r_j`` with ``s_eff[b,h,q] =
+        gamma_h * r_q`` (their code, not the comment above it, which
+        describes the un-shipped affine variant).  Constant through
+        decode, so it folds into the additive mask once per prefill.
         """
-        ratio = TokenGate.kept_ratio(kept_positions)
-        return (bias * ratio.view(-1, 1, 1)).mean(-1)
+        return self.temperature(row).mean() * TokenGate.kept_ratio(kept_positions)
+
+    def fold_bias(self, bias, kept_positions, rows=None):
+        """Per-(key, row, head) additive decode mask per upstream.
+
+        The phase-2 key j contributes ``b_j[row, h] * sb_j`` — the
+        PER-HEAD bias preserved (upstream's decode mask is (B, H, 1, S)),
+        scaled by the row's head-mean gamma times the key's own ratio.
+        """
+        gamma = F.softplus(self.attn_scale)                      # (rows, heads)
+        if rows is not None:
+            gamma = gamma[rows]
+        scale = gamma.mean(-1, keepdim=True) * TokenGate.kept_ratio(kept_positions).view(-1, 1, 1)
+        return bias * scale
 
 
 def enabled():

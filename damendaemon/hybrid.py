@@ -316,10 +316,11 @@ class HybridExecutor:
             self.gate.to_device(self.device)
             self.gate_valid = {i: torch.zeros(max_batch, self.context, dtype=torch.bool, device=self.device)
                                for i in self.gate.bias_layers}
-            # Per-slot additive decode bias per gated full-attention layer:
-            # the upstream decode fold (head-mean key bias, constant through
+            # Per-slot per-head additive decode bias per gated full-attention
+            # layer: the upstream decode fold (per-head key bias scaled by
+            # head-mean gamma at the key's own ratio, constant through
             # decode) plus a hole mask over never-written KV positions.
-            self.gate_fold = {i: torch.zeros(max_batch, self.context, dtype=torch.float32, device=self.device)
+            self.gate_fold = {i: torch.zeros(max_batch, self.context, self.gate.heads, dtype=torch.float32, device=self.device)
                               for i in self.gate.bias_layers}
             self.gate_nvalid = torch.zeros(max_batch, dtype=torch.long, device=self.device)
         # Fused kernels and quantized KV coexist: only dense_fused.attention
@@ -603,11 +604,12 @@ class HybridExecutor:
                 # Gated decode (#641): never-written KV positions (pruned
                 # tokens) are holes; the query carries its own temperature
                 # (r · softplus(sigma)); the per-key bias enters as the
-                # upstream head-mean fold. Eager only — the fused dense
-                # decode kernel has no mask support.
+                # upstream per-head fold (b_j[h] · mean_h(gamma) · r_j).
+                # Eager only — the fused dense decode kernel has no mask
+                # support.
                 valid = self.gate_valid[i][slots].view(n, 1, 1, -1)
                 mask = mask & valid
-                fold = self.gate_fold[i][slots][:, None, None, :].to(q.dtype)
+                fold = self.gate_fold[i][slots].permute(0, 2, 1)[:, :, None, :].to(q.dtype)  # (n, heads, 1, context)
                 row = self.gate.bias_layers.index(i)
                 # _gate_decode_step already counted this token: m is the
                 # current valid count (kept + generated so far, inclusive).
@@ -619,8 +621,8 @@ class HybridExecutor:
                 scale = (ratio.view(n, 1, 1, 1)
                          * self.gate.temperature(row).view(1, 1, -1, 1).float()).to(q.dtype)
                 q = q * scale.view(n, 1, -1, 1)
-                additive = torch.where(mask, fold.expand(n, 1, 1, mask.shape[-1]),
-                                       torch.full_like(fold, float('-inf')).expand(n, 1, 1, mask.shape[-1]))
+                additive = torch.where(mask, fold,
+                                       torch.full_like(fold, float('-inf')))
                 out = scaled_attention(q.transpose(1, 2), ck.index_select(0, slots), cv.index_select(0, slots),
                                                      attn_mask=additive, enable_gqa=True)
             else:
@@ -764,15 +766,19 @@ class HybridExecutor:
 
     def _gated_attention(self, x, i, kept_positions, slots, ratio, key_bias):
         """Phase-2 full-attention (#641): KV written only at kept positions,
-        logits tempered per query and biased per key:
+        logits tempered per query and biased per key per upstream
+        (`_phase2_q_bias`):
 
-            softmax((r_q · softplus(sigma)) · q·k/√d + b_k) over kept keys.
+            softmax((r_q · softplus(sigma_h)) · q·k/√d
+                    + b_k[h] · mean_h(gamma) · r_k) over kept keys.
 
         ``ratio`` is r_q per kept position; ``key_bias`` is b_k per kept
-        position for this layer's gate row (zero on non-article keys).
-        Causality runs over the kept sequence, which preserves original
-        order (kept positions are sorted), so an in-pass causal mask is
-        exact.
+        position for this layer's gate row (zero on non-article keys), and
+        upstream scales the additive key bias by the row's head-mean gamma
+        at the key's own ratio — so prefill and the decode fold share one
+        bias convention.  Causality runs over the kept sequence, which
+        preserves original order (kept positions are sorted), so an in-pass
+        causal mask is exact.
         """
         n, length, _ = x.shape
         w = self.w
@@ -803,9 +809,12 @@ class HybridExecutor:
             k = k.repeat_interleave(repeat, 1)
             v = v.repeat_interleave(repeat, 1)
         logits = q @ k.transpose(-1, -2) * (self.dim ** -.5)
-        # Per-(query head, key) additive bias — b_k[l,h], zero on
-        # non-article keys. (t() + unsqueeze: no .view on a sliced tensor.)
-        logits = logits + key_bias.t()[None, :, None, :].float()
+        # Per-(query head, key) additive bias — b_k[l,h] scaled by the
+        # row's head-mean gamma at the key's own ratio (upstream
+        # `_phase2_q_bias`), zero on non-article keys. (t() + unsqueeze:
+        # no .view on a sliced tensor.)
+        scale = self.gate.key_scale(row, kept_positions).float()
+        logits = logits + (key_bias * scale[:, None]).t()[None, :, None, :].float()
         causal = torch.ones(length, length, dtype=torch.bool, device=x.device).tril()
         logits = logits.masked_fill(~causal, float('-inf'))
         weights = torch.softmax(logits, -1)
@@ -818,7 +827,13 @@ class HybridExecutor:
         rest of the backbone: the gate layer's MLP half on kept tokens, then
         every layer above — full-attention layers through _gated_attention
         (KV at kept positions only), DeltaNet layers over the kept sequence
-        (no bias: no per-token KV to bias, per upstream §GDN placement).
+        (no bias: no per-token KV to bias, per upstream §GDN placement) —
+        each followed by its MLP half.  The MLP sublayer is rowwise, so the
+        kept-row MLP output equals upstream's full-layer phase-2 at the kept
+        positions exactly (#642 residual fix: every phase-2 layer was
+        previously missing its MLP half, a uniform ~68% hidden-state
+        divergence from upstream's harness born at the first layer above
+        the gate).
 
         ``boundary`` covers the whole prompt; ``kept_positions`` selects.
         ``bias`` is the (rows, heads) per-key bias already gathered to the
@@ -838,6 +853,7 @@ class HybridExecutor:
                 h = self.norm(x, self.w[f'{i}.norm1'])
                 x = x + self._gated_attention(h, i, kept_positions, slots, ratio,
                                               bias[:, row])
+            x = self._mlp_half(x, i)
         return x
 
     @torch.inference_mode()
@@ -887,7 +903,7 @@ class HybridExecutor:
         self.length = self.lengths[0]
         for i in self.gate_valid:
             self.gate_valid[i][slot, kept] = True
-            self.gate_fold[i][slot, kept] = self.gate.decode_fold(bias, kept)[:, self.gate.bias_layers.index(i)]
+            self.gate_fold[i][slot, kept] = self.gate.fold_bias(bias, kept)[:, self.gate.bias_layers.index(i)]
         self.gate_nvalid[slot] = kept.numel()
         return logits
 
@@ -955,7 +971,7 @@ class HybridExecutor:
         self.length = self.lengths[0]
         for i in self.gate_valid:
             self.gate_valid[i][slot, kept] = True
-            self.gate_fold[i][slot, kept] = self.gate.decode_fold(bias, kept)[:, self.gate.bias_layers.index(i)]
+            self.gate_fold[i][slot, kept] = self.gate.fold_bias(bias, kept)[:, self.gate.bias_layers.index(i)]
         self.gate_nvalid[slot] = kept.numel()
         self._gate_cache.pop(slot, None)
         return logits

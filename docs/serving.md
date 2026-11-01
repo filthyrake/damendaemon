@@ -696,7 +696,8 @@ against fp32-stored gate weights regardless of the backbone compute dtype.
 Chunked gated prefill is admission-compatible with `--prefill-chunk-size`:
 the article span validates against the whole prompt, and intermediate chunks
 defer phase 2 to the final one. Decode honors the gate through a per-layer
-hole mask and the upstream head-mean key-bias fold, with the paper's
+hole mask and the upstream per-head key-bias fold (b_j[h] scaled by
+head-mean gamma at the key's ratio), with the paper's
 `r = log(m)/log(p)` query temperature.
 
 Component parity with the upstream implementation
@@ -707,8 +708,11 @@ E2EGate bias, top-K selection (exact index sets) and the kept-ratio
 temperature — measured on real layer-1 boundary activations of
 Qwen/Qwen3.5-2B; see `docs/evidence/nvidia/tokengate-641/`. Upstream's own
 hybrid model-forward is broken as shipped (#640), so parity is component
-level, not model-forward level; end-to-end accuracy on hybrid checkpoints
-is unqualified until upstream fixes its inference path.
+level, not model-forward level. End-to-end parity was later established on
+the #642 checkpoint (bounded 0.8B gate, 24 NIAH rows, K=2000): after the
+phase-2 layer-completeness fix our gated executor matches upstream's patched
+harness exactly (5/24 gated, 10/24 full-context control, both sides equal) —
+see `docs/evidence/nvidia/tokengate-642/residual-fix/`.
 
 ## Optional API authentication
 

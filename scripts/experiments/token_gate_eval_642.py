@@ -96,6 +96,9 @@ def main():
     parser.add_argument('--gate', required=True, help='gate_step*.pt')
     parser.add_argument('--lora', required=True, help='lora_step*.pt')
     parser.add_argument('--merged', default='/home/damen/models/Qwen3.5-0.8B-642-merged')
+    parser.add_argument('--reuse-merged', action='store_true',
+                        help='skip the LoRA merge and use the existing --merged '
+                             'snapshot verbatim (verification cells)')
     parser.add_argument('--jsonl', required=True, help='NIAH pool (test rows)')
     parser.add_argument('--context', type=int, default=24576)
     parser.add_argument('--samples', type=int, default=24)
@@ -103,7 +106,12 @@ def main():
     parser.add_argument('--out', default='token-gate-642-eval.json')
     args = parser.parse_args()
 
-    merged = merge_lora(args.base, args.lora, args.merged)
+    if args.reuse_merged:
+        if not os.path.isdir(args.merged):
+            raise SystemExit(f'--reuse-merged: {args.merged} does not exist')
+        merged = args.merged
+    else:
+        merged = merge_lora(args.base, args.lora, args.merged)
 
     os.environ.update({'DAMENDAEMON_TOKEN_GATE': '1',
                        'DAMENDAEMON_TOKEN_GATE_LAYER': '1',
@@ -170,8 +178,10 @@ def main():
 
     def score(arm_name, results):
         correct = 0
+        texts = []
         for (_, generated), (_, _, answer) in zip(results, prompts):
             text = tokenizer.decode(generated)
+            texts.append(text)
             correct += answer.lower() in text.lower()
         times = [t for t, _ in results]
         record['arms'][arm_name] = {
@@ -180,6 +190,8 @@ def main():
             'ttft_s_mean': sum(times) / len(times),
             'ttft_s_min': min(times), 'ttft_s_max': max(times),
             'peak_alloc_gib': torch.cuda.max_memory_allocated() / 2**30,
+            'first_tokens': [g[0] for _, g in results],
+            'samples': texts,
         }
         print(f"[eval] {arm_name}: acc={correct}/{len(prompts)} "
               f"ttft_mean={sum(times)/len(times):.3f}s "
