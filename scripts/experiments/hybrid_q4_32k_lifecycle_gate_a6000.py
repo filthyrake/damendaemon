@@ -212,11 +212,27 @@ def request(slot, prompt_ids, max_tokens, results: dict, *, cancel_after=None,
         results[slot]['output_preview'] = text[:80]
 
 
-def release_probe(name, prompt_ids, results: dict):
+def release_probe(name, prompt_ids, results: dict, attempts=12, spacing=5.0):
     """A tiny request sent right after a client disconnect: if the cancelled
     slot was actually released, this is admitted within seconds; if the
-    zombie request holds the slot, it queues behind the survivor instead."""
-    request(name, prompt_ids, 1, results)
+    zombie request holds the slot, it queues behind the survivor instead.
+
+    Retry-bounded (#664): the probe fires within milliseconds of the
+    disconnect, but release itself takes ~one decode step (the EOF is
+    observed at the next generation event). A single instant probe races
+    that window and reads a 503 that says nothing about the hold; bounded
+    retries distinguish prompt release (admitted within a few seconds)
+    from a zombie (all attempts rejected for the full decode)."""
+    import time as _time
+    for attempt in range(attempts):
+        attempt_results = {}
+        request(name, prompt_ids, 1, attempt_results)
+        result = attempt_results.get(name)
+        results[name] = result
+        if result is None or (result.get('error') is None
+                              and result.get('first_output_seconds') is not None):
+            return
+        _time.sleep(spacing)
 
 
 def followup_ok(result):
