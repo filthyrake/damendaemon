@@ -1,30 +1,34 @@
-"""Split prefill admission A/B: the C5 aggregate-prefill bound (#690).
+"""Split prefill admission A/B: the aggregate-prefill bound (#690).
 
 The chunked scheduler admitted the whole batch into prefill at once, so
 clustered arrivals serialized every first output onto the aggregate
-prefill time (C4 first outputs 502-528 s; C5 projects ~630 s > the 600 s
-gate). This runner measures the split-admission fix at the projected
-failing point: 5 simultaneous 32K requests on the 27B spec serve (the
-qualified #685 production shape, batch/queue 5), one guarded invocation
-per phase:
+prefill time (C4 first outputs 502-528 s at 4 slots; C5 projects ~630 s
+but is POLICY-REFUSED — the compensated Q4 precision admits at most four
+slots on this card, a measured memory bound). This runner measures the
+split-admission fix at the qualified shape: 4 simultaneous 32K requests
+on the 27B spec serve (the #685 production C4 shape), one guarded
+invocation per phase:
 
 - phase split   : DAMENDAEMON_PREFILL_ADMISSION=1 (one prefill lane)
 - phase legacy  : admission 0 (batch-wide round-robin, the control —
-                  expected to confirm the aggregate bound)
+                  expected to reproduce the aggregate bound: every
+                  slot's first output waits on all four prefills)
 
 Queue timeout is 900 s so the capacity surface (queue wait) is measured
 rather than conflated with rejection; the SLO gates are POST-ADMISSION
 per the #59 contract: client-observed first output minus the server-
 reported queue_seconds (both recorded per slot).
 
-Gates (declared on #690 before launch): both phases 5/5 complete 512/512
+Gates (declared on #690 before launch): both phases 4/4 complete 512/512
 with zero errors and no queue-timeout rejections; phase split passes
 per-slot post-admission first output <= 600 s and earliest-slot
-client-observed first output <= 300 s; phase legacy confirms all first
-outputs > 600 s client-observed (the projection, by measurement); slot-0
-digest must reproduce the pinned C-series corpus digest; per-slot digests
-compared across phases and reported (admission order changes scheduling,
-not computation).
+client-observed first output <= 300 s (a single prefill's time — the
+aggregate bound put EVERY slot at ~500 s); phase legacy confirms the
+aggregate bound (every first output >= 450 s client-observed, spread
+within 90 s — all slots waiting on all prefills); slot-0 digest must
+reproduce the pinned C-series corpus digest; per-slot digests compared
+across phases and reported (admission order changes scheduling, not
+computation).
 
 Preflight: single-device guard on the pinned A6000 UUID, fresh GPU
 headroom >= 40000 MiB, host MemAvailable >= 100 GiB.
@@ -50,7 +54,7 @@ CONTEXT = 32768
 PROMPT_TOKENS = 32256
 OUTPUT_TOKENS = 512
 CHUNK = 1024
-SLOTS = 5
+SLOTS = 4
 GPU_FLOOR_MIB = 40000
 HOST_FLOOR_BYTES = 100 * 1024**3
 FIRST_OUTPUT_LIMIT = 600
@@ -184,7 +188,7 @@ def main():
         raise ValueError('slot-0 digest does not match the pinned C-series corpus; refusing to launch')
     manifest_path = args.output.with_suffix('.manifest.json')
     save(manifest_path, dict(version=1, models=dict(qwen38=dict(path=SNAPSHOT, quantization='q4_0'))))
-    report = dict(completed=False, gate='#690 split prefill admission A/B (C5, 27B spec serve)',
+    report = dict(completed=False, gate='#690 split prefill admission A/B (C4, 27B spec serve)',
                   phase=args.phase, model=SNAPSHOT,
                   model_revision='1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0',
                   context=CONTEXT, prompt_tokens=PROMPT_TOKENS, output_limit=OUTPUT_TOKENS,
@@ -237,7 +241,7 @@ def main():
             thread.start()
         for thread in threads:
             thread.join()
-        report['rounds']['c5'] = dict(seconds=time.monotonic() - round_started,
+        report['rounds']['c4'] = dict(seconds=time.monotonic() - round_started,
                                       slots=results)
         report['statuses']['after_round'] = status()
         tokens_ok = all((results[slot].get('usage') or {}).get('completion_tokens') == OUTPUT_TOKENS
@@ -258,10 +262,11 @@ def main():
                 and first[0] is not None and first[0] <= 300
                 and all(value <= REQUEST_LIMIT + 600 for value in totals))
         else:
-            # The control CONFIRMS the aggregate bound: every first output
-            # over the gate client-observed is the finding, not a surprise.
+            # The control CONFIRMS the aggregate bound: every slot's first
+            # output waits on all four prefills (>= 450 s, tight spread).
             report['aggregate_bound_confirmed'] = bool(
-                all(value is not None and value > FIRST_OUTPUT_LIMIT for value in first))
+                all(value is not None and value >= 450 for value in first)
+                and max(first) - min(first) <= 90)
             report['completed'] = report['aggregate_bound_confirmed']
         save(args.output, report)
         print(f"[{args.phase}] first={[round(v,1) if v else v for v in first]} "
