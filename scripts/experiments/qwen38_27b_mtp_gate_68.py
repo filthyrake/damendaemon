@@ -175,9 +175,14 @@ def phase(args):
 
 
 def verdict(args):
-    """Local digest comparison across the three phase reports (no GPU)."""
-    paths = {name: args.output.with_name(f'{args.output.stem}-{name}.json')
-             for name in ('plain', 'spec_embed_first', 'spec_hidden_first')}
+    """Local digest comparison across the three phase reports (no GPU).
+
+    The phases run under separate guards, so their report paths are passed
+    explicitly (--plain/--spec-embed/--spec-hidden) rather than derived
+    from this report's stem.
+    """
+    paths = {'plain': args.plain, 'spec_embed_first': args.spec_embed,
+             'spec_hidden_first': args.spec_hidden}
     for name, path in paths.items():
         if not path.exists():
             raise ValueError(f'missing phase report: {path}')
@@ -217,8 +222,13 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--phase', choices=('plain', 'spec', 'verdict'), required=True)
     parser.add_argument('--order', choices=('embed_first', 'hidden_first'))
+    parser.add_argument('--plain', type=Path)
+    parser.add_argument('--spec-embed', type=Path)
+    parser.add_argument('--spec-hidden', type=Path)
     args = parser.parse_args()
     if args.phase == 'verdict':
+        if not (args.plain and args.spec_embed and args.spec_hidden):
+            raise SystemExit('verdict requires --plain/--spec-embed/--spec-hidden')
         verdict(args)
         return
     if args.phase == 'spec' and not args.order:

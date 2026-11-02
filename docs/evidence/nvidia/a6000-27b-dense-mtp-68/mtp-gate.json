@@ -1,0 +1,135 @@
+{
+  "acceptance": {
+    "spec_embed_first": {
+      "accepted": 511,
+      "main_steps": 511,
+      "rate": 1.0
+    },
+    "spec_hidden_first": {
+      "accepted": 0,
+      "main_steps": 511,
+      "rate": 0.0
+    }
+  },
+  "completed": true,
+  "context": 32768,
+  "device": "GPU-4adb9ddb-7bb3-189c-0fa2-51d67d1189ed",
+  "exactness": {
+    "spec_embed_first": {
+      "long32k": true,
+      "short0": true,
+      "short1": true,
+      "short2": true,
+      "short3": true,
+      "short4": true
+    },
+    "spec_hidden_first": {
+      "long32k": true,
+      "short0": true,
+      "short1": true,
+      "short2": true,
+      "short3": true,
+      "short4": true
+    }
+  },
+  "gate": "dense MTP speculative decode (#68 decode lever)",
+  "model": "/home/damen/models/Qwen3.8-27B-1d4bf0f2",
+  "model_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "phases": {
+    "plain": {
+      "completed": true,
+      "mtp_loaded": false,
+      "peak_gib": 30.186176776885986,
+      "prompts": {
+        "long32k": {
+          "seconds": 406.0,
+          "tokens": 512
+        },
+        "short0": {
+          "seconds": 2.0,
+          "tokens": 12
+        },
+        "short1": {
+          "seconds": 0.9,
+          "tokens": 12
+        },
+        "short2": {
+          "seconds": 2.0,
+          "tokens": 12
+        },
+        "short3": {
+          "seconds": 2.0,
+          "tokens": 12
+        },
+        "short4": {
+          "seconds": 1.8,
+          "tokens": 12
+        }
+      }
+    },
+    "spec_embed_first": {
+      "completed": true,
+      "mtp_loaded": true,
+      "peak_gib": 30.047438144683838,
+      "prompts": {
+        "long32k": {
+          "seconds": 417.5,
+          "tokens": 512
+        },
+        "short0": {
+          "seconds": 1.9,
+          "tokens": 12
+        },
+        "short1": {
+          "seconds": 0.9,
+          "tokens": 12
+        },
+        "short2": {
+          "seconds": 1.5,
+          "tokens": 12
+        },
+        "short3": {
+          "seconds": 1.0,
+          "tokens": 12
+        },
+        "short4": {
+          "seconds": 1.6,
+          "tokens": 12
+        }
+      }
+    },
+    "spec_hidden_first": {
+      "completed": true,
+      "mtp_loaded": true,
+      "peak_gib": 30.047438144683838,
+      "prompts": {
+        "long32k": {
+          "seconds": 416.8,
+          "tokens": 512
+        },
+        "short0": {
+          "seconds": 1.0,
+          "tokens": 12
+        },
+        "short1": {
+          "seconds": 0.9,
+          "tokens": 12
+        },
+        "short2": {
+          "seconds": 0.9,
+          "tokens": 12
+        },
+        "short3": {
+          "seconds": 0.9,
+          "tokens": 12
+        },
+        "short4": {
+          "seconds": 0.9,
+          "tokens": 12
+        }
+      }
+    }
+  },
+  "precision": "compensated",
+  "quantization": "q4_0"
+}
