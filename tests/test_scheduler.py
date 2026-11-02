@@ -685,6 +685,118 @@ class ChunkedSchedulerTests(unittest.TestCase):
                 BatchedRuntime({},prefill_chunk_size=value)
 
 
+class SplitPrefillAdmissionTests(unittest.TestCase):
+    """#690: split prefill admission on the chunked path.
+    DAMENDAEMON_PREFILL_ADMISSION bounds how many slots prefill at once
+    ('0' = legacy batch-wide round-robin, the A/B control). The pinned
+    contract: at bound 1 a queued request's first chunk is dispatched only
+    after the incumbent's prefill completes (its first output no longer
+    waits on later arrivals' chunks), every queued request still completes
+    (FIFO, no starvation), and decode keeps interleaving one chunk per
+    decode step."""
+
+    def setUp(self):
+        environment = {'DAMENDAEMON_PREFILL_ADMISSION': '1'}
+        patcher = patch('damendaemon.scheduler.Runtime', FakeRuntime)
+        with patch.dict('os.environ', environment, clear=False):
+            patcher.start()
+        self.addCleanup(patcher.stop)
+        with patch.dict('os.environ', environment, clear=False):
+            self.runtime = BatchedRuntime({'a': 'a', 'b': 'b'}, batch_size=2,
+                                           queue_size=4, prefill_chunk_size=2)
+        self.executor = ChunkExecutor()
+        self.runtime.runtime.executor = self.executor
+        self.addCleanup(self.runtime.close)
+        self.addCleanup(self.executor.release.set)
+
+    def generate(self, prompt, count=8, alias='a'):
+        return list(self.runtime.generate(alias, [{'content': prompt}], count))
+
+    def wait_pending(self, count):
+        deadline = time.monotonic() + 3
+        while time.monotonic() < deadline:
+            with self.runtime.condition:
+                if len(self.runtime.pending) == count:
+                    return
+            time.sleep(.001)
+        self.fail('requests did not queue')
+
+    def test_second_prefill_starts_after_incumbent_prefill_completes(self):
+        with ThreadPoolExecutor(2) as pool:
+            long = pool.submit(self.generate, 'abcdefghijklmnop')
+            self.assertTrue(self.executor.entered.wait(2))
+            short = pool.submit(self.generate, 'wxyz')
+            self.wait_pending(1)
+            self.executor.release.set()
+            long_result, short_result = long.result(5), short.result(5)
+        chunks = [event for event in self.executor.chunk_events if event[0] == 'prefill']
+        # The incumbent (slot 0) owns the whole prefill lane: every one of
+        # its chunks precedes the second request's first chunk.
+        self.assertEqual([event[1] for event in chunks[:8]], [0] * 8)
+        self.assertEqual([event[2] for event in chunks if event[1] == 0],
+                         list(range(0, 16, 2)))
+        self.assertEqual([event[2] for event in chunks if event[1] == 1], [0, 2])
+        # Decode of the incumbent interleaves with the second prefill —
+        # the overlap the split exists to create.
+        self.assertTrue(any(event[0] == 'decode' and 0 in event[1]
+                            for event in self.executor.chunk_events))
+        for result, prompt_tokens in ((long_result, 16), (short_result, 4)):
+            self.assertEqual(result[-1]['usage']['prompt_tokens'], prompt_tokens)
+            self.assertEqual(result[-1]['usage']['completion_tokens'], 8)
+
+    def test_all_queued_requests_complete_without_starvation(self):
+        # Three requests against batch 2, admission bound 1: the third waits
+        # for a free prefill lane, then a free slot — and still completes.
+        with ThreadPoolExecutor(3) as pool:
+            self.executor.release.set()
+            futures = [pool.submit(self.generate, prompt)
+                      for prompt in ('abcdef', 'ghijkl', 'mnopqr')]
+            results = [future.result(5) for future in futures]
+        for result in results:
+            self.assertEqual(result[-1]['usage']['prompt_tokens'], 6)
+            self.assertEqual(result[-1]['usage']['completion_tokens'], 8)
+
+    def test_admission_env_is_validated(self):
+        for value in ('yes', '-1', '1.5', '3'):
+            with self.subTest(value=value):
+                with patch.dict('os.environ', {'DAMENDAEMON_PREFILL_ADMISSION': value},
+                                clear=False):
+                    with self.assertRaisesRegex(ValueError, 'PREFILL_ADMISSION'):
+                        BatchedRuntime({'a': 'a'}, batch_size=2, queue_size=4,
+                                       prefill_chunk_size=2)
+
+    def test_legacy_env_keeps_round_robin_prefill(self):
+        # The control contract: '0' admits the whole batch, so two admitted
+        # prefilling slots alternate chunks (the aggregate-prefill bound).
+        environment = {'DAMENDAEMON_PREFILL_ADMISSION': '0'}
+        with patch.dict('os.environ', environment, clear=False), \
+                patch('damendaemon.scheduler.Runtime', FakeRuntime):
+            runtime = BatchedRuntime({'a': 'a'}, batch_size=2, queue_size=4,
+                                     prefill_chunk_size=2)
+        self.addCleanup(runtime.close)
+        executor = ChunkExecutor()
+        runtime.runtime.executor = executor
+        self.addCleanup(executor.release.set)
+
+        def run(prompt):
+            return list(runtime.generate('a', [{'content': prompt}], 4))
+
+        with ThreadPoolExecutor(2) as pool:
+            long = pool.submit(run, 'abcdefghijklmnop')
+            self.assertTrue(executor.entered.wait(2))
+            short = pool.submit(run, 'wxyz')
+            deadline = time.monotonic() + 3
+            while time.monotonic() < deadline:
+                with runtime.condition:
+                    if len(runtime.pending) == 1:
+                        break
+                time.sleep(.001)
+            executor.release.set()
+            long.result(5), short.result(5)
+        chunks = [event for event in executor.chunk_events if event[0] == 'prefill']
+        self.assertEqual([event[1] for event in chunks[1:5]], [0, 1, 0, 1])
+
+
 class MtpChunkExecutor(ChunkExecutor):
     """Chunked fake carrying the MTP serving surface: spec_round mirrors
     decode_batch's token+1 semantics with a perfect draft (truth-first
