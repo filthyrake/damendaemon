@@ -195,7 +195,11 @@ def main():
     environment = dict(os.environ)
     environment['DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4'] = '1'
     environment['DAMENDAEMON_HYBRID_PRECISION'] = 'compensated'
+    environment['DAMENDAEMON_QUANTIZATION'] = 'q4_0'
+    environment['DAMENDAEMON_KERNELS'] = 'triton'
+    environment['DAMENDAEMON_DEVICE'] = 'cuda'
     environment['DAMENDAEMON_HYBRID_MTP'] = '1'
+    environment['DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CONTEXT'] = str(CONTEXT)
     environment['DAMENDAEMON_PREFILL_ADMISSION'] = '1' if args.phase == 'split' else '0'
     server = None
     try:
