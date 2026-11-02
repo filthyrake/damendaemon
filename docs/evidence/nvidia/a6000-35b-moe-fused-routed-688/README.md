@@ -72,9 +72,33 @@ The dispatch contract is CPU-pinned in `tests/test_hybrid_moe.py`:
 env validation (garbage refuses), env on/off identical on the fallback
 path, packed-CPU executors still refused at construction.
 
-## Artifacts
+## C6 re-qualification at 32K positions (follow-on, gated separately)
+
+After #692 merged, the 32K-position C6 cell was re-run with the fused path
+live (default-on), same runner/snapshot/geometry as the #686 record
+(`scripts/experiments/qwen36_35b_q8_concurrency_668.py --concurrency 6`;
+gates declared on #688 before launch). `c6-refit-fused.json` +
+`g688c6.json`; baseline `docs/evidence/nvidia/a6000-slo-concurrency-59/c6.json`.
+
+| | baseline (#686, materialize) | refit (fused) | delta |
+|---|---|---|---|
+| decode | 264.0 s | **32.8 s** | **8.0×** |
+| per-slot rate | 1.94 tok/s | **15.6 tok/s** | 8.0× |
+| request wall (worst slot) | ~272 s | 40.6 s | — |
+| prefill (per slot) | ~7.8 s | 7.7–7.8 s | unchanged (materialize by design) |
+| allocator peak | 43.72 GiB | 43.72 GiB | identical |
+| outputs | — | **byte-identical digests, 6/6 slots** | — |
+
+All five declared gates pass (6/6 × 512, zero OOM, runner SLO gates
+inherited, strictly-faster than 1.94, peak ≤ 44.5, digests reported). The
+8.0× is smaller than the 8K-position 12.0× exactly as predicted — 32K KV
+attention is a fixed larger share of the decode step that the fused
+expert path cannot shrink. **SLO consequence: the 6-user C6 request wall
+drops from ~272 s to ~41 s — 29× margin against the 1200 s gate; decode is
+no longer the binding constraint of the C6 SLO cell.**
 
 - `fused_cell.json` / `materialize_cell.json` — full cell reports
+- `c6-refit-fused.json` / `g688c6.json` — the C6 re-fit cell + guard reports
 - `g688a.json` / `g688b.json` — guard reports (phase passed, 0 exit)
 - `runner.py` — the A/B runner verbatim
 
