@@ -1043,7 +1043,8 @@ class HybridExecutor:
             except ImportError:
                 fused = False
         if fused:
-            gate_up_scales, down_scales = packed_scales[id(gate_up)], packed_scales[id(down)]
+            gate_up_scales, down_scales = (self.linear.scales[id(gate_up)],
+                                           self.linear.scales[id(down)])
             routed = routed_linear(flat, gate_up, gate_up_scales, selected, 2 * inter, True)
             gate, up = routed.chunk(2, -1)
             activated = (F.silu(gate.float())*up.float()).to(flat.dtype)
