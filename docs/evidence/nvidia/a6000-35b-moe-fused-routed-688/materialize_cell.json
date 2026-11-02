@@ -1,0 +1,210 @@
+{
+  "batch": 6,
+  "completed": true,
+  "context": 32768,
+  "device": "GPU-4adb9ddb-7bb3-189c-0fa2-51d67d1189ed",
+  "gate": "#688 fused routed dequant-matvec A/B (direct executor)",
+  "graphs": false,
+  "kernels": "triton-hybrid+q8_0",
+  "kv_cache_bytes": 4026531840,
+  "model": "/home/damen/models/Qwen_Qwen3.6-35B-A3B",
+  "model_revision": "995ad96eacd98c81ed38be0c5b274b04031597b0",
+  "oom_count": 0,
+  "output_limit": 512,
+  "phase": "materialize",
+  "phases": {
+    "allocator_after_warmup_gib": 38.954373836517334,
+    "allocator_current_gib": 38.91577100753784,
+    "allocator_peak_gib": 40.81601428985596,
+    "decode": {
+      "aggregate_tokens_per_second": 12.51506237264807,
+      "per_slot_tokens_per_second": 2.085843728774678,
+      "seconds": 245.4642181179952,
+      "steps": 511
+    },
+    "decode_progress": {
+      "seconds": 184.37647029999061,
+      "steps": 384
+    },
+    "prefill": {
+      "seconds": [
+        2.9792166889819782,
+        2.850340047996724,
+        2.831320188008249,
+        2.8266262429824565,
+        2.8415289660042617,
+        2.8528467529977206
+      ],
+      "total": 17.18187888697139
+    },
+    "warmup": {
+      "seconds": 2.6871703189972322
+    }
+  },
+  "precision": "float16",
+  "prompt_tokens": 8192,
+  "quantization": "q8_0",
+  "slot_prompt_digests": [
+    "cb37cfcd35d845e9312f808d023bc95574723f44080f14661c7cb4afa76409b5",
+    "08977c19c55c200ec03d9006d668054dd70960386acbe28a440915f49bc1593b",
+    "c32c3921c2ba8a1d681c2fb52dc44e7773cb17447e2a30e3f66dfd97b29cd8e7",
+    "b0dbd7b27d99842ffaae914b7312aec7d20f0f5dc97fe4a613b72425b1971b08",
+    "9c043314f2fd115c5a64fb9049be5f88249511c8c89487a2a4ab82bc7149531c",
+    "fbeab955d4310492561245da23d3ff96df366e0ea9f55c2ce7617ecfcdc42143"
+  ],
+  "slots": {
+    "slot0": {
+      "first_token": 5388,
+      "output_ids_digest": "b4c2c64072d0796bc67e9bcd758cf357055467a04cf8e84221ea786672cdfbd1",
+      "output_preview_ids": [
+        5388,
+        1345,
+        279,
+        12182,
+        7189,
+        1396,
+        59056,
+        43555,
+        2691,
+        440,
+        5721,
+        321,
+        26080,
+        13,
+        561,
+        3841
+      ],
+      "output_tokens": 512,
+      "passed": true,
+      "prefill_seconds": 2.9792166889819782
+    },
+    "slot1": {
+      "first_token": 1345,
+      "output_ids_digest": "e2241843e8b8546c68ffd9c0f05f22aebf6743763d188298e7ddabc89e2377f9",
+      "output_preview_ids": [
+        1345,
+        279,
+        12182,
+        7189,
+        1396,
+        59056,
+        43555,
+        2691,
+        440,
+        5721,
+        321,
+        26080,
+        13,
+        561,
+        3841,
+        13477
+      ],
+      "output_tokens": 512,
+      "passed": true,
+      "prefill_seconds": 2.850340047996724
+    },
+    "slot2": {
+      "first_token": 279,
+      "output_ids_digest": "e2e820bad5cf1ae7a6b3db4fce0d84ff17421a81514aa7c094f2d5afcd1fd279",
+      "output_preview_ids": [
+        279,
+        12182,
+        7189,
+        1396,
+        59056,
+        43555,
+        2691,
+        440,
+        5721,
+        321,
+        26080,
+        13,
+        561,
+        3841,
+        13477,
+        37550
+      ],
+      "output_tokens": 512,
+      "passed": true,
+      "prefill_seconds": 2.831320188008249
+    },
+    "slot3": {
+      "first_token": 12182,
+      "output_ids_digest": "c1ceca265b41e2e5952cfacc63db18af0df41c7fc4c2f892ab564df574c2f772",
+      "output_preview_ids": [
+        12182,
+        7189,
+        1396,
+        59056,
+        43555,
+        2691,
+        440,
+        5721,
+        321,
+        26080,
+        13,
+        561,
+        3841,
+        13477,
+        37550,
+        33075
+      ],
+      "output_tokens": 512,
+      "passed": true,
+      "prefill_seconds": 2.8266262429824565
+    },
+    "slot4": {
+      "first_token": 7189,
+      "output_ids_digest": "cca2ed8f122f442a72963347137c12c71bfca9f75fb7414d5428b90521afb608",
+      "output_preview_ids": [
+        7189,
+        1396,
+        59056,
+        43555,
+        2691,
+        440,
+        5721,
+        321,
+        26080,
+        13,
+        561,
+        3841,
+        13477,
+        37550,
+        33075,
+        888
+      ],
+      "output_tokens": 512,
+      "passed": true,
+      "prefill_seconds": 2.8415289660042617
+    },
+    "slot5": {
+      "first_token": 1396,
+      "output_ids_digest": "c27eed75e4790ba6e13bfa3c879e38162e98a7bcea606b98107bacbdb99969ba",
+      "output_preview_ids": [
+        1396,
+        59056,
+        43555,
+        2691,
+        440,
+        5721,
+        321,
+        26080,
+        13,
+        561,
+        3841,
+        13477,
+        37550,
+        33075,
+        888,
+        279
+      ],
+      "output_tokens": 512,
+      "passed": true,
+      "prefill_seconds": 2.8528467529977206
+    }
+  },
+  "torch": "2.13.0+cu130",
+  "weight_gib": 34.761629581451416,
+  "weight_load_seconds": 127.95645135600353
+}

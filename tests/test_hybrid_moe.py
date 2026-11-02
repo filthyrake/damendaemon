@@ -303,6 +303,38 @@ class HybridMoeTests(unittest.TestCase):
         self.assertLess(float(error), 0.15)
 
 
+    def test_fused_routed_env_and_dispatch_contract(self):
+        """#688: the fused routed kernels are a CUDA surface — a packed CPU
+        executor is refused at construction, so the contract is pinned at
+        the sublayer itself: the env validates (garbage refuses loudly) and,
+        with the fused env on, a non-CUDA executor still runs the
+        materialize path — token-identical to env off. The device gate is
+        load-bearing: the moe_kernels import alone succeeds on a
+        triton-installed CPU box."""
+        weights, scales = self._prepared('q8_0')
+
+        def moe_half(env):
+            # Swap ONLY the layer-1 expert stacks for packed q8: the shared
+            # projections stay fp32 (their packed dispatch needs triton,
+            # which CPU never has), while _moe_half's expert path reads the
+            # scales straight off the packed Linear.
+            from damendaemon.quantization import Linear
+            import torch.nn.functional as F
+            executor = self.executor()
+            expert_scales = {}
+            for name in ('1.experts_gate_up', '1.experts_down'):
+                executor.w[name] = weights[name]
+                expert_scales[name] = scales[name]
+            executor.linear = Linear(executor.w, expert_scales, 'cpu', F.linear, {})
+            with patch.dict('os.environ', {'DAMENDAEMON_MOE_FUSED_ROUTED': env}, clear=False):
+                torch.manual_seed(7)
+                return executor._moe_half(torch.randn(1, 3, HIDDEN), 1)
+        with self.assertRaisesRegex(ValueError, 'MOE_FUSED_ROUTED'):
+            moe_half('yes')
+        torch.testing.assert_close(moe_half('1'), moe_half('0'), rtol=0, atol=0,
+                                   msg='CPU fallback must be identical with the fused env on or off')
+
+
 class HybridMoeServeAdmissionTests(unittest.TestCase):
     """The serve path dispatches MoE text through the hybrid executor (#668)."""
 
