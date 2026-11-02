@@ -508,6 +508,14 @@ class HybridExecutor:
                 raise ValueError('DAMENDAEMON_HYBRID_MTP_CONCAT must be embed_first or hidden_first')
             self.kv[self.mtp_layer] = torch.zeros((2, max_batch, self.kh, self.context, self.dim),
                                                   dtype=self.compute_dtype, device=self.device)
+            # Per-slot MTP serving state (#68 spec serving cell): the final
+            # hidden of each slot's most recent forward (the draft seed's
+            # h_{position-1}), and the carried last hidden across prefill
+            # chunks for the incremental MTP KV fill. Both are overwritten by
+            # every forward a slot participates in; both are only read after
+            # that slot's own prefill.
+            self.mtp_slot_hidden = {}
+            self.mtp_prev_hidden = {}
         # Gate-3 accounting (#535): resident KV bytes per mode, reported in
         # /v1/models/status. The quantized pair counts int8 data plus FP16
         # scales; the plain cache counts its compute-dtype bytes.
@@ -703,6 +711,13 @@ class HybridExecutor:
     def attention(self, x, i, positions, slots, prefill, prefix_length=0):
         n, length, _ = x.shape
         w = self.w
+        # Packed multi-row continuations with divergent per-row positions
+        # (MTP spec blocks: slots decode at their own lengths) can use
+        # neither the grouped trailing-window path nor the uniform
+        # lower-right causal window — both assume every row sits at the
+        # same offset. Divergent rows take the explicit per-row mask below;
+        # uniform rows (every existing caller) keep the fast paths.
+        divergent = prefill and n > 1 and not bool((positions == positions[0]).all())
         q, k, v = self.linear(x, w[f'{i}.qkv']).split((2*self.heads*self.dim, self.kh*self.dim, self.kh*self.dim), -1)
         q, gate = q.view(n, length, self.heads, 2*self.dim).chunk(2, -1)
         k, v = [a.view(n, length, self.kh, self.dim) for a in (k, v)]
@@ -727,15 +742,22 @@ class HybridExecutor:
             cv[slots[:, None], :, positions, :] = v
         from .grouped_attention import use_grouped_prefill
         from .device import selected_accelerator
-        end = prefix_length + length
+        if divergent:
+            # Divergent rows read each slot's own history; the shared read
+            # window must cover the longest row's last position.
+            end = int(positions.max()) + 1
+        else:
+            end = prefix_length + length
         if self.kv_quant == 'q8_0':
             # Slot-indexed views of the populated prefix in the compute dtype.
             # The quantized path feeds eager attention only; the fused dense
             # decode kernel reads the FP32 cache layout and is bypassed here
             # (fused linear scan/conv and fused norms are KV-independent).
-            if use_grouped_prefill(selected_accelerator(), self.hybrid_precision, prefill, length, end):
+            if use_grouped_prefill(selected_accelerator(), self.hybrid_precision, prefill, length, end) and not divergent:
                 from .grouped_attention import attention as grouped_attention
                 out = grouped_attention(q.transpose(1, 2), ck, cv)
+            elif divergent:
+                out = self._divergent_attention(q, ck, cv, slots, positions)
             elif prefill and prefix_length:
                 from torch.nn.attention.bias import causal_lower_right
                 mask = (self.arange[:end][None, :] <= positions[0, :, None]
@@ -750,10 +772,12 @@ class HybridExecutor:
                 mask = self.arange.view(1, 1, 1, -1)[:, :, :, :end] <= positions.view(n, 1, 1, 1)
                 out = scaled_attention(q.transpose(1, 2), ck, cv,
                                                              attn_mask=mask, enable_gqa=True)
-        elif use_grouped_prefill(selected_accelerator(), self.hybrid_precision, prefill, length, end):
+        elif use_grouped_prefill(selected_accelerator(), self.hybrid_precision, prefill, length, end) and not divergent:
             from .grouped_attention import attention as grouped_attention
             out = grouped_attention(q.transpose(1, 2),
                 ck[:, :, :end].index_select(0, slots), cv[:, :, :end].index_select(0, slots))
+        elif divergent:
+            out = self._divergent_attention(q, ck, cv, slots, positions)
         elif prefill and prefix_length:
             from torch.nn.attention.bias import causal_lower_right
             end = prefix_length + length
@@ -801,6 +825,18 @@ class HybridExecutor:
         out = out.transpose(1, 2).float()*gate.float().sigmoid()
         return self.linear(out.reshape(n, length, -1).to(self.compute_dtype), w[f'{i}.o'])
 
+    def _divergent_attention(self, q, ck, cv, slots, positions):
+        """Explicit per-row causal mask over each slot's own KV history for
+        packed continuation rows whose positions differ (MTP spec blocks).
+        Same eager SDPA shape the decode branch uses, generalized to
+        multi-token rows: allowed[r, :, i, j] = key j <= positions[r, i]."""
+        n, length = positions.shape
+        end = int(positions.max()) + 1
+        mask = self.arange[:end].reshape(1, 1, 1, -1) <= positions.reshape(n, 1, length, 1)
+        return scaled_attention(q.transpose(1, 2), ck[:, :, :end].index_select(0, slots),
+                                cv[:, :, :end].index_select(0, slots),
+                                attn_mask=mask, enable_gqa=True)
+
     @torch.inference_mode()
     def forward(self, ids, positions, slots, prefill, prefix_length=0, return_logits=True,
                 return_hidden=False):
@@ -829,12 +865,46 @@ class HybridExecutor:
 
     def forward_embeddings(self, x, positions, slots, prefill, prefix_length=0, return_logits=True):
         """Shared text backbone after token or image/text embedding assembly."""
+        embeddings = x
         x = self.forward_layers(x, positions, slots, prefill, prefix_length)
-        # The pre-final-norm residual of the last position — the MTP draft
-        # head's hidden input (#668); captured only when requested so the
-        # ordinary decode path keeps its exact allocation behavior.
-        self._last_hidden = x[:, -1:].detach() if getattr(self, 'mtp_layer', None) is not None else None
+        if getattr(self, 'mtp_layer', None) is not None:
+            # The pre-final-norm residual of the last position — the MTP
+            # draft head's hidden input (#668); captured only when armed so
+            # the ordinary decode path keeps its exact allocation behavior.
+            self._last_hidden = x[:, -1:].detach()
+            for row, slot in enumerate(slots.tolist()):
+                # [1, 1, hidden] — the shape mtp_propose consumes.
+                self.mtp_slot_hidden[slot] = x[row, -1:].detach().unsqueeze(0)
+                if prefill:
+                    self._mtp_fill_chunk(row, slot, x, embeddings, positions, prefix_length)
+                    self.mtp_prev_hidden[slot] = x[row, -1:].detach()
         return self.output_logits(x[:, -1]) if return_logits else None
+
+    def _mtp_fill_chunk(self, row, slot, hiddens, embeddings, positions, prefix_length):
+        """Fill the MTP head's KV over one prefill chunk (#68 spec serving).
+
+        The draft head consumes (h_{j-1}, emb(token_j)) evaluated at every
+        prompt position j >= 1 (position 0 is the architectural hole).
+        Continuation chunks prepend the carried h_{p0-1}; the result is the
+        same MTP KV state _mtp_prefill leaves, filled incrementally so the
+        whole prompt's hiddens are never materialized."""
+        h_prev = hiddens[row, :-1]                     # h_{j-1}, j in [p0+1, p0+length)
+        e = embeddings[row]                             # emb(token_j), j in [p0, p0+length)
+        pos = positions[row]
+        if prefix_length:
+            carried = self.mtp_prev_hidden.get(slot)
+            if carried is None:
+                raise ValueError('MTP continuation chunk without a carried hidden')
+            h_prev = torch.cat((carried, h_prev), 0)    # h_{p0-1} + h_{p0..p0+length-2}
+        else:
+            # Fresh prompt: position 0 is the architectural hole — pairs
+            # start at j=1, so h_prev[i] (already h_0..h_{length-2}) pairs
+            # with e[1:] (emb_1..emb_{length-1}).
+            e, pos = e[1:], pos[1:]
+        if h_prev.shape[0] == 0:
+            return
+        self._mtp_layer_forward(h_prev.unsqueeze(0), e.unsqueeze(0), pos.unsqueeze(0),
+                                torch.tensor([slot], device=self.device), collect=False)
 
     def forward_layers(self, x, positions, slots, prefill, prefix_length=0,
                        layer_start=None, layer_end=None):
@@ -1415,3 +1485,95 @@ class HybridExecutor:
             # token it now predicts) at that token's own position.
             draft = int(self.mtp_propose(hidden, truth, self.lengths[slot], slot)[0].float().argmax())
         return output, accepted, steps
+
+    @torch.inference_mode()
+    def spec_round(self, blocks):
+        """One packed optimistic MTP decode round (#68 spec serving cell).
+
+        blocks: list of (slot, first, second, corrective) — one block per
+        ready speculating slot:
+          fresh:       first = the last emitted (verified) token, which
+                       sits at L = lengths[slot]; second = the MTP draft
+                       for position L+1, or None to seed here from the
+                       per-slot hidden stash (stateless between calls).
+          corrective: first = the same verified token (re-consumed after
+                       the state rollback of the round that rejected it),
+                       second = the argmax that round verified (already
+                       emitted — only its follower is emitted here).
+
+        One [B, 2] continuation forward runs every block with per-row
+        positions (divergent by construction: slots decode at their own
+        lengths). Fresh rows verify the draft against the first row's
+        argmax: accept → the draft and its follower are both emitted (two
+        verified tokens per forward); reject → the slot's recurrent state
+        snapshot is restored and a corrective block re-runs with the truth
+        (the truth is emitted by the caller now, its follower next round).
+        Corrective blocks always resolve — their second token IS the
+        verified argmax. The MTP KV is backfilled at each consumed position;
+        the stash carries each slot's final hidden for the next seed.
+
+        Returns (emissions, corrective_blocks, accepted_count): emissions
+        is a list of (slot, [tokens]) in block order — every token is the
+        main model's greedy argmax at its position, so the stream is exact
+        regardless of draft quality."""
+        if self.mtp_layer is None or not blocks:
+            raise ValueError('spec_round requires the MTP draft head and blocks')
+        device = self.device
+        rows = []
+        for slot, first, second, corrective in blocks:
+            if second is None:
+                if corrective:
+                    raise ValueError('corrective blocks carry the verified truth')
+                hidden = self.mtp_slot_hidden.get(slot)
+                if hidden is None:
+                    raise ValueError(f'slot {slot} has no hidden stash; prefill incomplete')
+                logits = self.mtp_propose(hidden, first, self.lengths[slot], slot)
+                second = int(logits[0].float().argmax())
+            rows.append((slot, first, second, corrective))
+        # Snapshot the participating slots' recurrent state: a rejected
+        # draft rolls its slot back to this boundary (KV is position-
+        # addressed and self-heals by overwrite on the corrective re-run).
+        snap_state = {slot: {i: self.state[i][slot].clone() for i in self.state}
+                      for slot, *_ in rows}
+        snap_conv = {slot: {i: self.conv[i][slot].clone() for i in self.conv}
+                     for slot, *_ in rows}
+        snap_hidden = {slot: self.mtp_slot_hidden.get(slot) for slot, *_ in rows}
+        lengths = [self.lengths[slot] for slot, *_ in rows]
+        tokens = torch.tensor([[first, second] for _, first, second, _ in rows], device=device)
+        positions = torch.tensor([[L, L + 1] for L in lengths], device=device)
+        slots = torch.tensor([slot for slot, *_ in rows], device=device)
+        x = self.forward_layers(self.embedding(tokens), positions, slots, True, min(lengths))
+        logits = self.output_logits(x)
+        emissions, corrective, accepted = [], [], 0
+        for row, (slot, first, second, is_corrective) in enumerate(rows):
+            L = lengths[row]
+            truth = int(logits[row, 0].float().argmax())   # token at L+1 (verified)
+            follow = int(logits[row, 1].float().argmax())  # token at L+2 (greedy after `second`)
+            if is_corrective:
+                # `second` == the truth verified in the rejecting round and
+                # already emitted there; only the follower is new.
+                emissions.append((slot, [follow]))
+                # MTP KV backfill at L+1 for the re-verified truth token.
+                self.mtp_propose(x[row, 0:1].unsqueeze(0), second, L + 1, slot)
+            elif truth == second:
+                accepted += 1
+                emissions.append((slot, [second, follow]))
+                # MTP KV backfill at L+1 for the accepted draft token.
+                self.mtp_propose(x[row, 0:1].unsqueeze(0), second, L + 1, slot)
+            else:
+                # Rejected: emit the verified truth now; roll the slot back
+                # and queue the corrective block (which emits its follower).
+                emissions.append((slot, [truth]))
+                for i in snap_state[slot]:
+                    self.state[i][slot].copy_(snap_state[slot][i])
+                for i in snap_conv[slot]:
+                    self.conv[i][slot].copy_(snap_conv[slot][i])
+                self.mtp_slot_hidden[slot] = snap_hidden[slot]
+                self.lengths[slot] = L
+                self.length = self.lengths[0]
+                corrective.append((slot, first, truth, True))
+                continue
+            self.lengths[slot] = L + 2
+            self.length = self.lengths[0]
+            self.mtp_slot_hidden[slot] = x[row, -1:].detach().unsqueeze(0)
+        return emissions, corrective, accepted
