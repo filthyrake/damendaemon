@@ -318,16 +318,19 @@ def main():
                    + [('t2', T2_SENTENCE.format(name=name, count=count), fraction)
                       for name, count, fraction in T2_NEEDLES]
                    + [('t3', text, fraction) for text, fraction in T3_FACTS])
-        prompt_text, layout, corpus_tokens, prompt_tokens = assemble(
-            tokenizer, corpus_budget - 600, inserts, QA_QUESTIONS)
-        if prompt_tokens > tier.context - 576:
-            raise ValueError(f'qa prompt {prompt_tokens} exceeds the context budget')
+        limit, target, closing = tier.context - 576, corpus_budget - 900, QA_QUESTIONS
     else:
         inserts = [('t4', text, fraction) for text, fraction in T4_EVENTS]
+        limit, target, closing = tier.context - 256, corpus_budget - 400, T4_PROMPT
+    prompt_text = layout = corpus_tokens = prompt_tokens = None
+    for _ in range(6):
         prompt_text, layout, corpus_tokens, prompt_tokens = assemble(
-            tokenizer, corpus_budget - 200, inserts, T4_PROMPT)
-        if prompt_tokens > tier.context - 256:
-            raise ValueError(f'summary prompt {prompt_tokens} exceeds the context budget')
+            tokenizer, target, inserts, closing)
+        if prompt_tokens <= limit:
+            break
+        target -= (prompt_tokens - limit) + 64
+    else:
+        raise ValueError(f'{args.phase} prompt {prompt_tokens} exceeds the context budget')
     prompt_ids = tokenizer.encode(prompt_text).ids
     positions = [dict(kind=kind, fraction=round(position / max(corpus_tokens, 1), 3))
                  for kind, _, position in layout if kind != 'filler']
