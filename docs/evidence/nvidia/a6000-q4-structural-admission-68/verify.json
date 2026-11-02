@@ -1,0 +1,65 @@
+{
+ "events": [
+  {
+   "kind": "warmup",
+   "value": {
+    "first_output_seconds": 170.52676628599875,
+    "chars": 48
+   }
+  },
+  {
+   "kind": "measured_32k_64",
+   "value": {
+    "first_output_seconds": 154.15285789000336,
+    "chars": 380
+   }
+  }
+ ],
+ "serve_admitted": true,
+ "models_status": {
+  "models": [
+   {
+    "id": "qwen38",
+    "quantization": "q4_0",
+    "residency": "disk",
+    "chat_template": {
+     "source": "checkpoint",
+     "sha256": null
+    },
+    "host_weight_bytes": null,
+    "vision_host_weight_bytes": 0,
+    "vision_gpu_weight_bytes": 0,
+    "gpu_projection_cache_bytes": 0,
+    "kv_cache_mode": null,
+    "kv_cache_bytes": null,
+    "gpu_packed_layout_overhead_bytes": 0,
+    "q4_marlin_abi": null,
+    "partition": null,
+    "partition_rebind_count": null,
+    "output_head_workspace_bytes": 0,
+    "weight_streaming": null,
+    "pipeline": null,
+    "executor_failed": false
+   }
+  ],
+  "device": "cuda",
+  "context": 32768,
+  "closing": false,
+  "closed": false,
+  "cuda_allocated_bytes": 0,
+  "cuda_peak_allocated_bytes": 0,
+  "hip_allocated_bytes": null,
+  "rocm_aotriton_experimental": null,
+  "cuda_devices": null,
+  "pending_pipeline_cleanup": 0,
+  "pending_executor_cleanup": 0,
+  "xpu_allocated_bytes": null,
+  "xpu_reserved_bytes": null,
+  "xpu_peak_allocated_bytes": null,
+  "mps_allocated_bytes": null,
+  "host_cached_bytes": 0,
+  "host_budget_bytes": 42949672960,
+  "gpu_model_limit": 1,
+  "host_model_limit": 1
+ }
+}
