@@ -1,0 +1,50 @@
+{
+ "completed": true,
+ "gate": "grouped vs SDPA compensated chunk-prefill A/B (#68 capacity)",
+ "model": "/home/damen/models/Qwen3.8-27B-1d4bf0f2",
+ "context": 32768,
+ "prompt_tokens": 32256,
+ "output_tokens": 64,
+ "chunk": 127,
+ "passes": [
+  {
+   "tag": "passA-grouped",
+   "grouped": true,
+   "healthy": true,
+   "round": {
+    "first_output_seconds": 300.7502150190121,
+    "total_seconds": 330.22074607902323,
+    "output_chars": 380,
+    "output_digest": "8a700db8adf132dc6d843582055b3487a91a23fe70f19aa79e65bc7ab849625b",
+    "usage": null
+   },
+   "cuda_peak_allocated_bytes": 22274757632,
+   "oom_warnings": 0
+  },
+  {
+   "tag": "passB-sdpa-control",
+   "grouped": false,
+   "healthy": true,
+   "round": {
+    "first_output_seconds": 327.2902988900023,
+    "total_seconds": 356.7544953459874,
+    "output_chars": 380,
+    "output_digest": "8a700db8adf132dc6d843582055b3487a91a23fe70f19aa79e65bc7ab849625b",
+    "usage": null
+   },
+   "cuda_peak_allocated_bytes": 24781027328,
+   "oom_warnings": 12
+  }
+ ],
+ "attribution": {
+  "a_completed": true,
+  "b_storm_reproduced": true,
+  "oom_a": 0,
+  "oom_b": 12,
+  "peak_a": 22274757632,
+  "peak_b": 24781027328,
+  "first_output_a": 300.7502150190121,
+  "first_output_b": 327.2902988900023,
+  "output_digest_identical": true
+ }
+}
