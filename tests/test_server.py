@@ -636,9 +636,9 @@ class DisconnectDetectionTests(ServerTests):
             client.sendall(b"POST /v1/chat/completions HTTP/1.1\r\nHost: t\r\n"
                            b"Content-Type: application/json\r\n"
                            + f"Content-Length: {len(body)}\r\n\r\n".encode() + body)
-            # Wait for the first SSE event, then leave — FIN, not RST.
+            # Wait for the first SSE content event, then leave — FIN, not RST.
             received = b''
-            while b"data: " not in received:
+            while b'first' not in received:
                 received += client.recv(4096)
             self.assertIn(b"first", received)
             client.close()
@@ -653,4 +653,48 @@ class DisconnectDetectionTests(ServerTests):
                              'the zombie generator must be closed after the peer leaves')
             self.assertFalse(state['terminal_emitted'],
                               'the handler must stop consuming events after the disconnect')
+            self.assertEqual(state['tokens_emitted'], 1)
+
+    def test_urllib_close_also_cancels_generation(self):
+        """The same detection through urllib's response.close() — the harness
+        client in every lifecycle cell. urllib alone can leave the socket in
+        a reference cycle (no FIN until cyclic GC, measured indefinitely
+        late on the Q4 harness), so the harnesses hard-close the socket; this
+        test models that corrected client."""
+        from scripts.experiments.http_disconnect import hard_disconnect
+        released = threading.Event()
+        state = dict(terminal_emitted=False, tokens_emitted=0)
+
+        def generate(alias, messages, max_tokens, **kwargs):
+            try:
+                yield {'text': 'first', 'token': 1}
+                state['tokens_emitted'] += 1
+                released.wait(10)
+                yield {'text': 'second', 'token': 2}
+                state['tokens_emitted'] += 1
+                yield {"finish_reason": "length", "usage": {"prompt_tokens": 1,
+                       "completion_tokens": 2, "total_tokens": 3},
+                       "timing": {"queue_seconds": 0}}
+                state['terminal_emitted'] = True
+            finally:
+                self.runtime.closed += 1
+
+        with patch.object(self.runtime, 'generate', side_effect=generate):
+            before = self.runtime.closed
+            response = self.post(stream=True)
+            received = b''
+            for line in response:
+                received += line
+                if b'first' in line:
+                    break
+            self.assertIn(b'first', received)
+            response.close()
+            hard_disconnect(response)
+            released.set()
+            deadline = time.monotonic() + 10
+            while self.runtime.closed <= before and time.monotonic() < deadline:
+                time.sleep(0.05)
+            self.assertEqual(self.runtime.closed, before + 1,
+                             'a hard-closed urllib connection must cancel generation')
+            self.assertFalse(state['terminal_emitted'])
             self.assertEqual(state['tokens_emitted'], 1)

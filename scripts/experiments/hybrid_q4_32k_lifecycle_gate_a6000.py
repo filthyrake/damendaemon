@@ -138,6 +138,13 @@ def output_digest(text):
     return hashlib.sha256(text.encode()).hexdigest()
 
 
+def hard_disconnect(response):
+    """Delegate to the shared deterministic-FIN helper (see
+    scripts/experiments/http_disconnect.py for the full rationale)."""
+    from scripts.experiments.http_disconnect import hard_disconnect as close_it
+    close_it(response)
+
+
 def request(slot, prompt_ids, max_tokens, results: dict, *, cancel_after=None,
             cancel_after_first_output=0):
     """One streamed completion. With cancel_after, the connection is closed
@@ -163,6 +170,7 @@ def request(slot, prompt_ids, max_tokens, results: dict, *, cancel_after=None,
             time.sleep(cancel_after)
             disconnected = time.monotonic() - started
             response.close()
+            hard_disconnect(response)
         else:
             for line in response:
                 if time.monotonic() - started > REQUEST_LIMIT:
@@ -184,6 +192,7 @@ def request(slot, prompt_ids, max_tokens, results: dict, *, cancel_after=None,
                         and time.monotonic() - started >= first_output + cancel_after_first_output):
                     disconnected = time.monotonic() - started
                     response.close()
+                    hard_disconnect(response)
                     break
     except Exception as failure:
         error = failure
