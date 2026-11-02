@@ -1,0 +1,81 @@
+{
+  "batch": 1,
+  "completed": true,
+  "context": 65536,
+  "corpus_text_sha256": "8d5da019dd0233f7e52570e2f60b4c2317ed195026d1b084b79974eee9b1a97a",
+  "gate": "long-document quality (qwen27-64k summary)",
+  "gates": {
+    "t1_min": 2,
+    "t1_total": 3,
+    "t2_min": 4,
+    "t2_total": 6,
+    "t3_min": 1,
+    "t3_total": 2,
+    "t4_min": 3,
+    "t4_total": 5
+  },
+  "needle_positions": [
+    {
+      "fraction": 0.305,
+      "kind": "t4"
+    },
+    {
+      "fraction": 0.457,
+      "kind": "t4"
+    },
+    {
+      "fraction": 0.61,
+      "kind": "t4"
+    },
+    {
+      "fraction": 0.762,
+      "kind": "t4"
+    }
+  ],
+  "phase": "summary",
+  "prompt_ids_sha256": "7f1786eb13046876f449f34365e9737a565974e066a738f614aa30dca3505226",
+  "prompt_tokens": 65062,
+  "quantization": "q4_0",
+  "request": {
+    "first_output_seconds": 335.0712781609909,
+    "output_chars": 1498,
+    "output_preview": "\n\n<think>\nThe user wants me to summarize the critical events of this log in at most 80 words, written as one paragraph without lists.\n\nLet me identify the critical events in this massive log of routine operations:\n\n1. \"ALERT: thermal runaway detected in tower 4.\" - This is a critical alert.\n2. \"Crew Halvard contained the fault at its source.\" - Response to the alert.\n3. \"Evacuation of deck 7 compl",
+    "tag": "qwen27-64k-summary",
+    "total_seconds": 381.5769977059972,
+    "usage": {
+      "completion_tokens": 384,
+      "prompt_tokens": 65062,
+      "total_tokens": 65446
+    }
+  },
+  "scores": {
+    "T4": "5/5"
+  },
+  "scoring": "normalized exact agreement, judge-free",
+  "snapshot": "/home/damen/models/Qwen3.8-27B-1d4bf0f2",
+  "tasks": {
+    "T4": [
+      {
+        "key": "thermal runaway",
+        "passed": true
+      },
+      {
+        "key": "tower 4",
+        "passed": true
+      },
+      {
+        "key": "halvard",
+        "passed": true
+      },
+      {
+        "key": "deck 7",
+        "passed": true
+      },
+      {
+        "key": "48 minutes",
+        "passed": true
+      }
+    ]
+  },
+  "tier": "qwen27-64k"
+}

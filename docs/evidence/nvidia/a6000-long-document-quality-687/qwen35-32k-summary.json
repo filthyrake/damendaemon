@@ -1,0 +1,81 @@
+{
+  "batch": 6,
+  "completed": true,
+  "context": 32768,
+  "corpus_text_sha256": "b03dff0a70d95da331426cb2f70e5ceac5f4d93590b88a3f8ee612914764f352",
+  "gate": "long-document quality (qwen35-32k summary)",
+  "gates": {
+    "t1_min": 2,
+    "t1_total": 3,
+    "t2_min": 4,
+    "t2_total": 6,
+    "t3_min": 1,
+    "t3_total": 2,
+    "t4_min": 3,
+    "t4_total": 5
+  },
+  "needle_positions": [
+    {
+      "fraction": 0.303,
+      "kind": "t4"
+    },
+    {
+      "fraction": 0.456,
+      "kind": "t4"
+    },
+    {
+      "fraction": 0.61,
+      "kind": "t4"
+    },
+    {
+      "fraction": 0.763,
+      "kind": "t4"
+    }
+  ],
+  "phase": "summary",
+  "prompt_ids_sha256": "a930042b7b5a2ad048593c50e225bd8441b8470e2cf2a02f93c74ccde3c84351",
+  "prompt_tokens": 32279,
+  "quantization": "q8_0",
+  "request": {
+    "first_output_seconds": 8.130336556001566,
+    "output_chars": 497,
+    "output_preview": "\n\n<think>\n\n</think>\n\nRoutine operations continued across numerous bays, shuttles, and systems with no incidents reported. A critical thermal runaway event was detected in tower 4, which was successfully contained by Crew Halvard. Subsequently, the evacuation of deck 7 was completed in 48 minutes. Despite these anomalies, reactor output remained nominal, and all other monitored systems, including g",
+    "tag": "qwen35-32k-summary",
+    "total_seconds": 10.637040210014675,
+    "usage": {
+      "completion_tokens": 97,
+      "prompt_tokens": 32279,
+      "total_tokens": 32376
+    }
+  },
+  "scores": {
+    "T4": "5/5"
+  },
+  "scoring": "normalized exact agreement, judge-free",
+  "snapshot": "/home/damen/models/Qwen_Qwen3.6-35B-A3B",
+  "tasks": {
+    "T4": [
+      {
+        "key": "thermal runaway",
+        "passed": true
+      },
+      {
+        "key": "tower 4",
+        "passed": true
+      },
+      {
+        "key": "halvard",
+        "passed": true
+      },
+      {
+        "key": "deck 7",
+        "passed": true
+      },
+      {
+        "key": "48 minutes",
+        "passed": true
+      }
+    ]
+  },
+  "tier": "qwen35-32k"
+}

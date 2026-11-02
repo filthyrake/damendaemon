@@ -1,0 +1,203 @@
+{
+  "batch": 6,
+  "completed": true,
+  "context": 32768,
+  "corpus_text_sha256": "cd5019739a6c5deebc48e22a5ca552e913b2fb8808a679681c88f81eb89229dd",
+  "gate": "long-document quality (qwen35-32k qa)",
+  "gates": {
+    "t1_min": 2,
+    "t1_total": 3,
+    "t2_min": 4,
+    "t2_total": 6,
+    "t3_min": 1,
+    "t3_total": 2,
+    "t4_min": 3,
+    "t4_total": 5
+  },
+  "needle_positions": [
+    {
+      "fraction": 0.152,
+      "kind": "t2"
+    },
+    {
+      "fraction": 0.253,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.336,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.377,
+      "kind": "t2"
+    },
+    {
+      "fraction": 0.429,
+      "kind": "t3"
+    },
+    {
+      "fraction": 0.45,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.512,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.565,
+      "kind": "t3"
+    },
+    {
+      "fraction": 0.596,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.638,
+      "kind": "t2"
+    },
+    {
+      "fraction": 0.668,
+      "kind": "t3"
+    },
+    {
+      "fraction": 0.699,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.741,
+      "kind": "t2"
+    },
+    {
+      "fraction": 0.793,
+      "kind": "t3"
+    },
+    {
+      "fraction": 0.824,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.885,
+      "kind": "t2"
+    },
+    {
+      "fraction": 0.908,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.969,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.98,
+      "kind": "t2"
+    }
+  ],
+  "parsed_answers": {
+    "A1": "K7Q-4471",
+    "A2": "RX3-9028",
+    "A3": "V8N-6113",
+    "A4": "Halden 47; Ostmark 52; Vireo 38; Casselt 61; Dunmore 44; Pellworth 57",
+    "A5": "YES",
+    "A6": "NO"
+  },
+  "phase": "qa",
+  "prompt_ids_sha256": "38f65ee112e8ae685c946b2ce0741c3a3cde9ba60a10eac6d70603b7b3b07c56",
+  "prompt_tokens": 32180,
+  "quantization": "q8_0",
+  "request": {
+    "first_output_seconds": 8.155607908993261,
+    "output_chars": 148,
+    "output_preview": "\n\n<think>\n\n</think>\n\nA1: K7Q-4471\nA2: RX3-9028\nA3: V8N-6113\nA4: Halden 47; Ostmark 52; Vireo 38; Casselt 61; Dunmore 44; Pellworth 57\nA5: YES\nA6: NO",
+    "tag": "qwen35-32k-qa",
+    "total_seconds": 10.510638453008141,
+    "usage": {
+      "completion_tokens": 91,
+      "prompt_tokens": 32180,
+      "total_tokens": 32271
+    }
+  },
+  "scores": {
+    "T1": "3/3",
+    "T2": "6/6",
+    "T3": "2/2"
+  },
+  "scoring": "normalized exact agreement, judge-free",
+  "snapshot": "/home/damen/models/Qwen_Qwen3.6-35B-A3B",
+  "tasks": {
+    "T1": [
+      {
+        "answer": "K7Q-4471",
+        "expected": "K7Q-4471",
+        "needle": "amber",
+        "passed": true
+      },
+      {
+        "answer": "RX3-9028",
+        "expected": "RX3-9028",
+        "needle": "cobalt",
+        "passed": true
+      },
+      {
+        "answer": "V8N-6113",
+        "expected": "V8N-6113",
+        "needle": "mauve",
+        "passed": true
+      }
+    ],
+    "T2": [
+      {
+        "answer": "Halden 47; Ostmark 52; Vireo 38; Casselt 61; Dunmore 44; Pellworth 57",
+        "expected": 47,
+        "passed": true,
+        "station": "Halden"
+      },
+      {
+        "answer": "Halden 47; Ostmark 52; Vireo 38; Casselt 61; Dunmore 44; Pellworth 57",
+        "expected": 52,
+        "passed": true,
+        "station": "Ostmark"
+      },
+      {
+        "answer": "Halden 47; Ostmark 52; Vireo 38; Casselt 61; Dunmore 44; Pellworth 57",
+        "expected": 38,
+        "passed": true,
+        "station": "Vireo"
+      },
+      {
+        "answer": "Halden 47; Ostmark 52; Vireo 38; Casselt 61; Dunmore 44; Pellworth 57",
+        "expected": 61,
+        "passed": true,
+        "station": "Casselt"
+      },
+      {
+        "answer": "Halden 47; Ostmark 52; Vireo 38; Casselt 61; Dunmore 44; Pellworth 57",
+        "expected": 44,
+        "passed": true,
+        "station": "Dunmore"
+      },
+      {
+        "answer": "Halden 47; Ostmark 52; Vireo 38; Casselt 61; Dunmore 44; Pellworth 57",
+        "expected": 57,
+        "passed": true,
+        "station": "Pellworth"
+      }
+    ],
+    "T3": [
+      {
+        "answer": "YES",
+        "expected": "yes",
+        "parsed": "yes",
+        "passed": true,
+        "question": "Q5"
+      },
+      {
+        "answer": "NO",
+        "expected": "no",
+        "parsed": "no",
+        "passed": true,
+        "question": "Q6"
+      }
+    ]
+  },
+  "tier": "qwen35-32k"
+}
