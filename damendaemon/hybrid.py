@@ -1024,19 +1024,25 @@ class HybridExecutor:
         # routed dequant-matvec kernels directly (moe_kernels, the gpt-oss/
         # olmoe family's production path) — rows dequantize in registers and
         # the fp32 intermediate + fp16 materialization of every active
-        # expert slice never exists. Same routing/activation semantics; the
-        # accumulation order differs (fp32 route sum vs fp16 index_add),
-        # pinned by the parity gates rather than token-exactness. Int8
-        # (q8_0) stacks only — q4_0's paired-nibble rows keep the
-        # materialize path (dequantize_q4 semantics). Structural admission:
-        # packed stacks + CUDA + the kernels import; anything else keeps
-        # the materialize path (the A/B control is
-        # DAMENDAEMON_MOE_FUSED_ROUTED=0).
+        # expert slice never exists. The kernel is DECODE-shaped: one routed
+        # matvec row per program, grid (outputs/tile, rows*TOP) — CUDA's
+        # grid-Y limit is 65535, and at prefill row counts cuBLAS GEMM
+        # amortizes the dequant intermediate better than per-row matvecs.
+        # Admission is structural: single-position rows (decode steps) with
+        # valid launch geometry, int8 (q8_0) stacks, CUDA, kernels import —
+        # q4_0's paired-nibble rows and multi-position prefill keep the
+        # materialize path (dequantize_q4 semantics; cuBLAS). Same
+        # routing/activation semantics; the accumulation order differs
+        # (fp32 route sum vs fp16 index_add), pinned by the parity gates
+        # rather than token-exactness. The A/B control is
+        # DAMENDAEMON_MOE_FUSED_ROUTED=0.
         _fused_env = os.environ.get('DAMENDAEMON_MOE_FUSED_ROUTED', '1')
         if _fused_env not in ('0', '1'):
             raise ValueError('DAMENDAEMON_MOE_FUSED_ROUTED must be 0 or 1')
         fused = (gate_up.dtype is torch.int8 and self.device == 'cuda'
-                 and _fused_env == '1')
+                 and _fused_env == '1'
+                 and x.shape[1] == 1
+                 and (x.shape[0] * self.moe_top_k) <= 65535)
         if fused:
             try:
                 from .moe_kernels import routed_linear, combine
