@@ -335,10 +335,10 @@ def main():
                    + [('t2', T2_SENTENCE.format(name=name, count=count), fraction)
                       for name, count, fraction in T2_NEEDLES]
                    + [('t3', text, fraction) for text, fraction in T3_FACTS])
-        limit, target, closing = tier.context - 576, corpus_budget - 900, QA_QUESTIONS
+        limit, target, closing = tier.context - MAX_TOKENS['qa'] - 64, corpus_budget - 900, QA_QUESTIONS
     else:
         inserts = [('t4', text, fraction) for text, fraction in T4_EVENTS]
-        limit, target, closing = tier.context - 256, corpus_budget - 400, T4_PROMPT
+        limit, target, closing = tier.context - MAX_TOKENS['summary'] - 64, corpus_budget - 400, T4_PROMPT
     prompt_text = layout = corpus_tokens = prompt_tokens = None
     for _ in range(6):
         prompt_text, layout, corpus_tokens, prompt_tokens = assemble(
