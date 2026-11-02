@@ -88,10 +88,19 @@ the software snapshot above:
 - `qwen38-27b-hybrid-32k-lifecycle` (#68): lifecycle gate **pass** — 32K Q4
   hybrid cells on the real HTTP service: C2 concurrency PASS at 2 slots
   (first output 308.1/310.6 s, peak 27.23 GiB), reuse-identical and
-  reuse-suffix PASS, disconnect release ≤5 s, status readable mid-generation
-  after #665. No independent numerical reference exists at 32K, so the cell
-  carries no numerical gate and the state machine reports it as
-  implemented_unvalidated; the gate record is the pass attestation.
+  reuse-suffix PASS, status readable mid-generation after #665.
+  Cancellation is fixed and evidenced (#664/#678): the October
+  cancel-decode cell measured a zombie (request decoded to completion
+  holding the slot after the client left — no server FIN detection plus a
+  urllib harness socket surviving in a reference cycle); after the fix the
+  pinned workload passes every gate — release 1.9 s post-disconnect, KV
+  released to baseline, follow-up 32K request clean. Q4 production
+  admission is structural since #679 — plain `damendaemon serve` (no
+  probe) admitted the same model at 32K and completed a 32K/64 request
+  at 154.2 s first output. No independent numerical reference exists at
+  32K, so the cell carries no numerical gate and the state machine
+  reports it as implemented_unvalidated; the gate record is the pass
+  attestation.
 - `qwen36-35b-moe-a6000-numeric` (#668): **numerical_pass** — first
   full-model hardware gate of the hybrid MoE executor (Qwen3.6-35B-A3B,
   qwen3_5_moe, Q8_0 packed expert projections): 5/5 prefill argmax and 5/5
@@ -100,7 +109,13 @@ the software snapshot above:
   (accuracy/drift per the #23 convention); 34.8 GiB packed weights with
   live-asserted packed state. The first run's greedy mismatch was a
   harness-side first-token duplication (realignment proved exact
-  agreement); documented and re-run clean (PR #670).
+  agreement); documented and re-run clean (PR #670). Streaming parity
+  extension (#677/#676): the identical Q8-packed model runs
+  host-resident through synchronous layer streaming with streamed ==
+  resident exactness (token-identical greedy, spec-decode parity, 5/5
+  argmax, rel-RMS 0.084 under the amended tie-flip gate), and the
+  unquantized 64.6 GiB FP16 snapshot streams identically at 3.46 GiB peak
+  device weights — admission structural, family-wide, not name-locked.
 - `qwen36-35b-moe-a6000-lifecycle` (#668): lifecycle gate **pass** — 32K Q8
   MoE cells: C1/C2/C4 concurrency ALL PASS (4 concurrent 32K users, 9.42
   tok/s aggregate, every request ≤ 225 s, peak 42.35 GiB; slot-0 prompt and
