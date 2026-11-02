@@ -1,0 +1,82 @@
+{
+ "completed": false,
+ "gate": "staggered fairness under SLO load (#59)",
+ "model": "/home/damen/models/Qwen3.8-27B-1d4bf0f2",
+ "context": 32768,
+ "chunk": 1024,
+ "users": 6,
+ "slots": 4,
+ "stagger_seconds": 40.0,
+ "output_limit": 256,
+ "requests": {
+  "0": {
+   "submit_to_first_output": 502.32453349698335,
+   "submit_to_total": 654.6780532769917,
+   "completion_tokens": 256,
+   "prompt_tokens": 32256,
+   "output_digest": null,
+   "error": null
+  },
+  "1": {
+   "submit_to_first_output": 521.1601952610072,
+   "submit_to_total": 671.1476189990062,
+   "completion_tokens": 256,
+   "prompt_tokens": 32256,
+   "output_digest": null,
+   "error": null
+  },
+  "2": {
+   "submit_to_first_output": 524.0961162589956,
+   "submit_to_total": 674.9902772739879,
+   "completion_tokens": 256,
+   "prompt_tokens": 32256,
+   "output_digest": null,
+   "error": null
+  },
+  "3": {
+   "submit_to_first_output": 527.2542318149935,
+   "submit_to_total": 678.2132882789883,
+   "completion_tokens": 256,
+   "prompt_tokens": 32256,
+   "output_digest": null,
+   "error": null
+  },
+  "4": {
+   "submit_to_first_output": 859.2435759519867,
+   "submit_to_total": 956.5053705509927,
+   "completion_tokens": 256,
+   "prompt_tokens": 32256,
+   "output_digest": null,
+   "error": null
+  },
+  "5": {
+   "submit_to_first_output": 842.8772941959905,
+   "submit_to_total": 917.3294209020096,
+   "completion_tokens": 256,
+   "prompt_tokens": 32256,
+   "output_digest": null,
+   "error": null
+  }
+ },
+ "warmup_seconds": 193.1,
+ "user_prompt_digests": {
+  "0": "31836e963e26cd642684d7bce9c778132376800375c2b09917612a5d398be727",
+  "1": "82388e90b329b1d79a84f67842d73c277ed9e78ded2680580349e83bd13054e4",
+  "2": "84c08245f34c2051e45d9f55026a335505aa63da48db8d4f328660860df12304",
+  "3": "902feb89574a091be8f387d6cabb8b585addcb4eff7b41096b5d0f1232830b3e",
+  "4": "37e9626d443a6ffa21f9952ec335f6114bf78630f5afb9d46c198b295d802a54",
+  "5": "244619bf40a8b07a450848c2893d94410119070423bb909ad47af2eb725d774f"
+ },
+ "fairness": {
+  "per_user_decode_tok_s": [
+   1.674,
+   1.7,
+   1.69,
+   1.689,
+   2.622,
+   3.425
+  ],
+  "jain_index": 0.91,
+  "no_starvation": true
+ }
+}

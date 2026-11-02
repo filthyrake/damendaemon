@@ -1,0 +1,75 @@
+{
+ "completed": false,
+ "gate": "staggered fairness under SLO load (#59)",
+ "model": "/home/damen/models/Qwen3.8-27B-1d4bf0f2",
+ "context": 32768,
+ "chunk": 1024,
+ "users": 6,
+ "slots": 4,
+ "stagger_seconds": 40.0,
+ "output_limit": 256,
+ "requests": {
+  "0": {
+   "submit_to_first_output": 502.32200138797634,
+   "submit_to_total": 654.6052849529951,
+   "completion_tokens": null,
+   "prompt_tokens": null,
+   "output_digest": null,
+   "error": null
+  },
+  "1": {
+   "submit_to_first_output": 521.1050430439936,
+   "submit_to_total": 671.0829400240036,
+   "completion_tokens": null,
+   "prompt_tokens": null,
+   "output_digest": null,
+   "error": null
+  },
+  "2": {
+   "submit_to_first_output": 524.0397668079822,
+   "submit_to_total": 674.9376558469958,
+   "completion_tokens": null,
+   "prompt_tokens": null,
+   "output_digest": null,
+   "error": null
+  },
+  "3": {
+   "submit_to_first_output": 527.1953278850124,
+   "submit_to_total": 678.4559253600019,
+   "completion_tokens": null,
+   "prompt_tokens": null,
+   "output_digest": null,
+   "error": null
+  },
+  "4": {
+   "submit_to_first_output": null,
+   "submit_to_total": 600.006841999013,
+   "completion_tokens": null,
+   "prompt_tokens": null,
+   "output_digest": null,
+   "error": "<HTTPError 503: 'Service Unavailable'>"
+  },
+  "5": {
+   "submit_to_first_output": 709.6887352519843,
+   "submit_to_total": 737.1646718929987,
+   "completion_tokens": null,
+   "prompt_tokens": null,
+   "output_digest": null,
+   "error": null
+  }
+ },
+ "warmup_seconds": 210.4,
+ "user_prompt_digests": {
+  "0": "31836e963e26cd642684d7bce9c778132376800375c2b09917612a5d398be727",
+  "1": "82388e90b329b1d79a84f67842d73c277ed9e78ded2680580349e83bd13054e4",
+  "2": "84c08245f34c2051e45d9f55026a335505aa63da48db8d4f328660860df12304",
+  "3": "902feb89574a091be8f387d6cabb8b585addcb4eff7b41096b5d0f1232830b3e",
+  "4": "37e9626d443a6ffa21f9952ec335f6114bf78630f5afb9d46c198b295d802a54",
+  "5": "244619bf40a8b07a450848c2893d94410119070423bb909ad47af2eb725d774f"
+ },
+ "fairness": {
+  "per_user_decode_tok_s": [],
+  "jain_index": 0.0,
+  "no_starvation": false
+ }
+}
