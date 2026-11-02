@@ -116,8 +116,9 @@ def load_weights(state, config):
             # meta-tensor planning has no data to validate.
             if not w[f'{i}.A'].is_meta and not torch.isfinite(w[f'{i}.A'].exp()).all():
                 raise ValueError('nonfinite hybrid decay rates: A_log overflows')
-    if moe and state.get('mtp.fc.weight') is not None:
-        # MTP head transcription (#668 MTP cell). Upstream Transformers
+    if state.get('mtp.fc.weight') is not None:
+        # MTP head transcription (#668 MTP cell; dense draft layers added for
+        # the qwen3.5 dense checkpoints, 2026-11-01). Upstream Transformers
         # ignores mtp.* at load (_keys_to_ignore_on_load_unexpected), so
         # there is no eager inference reference to pin to: the semantics
         # are transcribed structurally (DeepSeek-V3 MTP as carried by the
@@ -141,7 +142,10 @@ def load_weights(state, config):
                 raise ValueError('MTP heads with dedicated embeddings are unsupported '
                                 '(this checkpoint shares the main embeddings/head)')
             hidden = config['hidden_size']
-            inter, shared = config['moe_intermediate_size'], config['shared_expert_intermediate_size']
+            # The draft FFN mirrors the main checkpoint: MoE checkpoints
+            # carry a routed expert layer, dense ones a plain SwiGLU MLP.
+            inter = config['moe_intermediate_size' if moe else 'intermediate_size']
+            shared = config.get('shared_expert_intermediate_size')
             experts = moe
             def mtp_take(name, shape, dtype=torch.float16):
                 tensor = convert(state.pop('mtp.' + name), dtype)
@@ -153,8 +157,9 @@ def load_weights(state, config):
             w['mtp.pre_e'] = mtp_take('pre_fc_norm_embedding.weight', (hidden,), torch.float32) + 1
             w['mtp.pre_h'] = mtp_take('pre_fc_norm_hidden.weight', (hidden,), torch.float32) + 1
             w['mtp.norm'] = mtp_take('norm.weight', (hidden,), torch.float32) + 1
-            # The MTP block is a full-attention MoE layer identical in shape
-            # to a main full-attention layer — transcribed under the virtual
+            # The MTP block is a full-attention layer identical in shape to a
+            # main full-attention layer (MoE or dense, mirroring the
+            # checkpoint) — transcribed under the virtual
             # index N so the existing attention/FFN/quantization machinery
             # applies without duplication.
             layer = f'layers.0.'
@@ -171,14 +176,24 @@ def load_weights(state, config):
             for name in ('q', 'k'):
                 w[f'{n}.{name}_norm'] = mtp_take(layer + f'self_attn.{name}_norm.weight',
                                                  (config['head_dim'],), torch.float32) + 1
-            w[f'{n}.router'] = mtp_take(layer + 'mlp.gate.weight', (experts, hidden))
-            w[f'{n}.experts_gate_up'] = mtp_take(layer + 'mlp.experts.gate_up_proj', (experts, 2 * inter, hidden))
-            w[f'{n}.experts_down'] = mtp_take(layer + 'mlp.experts.down_proj', (experts, hidden, inter))
-            w[f'{n}.shared_gate_up'] = concatenate([
-                mtp_take(layer + f'mlp.shared_expert.{name}_proj.weight', (shared, hidden))
-                for name in ('gate', 'up')])
-            w[f'{n}.shared_down'] = mtp_take(layer + 'mlp.shared_expert.down_proj.weight', (hidden, shared))
-            w[f'{n}.shared_expert_gate'] = mtp_take(layer + 'mlp.shared_expert_gate.weight', (1, hidden), torch.float32)
+            if moe:
+                w[f'{n}.router'] = mtp_take(layer + 'mlp.gate.weight', (experts, hidden))
+                w[f'{n}.experts_gate_up'] = mtp_take(layer + 'mlp.experts.gate_up_proj', (experts, 2 * inter, hidden))
+                w[f'{n}.experts_down'] = mtp_take(layer + 'mlp.experts.down_proj', (experts, hidden, inter))
+                w[f'{n}.shared_gate_up'] = concatenate([
+                    mtp_take(layer + f'mlp.shared_expert.{name}_proj.weight', (shared, hidden))
+                    for name in ('gate', 'up')])
+                w[f'{n}.shared_down'] = mtp_take(layer + 'mlp.shared_expert.down_proj.weight', (hidden, shared))
+                w[f'{n}.shared_expert_gate'] = mtp_take(layer + 'mlp.shared_expert_gate.weight', (1, hidden), torch.float32)
+            else:
+                # Dense draft FFN, transcribed exactly like a main dense
+                # layer: concatenated gate/up projections then down. The
+                # virtual index N keeps _mlp_half's structural dispatch
+                # (no router key -> dense path) — no forward changes.
+                w[f'{n}.gate_up'] = concatenate([
+                    mtp_take(layer + f'mlp.{name}_proj.weight', (inter, hidden))
+                    for name in ('gate', 'up')])
+                w[f'{n}.down'] = mtp_take(layer + 'mlp.down_proj.weight', (hidden, inter))
             remaining = [name for name in state if name.startswith('mtp.')]
             if remaining:
                 raise ValueError(f'untranscribed MTP tensors: {sorted(remaining)}')

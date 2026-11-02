@@ -54,7 +54,7 @@ def tensor_schema(config, quantization):
 
 
 class PreparedCache:
-    def __init__(self, root, model_path, config, quantization, files, schema=None):
+    def __init__(self, root, model_path, config, quantization, files, schema=None, mtp=False):
         self.root = Path(root)
         self.config = config
         self.files = [Path(model_path) / 'config.json', *files]
@@ -62,8 +62,11 @@ class PreparedCache:
         if index.exists():
             self.files.append(index)
         self.identity = self.snapshot()
+        # The MTP opt-in changes the prepared tensor set, not the source
+        # files — it belongs in the cache identity or a head-less entry
+        # would be served to an MTP load (and vice versa).
         manifest = {'version': VERSION, 'config': config, 'quantization': quantization,
-                    'source': self.identity}
+                    'mtp': bool(mtp), 'source': self.identity}
         self.manifest = json.dumps(manifest, sort_keys=True, separators=(',', ':'))
         self.key = hashlib.sha256(self.manifest.encode()).hexdigest()
         self.path = self.root / (self.key + '.safetensors')
@@ -197,7 +200,7 @@ class PreparedCache:
         return True
 
 
-def configured_cache(model_path, config, quantization, files):
+def configured_cache(model_path, config, quantization, files, mtp=False):
     root = os.environ.get('DAMENDAEMON_WEIGHT_CACHE')
     hybrid = (quantization == 'q4_0' and config.get('model_type') == 'qwen3_5_text')
     if (not root or quantization not in ('q4_0', 'q8_0')
@@ -207,7 +210,7 @@ def configured_cache(model_path, config, quantization, files):
     # edit between the caller's parse and fingerprint cannot seed the wrong key.
     from .config import decoder_config
     schema = None if hybrid else tensor_schema(config, quantization)
-    cache = PreparedCache(root, model_path, config, quantization, files, schema=schema)
+    cache = PreparedCache(root, model_path, config, quantization, files, schema=schema, mtp=mtp)
     if decoder_config(read_config(Path(model_path) / 'config.json')) != config:
         raise RuntimeError('checkpoint configuration changed while loading')
     from .qwen2 import weight_files

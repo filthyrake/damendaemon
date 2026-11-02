@@ -56,7 +56,7 @@ def weight_bytes(path,quantization=None):
     total, embedding, has_head = 0, None, False
     include_mtp = (os.environ.get('DAMENDAEMON_HYBRID_MTP') == '1'
                    and os.environ.get('DAMENDAEMON_HYBRID_MTP_DROP') != '1'
-                   and config['model_type'] == 'qwen3_5_moe_text')
+                   and config['model_type'] in ('qwen3_5_text', 'qwen3_5_moe_text'))
     for file in weight_files(path):
         with safe_open(str(file), framework="pt", device="cpu") as reader:
             for key in reader.keys():
@@ -159,7 +159,13 @@ class ModelWeights:
         if any(token >= c['vocab_size'] for token in self.eos):
             raise ValueError('EOS token IDs must be within the model vocabulary')
         from .weight_cache import configured_cache
-        cache = configured_cache(self.path, c, self.quantization, files)
+        # The MTP opt-in changes the prepared tensor set; it is threaded
+        # into the cache identity so a head-less entry can never be served
+        # to an MTP load (and vice versa).
+        include_mtp = (os.environ.get('DAMENDAEMON_HYBRID_MTP') == '1'
+                       and os.environ.get('DAMENDAEMON_HYBRID_MTP_DROP') != '1'
+                       and c['model_type'] in ('qwen3_5_text', 'qwen3_5_moe_text'))
+        cache = configured_cache(self.path, c, self.quantization, files, mtp=include_mtp)
         self.weight_cache_status = 'disabled' if cache is None else 'miss'
         if cache is not None:
             prepared = cache.load()
@@ -168,11 +174,7 @@ class ModelWeights:
                 self.weight_cache_status = 'hit'
                 return
         state = {}
-        # MTP tensors (#668 MTP cell) join the state only under the explicit
-        # load opt-in — default loads stay byte- and host-memory-identical.
-        include_mtp = (os.environ.get('DAMENDAEMON_HYBRID_MTP') == '1'
-                       and os.environ.get('DAMENDAEMON_HYBRID_MTP_DROP') != '1'
-                       and c['model_type'] == 'qwen3_5_moe_text')
+        # (include_mtp computed above the cache: same env + family gate.)
         for candidate in files:
             with safe_open(str(candidate), framework="pt", device="cpu") as reader:
                 for key in reader.keys():
