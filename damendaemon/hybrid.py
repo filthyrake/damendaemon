@@ -757,7 +757,8 @@ class HybridExecutor:
                 from .grouped_attention import attention as grouped_attention
                 out = grouped_attention(q.transpose(1, 2), ck, cv)
             elif divergent:
-                out = self._divergent_attention(q, ck, cv, slots, positions)
+                # ck/cv are read_kv's row-indexed views — never re-index.
+                out = self._divergent_attention(q, ck, cv, slots, positions, indexed=False)
             elif prefill and prefix_length:
                 from torch.nn.attention.bias import causal_lower_right
                 mask = (self.arange[:end][None, :] <= positions[0, :, None]
@@ -825,17 +826,35 @@ class HybridExecutor:
         out = out.transpose(1, 2).float()*gate.float().sigmoid()
         return self.linear(out.reshape(n, length, -1).to(self.compute_dtype), w[f'{i}.o'])
 
-    def _divergent_attention(self, q, ck, cv, slots, positions):
+    def _divergent_attention(self, q, ck, cv, slots, positions, indexed=True):
         """Explicit per-row causal mask over each slot's own KV history for
         packed continuation rows whose positions differ (MTP spec blocks).
         Same eager SDPA shape the decode branch uses, generalized to
-        multi-token rows: allowed[r, :, i, j] = key j <= positions[r, i]."""
+        multi-token rows: allowed[r, :, i, j] = key j <= positions[r, i].
+
+        Rows run one at a time: the packed [B, heads, q, 32K] masked-GQA
+        call falls to the math path, which expands KV to the full query
+        head count in FP32 (~800 MB per slot transient at 32K) — fine at
+        B=1/B=2, an OOM at B=4 (measured: the C4-spec worker died on a
+        2.96 GiB allocation). The per-row [1, heads, q, end] shape is the
+        decode branch's proven geometry; each row also reads only to its
+        own last position. `indexed=False` serves the q8_0 caller, whose
+        ck/cv are already row-indexed (read_kv returns slot-indexed views
+        in row order — never re-index by slot id there)."""
         n, length = positions.shape
-        end = int(positions.max()) + 1
-        mask = self.arange[:end].reshape(1, 1, 1, -1) <= positions.reshape(n, 1, length, 1)
-        return scaled_attention(q.transpose(1, 2), ck[:, :, :end].index_select(0, slots),
-                                cv[:, :, :end].index_select(0, slots),
-                                attn_mask=mask, enable_gqa=True)
+        outputs = []
+        for row in range(n):
+            end = int(positions[row].max()) + 1
+            if indexed:
+                keys = ck[:, :, :end].index_select(0, slots[row:row+1])
+                values = cv[:, :, :end].index_select(0, slots[row:row+1])
+            else:
+                keys, values = ck[row:row+1, :, :end], cv[row:row+1, :, :end]
+            mask = self.arange[:end].view(1, 1, 1, -1) <= positions[row].view(1, length, 1)
+            out = scaled_attention(q[row:row+1].transpose(1, 2), keys, values,
+                                  attn_mask=mask, enable_gqa=True)
+            outputs.append(out)
+        return torch.cat(outputs, 0)
 
     @torch.inference_mode()
     def forward(self, ids, positions, slots, prefill, prefix_length=0, return_logits=True,

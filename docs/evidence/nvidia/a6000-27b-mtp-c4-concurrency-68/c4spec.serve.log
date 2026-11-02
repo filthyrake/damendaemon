@@ -1,0 +1,153 @@
+UNQUALIFIED A6000 Q4 context probe (issue #68 re-scope): production admission is unchanged.
+damendaemon listening on http://127.0.0.1:8138
+[W1102 05:44:43.189267054 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 503316480 bytes (free: 131399680, total: 47750578176).
+[W1102 05:46:52.730380197 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 679477248 bytes (free: 584384512, total: 47750578176).
+[W1102 05:48:29.632243709 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 794820608 bytes (free: 483721216, total: 47750578176).
+[W1102 05:48:52.754114113 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 2380267520 bytes (free: 1700069376, total: 47750578176).
+[W1102 05:48:56.261701307 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 3172990976 bytes (free: 901054464, total: 47750578176).
+[W1102 05:48:56.430376953 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 3172990976 bytes (free: 1697972224, total: 47750578176).
+[W1102 05:48:56.430655737 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 3172990976 bytes (free: 1697972224, total: 47750578176).
+Traceback (most recent call last):
+Traceback (most recent call last):
+Traceback (most recent call last):
+  File "/tmp/668c4s/damendaemon/server.py", line 356, in post_authorized
+    for event in generation:
+                 ^^^^^^^^^^
+  File "/tmp/668c4s/damendaemon/server.py", line 356, in post_authorized
+    for event in generation:
+                 ^^^^^^^^^^
+Traceback (most recent call last):
+  File "/tmp/668c4s/damendaemon/server.py", line 356, in post_authorized
+    for event in generation:
+                 ^^^^^^^^^^
+  File "/tmp/668c4s/damendaemon/scheduler.py", line 317, in generate
+    raise request.error
+  File "/tmp/668c4s/damendaemon/scheduler.py", line 317, in generate
+    raise request.error
+  File "/tmp/668c4s/damendaemon/server.py", line 356, in post_authorized
+    for event in generation:
+                 ^^^^^^^^^^
+  File "/tmp/668c4s/damendaemon/scheduler.py", line 317, in generate
+    raise request.error
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 2.96 GiB. GPU 0 has a total capacity of 44.47 GiB of which 1.58 GiB is free. Including non-PyTorch memory, this process has 42.88 GiB memory in use. Of the allocated memory 41.42 GiB is allocated by PyTorch, and 449.72 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 2.96 GiB. GPU 0 has a total capacity of 44.47 GiB of which 1.58 GiB is free. Including non-PyTorch memory, this process has 42.88 GiB memory in use. Of the allocated memory 41.42 GiB is allocated by PyTorch, and 449.72 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+  File "/tmp/668c4s/damendaemon/scheduler.py", line 317, in generate
+    raise request.error
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 2.96 GiB. GPU 0 has a total capacity of 44.47 GiB of which 1.58 GiB is free. Including non-PyTorch memory, this process has 42.88 GiB memory in use. Of the allocated memory 41.42 GiB is allocated by PyTorch, and 449.72 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+Worker traceback:
+Worker traceback:
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 2.96 GiB. GPU 0 has a total capacity of 44.47 GiB of which 1.58 GiB is free. Including non-PyTorch memory, this process has 42.88 GiB memory in use. Of the allocated memory 41.42 GiB is allocated by PyTorch, and 449.72 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+Worker traceback:
+  File "/tmp/668c4s/damendaemon/scheduler.py", line 691, in _chunked_group
+  File "/tmp/668c4s/damendaemon/scheduler.py", line 691, in _chunked_group
+Worker traceback:
+  File "/tmp/668c4s/damendaemon/scheduler.py", line 691, in _chunked_group
+  File "/tmp/668c4s/damendaemon/scheduler.py", line 691, in _chunked_group
+    if ready and not self._speculate_mtp(ready,active,executor):
+    if ready and not self._speculate_mtp(ready,active,executor):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/668c4s/damendaemon/scheduler.py", line 585, in _speculate_mtp
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    if ready and not self._speculate_mtp(ready,active,executor):
+    if ready and not self._speculate_mtp(ready,active,executor):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/668c4s/damendaemon/scheduler.py", line 585, in _speculate_mtp
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    emissions, corrective, accepted = executor.spec_round(blocks)
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/damen/3090-damendaemon/venv/lib64/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+    emissions, corrective, accepted = executor.spec_round(blocks)
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 1545, in spec_round
+    x = self.forward_layers(self.embedding(tokens), positions, slots, True, min(lengths))
+  File "/home/damen/3090-damendaemon/venv/lib64/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+  File "/tmp/668c4s/damendaemon/scheduler.py", line 585, in _speculate_mtp
+  File "/tmp/668c4s/damendaemon/scheduler.py", line 585, in _speculate_mtp
+    emissions, corrective, accepted = executor.spec_round(blocks)
+    emissions, corrective, accepted = executor.spec_round(blocks)
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/damen/3090-damendaemon/venv/lib64/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 924, in forward_layers
+  File "/home/damen/3090-damendaemon/venv/lib64/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    x = self._run_layer(x, i, positions, slots, prefill, prefix_length)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 957, in _run_layer
+    else self.attention(h, i, positions, slots, prefill, prefix_length))
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 1545, in spec_round
+    x = self.forward_layers(self.embedding(tokens), positions, slots, True, min(lengths))
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    return func(*args, **kwargs)
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 780, in attention
+    out = self._divergent_attention(q, ck, cv, slots, positions)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 1545, in spec_round
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 1545, in spec_round
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 924, in forward_layers
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 836, in _divergent_attention
+    x = self.forward_layers(self.embedding(tokens), positions, slots, True, min(lengths))
+    x = self._run_layer(x, i, positions, slots, prefill, prefix_length)
+    x = self.forward_layers(self.embedding(tokens), positions, slots, True, min(lengths))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 957, in _run_layer
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    return scaled_attention(q.transpose(1, 2), ck[:, :, :end].index_select(0, slots),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/668c4s/damendaemon/device.py", line 80, in attention
+    return F.scaled_dot_product_attention(q, k, v, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    else self.attention(h, i, positions, slots, prefill, prefix_length))
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 924, in forward_layers
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 924, in forward_layers
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 780, in attention
+    x = self._run_layer(x, i, positions, slots, prefill, prefix_length)
+    out = self._divergent_attention(q, ck, cv, slots, positions)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 957, in _run_layer
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 836, in _divergent_attention
+    else self.attention(h, i, positions, slots, prefill, prefix_length))
+    return scaled_attention(q.transpose(1, 2), ck[:, :, :end].index_select(0, slots),
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 780, in attention
+  File "/tmp/668c4s/damendaemon/device.py", line 80, in attention
+    out = self._divergent_attention(q, ck, cv, slots, positions)
+    return F.scaled_dot_product_attention(q, k, v, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 836, in _divergent_attention
+
+    return scaled_attention(q.transpose(1, 2), ck[:, :, :end].index_select(0, slots),
+    x = self._run_layer(x, i, positions, slots, prefill, prefix_length)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/668c4s/damendaemon/device.py", line 80, in attention
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 957, in _run_layer
+    return F.scaled_dot_product_attention(q, k, v, **kwargs)
+    else self.attention(h, i, positions, slots, prefill, prefix_length))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 780, in attention
+    out = self._divergent_attention(q, ck, cv, slots, positions)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/668c4s/damendaemon/hybrid.py", line 836, in _divergent_attention
+    return scaled_attention(q.transpose(1, 2), ck[:, :, :end].index_select(0, slots),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/668c4s/damendaemon/device.py", line 80, in attention
+    return F.scaled_dot_product_attention(q, k, v, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
