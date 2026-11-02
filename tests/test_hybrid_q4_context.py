@@ -28,11 +28,20 @@ class HybridQ4ContextLimitTest(unittest.TestCase):
             self.assertEqual(hybrid_q4_policy._experimental_context_limit(False), 32768)
 
     def test_rejects_out_of_bounds_and_garbage(self):
-        for value in ('0', '128', '65536', 'abc', '-1'):
+        for value in ('0', '128', '262144', 'abc', '-1'):
             with mock.patch.dict('os.environ', {'DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CONTEXT': value}), \
                  mock.patch.object(hybrid_q4_policy, 'selected_accelerator', return_value='rocm'):
                 with self.assertRaises(ValueError):
                     hybrid_q4_policy._experimental_context_limit(False)
+
+    def test_long_context_bound_extends_to_128k(self):
+        # #59/#60 sweep: 64K/128K admit structurally (machinery is
+        # context-agnostic; capacity is the allocator's gate, not this
+        # bound); 256K stays out — refused by arithmetic capacity, not here.
+        for value in ('65536', '131072'):
+            with mock.patch.dict('os.environ', {'DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CONTEXT': value}), \
+                 mock.patch.object(hybrid_q4_policy, 'selected_accelerator', return_value='cuda'):
+                self.assertEqual(hybrid_q4_policy._experimental_context_limit(False), int(value))
 
     def test_rejects_unadmitted_targets(self):
         for accelerator in ('xpu', 'mps'):

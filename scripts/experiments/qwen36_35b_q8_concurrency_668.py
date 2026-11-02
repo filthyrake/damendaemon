@@ -106,7 +106,7 @@ def slot_prompt(base, slot):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--concurrency', type=int, choices=(1, 2, 4), required=True)
+    parser.add_argument('--concurrency', type=int, choices=(1, 2, 4, 6), required=True)
     args = parser.parse_args()
     require_guard()
     if args.output.exists():

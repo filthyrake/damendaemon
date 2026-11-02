@@ -58,20 +58,28 @@ def _experimental_context_limit(chain):
 
     #68: the guarded 32K cell (golden4096 4K completed under the improved
     thermal envelope) may opt in with DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CONTEXT
-    =<tokens>, valid 512..32768. The extension is structural: it admits on
+    =<tokens>, valid 512..131072. The extension is structural: it admits on
     any device already admitted by validate() — the A6000 carries the full
     32K evidence set (C1/C2 capacity, lifecycle and cancellation cells,
     docs/evidence/nvidia/a6000-q4-32k-68/), and the previous gfx1151 arch
     string was a name lock, not a capability check (it already exceeded
     that host's own 4K qualification). The chain keeps its own bound.
+
+    #59/#60 long-context sweep: the bound moves 32K -> 128K on the same
+    structural grounds — the machinery (chunked prefill, grouped
+    attention, MTP incremental fill) is context-agnostic and the capacity
+    gate is the allocator, not this policy. 131072 is the largest
+    single-slot context that fits this card class by arithmetic (16 GiB
+    fp32 KV + ~17 GiB packed weights + workspace < 44.5 GiB); 256K is
+    32 GiB KV alone and is refused by capacity, not by this bound.
     """
     if chain:
         return CHAIN_CONTEXT_LIMIT
     value = os.environ.get('DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CONTEXT', '')
     if not value:
         return 512
-    if not (value.isascii() and value.isdecimal() and 512 <= int(value) <= 32768):
-        raise ValueError('DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CONTEXT accepts 512..32768')
+    if not (value.isascii() and value.isdecimal() and 512 <= int(value) <= 131072):
+        raise ValueError('DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CONTEXT accepts 512..131072')
     if selected_accelerator() not in ('rocm', 'cuda'):
         raise ValueError('the experimental Q4 context extension requires an admitted ROCm or CUDA device')
     return int(value)
