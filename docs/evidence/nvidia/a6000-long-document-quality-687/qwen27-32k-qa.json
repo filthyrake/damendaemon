@@ -1,0 +1,203 @@
+{
+  "batch": 4,
+  "completed": true,
+  "context": 32768,
+  "corpus_text_sha256": "e5b34d0ac8009b9d4bfdcb35ade57b667838155a201f5a75bb769a1f486d64cb",
+  "gate": "long-document quality (qwen27-32k qa)",
+  "gates": {
+    "t1_min": 2,
+    "t1_total": 3,
+    "t2_min": 4,
+    "t2_total": 6,
+    "t3_min": 1,
+    "t3_total": 2,
+    "t4_min": 3,
+    "t4_total": 5
+  },
+  "needle_positions": [
+    {
+      "fraction": 0.151,
+      "kind": "t2"
+    },
+    {
+      "fraction": 0.254,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.336,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.377,
+      "kind": "t2"
+    },
+    {
+      "fraction": 0.428,
+      "kind": "t3"
+    },
+    {
+      "fraction": 0.451,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.513,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.564,
+      "kind": "t3"
+    },
+    {
+      "fraction": 0.595,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.637,
+      "kind": "t2"
+    },
+    {
+      "fraction": 0.668,
+      "kind": "t3"
+    },
+    {
+      "fraction": 0.699,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.741,
+      "kind": "t2"
+    },
+    {
+      "fraction": 0.792,
+      "kind": "t3"
+    },
+    {
+      "fraction": 0.823,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.887,
+      "kind": "t2"
+    },
+    {
+      "fraction": 0.907,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.968,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.98,
+      "kind": "t2"
+    }
+  ],
+  "parsed_answers": {
+    "A1": "K7Q-4471",
+    "A2": "RX3-9028",
+    "A3": "V8N-6113",
+    "A4": "Halden 47; Ostmark 52; Vireo 38; Casselt 61; Dunmore 44; Pellworth 57",
+    "A5": "Did shipment SN-118 require permit CX-221?\n\"Cargo manifest 118: shipment SN-118 departed station Casselt at 06:40 carrying reagent lots.\"\n\"Cold-chain directive 7: any shipment departing station Cassel",
+    "A6": "Did shipment SN-204 require permit CX-221?\n\"Cargo manifest 204: shipment SN-204 departed station Vireo at 14:15 carrying alloy stock.\"\n\"Cold-chain directive 9: any shipment departing station Vireo bet"
+  },
+  "phase": "qa",
+  "prompt_ids_sha256": "e165dfcb36374f839dbdc01b4c6cc95ed3e5b5916dddf255110a988085a6c257",
+  "prompt_tokens": 31982,
+  "quantization": "q4_0",
+  "request": {
+    "first_output_seconds": 129.47560767098912,
+    "output_chars": 2221,
+    "output_preview": "\n\n<think>\nLet me find the answers to each question from the records.\n\nQ1: What is the authorization code for the amber crate transfer?\nLooking through the text: \"OPERATIONS NOTICE: The amber crate transfer is authorized under code K7Q-4471.\"\nAnswer: K7Q-4471\n\nQ2: What is the authorization code for the cobalt crate transfer?\nLooking through the text: \"OPERATIONS NOTICE: The cobalt crate transfer is",
+    "tag": "qwen27-32k-qa",
+    "total_seconds": 199.1382413560059,
+    "usage": {
+      "completion_tokens": 700,
+      "prompt_tokens": 31982,
+      "total_tokens": 32682
+    }
+  },
+  "scores": {
+    "T1": "3/3",
+    "T2": "6/6",
+    "T3": "1/2"
+  },
+  "scoring": "normalized exact agreement, judge-free",
+  "snapshot": "/home/damen/models/Qwen3.8-27B-1d4bf0f2",
+  "tasks": {
+    "T1": [
+      {
+        "answer": "K7Q-4471",
+        "expected": "K7Q-4471",
+        "needle": "amber",
+        "passed": true
+      },
+      {
+        "answer": "RX3-9028",
+        "expected": "RX3-9028",
+        "needle": "cobalt",
+        "passed": true
+      },
+      {
+        "answer": "V8N-6113",
+        "expected": "V8N-6113",
+        "needle": "mauve",
+        "passed": true
+      }
+    ],
+    "T2": [
+      {
+        "answer": "Halden 47; Ostmark 52; Vireo 38; Casselt 61; Dunmore 44; Pellworth 57",
+        "expected": 47,
+        "passed": true,
+        "station": "Halden"
+      },
+      {
+        "answer": "Halden 47; Ostmark 52; Vireo 38; Casselt 61; Dunmore 44; Pellworth 57",
+        "expected": 52,
+        "passed": true,
+        "station": "Ostmark"
+      },
+      {
+        "answer": "Halden 47; Ostmark 52; Vireo 38; Casselt 61; Dunmore 44; Pellworth 57",
+        "expected": 38,
+        "passed": true,
+        "station": "Vireo"
+      },
+      {
+        "answer": "Halden 47; Ostmark 52; Vireo 38; Casselt 61; Dunmore 44; Pellworth 57",
+        "expected": 61,
+        "passed": true,
+        "station": "Casselt"
+      },
+      {
+        "answer": "Halden 47; Ostmark 52; Vireo 38; Casselt 61; Dunmore 44; Pellworth 57",
+        "expected": 44,
+        "passed": true,
+        "station": "Dunmore"
+      },
+      {
+        "answer": "Halden 47; Ostmark 52; Vireo 38; Casselt 61; Dunmore 44; Pellworth 57",
+        "expected": 57,
+        "passed": true,
+        "station": "Pellworth"
+      }
+    ],
+    "T3": [
+      {
+        "answer": "Did shipment SN-118 require permit CX-221?\n\"Cargo manifest 118: shipment SN-118 departed station Casselt at 06:40 carrying reagent lots.\"\n\"Cold-chain directive ",
+        "expected": "yes",
+        "parsed": "yes",
+        "passed": true,
+        "question": "Q5"
+      },
+      {
+        "answer": "Did shipment SN-204 require permit CX-221?\n\"Cargo manifest 204: shipment SN-204 departed station Vireo at 14:15 carrying alloy stock.\"\n\"Cold-chain directive 9: ",
+        "expected": "no",
+        "parsed": null,
+        "passed": false,
+        "question": "Q6"
+      }
+    ]
+  },
+  "tier": "qwen27-32k"
+}

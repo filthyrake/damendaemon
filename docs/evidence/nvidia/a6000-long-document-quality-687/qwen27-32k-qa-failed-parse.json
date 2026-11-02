@@ -1,0 +1,196 @@
+{
+  "batch": 4,
+  "completed": false,
+  "context": 32768,
+  "corpus_text_sha256": "cd5019739a6c5deebc48e22a5ca552e913b2fb8808a679681c88f81eb89229dd",
+  "gate": "long-document quality (qwen27-32k qa)",
+  "gates": {
+    "t1_min": 2,
+    "t1_total": 3,
+    "t2_min": 4,
+    "t2_total": 6,
+    "t3_min": 1,
+    "t3_total": 2,
+    "t4_min": 3,
+    "t4_total": 5
+  },
+  "needle_positions": [
+    {
+      "fraction": 0.152,
+      "kind": "t2"
+    },
+    {
+      "fraction": 0.253,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.336,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.377,
+      "kind": "t2"
+    },
+    {
+      "fraction": 0.429,
+      "kind": "t3"
+    },
+    {
+      "fraction": 0.45,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.512,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.565,
+      "kind": "t3"
+    },
+    {
+      "fraction": 0.596,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.638,
+      "kind": "t2"
+    },
+    {
+      "fraction": 0.668,
+      "kind": "t3"
+    },
+    {
+      "fraction": 0.699,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.741,
+      "kind": "t2"
+    },
+    {
+      "fraction": 0.793,
+      "kind": "t3"
+    },
+    {
+      "fraction": 0.824,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.885,
+      "kind": "t2"
+    },
+    {
+      "fraction": 0.908,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.969,
+      "kind": "t1"
+    },
+    {
+      "fraction": 0.98,
+      "kind": "t2"
+    }
+  ],
+  "parsed_answers": {},
+  "phase": "qa",
+  "prompt_ids_sha256": "38f65ee112e8ae685c946b2ce0741c3a3cde9ba60a10eac6d70603b7b3b07c56",
+  "prompt_tokens": 32180,
+  "quantization": "q4_0",
+  "request": {
+    "first_output_seconds": 130.53509175902582,
+    "output_chars": 922,
+    "output_preview": "\n\n<think>\nLet me find the answers to each question from the records.\n\nQ1: What is the authorization code for the amber crate transfer?\nLooking through the text: \"OPERATIONS NOTICE: The amber crate transfer is authorized under code K7Q-4471.\"\nAnswer: K7Q-4471\n\nQ2: What is the authorization code for the cobalt crate transfer?\nLooking through the text: \"OPERATIONS NOTICE: The cobalt crate transfer is",
+    "tag": "qwen27-32k-qa",
+    "total_seconds": 156.7830657750019,
+    "usage": {
+      "completion_tokens": 256,
+      "prompt_tokens": 32180,
+      "total_tokens": 32436
+    }
+  },
+  "scores": {
+    "T1": "0/3",
+    "T2": "0/6",
+    "T3": "0/2"
+  },
+  "scoring": "normalized exact agreement, judge-free",
+  "snapshot": "/home/damen/models/Qwen3.8-27B-1d4bf0f2",
+  "tasks": {
+    "T1": [
+      {
+        "answer": "",
+        "expected": "K7Q-4471",
+        "needle": "amber",
+        "passed": false
+      },
+      {
+        "answer": "",
+        "expected": "RX3-9028",
+        "needle": "cobalt",
+        "passed": false
+      },
+      {
+        "answer": "",
+        "expected": "V8N-6113",
+        "needle": "mauve",
+        "passed": false
+      }
+    ],
+    "T2": [
+      {
+        "answer": "",
+        "expected": 47,
+        "passed": false,
+        "station": "Halden"
+      },
+      {
+        "answer": "",
+        "expected": 52,
+        "passed": false,
+        "station": "Ostmark"
+      },
+      {
+        "answer": "",
+        "expected": 38,
+        "passed": false,
+        "station": "Vireo"
+      },
+      {
+        "answer": "",
+        "expected": 61,
+        "passed": false,
+        "station": "Casselt"
+      },
+      {
+        "answer": "",
+        "expected": 44,
+        "passed": false,
+        "station": "Dunmore"
+      },
+      {
+        "answer": "",
+        "expected": 57,
+        "passed": false,
+        "station": "Pellworth"
+      }
+    ],
+    "T3": [
+      {
+        "answer": "",
+        "expected": "yes",
+        "parsed": null,
+        "passed": false,
+        "question": "Q5"
+      },
+      {
+        "answer": "",
+        "expected": "no",
+        "parsed": null,
+        "passed": false,
+        "question": "Q6"
+      }
+    ]
+  },
+  "tier": "qwen27-32k"
+}
