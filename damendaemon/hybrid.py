@@ -1438,14 +1438,55 @@ class HybridExecutor:
         ck[slots[:, None], :, positions, :] = k
         cv[slots[:, None], :, positions, :] = v
         end = int(positions.max()) + 1
-        # Eager masked attention with the architectural hole: the MTP block
-        # never sees a predecessor for the first token, so position 0 has no
-        # MTP key. The fused decode kernel has no mask support — eager only.
-        keys = self.arange[:end]
-        allowed = (keys.view(1, -1) <= positions.view(n, length, 1)) & (keys.view(1, -1) >= 1)
-        out = scaled_attention(q.transpose(1, 2), ck.index_select(0, slots)[:, :, :end],
-                               cv.index_select(0, slots)[:, :, :end],
-                               attn_mask=allowed.view(n, 1, length, end), enable_gqa=True)
+        # The architectural hole (position 0 has no MTP key — the block never
+        # sees a predecessor for the first token) is the ONLY reason this
+        # attention carried an explicit mask: its full content is "causal
+        # minus key 0". Over keys sliced to [1:end] that is exactly SDPA's
+        # is_causal for contiguous ascending positions (query i at p0+i
+        # attends sliced key j — position j+1 — iff j <= p0+i-1, which is
+        # SDPA's upper-left causal bound at kv_len-q_len = p0-1), and the
+        # same holds for any single-row evaluation (the row sits at the end
+        # of the key range, so causal admits every sliced key). The fused
+        # path then runs GQA natively; the masked eager path's math backend
+        # instead materializes q-head-expanded fp32 K/V (~2x1.6 GiB at 128K
+        # keys — the measured #689 transient that OOMed the C1 128K cell).
+        # Non-contiguous divergent rows keep the eager mask (structural
+        # admission; the decode fast path short-circuits without a device
+        # sync). DAMENDAEMON_MTP_EAGER_MASK=1 forces the legacy path as the
+        # parity control.
+        _eager_env = os.environ.get('DAMENDAEMON_MTP_EAGER_MASK', '0')
+        if _eager_env not in ('0', '1'):
+            raise ValueError('DAMENDAEMON_MTP_EAGER_MASK must be 0 or 1')
+        contiguous = _eager_env == '0' and (
+            (n == 1 and length == 1)
+            or bool(positions.min() >= 1
+                    and (positions[:, 1:] - positions[:, :-1] == 1).all()
+                    and (positions == positions[:1]).all()))
+        if contiguous:
+            # Keys sliced past the hole: [1:end]. fp32 computes (the
+            # compensated serves) get the grouped GEMM path — the fused
+            # SDPA backends reject fp32, so the math backend would run and
+            # expand GQA at q-head count through fp32 K/V copies (~2x1.6
+            # GiB at 128K keys — the measured #689 transient; is_causal
+            # does not prevent it, verified by the first 128K re-run). The
+            # grouped path bounds the identical math to fixed scratch and
+            # needs no enable_gqa expansion (its causal bound,
+            # prefix = context - length, is exactly hole+causal for
+            # contiguous rows). fp16 computes keep the fused kernel.
+            k_sel = ck.index_select(0, slots)[:, :, 1:end]
+            v_sel = cv.index_select(0, slots)[:, :, 1:end]
+            if self.compute_dtype == torch.float32:
+                from .grouped_attention import attention as grouped_attention
+                out = grouped_attention(q.transpose(1, 2), k_sel, v_sel)
+            else:
+                out = scaled_attention(q.transpose(1, 2), k_sel, v_sel,
+                                       is_causal=True, enable_gqa=True)
+        else:
+            keys = self.arange[:end]
+            allowed = (keys.view(1, -1) <= positions.view(n, length, 1)) & (keys.view(1, -1) >= 1)
+            out = scaled_attention(q.transpose(1, 2), ck.index_select(0, slots)[:, :, :end],
+                                   cv.index_select(0, slots)[:, :, :end],
+                                   attn_mask=allowed.view(n, 1, length, end), enable_gqa=True)
         out = out.transpose(1, 2).float()*gate.float().sigmoid()
         x = x + self.linear(out.reshape(n, length, -1).to(self.compute_dtype), w[f'{i}.o'])
         x = self._mlp_half(x, i)
