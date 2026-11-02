@@ -1019,7 +1019,37 @@ class HybridExecutor:
                                                 scoring='softmax', renormalize=True)
         output = torch.zeros_like(flat)
         gate_up, down = w[f'{i}.experts_gate_up'], w[f'{i}.experts_down']
-        if gate_up.dtype in (torch.int8, torch.uint8):
+        inter = gate_up.shape[1] // 2
+        # Fused routed projections (#688): the packed expert stacks feed the
+        # routed dequant-matvec kernels directly (moe_kernels, the gpt-oss/
+        # olmoe family's production path) — rows dequantize in registers and
+        # the fp32 intermediate + fp16 materialization of every active
+        # expert slice never exists. Same routing/activation semantics; the
+        # accumulation order differs (fp32 route sum vs fp16 index_add),
+        # pinned by the parity gates rather than token-exactness. Int8
+        # (q8_0) stacks only — q4_0's paired-nibble rows keep the
+        # materialize path (dequantize_q4 semantics). Structural admission:
+        # packed stacks + CUDA + the kernels import; anything else keeps
+        # the materialize path (the A/B control is
+        # DAMENDAEMON_MOE_FUSED_ROUTED=0).
+        _fused_env = os.environ.get('DAMENDAEMON_MOE_FUSED_ROUTED', '1')
+        if _fused_env not in ('0', '1'):
+            raise ValueError('DAMENDAEMON_MOE_FUSED_ROUTED must be 0 or 1')
+        fused = (gate_up.dtype is torch.int8 and self.device == 'cuda'
+                 and _fused_env == '1')
+        if fused:
+            try:
+                from .moe_kernels import routed_linear, combine
+            except ImportError:
+                fused = False
+        if fused:
+            gate_up_scales, down_scales = packed_scales[id(gate_up)], packed_scales[id(down)]
+            routed = routed_linear(flat, gate_up, gate_up_scales, selected, 2 * inter, True)
+            gate, up = routed.chunk(2, -1)
+            activated = (F.silu(gate.float())*up.float()).to(flat.dtype)
+            projected = routed_linear(activated, down, down_scales, selected, flat.shape[-1], False)
+            output = combine(projected, coefficients)
+        elif gate_up.dtype in (torch.int8, torch.uint8):
             from .quantization import dequantize, dequantize_q4
             packed_scales = self.linear.scales
             gate_up_scales, down_scales = packed_scales[id(gate_up)], packed_scales[id(down)]
