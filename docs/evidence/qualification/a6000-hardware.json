@@ -138,8 +138,8 @@
     "prompts_sha256": "d57d0a893b4d2bf90f3acf970235ad965528a88e359a88b5795cf797477b7b56",
     "eos_policy": "greedy; 512-token output limit; first-EOS cut"
    },
-   "implementation_commit": "d036db791a2526a92f39454cf3fec8535761368a",
-   "reason": "32K Q4 long-context lifecycle cells on the real HTTP service: C2 concurrency PASSED within all time/memory gates at 2 slots (first output 308.1/310.6 s, 805 s total, peak 27.23 GiB); C4 measured out on time gates (throughput-bound, not memory-bound); reuse-identical and reuse-suffix cells PASSED (identical prompts fully re-prefill with zero stale-state contamination; a changed suffix changes the output; repeats identical); mid-decode client disconnects release admission/KV/slot within 5 s with survivors unaffected; /v1/models/status readable 100/100 polls during an active 32K generation after the #665 fix. prompts_sha256 binds the recorded per-slot prompt digests in gate-c2.json. No independent numerical reference exists at 32K, so no numerical gate; the state machine reports this lifecycle-only pass as implemented_unvalidated - the gate record below is the pass attestation.",
+   "implementation_commit": "840b9f25575cb62aaf2e725be5b282bb34c9ca15",
+   "reason": "32K Q4 lifecycle cells on the real HTTP service: C2 concurrency PASS at 2 slots (first output 308.1/310.6 s, peak 27.23 GiB); C4 measured out on time gates (throughput-bound); reuse-identical and reuse-suffix PASS (no stale-state contamination; changed suffix changes output). Cancellation: October's cancel-decode measured a zombie (#664 reopened — no server FIN detection + urllib harness socket cycle); after the #678 fix the pinned workload passes every gate with release at 1.9 s post-disconnect, KV released to baseline, follow-up 32K request clean. Q4 production admission is structural since #679 — plain damendaemon serve (no probe) admitted the same model at 32K and completed a 32K/64 request at 154.2 s first output. Status endpoint readable 100/100 polls mid-generation after #665. No independent numerical reference exists at 32K; the state machine reports this lifecycle-only pass as implemented_unvalidated - the gate record is the attestation.",
    "comparators": [],
    "lifecycle": {
     "result": "pass",
@@ -182,12 +182,28 @@
       "sha256": "beec73ca4607ca09214262fe341866466c83390e031e1fa8527acb04b7f3e6c1"
      },
      {
-      "path": "docs/evidence/nvidia/a6000-q4-32k-68/disconnect-664/README.md",
-      "sha256": "432deeab4f2c47e6f45118f1d27d2217e172b6eacbd6db4ea2a6e1edd7190943"
+      "path": "docs/evidence/nvidia/a6000-q4-32k-cancel-fix-664/README.md",
+      "sha256": "4bbf9e75faa9501bd2c81a392b60f5d5a3d79a3b287dc3c3a9a95be00b089721"
      },
      {
-      "path": "docs/evidence/nvidia/a6000-q4-32k-68/disconnect-664/d3-status-fixed.json",
-      "sha256": "71c56ee9c771d59960722634727628154add513e66c06c9d1cb7275b62cc6f0f"
+      "path": "docs/evidence/nvidia/a6000-q4-32k-cancel-fix-664/gate-cd3.json",
+      "sha256": "e6d8e3bb545d19715282ba66529c9d94a0f6bc5013abc8ae998199efd79ad3b3"
+     },
+     {
+      "path": "docs/evidence/nvidia/a6000-q4-32k-cancel-fix-664/guard-cd3.json",
+      "sha256": "c9952b982fd3a36bab136cf15a365e7efd5d069b77f823824ff60eb893555fd0"
+     },
+     {
+      "path": "docs/evidence/nvidia/a6000-q4-structural-admission-68/README.md",
+      "sha256": "3ab7b70d5ea63f42668c36f3d4ffeac1b7a32365508a20a1d8b8eec629eeec3d"
+     },
+     {
+      "path": "docs/evidence/nvidia/a6000-q4-structural-admission-68/verify.json",
+      "sha256": "b810d4ae8ba316e60382c8cd3392e274d0d00a6d67504673c453fc8ee12a3418"
+     },
+     {
+      "path": "docs/evidence/nvidia/a6000-q4-structural-admission-68/guard-v.json",
+      "sha256": "d08b0c32b2f47ee8600f1fa918f565570e530911ddc430b9304242a9ccc85d9f"
      }
     ]
    }
@@ -212,7 +228,7 @@
     "eos_policy": "greedy continuation; prefill last-token logits parity plus 12-token greedy agreement"
    },
    "implementation_commit": "9a888cc16fb8a813ce9c25422a7eb7c55d60e64c",
-   "reason": "First full-model numerical gate of the hybrid MoE executor (#670): 5/5 prefill last-token argmax agreement and 5/5 token-exact 12-token greedy streams against the independent eager Transformers 5.20.1 BF16 CPU reference on the pinned snapshot, worst logit relative RMS 0.1139 (one 9-token prompt; others 0.032-0.038) - accuracy/drift per the #23 convention, no byte-exactness claim across quantized boundaries. Weights 34.8 GiB packed with live-asserted packed state (int8 expert stacks, unpacked router and shared-expert combine gate). A first-run greedy mismatch was root-caused to a harness-side first-token duplication in the reference stream (realignment proved exact agreement); the runner was fixed and the gate re-run clean - the correction is documented in the evidence README. prompts_sha256 binds the runner's five literal prompts encoded with the snapshot tokenizer (token-id list digest). No performance claim; 5 short prompts at context 512.",
+   "reason": "First full-model hardware gate of the hybrid MoE executor (Qwen3.6-35B-A3B, qwen3_5_moe, Q8_0 packed expert projections): 5/5 prefill argmax and 5/5 token-exact 12-token greedy streams vs the independent eager Transformers 5.20.1 BF16 CPU reference, worst logit rel-RMS 0.1139 (accuracy/drift per #23); 34.8 GiB packed weights live-asserted. The first run's greedy mismatch was harness-side first-token duplication; realignment proved exact agreement (PR #670). Streaming parity extension (same packed surface, PR #677/#676): the identical Q8-packed model runs host-resident through synchronous layer streaming with streamed == resident exactness (token-identical greedy, spec-decode parity, 5/5 argmax, rel-RMS 0.084 under the amended tie-flip gate); the unquantized 64.6 GiB FP16 snapshot streams identically at 3.46 GiB peak device weights. Admission is structural (family, not names).",
    "comparators": [],
    "numerical": {
     "result": "pass",
@@ -245,6 +261,18 @@
      {
       "path": "docs/evidence/nvidia/qwen36-35b-a3b-q8-a6000/README.md",
       "sha256": "d16f8f732401adf753253174964f2d0e8fbede614f42a5785cfef82ea10da9c0"
+     },
+     {
+      "path": "docs/evidence/nvidia/qwen36-35b-a3b-q8-streaming-a6000/README.md",
+      "sha256": "82b00fe9116bf230906015dfdecc1bdbc4e89217ae81fbf2a7ba7c1e2b5e0d67"
+     },
+     {
+      "path": "docs/evidence/nvidia/qwen36-35b-a3b-q8-streaming-a6000/q8stream-gate.json",
+      "sha256": "6acedd316b90f5070becdc4cbe20cb1e20839d4513c7bd245680f109e51f9329"
+     },
+     {
+      "path": "docs/evidence/nvidia/qwen36-35b-a3b-q8-streaming-a6000/guard-q8stream.json",
+      "sha256": "e9213198726eaf682e6d325be22f7f1da96118414daee8bc9cf20736ba86ffc1"
      }
     ]
    }
