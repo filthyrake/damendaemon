@@ -4,7 +4,9 @@ from contextlib import closing
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import math
+import select
 import signal
+import socket
 import threading
 import traceback
 import time
@@ -64,6 +66,29 @@ def handler_for(runtime, auth=None, *, reservation_store=None):
 
         def log_message(self, *args):
             pass  # Do not log prompts or response content.
+
+        def peer_gone(self):
+            """True when the client has closed its side of the connection.
+
+            A graceful close sends FIN, not RST: writes into a half-closed
+            socket succeed and a small SSE stream fits the send buffer, so a
+            dead consumer never surfaces as a write error — the GPU worker
+            would decode an entire request nobody reads (#664). Probe the
+            socket instead: readable-with-EOF means the peer is gone.
+            Readable-with-data is a pipelined follow-up, not a disconnect.
+            select(0) keeps the probe non-blocking on every platform
+            (combined MSG_PEEK|MSG_DONTWAIT stalls on some stacks until the
+            socket timeout, which would misread every live request).
+            Checked between generation events, this bounds disconnect
+            detection by one decode step instead of the whole request.
+            """
+            try:
+                readable, _, _ = select.select([self.connection], [], [], 0)
+                if not readable:
+                    return False
+                return self.connection.recv(1, socket.MSG_PEEK) == b''
+            except OSError:
+                return True
 
         def read_body(self, length):
             deadline = time.monotonic() + BODY_READ_SECONDS
@@ -331,6 +356,16 @@ def handler_for(runtime, auth=None, *, reservation_store=None):
                     for event in generation:
                         if final is not None:
                             raise RuntimeError('generation emitted an event after its terminal event')
+                        # The peer check runs per event (never per token byte):
+                        # a vanished client is detected within one decode
+                        # step — closing the generator cancels the request
+                        # and frees the batch slot instead of decoding a
+                        # zombie to completion (#664). Extra client bytes on
+                        # the socket are not a disconnect (peer_gone peeks
+                        # EOF only).
+                        if self.peer_gone():
+                            self.close_connection = True
+                            return
                         if event.get("tool_call_format")=="harmony":tool_parser=None
                         if stream and not started:
                             self.send_response(200)

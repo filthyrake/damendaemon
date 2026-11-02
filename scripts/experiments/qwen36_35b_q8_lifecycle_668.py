@@ -155,6 +155,8 @@ def request(slot, prompt_ids, max_tokens, results: dict, *, cancel_after=None,
             time.sleep(cancel_after)
             disconnected = time.monotonic() - started
             response.close()
+            from scripts.experiments.http_disconnect import hard_disconnect
+            hard_disconnect(response)
         else:
             for line in response:
                 if time.monotonic() - started > REQUEST_LIMIT:
@@ -176,6 +178,8 @@ def request(slot, prompt_ids, max_tokens, results: dict, *, cancel_after=None,
                         and time.monotonic() - started >= first_output + cancel_after_first_output):
                     disconnected = time.monotonic() - started
                     response.close()
+                    from scripts.experiments.http_disconnect import hard_disconnect
+                    hard_disconnect(response)
                     break
     except Exception as failure:
         error = failure
