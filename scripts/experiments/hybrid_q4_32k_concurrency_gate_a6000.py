@@ -156,7 +156,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--concurrency', type=int, choices=(2, 4), required=True)
+    # The chunk bound is a named, pre-declared lever from the October C4
+    # finding ("a faster executor (bigger chunk ...)"): 127 is the A30
+    # heritage default this card inherited; the #681 bounded grouped
+    # prefill fixed the per-chunk scratch, so larger chunks amortize
+    # per-chunk turns without unbounded temporaries. Validated, recorded
+    # in the report; the October cells' 127 stays reproducible.
+    parser.add_argument('--chunk', type=int, default=CHUNK)
     args = parser.parse_args()
+    if not 127 <= args.chunk <= 4096:
+        raise ValueError('chunk must stay within the pre-declared 127..4096 bound')
     require_guard()
     if args.output.exists():
         raise ValueError('new output path required')
@@ -175,7 +184,7 @@ def main():
                   executor_rescope='A6000 (issue #68, 2026-10-28)',
                   model=SNAPSHOT, model_revision='1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0',
                   context=CONTEXT, prompt_tokens=PROMPT_TOKENS,
-                  slot_prompt_digests=digests, output_limit=OUTPUT_TOKENS, chunk=CHUNK,
+                  slot_prompt_digests=digests, output_limit=OUTPUT_TOKENS, chunk=args.chunk,
                   batch=args.concurrency, quantization='q4_0', precision='compensated',
                   graphs=False, device=A6000_UUID,
                   c1_reference='docs/evidence/nvidia/a6000-q4-32k-68/ gate-attempt5-PASSED.json',
@@ -189,7 +198,7 @@ def main():
         server = subprocess.Popen(
             [sys.executable, '-m', 'scripts.experiments.hybrid_q4_a6000_probe', 'serve',
              '--model-config', str(manifest_path), '--device', 'cuda', '--context', str(CONTEXT),
-             '--no-graph', '--prefill-chunk-size', str(CHUNK),
+             '--no-graph', '--prefill-chunk-size', str(args.chunk),
              '--batch-size', str(args.concurrency),
              '--port', str(PORT), '--gpu-models', '1', '--host-models', '1',
              '--host-gib', '40', '--queue-timeout', '600',

@@ -61,6 +61,55 @@ prefill admission (SLO work under #59/#60), not more memory.
 Per the pre-declaration on #68, this C4 failure is the measured finding
 and is not a retry license; no setting sweep follows.
 
+## Chunk-1024 re-measurement (2026-11-01, after #681's grouped prefill)
+
+Branch `c4-chunk-bounded` — the finding's own named lever ("bigger
+chunk"), pre-declared on #68 before launch: exactly two cells, C2 then
+conditional C4, chunk bounded 127..4096 in the runner (`--chunk`,
+recorded in the reports). Everything else pinned as October.
+
+**C2 @ 1024 — PASSED** (c2-1024.json / guard-c2-1024.json, guard 0 in 936 s):
+
+| slot | first output | total | tokens |
+|---|---|---|---|
+| 0 | 257.2 s | 751.6 s | 512/512 |
+| 1 | 248.7 s | 751.6 s | 512/512 (3018 chars) |
+
+Peak allocator 25.12 GiB (vs 27.23 GiB at 127: the #681 grouped scratch
+replaces the per-chunk SDPA temporaries). Warmup single request 171 s.
+
+**C4 @ 1024 — first-output gate now passes, total gate still bounded out**
+(c4-1024.json / guard-c4-1024.json, guard 0 in 1403 s):
+
+| slot | first output | total (clipped) | chars |
+|---|---|---|---|
+| 0 | 491.5 s | 1200.3 s | 2296 |
+| 1 | 510.9 s | 1200.3 s | 2263 |
+| 2 | 514.4 s | 1200.3 s | 2258 |
+| 3 | 518.3 s | 1200.3 s | 2254 |
+
+Peak allocator 33.41 GiB, zero OOM, clean release. Aggregate prefill
+improved ~1.24x (first output 616-625 → 491-518 s, all slots inside the
+600 s gate the October cell failed). But all four slots were clipped
+mid-decode by the 1200 s per-request wall at ~385/512 tokens.
+
+**Honest correction to the October finding:** the "~0.8 tok/s/slot"
+packed-4 decode estimate assumed 4.05 chars/token, derived by assuming
+near-completion. The C2 cells measure this corpus at **5.90 chars/token**
+(gate-c2.json slot 0: 512 tokens / 3020 chars; c2-1024.json identical).
+Re-derived, both C4 cells decode at **~0.55-0.56 tok/s/slot (~2.2
+aggregate)** — October ~328 tokens in 585 s, chunk-1024 ~389 in ~709 s.
+The October conclusion (total gate fails at C4×512) stands, more
+decisively: a full 512-token request needs ~500 s prefill + ~930 s
+decode ≈ 1430 s. Chunk size moves prefill only; packed-4 decode is
+unchanged, as expected.
+
+**Updated finding:** on this executor, 32 K Q4 is 2-slot at full 512
+output; 4-slot fits only shorter requests (≤ ~350 output tokens at the
+measured rate) — or needs a faster decode path (graphs, speculative
+decode, or split prefill admission under #59), not a bigger chunk and
+not more memory.
+
 ## Honest scope
 
 Capacity/concurrency only. Cancellation, reuse, quality and SLO remain
