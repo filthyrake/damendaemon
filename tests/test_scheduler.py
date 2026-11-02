@@ -595,6 +595,7 @@ class ChunkedSchedulerTests(unittest.TestCase):
             time.sleep(.001)
         self.fail('requests did not queue')
 
+
     def test_decode_interleaves_chunks_and_preserves_usage(self):
         with ThreadPoolExecutor(2) as pool:
             short=pool.submit(self.generate,'ab')
@@ -683,6 +684,85 @@ class ChunkedSchedulerTests(unittest.TestCase):
             with self.subTest(value=value),self.assertRaises(ValueError):
                 BatchedRuntime({},prefill_chunk_size=value)
 
+
+class MtpChunkExecutor(ChunkExecutor):
+    """Chunked fake carrying the MTP serving surface: spec_round mirrors
+    decode_batch's token+1 semantics with a perfect draft (truth-first
+    emissions), so a spec-driven stream must equal the plain stream and
+    decode_batch must never be called while spec is eligible."""
+    mtp_layer=1
+    def __init__(self):
+        super().__init__()
+        self.lengths={0:0,1:0}
+        self.spec_events=[]
+    def prefill_chunk(self,tokens,slot,start,final=True):
+        result=super().prefill_chunk(tokens,slot,start,final)
+        self.lengths[slot]=start+len(tokens)
+        return result
+    def decode_batch(self,tokens,slots):
+        self.lengths[slots[0]]+=1
+        return super().decode_batch(tokens,slots)
+    def spec_round(self,blocks):
+        self.spec_events.append(tuple(block[0] for block in blocks))
+        emissions,accepted=[],0
+        for slot,first,second,corrective in blocks:
+            truth=first+1
+            if corrective:
+                emissions.append((slot,[truth+1]))
+            else:
+                emissions.append((slot,[truth,truth+1]))
+                accepted+=1
+            self.lengths[slot]+=2
+        return emissions,[],accepted
+
+
+class MtpChunkedSchedulerTests(unittest.TestCase):
+    """The scheduler's chunked-prefill loop must engage spec rounds (the
+    #68 A/B cell's first run measured identical decode times because only
+    one of the decode loops was wired — these tests pin every loop's
+    engagement through the real scheduling machinery)."""
+
+    def setUp(self):
+        patcher=patch('damendaemon.scheduler.Runtime',FakeRuntime)
+        patcher.start();self.addCleanup(patcher.stop)
+        self.runtime=BatchedRuntime({'a':'a','b':'b'},batch_size=2,queue_size=4,prefill_chunk_size=2)
+        self.executor=MtpChunkExecutor()
+        self.runtime.runtime.executor=self.executor
+        self.addCleanup(self.runtime.close)
+        self.addCleanup(self.executor.release.set)
+
+    def generate(self,prompt,count=8,alias='a'):
+        return list(self.runtime.generate(alias,[{'content':prompt}],count))
+
+    def tokens(self,events):
+        return [event['token'] for event in events if 'token' in event]
+
+    def test_chunked_loop_engages_spec_rounds(self):
+        self.executor.release.set()
+        events=self.generate('abcd',8)
+        self.assertEqual(self.tokens(events),list(range(1,9)))
+        self.assertTrue(self.executor.spec_events,'the chunked loop never called spec_round')
+        self.assertEqual([e for e in self.executor.chunk_events if e[0]=='decode'],[],
+                         'eligible spec requests must never fall back to plain decode')
+        self.assertEqual(len(self.executor.spec_events),4,'two tokens per accepted round')
+
+    def test_mid_block_finish_drops_the_rest_cleanly(self):
+        self.executor.release.set()
+        events=self.generate('ab',3)
+        self.assertEqual(self.tokens(events),[1,2,3])
+        self.assertEqual(events[-1]['usage']['completion_tokens'],3)
+
+    def test_two_slots_share_packed_rounds(self):
+        self.executor.release.set()
+        with ThreadPoolExecutor(2) as pool:
+            first=pool.submit(self.generate,'ab',8)
+            second=pool.submit(self.generate,'cd',8)
+            events_a,events_b=first.result(5),second.result(5)
+        self.assertEqual(self.tokens(events_a),list(range(1,9)))
+        self.assertEqual(self.tokens(events_b),list(range(1,9)))
+        self.assertTrue(any(len(event)==2 for event in self.executor.spec_events),
+                        'co-ready slots must share one packed spec round')
+        self.assertEqual([e for e in self.executor.chunk_events if e[0]=='decode'],[])
 
 class FakePagedExecutor(FakeExecutor):
     def __init__(self):

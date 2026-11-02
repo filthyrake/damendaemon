@@ -484,6 +484,14 @@ class BatchedRuntime:
                 # object because the consumer may already be waiting on it.
                 with request.events.mutex:
                     request.events.maxsize=max(8,2*executor.speculative_verifier.width)
+        elif getattr(executor,'mtp_layer',None) is not None:
+            # MTP spec serving (#68 decode lever): rounds emit up to two
+            # tokens per slot; give the event queue the same headroom the
+            # n-gram path grants. Eligibility is re-checked per round.
+            from .speculative import eligible
+            if eligible(request):
+                with request.events.mutex:
+                    request.events.maxsize=max(request.events.maxsize,8)
         return tokens
 
     def _speculate(self,ready,active,executor):
@@ -520,6 +528,71 @@ class BatchedRuntime:
             # The last emitted token remains the next decode input. Rejected,
             # filler and post-EOS positions cannot extend the committed prefix.
             executor.lengths[slot]=start+len(request.output)-previous
+        return True
+
+    def _emit_spec(self, emissions, ready, active, executor, owned=None):
+        """Emit one spec round's tokens in block order; a request that
+        finishes mid-block (stop or max_tokens) drops the rest of its
+        block — the slot is released and reset, so the consumed second
+        position never matters. Returns the still-active slot set.
+
+        owned=None mirrors the plain loops (finish inside _emit); a set
+        mirrors the paged loop (deferred finish + explicit release)."""
+        by_slot = {slot: (request, prompt_count) for slot, request, prompt_count in ready}
+        survivors = {slot for slot, *_ in ready}
+        for slot, tokens in emissions:
+            if slot not in survivors:
+                continue
+            request, prompt_count = by_slot[slot]
+            for token in tokens:
+                request.max_batch_seen = max(request.max_batch_seen, len(ready))
+                if owned is None:
+                    if self._emit(request, token, executor, prompt_count):
+                        del active[slot]
+                        survivors.discard(slot)
+                        break
+                elif self._emit(request, token, executor, prompt_count, defer_finish=True):
+                    executor.release_request(slot)
+                    owned.discard(slot)
+                    self._finish(request)
+                    del active[slot]
+                    survivors.discard(slot)
+                    break
+        return survivors
+
+    def _speculate_mtp(self, ready, active, executor, owned=None):
+        """Packed MTP speculative round (#68 decode lever): when the
+        executor carries the draft head and every ready request is
+        greedy-eligible, one [B, 2] optimistic forward per round emits up
+        to two verified tokens per slot (rejections roll the slot's
+        recurrent state back and resolve in a corrective round inside the
+        same call). Chunked prefill coexists — the round only ever runs in
+        the decode phase. Exact by construction: every emitted token is
+        the main model's greedy argmax at its position; the draft only
+        guesses what verification confirms. Returns False (plain packed
+        decode) whenever anything is ineligible — mixed shapes cannot
+        share a forward."""
+        if getattr(executor, 'mtp_layer', None) is None or not ready:
+            return False
+        from .speculative import eligible
+        blocks = []
+        for slot, request, prompt_count in ready:
+            if (not eligible(request)
+                    or executor.lengths[slot] + 2 > executor.context
+                    or request.max_tokens - len(request.output) < 1):
+                return False
+            blocks.append((slot, request.output[-1], None, False))
+        emissions, corrective, accepted = executor.spec_round(blocks)
+        survivors = self._emit_spec(emissions, ready, active, executor, owned)
+        if corrective:
+            # Drop corrective blocks whose slot finished mid-round; the
+            # rest re-run [verified, truth] in one packed forward and emit
+            # their followers (corrective blocks always resolve).
+            blocks = [(slot, first, truth, True)
+                      for slot, first, truth, _ in corrective if slot in survivors]
+            if blocks:
+                emissions, _, _ = executor.spec_round(blocks)
+                self._emit_spec(emissions, ready, active, executor)
         return True
 
     def _prefill_slot(self,partial,chunk_size):
@@ -615,7 +688,7 @@ class BatchedRuntime:
                         self._finish(request,BusyError('stream backpressure timeout'))
                         del active[slot]
                 ready=self._ready_decode(active)
-                if ready:
+                if ready and not self._speculate_mtp(ready,active,executor):
                     logits,next_tokens=executor.decode_batch([r.output[-1] for _,r,_ in ready],[slot for slot,_,_ in ready])
                     selected=sample_rows(logits,[r.sampler for _,r,_ in ready],next_tokens)
                     for (slot,request,length),token in zip(ready,selected):
@@ -758,7 +831,7 @@ class BatchedRuntime:
                         owned.remove(slot)
                         del active[slot]
                 ready=self._ready_decode(active)
-                if ready:
+                if ready and not self._speculate_mtp(ready,active,executor,owned):
                     logits,next_ids=executor.decode_batch([r.output[-1] for _,r,_ in ready],[slot for slot,_,_ in ready])
                     selected=sample_rows(logits,[r.sampler for _,r,_ in ready],next_ids)
                     for (slot,request,length),token in zip(ready,selected):
@@ -849,7 +922,8 @@ class BatchedRuntime:
                         self._finish(request, BusyError("stream backpressure timeout"))
                         del active[slot]
                 ready = self._ready_decode(active)
-                if ready and not self._speculate(ready,active,executor):
+                if ready and not self._speculate(ready,active,executor) \
+                        and not self._speculate_mtp(ready,active,executor):
                     logits, next_tokens = executor.decode_batch([r.output[-1] for _, r, _ in ready],
                                                            [slot for slot, _, _ in ready])
                     selected = sample_rows(logits, [r.sampler for _, r, _ in ready], next_tokens)
