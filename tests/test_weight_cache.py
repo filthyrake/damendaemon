@@ -83,6 +83,17 @@ class WeightCacheTests(unittest.TestCase):
         self.assertEqual(before, cache.path.read_bytes())
         self.assertEqual([cache.path], list(cache.root.iterdir()))
 
+    def test_mtp_opt_in_keys_a_separate_cache_entry(self):
+        # The MTP opt-in changes the prepared tensor set, not the source
+        # files; the cache identity must distinguish them or a head-less
+        # entry is served to an MTP load (and vice versa).
+        base = self.cache('q4_0')
+        with_head = PreparedCache(self.root / 'cache', self.root, self.config, 'q4_0',
+                                  [self.source], schema=tensor_schema(self.config, 'q4_0'),
+                                  mtp=True)
+        self.assertNotEqual(base.key, with_head.key)
+        self.assertNotEqual(base.path, with_head.path)
+
     def test_schema_covers_dense_architectures(self):
         for architecture in ('qwen2', 'qwen3', 'llama', 'phi3', 'mistral'):
             config = dict(self.config, model_type=architecture)
