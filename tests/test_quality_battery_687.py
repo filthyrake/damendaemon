@@ -60,12 +60,52 @@ class QualityBatteryTests(unittest.TestCase):
         self.assertTrue(all(item['passed'] for item in tasks['T2']))
         self.assertEqual([item['passed'] for item in tasks['T3']], [True, True])
 
+    def test_score_qa_reasoning_restatement_format(self):
+        """The 27B Q4 tier's observed format (#687 run 1, retained as a
+        finding): Q-restatement + 'Looking through...' + 'Answer: X'.
+        Extraction takes the final Answer line per Q-segment — truth-blind."""
+        output = ('\nLet me find the answers.\n\n'
+                  'Q1: What is the authorization code for the amber crate transfer?\n'
+                  'Looking through the text: "OPERATIONS NOTICE: The amber crate '
+                  'transfer is authorized under code K7Q-4471."\nAnswer: K7Q-4471\n\n'
+                  'Q2: What is the code? Probably wrong. Answer: no idea\n'
+                  'On reflection the notice says RX3-9028. Answer: RX3-9028\n\n'
+                  'Q3: What is the authorization code for the mauve crate?\n'
+                  'The code is V8N-6113. Answer: V8N-6113\n\n'
+                  'Q4: Report the station counts.\n'
+                  'Answer: Halden 47; Ostmark 52; Vireo 38; Casselt 61; '
+                  'Dunmore 44; Pellworth 57\n\n'
+                  'Q5: Did SN-118 require CX-221? The directive covers Casselt '
+                  '05:00-09:00. Answer: YES\n\n'
+                  'Q6: Did SN-204 require CX-221? It left Vireo; that needs '
+                  'KL-905 instead. Answer: NO')
+        answers, tasks = score_qa(output, [])
+        self.assertEqual([item['passed'] for item in tasks['T1']],
+                         [True, True, True])
+        self.assertTrue(all(item['passed'] for item in tasks['T2']))
+        self.assertEqual([item['passed'] for item in tasks['T3']], [True, True])
+        # The FINAL Answer line wins over an earlier wrong one (Q2).
+        self.assertIn('rx3-9028', answers['A2'].lower())
+
     def test_score_qa_missing_and_garbled(self):
         output = 'A1: unknown\nA2: \nA3: V8N-6113'
         _, tasks = score_qa(output, [])
         self.assertEqual([item['passed'] for item in tasks['T1']], [False, False, True])
         self.assertFalse(any(item['passed'] for item in tasks['T2']))
         self.assertFalse(any(item['passed'] for item in tasks['T3']))
+
+    def test_score_summary_reads_the_tail(self):
+        """Early reasoning that quotes events must not satisfy the gate —
+        the summary (response tail) carries the keys."""
+        rambling = ('Let me review the log. I see a thermal runaway in tower 4 '
+                    'and Halvard... thinking... nothing more. ' + 'routine filler words '
+                    * 60)
+        tail_only = (' In brief: a thermal runaway hit tower 4, Halvard contained '
+                     'it, deck 7 was evacuated in 48 minutes, output stayed nominal.')
+        items = score_summary(rambling + tail_only)
+        self.assertEqual(sum(1 for item in items if item['passed']), 5)
+        quotes_only = score_summary(rambling)
+        self.assertEqual(sum(1 for item in quotes_only if item['passed']), 0)
 
     def test_score_summary_keys(self):
         text = ('A thermal runaway struck tower 4; crew Halvard contained it and '

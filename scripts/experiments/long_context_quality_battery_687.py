@@ -70,7 +70,7 @@ A6000_UUID = 'GPU-4adb9ddb-7bb3-189c-0fa2-51d67d1189ed'
 PORT = 8147
 GPU_FLOOR_MIB = 40000
 HOST_FLOOR_BYTES = 100 * 1024**3
-MAX_TOKENS = {'qa': 256, 'summary': 200}
+MAX_TOKENS = {'qa': 700, 'summary': 384}
 
 TIERS = {
     'qwen27-32k': Tier(snapshot='/home/damen/models/Qwen3.8-27B-1d4bf0f2',
@@ -258,36 +258,53 @@ def request(prompt_ids, max_tokens, tag, limit=1600):
 
 
 def score_qa(output, layout):
-    answers = {}
+    """Truth-blind answer extraction, two accepted response formats:
+    the terse 'A1: ...' lines, or the reasoning models' Q-restatement
+    style ('Q1: ...' then, in that segment, 'Answer: X' — the final
+    Answer line wins when several appear). Extraction never injects the
+    expected value; matching is the declared exact-agreement check."""
+    alines = {}
     for match in re.finditer(r'A(\d)[ \t]*:[ \t]*([^\n]*)', output):
-        answers[f'A{match.group(1)}'] = match.group(2)
+        alines[int(match.group(1))] = match.group(2)
+    evidence = {}
+    qmarkers = list(re.finditer(r'Q(\d)[ \t]*:[ \t]*', output))
+    for index, marker in enumerate(qmarkers):
+        number = int(marker.group(1))
+        stop = qmarkers[index + 1].start() if index + 1 < len(qmarkers) else len(output)
+        segment = output[marker.end():stop]
+        finals = re.findall(r'Answer[ \t]*:[ \t]*([^\n]+)', segment)
+        evidence[number] = finals[-1] if finals else segment
+    for number, line in alines.items():
+        evidence.setdefault(number, line)
     tasks = {'T1': [], 'T2': [], 'T3': []}
     for index, (color, code, _) in enumerate(T1_NEEDLES):
-        given = re.sub(r'[^a-z0-9]', '', answers.get(f'A{index + 1}', '').lower())
+        given = re.sub(r'[^a-z0-9]', '', evidence.get(index + 1, '').lower())
         expected = re.sub(r'[^a-z0-9]', '', code.lower())
         tasks['T1'].append(dict(needle=color, expected=code,
-                                answer=answers.get(f'A{index + 1}', '')[:120],
+                                answer=evidence.get(index + 1, '')[:160],
                                 passed=expected in given))
-    t2 = answers.get('A4', '')
+    t2 = evidence.get(4, '')
     for name, count, _ in T2_NEEDLES:
         pattern = re.compile(re.escape(name) + r'\D{0,12}(\d+)', re.IGNORECASE)
         found = pattern.search(normalize(t2))
         passed = False
         if found:
             passed = int(found.group(1)) == count
-        tasks['T2'].append(dict(station=name, expected=count, answer=t2[:200], passed=passed))
-    for index, (question, truth) in enumerate((('Q5', 'yes'), ('Q6', 'no'))):
-        given = normalize(answers.get(f'A{index + 5}', ''))
+        tasks['T2'].append(dict(station=name, expected=count, answer=t2[:240], passed=passed))
+    for index, question in enumerate(('Q5', 'Q6')):
+        given = normalize(evidence.get(index + 5, ''))
         verdict = 'yes' if re.search(r'\byes\b', given) else ('no' if re.search(r'\bno\b', given) else None)
         tasks['T3'].append(dict(question=question, expected=T3_TRUTH[question],
-                                answer=answers.get(f'A{index + 5}', '')[:120],
+                                answer=evidence.get(index + 5, '')[:160],
                                 passed=verdict == T3_TRUTH[question], parsed=verdict))
-    return answers, tasks
+    return {f'A{number}': text[:200] for number, text in sorted(evidence.items())}, tasks
 
 
 def score_summary(output):
-    given = normalize(output)
-    items = [dict(key=key, passed=key in given) for key in T4_KEYS]
+    # Reasoning models may quote the events while thinking; the summary
+    # ends the response, so the gate reads the final 120 words only.
+    tail = ' '.join(normalize(output).split()[-120:])
+    items = [dict(key=key, passed=key in tail) for key in T4_KEYS]
     return items
 
 
