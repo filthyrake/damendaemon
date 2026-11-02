@@ -1463,10 +1463,24 @@ class HybridExecutor:
                     and (positions[:, 1:] - positions[:, :-1] == 1).all()
                     and (positions == positions[:1]).all()))
         if contiguous:
-            out = scaled_attention(q.transpose(1, 2),
-                                   ck.index_select(0, slots)[:, :, 1:end],
-                                   cv.index_select(0, slots)[:, :, 1:end],
-                                   is_causal=True, enable_gqa=True)
+            # Keys sliced past the hole: [1:end]. fp32 computes (the
+            # compensated serves) get the grouped GEMM path — the fused
+            # SDPA backends reject fp32, so the math backend would run and
+            # expand GQA at q-head count through fp32 K/V copies (~2x1.6
+            # GiB at 128K keys — the measured #689 transient; is_causal
+            # does not prevent it, verified by the first 128K re-run). The
+            # grouped path bounds the identical math to fixed scratch and
+            # needs no enable_gqa expansion (its causal bound,
+            # prefix = context - length, is exactly hole+causal for
+            # contiguous rows). fp16 computes keep the fused kernel.
+            k_sel = ck.index_select(0, slots)[:, :, 1:end]
+            v_sel = cv.index_select(0, slots)[:, :, 1:end]
+            if self.compute_dtype == torch.float32:
+                from .grouped_attention import attention as grouped_attention
+                out = grouped_attention(q.transpose(1, 2), k_sel, v_sel)
+            else:
+                out = scaled_attention(q.transpose(1, 2), k_sel, v_sel,
+                                       is_causal=True, enable_gqa=True)
         else:
             keys = self.arange[:end]
             allowed = (keys.view(1, -1) <= positions.view(n, length, 1)) & (keys.view(1, -1) >= 1)
