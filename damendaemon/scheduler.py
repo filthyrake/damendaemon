@@ -530,11 +530,14 @@ class BatchedRuntime:
             executor.lengths[slot]=start+len(request.output)-previous
         return True
 
-    def _emit_spec(self, emissions, ready, active, executor):
+    def _emit_spec(self, emissions, ready, active, executor, owned=None):
         """Emit one spec round's tokens in block order; a request that
         finishes mid-block (stop or max_tokens) drops the rest of its
         block — the slot is released and reset, so the consumed second
-        position never matters. Returns the still-active slot set."""
+        position never matters. Returns the still-active slot set.
+
+        owned=None mirrors the plain loops (finish inside _emit); a set
+        mirrors the paged loop (deferred finish + explicit release)."""
         by_slot = {slot: (request, prompt_count) for slot, request, prompt_count in ready}
         survivors = {slot for slot, *_ in ready}
         for slot, tokens in emissions:
@@ -543,15 +546,21 @@ class BatchedRuntime:
             request, prompt_count = by_slot[slot]
             for token in tokens:
                 request.max_batch_seen = max(request.max_batch_seen, len(ready))
-                if self._emit(request, token, executor, prompt_count):
+                if owned is None:
+                    if self._emit(request, token, executor, prompt_count):
+                        del active[slot]
+                        survivors.discard(slot)
+                        break
+                elif self._emit(request, token, executor, prompt_count, defer_finish=True):
                     executor.release_request(slot)
+                    owned.discard(slot)
                     self._finish(request)
                     del active[slot]
                     survivors.discard(slot)
                     break
         return survivors
 
-    def _speculate_mtp(self, ready, active, executor):
+    def _speculate_mtp(self, ready, active, executor, owned=None):
         """Packed MTP speculative round (#68 decode lever): when the
         executor carries the draft head and every ready request is
         greedy-eligible, one [B, 2] optimistic forward per round emits up
@@ -574,7 +583,7 @@ class BatchedRuntime:
                 return False
             blocks.append((slot, request.output[-1], None, False))
         emissions, corrective, accepted = executor.spec_round(blocks)
-        survivors = self._emit_spec(emissions, ready, active, executor)
+        survivors = self._emit_spec(emissions, ready, active, executor, owned)
         if corrective:
             # Drop corrective blocks whose slot finished mid-round; the
             # rest re-run [verified, truth] in one packed forward and emit
@@ -679,7 +688,7 @@ class BatchedRuntime:
                         self._finish(request,BusyError('stream backpressure timeout'))
                         del active[slot]
                 ready=self._ready_decode(active)
-                if ready:
+                if ready and not self._speculate_mtp(ready,active,executor):
                     logits,next_tokens=executor.decode_batch([r.output[-1] for _,r,_ in ready],[slot for slot,_,_ in ready])
                     selected=sample_rows(logits,[r.sampler for _,r,_ in ready],next_tokens)
                     for (slot,request,length),token in zip(ready,selected):
@@ -822,7 +831,7 @@ class BatchedRuntime:
                         owned.remove(slot)
                         del active[slot]
                 ready=self._ready_decode(active)
-                if ready:
+                if ready and not self._speculate_mtp(ready,active,executor,owned):
                     logits,next_ids=executor.decode_batch([r.output[-1] for _,r,_ in ready],[slot for slot,_,_ in ready])
                     selected=sample_rows(logits,[r.sampler for _,r,_ in ready],next_ids)
                     for (slot,request,length),token in zip(ready,selected):
