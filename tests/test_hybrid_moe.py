@@ -454,5 +454,173 @@ class HybridMoeMtpTests(unittest.TestCase):
         self.assertFalse(torch.allclose(logits['embed_first'], logits['hidden_first']))
 
 
+DENSE_INTER = 48  # distinct from SHARED to catch cross-wired FFN takes
+
+
+def dense_root_config():
+    """Dense qwen3.5 text config — the 27B C-series shape (no experts)."""
+    return {'model_type': 'qwen3_5', 'tie_word_embeddings': True,
+            'image_token_id': 99, 'text_config': {
+        'model_type': 'qwen3_5_text', 'hidden_size': HIDDEN,
+        'num_hidden_layers': LAYERS, 'num_attention_heads': HEADS,
+        'num_key_value_heads': KV, 'head_dim': HEAD_DIM, 'vocab_size': 64,
+        'max_position_embeddings': 262144,
+        'linear_num_key_heads': 1, 'linear_num_value_heads': 2,
+        'linear_key_head_dim': 16, 'linear_value_head_dim': 16,
+        'linear_conv_kernel_dim': 4,
+        'intermediate_size': DENSE_INTER,
+        'mtp_num_hidden_layers': 1, 'mtp_use_dedicated_embeddings': False,
+        'layer_types': ['linear_attention']*3+['full_attention'],
+        'hidden_act': 'silu', 'attn_output_gate': True, 'rms_norm_eps': 1.e-6,
+        'rope_parameters': {'rope_type': 'default', 'rope_theta': 10000000.,
+                            'partial_rotary_factor': .25}}}
+
+
+def dense_tensors(rng):
+    """Raw dense-checkpoint tensors (model.language_model. prefix, the
+    dense mlp.{gate,up,down}_proj surface the main transcription takes)."""
+    shapes = {'embed_tokens.weight': (64, HIDDEN), 'norm.weight': (HIDDEN,)}
+    for i in range(LAYERS):
+        shapes.update({f'layers.{i}.'+name: shape for name, shape in {
+            'input_layernorm.weight': (HIDDEN,), 'post_attention_layernorm.weight': (HIDDEN,),
+            'mlp.gate_proj.weight': (DENSE_INTER, HIDDEN),
+            'mlp.up_proj.weight': (DENSE_INTER, HIDDEN),
+            'mlp.down_proj.weight': (HIDDEN, DENSE_INTER)}.items()})
+        if i < LAYERS - 1:
+            shapes.update({'layers.%d.linear_attn.' % i+name: shape for name, shape in {
+                'in_proj_qkv.weight': (64, HIDDEN), 'in_proj_z.weight': (32, HIDDEN),
+                'in_proj_b.weight': (2, HIDDEN), 'in_proj_a.weight': (2, HIDDEN),
+                'conv1d.weight': (64, 1, 4), 'out_proj.weight': (HIDDEN, HIDDEN),
+                'dt_bias': (2,), 'A_log': (2,), 'norm.weight': (16,)}.items()})
+        else:
+            shapes.update({'layers.%d.self_attn.' % i+name: shape for name, shape in {
+                'q_proj.weight': (2*HEADS*HEAD_DIM, HIDDEN),
+                'k_proj.weight': (KV*HEAD_DIM, HIDDEN), 'v_proj.weight': (KV*HEAD_DIM, HIDDEN),
+                'o_proj.weight': (HIDDEN, HEADS*HEAD_DIM),
+                'q_norm.weight': (HEAD_DIM,), 'k_norm.weight': (HEAD_DIM,)}.items()})
+    return {'model.language_model.'+name: torch.randn(shape, generator=rng)*.08
+            for name, shape in shapes.items()}
+
+
+def dense_mtp_tensors(rng):
+    """Dense draft head: same attention/norm surface as the MoE head, plain
+    SwiGLU FFN (the 27B snapshot's mtp.layers.0.mlp.{gate,up,down}_proj)."""
+    shapes = {'fc.weight': (HIDDEN, 2*HIDDEN),
+              'pre_fc_norm_embedding.weight': (HIDDEN,),
+              'pre_fc_norm_hidden.weight': (HIDDEN,), 'norm.weight': (HIDDEN,),
+              'layers.0.input_layernorm.weight': (HIDDEN,),
+              'layers.0.post_attention_layernorm.weight': (HIDDEN,)}
+    shapes.update({'layers.0.self_attn.'+name: shape for name, shape in {
+        'q_proj.weight': (2*HEADS*HEAD_DIM, HIDDEN),
+        'k_proj.weight': (KV*HEAD_DIM, HIDDEN), 'v_proj.weight': (KV*HEAD_DIM, HIDDEN),
+        'o_proj.weight': (HIDDEN, HEADS*HEAD_DIM),
+        'q_norm.weight': (HEAD_DIM,), 'k_norm.weight': (HEAD_DIM,)}.items()})
+    shapes.update({'layers.0.mlp.'+name: shape for name, shape in {
+        'gate_proj.weight': (DENSE_INTER, HIDDEN),
+        'up_proj.weight': (DENSE_INTER, HIDDEN),
+        'down_proj.weight': (HIDDEN, DENSE_INTER)}.items()})
+    return {'mtp.'+name: torch.randn(shape, generator=rng)*.08
+            for name, shape in shapes.items()}
+
+
+class DenseMtpTests(unittest.TestCase):
+    """Dense-checkpoint MTP transcription (the qwen3.5 dense 27B surface).
+
+    Same opt-in contract as MoE: a checkpoint carrying mtp.* tensors must be
+    told explicitly what to do with them. The draft FFN mirrors the main
+    checkpoint — dense gate_up/down under the virtual index N, dispatched
+    structurally by _mlp_half (no router key -> dense path).
+    """
+
+    def setUp(self):
+        self.config = decoder_config(dense_root_config())
+
+    def _state(self):
+        state = dense_tensors(torch.Generator().manual_seed(123))
+        state.update(dense_mtp_tensors(torch.Generator().manual_seed(456)))
+        return state
+
+    def _model(self, env):
+        environment = {'DAMENDAEMON_DEVICE': 'xpu', 'DAMENDAEMON_EXPERIMENTAL_XPU': '1',
+                       'DAMENDAEMON_EXPERIMENTAL_VISION': '0', **env}
+        with patch.dict('os.environ', environment, clear=False):
+            weights = load_weights(self._state(), self.config)
+        weights = {name: value.float() for name, value in weights.items()}
+        weights['head'] = weights['embed']
+        return SimpleNamespace(config=self.config, max_context=64, weights=weights,
+                                scales={}, quantization='none',
+                                bytes=sum(t.numel()*t.element_size() for t in
+                                          {id(t):t for t in weights.values()}.values()))
+
+    def _executor(self, env):
+        model = self._model(env)
+        environment = {'DAMENDAEMON_DEVICE': 'xpu', 'DAMENDAEMON_EXPERIMENTAL_XPU': '1',
+                       'DAMENDAEMON_EXPERIMENTAL_VISION': '0', **env}
+        with patch.dict('os.environ', environment, clear=False), \
+                patch('damendaemon.hybrid.selected_device', return_value='cpu'), \
+                patch('damendaemon.xpu_policy.validate_model', lambda *a, **k: None), \
+                patch('damendaemon.hybrid.empty_cache'), \
+                patch('damendaemon.hybrid.available_memory', return_value=2**40):
+            return HybridExecutor(model, use_graph=False, max_batch=2, kernels='torch')
+
+    def test_dense_mtp_load_requires_explicit_opt_in(self):
+        with self.assertRaisesRegex(ValueError, 'DAMENDAEMON_HYBRID_MTP'):
+            self._model({})
+
+    def test_dense_mtp_drop_env_skips_the_head(self):
+        model = self._model({'DAMENDAEMON_HYBRID_MTP': '1',
+                             'DAMENDAEMON_HYBRID_MTP_DROP': '1'})
+        self.assertNotIn('mtp.fc', model.weights)
+        executor = self._executor({'DAMENDAEMON_HYBRID_MTP': '1',
+                                   'DAMENDAEMON_HYBRID_MTP_DROP': '1'})
+        self.assertIsNone(executor.mtp_layer)
+
+    def test_dense_mtp_transcribes_the_dense_draft_layer(self):
+        model = self._model({'DAMENDAEMON_HYBRID_MTP': '1'})
+        for name in ('mtp.fc', 'mtp.pre_e', 'mtp.pre_h', 'mtp.norm',
+                     f'{LAYERS}.qkv', f'{LAYERS}.o', f'{LAYERS}.q_norm',
+                     f'{LAYERS}.k_norm', f'{LAYERS}.norm1', f'{LAYERS}.norm2'):
+            self.assertIn(name, model.weights)
+        self.assertEqual(tuple(model.weights[f'{LAYERS}.gate_up'].shape),
+                         (2*DENSE_INTER, HIDDEN))
+        self.assertEqual(tuple(model.weights[f'{LAYERS}.down'].shape),
+                         (HIDDEN, DENSE_INTER))
+        # The dense draft must NOT carry a router: _mlp_half dispatches
+        # structurally, and the wrong FFN flavor would be a silent defect.
+        self.assertNotIn(f'{LAYERS}.router', model.weights)
+        executor = self._executor({'DAMENDAEMON_HYBRID_MTP': '1'})
+        self.assertEqual(executor.mtp_layer, LAYERS)
+        self.assertIn(executor.mtp_layer, executor.kv)
+        self.assertEqual(len(executor.c['layer_types']), LAYERS)
+
+    def test_dense_spec_decode_matches_plain_greedy_exactly(self):
+        prompt = [1, 2, 3, 7, 11, 5, 42, 9]
+        count = 24
+        plain = self._executor({'DAMENDAEMON_HYBRID_MTP': '1',
+                                'DAMENDAEMON_HYBRID_MTP_DROP': '1'})
+        logits = plain.prefill(prompt, 0)
+        token = int(logits[0].float().argmax())
+        expected = [token]
+        for _ in range(count - 1):
+            logits, next_ids = plain.decode(token)
+            token = int(next_ids[0])
+            expected.append(token)
+        for order in ('embed_first', 'hidden_first'):
+            spec = self._executor({'DAMENDAEMON_HYBRID_MTP': '1',
+                                   'DAMENDAEMON_HYBRID_MTP_CONCAT': order})
+            output, accepted, steps = spec.spec_decode(prompt, count)
+            self.assertEqual(output, expected,
+                             f'spec stream diverged from plain greedy ({order})')
+            self.assertEqual(len(output), count)
+            self.assertLessEqual(accepted, steps)
+            self.assertLessEqual(steps, count - 1)
+
+    def test_dense_spec_decode_requires_the_head(self):
+        plain = self._executor({'DAMENDAEMON_HYBRID_MTP': '1',
+                                'DAMENDAEMON_HYBRID_MTP_DROP': '1'})
+        with self.assertRaisesRegex(ValueError, 'MTP draft head'):
+            plain.spec_decode([1, 2, 3], 4)
+
+
 if __name__ == '__main__':
     unittest.main()
