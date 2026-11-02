@@ -290,17 +290,21 @@ class LayerStreamQuantizedTests(unittest.TestCase):
         self.assertEqual(set(store.resident_scales), {'head', '0.a'})
         self.assertEqual(set(binding), {id(store.resident[name])
                                        for name in ('head', '0.a') if name in store.resident_scales})
-        layer0_identity = id(store.resident['0.a'])
+
         head_identity = id(store.resident['head'])
         store.activate(1)
         rebind()
         self.assertEqual(set(store.resident_scales), {'head', '1.a'})
-        self.assertEqual(set(binding), {id(store.resident['head']), id(store.resident['1.a'])})
-        # Clone copies give every activation brand-new layer identities and
-        # the wholesale rebind drops the stale ones (device ids are addresses
-        # and can be reused after release — lingering keys mis-bind). Fixed
-        # tensors keep their identity by design.
-        self.assertNotIn(layer0_identity, binding)
+        # The invariant that matters: every binding key is the id of a
+        # CURRENTLY resident scaled tensor — the wholesale rebind never
+        # leaves entries for released tensors. (A released tensor's id can
+        # be recycled by a new clone, so key-absence alone is not provable;
+        # key-to-resident correspondence is.)
+        expected_keys = {id(store.resident[name]) for name in store.resident_scales}
+        self.assertEqual(set(binding), expected_keys)
+        # Fixed tensors keep their identity by design; the resident set
+        # itself proves layer 0 was released.
+        self.assertNotIn('0.a', store.resident)
         self.assertIn(head_identity, binding)
         # Release drops layer scales with layer weights; accounting prices
         # both. copied_bytes is cumulative transfer volume: fixed once, each

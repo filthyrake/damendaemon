@@ -20,7 +20,7 @@ class HybridQ4Tests(unittest.TestCase):
 
     def test_explicit_scope_and_other_precision_guards(self):
         model = SimpleNamespace(config=self.config, max_context=512, quantization='q4_0')
-        with patch.dict('os.environ', self.env, clear=True), patch('damendaemon.hybrid_q4_policy.device_name', return_value='NVIDIA A2'):
+        with patch.dict('os.environ', self.env, clear=True):
             self.assertEqual(select(model, False, 4, 'triton'), 'compensated')
             for graph, batch, kernels in ((True, 4, 'triton'), (False, 5, 'triton'), (False, 4, 'torch')):
                 with self.assertRaises(ValueError):
@@ -37,10 +37,14 @@ class HybridQ4Tests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         select(model, False, 4, 'triton')
 
-    def test_a30_requires_q4_opt_in_and_retains_execution_bounds(self):
+    def test_cuda_q4_admission_is_structural_and_retains_execution_bounds(self):
         model = SimpleNamespace(config=self.config, max_context=512, quantization='q4_0')
-        with patch.dict('os.environ', self.env | {'DAMENDAEMON_DEVICE': 'cuda'}, clear=True), \
-                patch('damendaemon.hybrid_q4_policy.device_name', return_value='NVIDIA A30'):
+        env = self.env | {'DAMENDAEMON_DEVICE': 'cuda'}
+        with patch.dict('os.environ', env, clear=True), \
+                patch('damendaemon.hybrid_q4_policy._cuda_q4_admits', return_value=True):
+            # Any CUDA host with the Triton hybrid kernels admits — the
+            # retired 'NVIDIA A30' string was a proxy for measured hardware;
+            # the A6000 carries the same qualification cells.
             self.assertEqual(select(model, False, 4, 'triton'), 'compensated')
             for changes in ({'max_context': 513}, {'quantization': 'q8_0'}):
                 with self.assertRaises(ValueError):
@@ -52,6 +56,12 @@ class HybridQ4Tests(unittest.TestCase):
             with patch.dict('os.environ', {'DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4': '0'}):
                 with self.assertRaises(ValueError):
                     select(model, False, 4, 'triton')
+        # A CUDA host without the kernels (or without a device) is refused —
+        # structurally, whatever its name.
+        with patch.dict('os.environ', env, clear=True), \
+                patch('damendaemon.hybrid_q4_policy._cuda_q4_admits', return_value=False):
+            with self.assertRaises(ValueError):
+                validate(self.config, 512)
 
     def test_no_opt_in_and_wrong_architecture_rejected(self):
         with patch.dict('os.environ', {}, clear=True):
