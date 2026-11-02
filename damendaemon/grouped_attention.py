@@ -3,12 +3,30 @@
 Flatten grouped query heads into GEMM rows instead of replicating long KV
 matrices. Partition query rows to bound score/probability scratch; each query
 still sees its complete causal prefix. This does not change KV/state precision.
+
+Dispatched on every compensated-prefill accelerator: on CUDA the eager SDPA
+chunk path materializes a score block that grows linearly with the prefix
+(q-heads x chunk x end, fp32 — measured on the A6000 32K Q4 cells as the
+standing OOM-retry storm: 769,654,784-byte requests at exactly 23,680 KV
+positions), while this path bounds the identical math to a fixed scratch.
 """
+import os
+
 import torch
 
 
 def use_grouped_prefill(accelerator, precision, prefill, query_tokens, kv_tokens):
-    return (accelerator == 'rocm' and precision == 'compensated' and prefill
+    # The kernel is pure-torch GEMM — accelerator-agnostic. Compensated chunk
+    # prefill over a long prefix is the shape it exists for; ROCm (HOMER
+    # bring-up) and CUDA (A6000 Q4 since #679) both run that surface.
+    # DAMENDAEMON_HYBRID_GROUPED_PREFILL=0 is the A/B control override for
+    # qualification cells; the default is the bounded path.
+    override = os.environ.get('DAMENDAEMON_HYBRID_GROUPED_PREFILL', '1')
+    if override not in ('0', '1'):
+        raise ValueError('DAMENDAEMON_HYBRID_GROUPED_PREFILL must be 0 or 1')
+    if override == '0':
+        return False
+    return (accelerator in ('rocm', 'cuda') and precision == 'compensated' and prefill
             and 1 < query_tokens <= kv_tokens and kv_tokens >= 1024)
 
 

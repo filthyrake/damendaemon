@@ -1,4 +1,6 @@
 import unittest
+from unittest import mock
+
 import torch
 from torch.nn import functional as F
 from damendaemon.grouped_attention import attention, use_grouped_prefill
@@ -28,8 +30,27 @@ class GroupedAttentionTests(unittest.TestCase):
             with self.assertRaises(ValueError): attention(query, key, value)
 
     def test_dispatch_preserves_other_devices_precision_decode_and_short_context(self):
+        # Compensated chunk prefill admits on every compensated-prefill
+        # accelerator (ROCm HOMER bring-up; CUDA Q4 since #679 — the eager
+        # SDPA path's score block grows linearly with the prefix there).
         self.assertTrue(use_grouped_prefill('rocm', 'compensated', True, 127, 4096))
-        for args in (('cuda', 'compensated', True, 127, 4096), ('mps', 'compensated', True, 127, 4096),
-                     ('rocm', 'float32', True, 127, 4096), ('rocm', 'compensated', False, 127, 4096),
-                     ('rocm', 'compensated', True, 1, 4096), ('rocm', 'compensated', True, 127, 512)):
+        self.assertTrue(use_grouped_prefill('cuda', 'compensated', True, 127, 4096))
+        for args in (('mps', 'compensated', True, 127, 4096),
+                     ('rocm', 'float32', True, 127, 4096), ('cuda', 'float16', True, 127, 4096),
+                     ('rocm', 'compensated', False, 127, 4096), ('cuda', 'compensated', False, 127, 4096),
+                     ('rocm', 'compensated', True, 1, 4096), ('cuda', 'compensated', True, 1, 4096),
+                     ('rocm', 'compensated', True, 127, 512), ('cuda', 'compensated', True, 512, 128)):
             self.assertFalse(use_grouped_prefill(*args))
+
+    def test_ab_control_override_forces_the_sdpa_path(self):
+        # DAMENDAEMON_HYBRID_GROUPED_PREFILL=0 is the qualification-cell A/B
+        # control; anything but 0/1 is a configuration error.
+        import os
+        with mock.patch.dict(os.environ, {'DAMENDAEMON_HYBRID_GROUPED_PREFILL': '0'}):
+            self.assertFalse(use_grouped_prefill('cuda', 'compensated', True, 127, 32768))
+            self.assertFalse(use_grouped_prefill('rocm', 'compensated', True, 127, 32768))
+        with mock.patch.dict(os.environ, {'DAMENDAEMON_HYBRID_GROUPED_PREFILL': '1'}):
+            self.assertTrue(use_grouped_prefill('cuda', 'compensated', True, 127, 32768))
+        with mock.patch.dict(os.environ, {'DAMENDAEMON_HYBRID_GROUPED_PREFILL': 'yes'}):
+            with self.assertRaises(ValueError):
+                use_grouped_prefill('cuda', 'compensated', True, 127, 32768)
