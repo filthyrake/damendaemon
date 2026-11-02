@@ -116,39 +116,45 @@ class QuantPipelinePolicyTests(unittest.TestCase):
                                        'DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB': '2048,2048'}, clear=True):
             policy_validate(self.config, 'q4_0', 1024, 1, False)
 
-    def q4_identity(self, env, current_device, primary_device):
-        """Run hybrid_q4_policy.validate with faked CUDA device identities."""
+    def q4_identity(self, env, primary_device):
+        """Run hybrid_q4_policy.validate with a faked CUDA device identity.
+
+        Q4 admission is structural (kernels + device present, or the #536
+        pipeline pair anchored on the A30 primary), so the only faked
+        identity that matters is cuda:0's name for the pair anchor."""
         import damendaemon.hybrid_q4_policy as module
         with patch.dict('os.environ', env, clear=True), \
                 patch.object(module, 'selected_accelerator', return_value='cuda'), \
-                patch.object(module, 'device_name', return_value=current_device), \
                 patch('torch.cuda.get_device_name', return_value=primary_device):
             module.validate(self.config, 512)
 
     def test_q4_stage_device_admitted_on_pipeline_pair(self):
-        # #536 gate 2: stage 1 builds under the A2, so the current-device name
-        # is not the A30; the explicit pipeline pair anchors identity on cuda:0.
+        # #536 gate 2: stage 1 builds under the A2, so the pipeline pair
+        # anchors identity on the A30 primary at cuda:0.
         self.q4_identity({'DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4': '1',
                           'DAMENDAEMON_HYBRID_PRECISION': 'compensated',
                           'DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE': '1',
                           'DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE_QUANT': '1',
                           'DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB': '22528,13312'},
-                         current_device='NVIDIA A2', primary_device='NVIDIA A30')
+                         primary_device='NVIDIA A30')
 
     def test_q4_stage_device_rejected_without_pipeline_opt_in(self):
-        with self.assertRaisesRegex(ValueError, 'NVIDIA A30'):
+        with self.assertRaisesRegex(ValueError, 'Triton hybrid kernels'):
             self.q4_identity({'DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4': '1',
                               'DAMENDAEMON_HYBRID_PRECISION': 'compensated'},
-                             current_device='NVIDIA A2', primary_device='NVIDIA A2')
+                             primary_device='NVIDIA A2')
 
     def test_q4_stage_device_rejected_without_a30_primary(self):
-        with self.assertRaisesRegex(ValueError, 'NVIDIA A30'):
+        # The pipeline pair's identity anchor is the A30 primary; without it
+        # the pair does not hold and structural admission (kernels + device)
+        # is the only path — absent on this host.
+        with self.assertRaisesRegex(ValueError, 'Triton hybrid kernels'):
             self.q4_identity({'DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4': '1',
                               'DAMENDAEMON_HYBRID_PRECISION': 'compensated',
                               'DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE': '1',
                               'DAMENDAEMON_EXPERIMENTAL_HYBRID_PIPELINE_QUANT': '1',
                               'DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB': '22528,13312'},
-                             current_device='NVIDIA A2', primary_device='NVIDIA A2')
+                             primary_device='NVIDIA A2')
 
     CHAIN_ENV = {'DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4': '1',
                  'DAMENDAEMON_HYBRID_PRECISION': 'compensated',
@@ -162,30 +168,26 @@ class QuantPipelinePolicyTests(unittest.TestCase):
         # qualified three-device chain topology; the explicit chain opt-in
         # admits it up to the qualified 2048 context cell.
         self.q4_identity(self.CHAIN_ENV,
-                         current_device='NVIDIA GeForce RTX 3090',
                          primary_device='NVIDIA GeForce RTX 3090')
 
     def test_q4_chain_rejected_without_chain_opt_in(self):
-        with self.assertRaisesRegex(ValueError, 'NVIDIA A30'):
+        with self.assertRaisesRegex(ValueError, 'Triton hybrid kernels'):
             self.q4_identity({key: value for key, value in self.CHAIN_ENV.items()
                               if key != 'DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CHAIN'},
-                             current_device='NVIDIA GeForce RTX 3090',
                              primary_device='NVIDIA GeForce RTX 3090')
 
     def test_q4_chain_context_bound_is_the_qualified_cell(self):
         import damendaemon.hybrid_q4_policy as module
         env = dict(self.CHAIN_ENV, DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB='22528')
         with patch.dict('os.environ', env, clear=True), \
-                patch.object(module, 'selected_accelerator', return_value='cuda'), \
-                patch.object(module, 'device_name', return_value='NVIDIA GeForce RTX 3090'):
+                patch.object(module, 'selected_accelerator', return_value='cuda'):
             module.validate(self.config, 2048)
             with self.assertRaisesRegex(ValueError, 'context <=2048'):
                 module.validate(self.config, 2049)
         without_chain = {key: value for key, value in env.items()
                          if key != 'DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CHAIN'}
         with patch.dict('os.environ', without_chain, clear=True), \
-                patch.object(module, 'selected_accelerator', return_value='cuda'), \
-                patch.object(module, 'device_name', return_value='NVIDIA A30'):
+                patch.object(module, 'selected_accelerator', return_value='cuda'):
             with self.assertRaisesRegex(ValueError, 'context <=512'):
                 module.validate(self.config, 513)
 
@@ -198,8 +200,7 @@ class QuantPipelinePolicyTests(unittest.TestCase):
             env = {key: value for key, value in self.CHAIN_ENV.items() if key != dropped}
             env['DAMENDAEMON_HYBRID_PIPELINE_BUDGETS_MIB'] = '22528'
             with self.assertRaisesRegex(ValueError, 'opt-in|compensated'):
-                self.q4_identity(env, current_device='NVIDIA GeForce RTX 3090',
-                                primary_device='NVIDIA GeForce RTX 3090')
+                self.q4_identity(env, primary_device='NVIDIA GeForce RTX 3090')
 
     def test_q4_chain_admits_compensated_select_at_qualified_context(self):
         # hybrid_precision.select carried its own context<=512 pin; under the

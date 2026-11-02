@@ -1,7 +1,7 @@
 """Explicit, unqualified hybrid Q4 bring-up; separate from dense Q4 support."""
 import os
 
-from .device import device_name, selected_accelerator
+from .device import selected_accelerator
 from .vision_policy import enabled as vision_enabled
 
 
@@ -54,12 +54,16 @@ def chain_anchor():
 
 
 def _experimental_context_limit(chain):
-    """Non-chain Q4 context bound: 512, or an explicit bounded ROCm opt-in.
+    """Non-chain Q4 context bound: 512, or an explicit bounded opt-in.
 
     #68: the guarded 32K cell (golden4096 4K completed under the improved
     thermal envelope) may opt in with DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CONTEXT
-    =<tokens>, valid 512..32768, ROCm/gfx1151 only. Discrete A30 admission is
-    unchanged; the chain keeps its own qualified bound.
+    =<tokens>, valid 512..32768. The extension is structural: it admits on
+    any device already admitted by validate() — the A6000 carries the full
+    32K evidence set (C1/C2 capacity, lifecycle and cancellation cells,
+    docs/evidence/nvidia/a6000-q4-32k-68/), and the previous gfx1151 arch
+    string was a name lock, not a capability check (it already exceeded
+    that host's own 4K qualification). The chain keeps its own bound.
     """
     if chain:
         return CHAIN_CONTEXT_LIMIT
@@ -68,13 +72,33 @@ def _experimental_context_limit(chain):
         return 512
     if not (value.isascii() and value.isdecimal() and 512 <= int(value) <= 32768):
         raise ValueError('DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CONTEXT accepts 512..32768')
-    if selected_accelerator() != 'rocm':
-        raise ValueError('the experimental Q4 context extension is ROCm gfx1151 only')
-    import torch
-    architecture = getattr(torch.cuda.get_device_properties(0), 'gcnArchName', '')
-    if not architecture.startswith('gfx1151'):
-        raise ValueError('the experimental Q4 context extension is gfx1151 only')
+    if selected_accelerator() not in ('rocm', 'cuda'):
+        raise ValueError('the experimental Q4 context extension requires an admitted ROCm or CUDA device')
     return int(value)
+
+
+def _cuda_q4_admits():
+    """True when this CUDA host can execute the compensated Q4 hybrid path.
+
+    Structural admission: the fused Triton hybrid kernels import and a
+    real CUDA device is present. The retired device-name pins ('NVIDIA
+    A30', the gfx1151 arch string) were proxies for 'hardware we had
+    measured' — the A6000 now carries the same qualification (C1/C2
+    capacity, lifecycle and cancellation cells, all passing), and a device
+    without the kernels fails here with a clear refusal instead of at
+    first kernel compile. The two-device pipeline keeps its own identity
+    anchor (#536 gate 2).
+    """
+    if _pipeline_pair_anchor():
+        return True
+    import torch
+    if not torch.cuda.is_available():
+        return False
+    try:
+        from . import hybrid_kernels  # noqa: F401 — admission probe
+    except ImportError:
+        return False
+    return True
 
 
 def validate(config, max_context=None):
@@ -88,8 +112,8 @@ def validate(config, max_context=None):
             or (max_context is not None and not 1 <= max_context <= context_limit)
             or vision_enabled()
             or (accelerator == 'cuda' and not chain
-                and device_name() != 'NVIDIA A30'
-                and not _pipeline_pair_anchor())):
-        raise ValueError('experimental hybrid Q4 requires explicit opt-in, ROCm or NVIDIA A30 '
-                         '(or the explicit distributed-chain opt-in), compensated text execution '
+                and not _cuda_q4_admits())):
+        raise ValueError('experimental hybrid Q4 requires explicit opt-in, ROCm or a '
+                         'CUDA device with the Triton hybrid kernels (or the explicit '
+                         'distributed-chain opt-in), compensated text execution '
                          f'and context <={context_limit}')
