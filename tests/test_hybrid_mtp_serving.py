@@ -204,5 +204,76 @@ class MtpServingTests(unittest.TestCase):
             spec.spec_round([(1, 5, None, False)])
 
 
+class MtpCausalPathTests(MtpServingTests):
+    """#689: the MTP block's attention expresses the architectural hole as
+    is_causal over keys sliced past position 0 (the fused path — no
+    q-head-expanded K/V materialization) whenever rows are contiguous or
+    single; the eager mask remains for divergent rows and as the
+    DAMENDAEMON_MTP_EAGER_MASK parity control."""
+
+    def test_env_validation(self):
+        executor = self._executor()
+        with patch.dict('os.environ', {'DAMENDAEMON_MTP_EAGER_MASK': 'yes'}, clear=False):
+            with self.assertRaisesRegex(ValueError, 'MTP_EAGER_MASK'):
+                executor.spec_decode([1, 2, 3, 7], 8)
+
+    def test_sliced_causal_matches_eager_mask(self):
+        """Whole-prompt MTP fill (contiguous multi-row) plus single-row
+        proposals: the sliced-causal route and the legacy masked route
+        must produce identical greedy streams."""
+        prompt = [1, 2, 3, 7, 11, 5, 42, 9]
+        streams = {}
+        for env in ('0', '1'):
+            executor = self._executor()
+            with patch.dict('os.environ', {'DAMENDAEMON_MTP_EAGER_MASK': env}, clear=False):
+                output, _, _ = self._spec_greedy(executor, prompt, 0, 40)
+            streams[env] = output
+        self.assertEqual(streams['0'], streams['1'])
+
+    def test_chunked_fill_parity_both_paths(self):
+        """The incremental MTP KV fill during chunked prefill (fresh and
+        continuation chunks) runs the same two routes; both must leave
+        the KV structurally identical to the whole-prompt fill and the
+        spec streams identical across routes."""
+        prompt = list(range(2, 2 + 30))
+        kvs, streams = {}, {}
+        for env in ('0', '1'):
+            executor = self._executor()
+            mtp = executor.mtp_layer
+            assert mtp is not None
+            with patch.dict('os.environ', {'DAMENDAEMON_MTP_EAGER_MASK': env}, clear=False):
+                with patch.object(type(executor), 'supports_chunked_prefill',
+                                  new_callable=lambda: property(lambda self: True)):
+                    for index, piece in enumerate([prompt[:7], prompt[7:19], prompt[19:]]):
+                        logits = executor.prefill_chunk(piece, 0, sum(map(len, [prompt[:7], prompt[7:19], prompt[19:]][:index])),
+                                                        final=index == 2)
+            kvs[env] = executor.kv[mtp].clone()
+            with patch.dict('os.environ', {'DAMENDAEMON_MTP_EAGER_MASK': env}, clear=False):
+                output, _, _ = self._spec_greedy(executor, prompt, 0, 24)
+            streams[env] = output
+        self.assertTrue(torch.allclose(kvs['0'], kvs['1'], atol=1e-4),
+                        'chunked MTP KV fill diverged between attention routes')
+        self.assertEqual(streams['0'], streams['1'])
+
+    def test_architectural_hole_never_read(self):
+        """Position 0 has no MTP key: poisoning it with NaN must leave the
+        spec stream untouched on the sliced-causal route (the fused path
+        drops key 0 by slicing — a leaked read would surface as NaN logits
+        and a diverged argmax)."""
+        prompt = [1, 2, 3, 7, 11, 5, 42, 9]
+        clean = self._executor()
+        expected = self._plain_greedy(clean, prompt, 0, 16)
+        poisoned = self._executor()
+        layer = poisoned.mtp_layer
+        assert layer is not None
+        for part in poisoned.kv[layer]:   # k and v
+            part[0, :, 0, :] = float('nan')
+        with patch.dict('os.environ', {'DAMENDAEMON_MTP_EAGER_MASK': '0'}, clear=False):
+            logits = poisoned.prefill(prompt, 0)
+            self.assertTrue(torch.isfinite(logits[0].float()).all())
+            output, _, _ = self._spec_greedy(poisoned, prompt, 0, 16)
+        self.assertEqual(output[:16], expected)
+
+
 if __name__ == '__main__':
     unittest.main()
