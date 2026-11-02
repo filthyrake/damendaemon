@@ -56,7 +56,8 @@ def corpus_ids(prompt_tokens):
 
 def request(prompt_ids, max_tokens, tag):
     body = json.dumps(dict(model=MODEL_NAME, prompt=prompt_ids, max_tokens=max_tokens,
-                           temperature=0, stream=True)).encode()
+                           temperature=0, stream=True,
+                           stream_options={'include_usage': True})).encode()
     req = urllib.request.Request(f'http://127.0.0.1:{PORT}/v1/completions', data=body,
                                  headers={'Content-Type': 'application/json'})
     started = time.monotonic()

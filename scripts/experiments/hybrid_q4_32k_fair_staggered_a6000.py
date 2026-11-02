@@ -79,7 +79,8 @@ def slot_prompt(base, slot):
 def user_request(user, prompt_ids, results):
     body = json.dumps(dict(model=MODEL_NAME, prompt=prompt_ids,
                            max_tokens=OUTPUT_TOKENS, temperature=0,
-                           stream=True)).encode()
+                           stream=True,
+                           stream_options={'include_usage': True})).encode()
     req = urllib.request.Request(f'http://127.0.0.1:{PORT}/v1/completions', data=body,
                                  headers={'Content-Type': 'application/json'})
     submitted = time.monotonic()
@@ -128,7 +129,11 @@ def main():
          '--no-graph', '--prefill-chunk-size', str(CHUNK),
          '--batch-size', str(SLOTS), '--port', str(PORT),
          '--gpu-models', '1', '--host-models', '1',
-         '--host-gib', '40', '--queue-timeout', '600', '--queue-size', '8'],
+         # The queue timeout must exceed one full incumbent slot cycle
+         # (measured ~660 s: 4-slot serialized 32K prefill ~500 s + decode
+         # ~150 s at 256 output) — the first run's 600 s expired the fifth
+         # user's admission seconds before a slot freed.
+         '--host-gib', '40', '--queue-timeout', '1200', '--queue-size', '8'],
         env=environment, stdout=log, stderr=subprocess.STDOUT, cwd=os.getcwd())
     report = dict(completed=False, gate='staggered fairness under SLO load (#59)',
                   model=SNAPSHOT, context=CONTEXT, chunk=CHUNK, users=USERS,
@@ -151,7 +156,8 @@ def main():
         # shape (including the spec round) before the measured load.
         warm = user_request  # noqa: F841 — pattern reuse below
         warm_body = json.dumps(dict(model=MODEL_NAME, prompt=corpus_ids()[:512],
-                                    max_tokens=4, temperature=0, stream=True)).encode()
+                                    max_tokens=4, temperature=0, stream=True,
+                                    stream_options={'include_usage': True})).encode()
         started = time.monotonic()
         req = urllib.request.Request(f'http://127.0.0.1:{PORT}/v1/completions', data=warm_body,
                                      headers={'Content-Type': 'application/json'})
