@@ -195,16 +195,12 @@ def main():
     environment = dict(os.environ)
     environment['DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4'] = '1'
     environment['DAMENDAEMON_HYBRID_PRECISION'] = 'compensated'
-    environment['DAMENDAEMON_QUANTIZATION'] = 'q4_0'
-    environment['DAMENDAEMON_KERNELS'] = 'triton'
-    environment['DAMENDAEMON_DEVICE'] = 'cuda'
     environment['DAMENDAEMON_HYBRID_MTP'] = '1'
-    environment['DAMENDAEMON_EXPERIMENTAL_HYBRID_Q4_CONTEXT'] = str(CONTEXT)
     environment['DAMENDAEMON_PREFILL_ADMISSION'] = '1' if args.phase == 'split' else '0'
     server = None
     try:
         server = subprocess.Popen(
-            [sys.executable, '-m', 'damendaemon', 'serve',
+            [sys.executable, '-m', 'scripts.experiments.hybrid_q4_a6000_probe', 'serve',
              '--model-config', str(manifest_path), '--device', 'cuda', '--context', str(CONTEXT),
              '--no-graph', '--prefill-chunk-size', str(CHUNK),
              '--batch-size', str(SLOTS), '--port', str(PORT),
