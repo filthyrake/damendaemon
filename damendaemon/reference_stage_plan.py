@@ -116,8 +116,9 @@ def plan_reference_stages(layout,budgets,*,context=512,slots=4,chunk_size=128,
             or any(type(v) is not int or not 1<=v<=2**40 for v in budgets)
             or type(context) is not int or not 1<=context<=min(2**20,limit)
             or type(slots) is not int or not 1<=slots<=4 or type(chunk_size) is not int or not 1<=chunk_size<=4096
-            or any(type(v) is not int or not 1<=v<=2**31 for v in (max_weight_bytes,max_cache_bytes,projection_workspace_bytes,max_workspace_bytes,max_output_bytes))
-            or type(frame_bytes) is not int or not 256<=frame_bytes<=64*1024**2):
+            or any(type(v) is not int or not 1<=v<=2**40 for v in (max_weight_bytes,max_cache_bytes))
+            or any(type(v) is not int or not 1<=v<=2**31 for v in (projection_workspace_bytes,max_workspace_bytes,max_output_bytes))
+            or type(frame_bytes) is not int or not 256<=frame_bytes<=2048*1024**2):
         raise ValueError('invalid reference storage placement controls')
     layout.verify_unchanged()
     # Re-audit workspace options without payloads if the caller changes them.

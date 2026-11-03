@@ -17,7 +17,8 @@ def main(argv=None):
     parser.add_argument('--prefill-chunk',type=bounded_integer(1,4096),default=128)
     parser.add_argument('--plan-output',help='write ranges-only JSON for the existing host command, only if a plan fits')
     for name,default in (('weight',256),('cache',256),('projection-workspace',8),('workspace',64),('output',64),('frame',64)):
-        parser.add_argument('--'+name+'-mib',type=bounded_integer(1,64 if name=='frame' else 2048),default=default)
+        bound=2**20 if name in ('weight','cache') else 2048  # weight/cache carry whole real-model stages (2**20 MiB); frame covers chunked-activation frames at practical context
+        parser.add_argument('--'+name+'-mib',type=bounded_integer(1,bound),default=default)
     args=parser.parse_args(argv)
     try:
         if not 2<=len(args.budget_mib)<=8:raise ValueError('storage planning requires 2..8 ordered CPU budgets')
