@@ -1,0 +1,87 @@
+{
+ "manifest_model": {
+  "alias": "qwen08",
+  "path": "/home/damen/models/Qwen3.5-0.8B-r2fc0636",
+  "quantization": "q8_0",
+  "mtp": false
+ },
+ "objective": {
+  "metric": "aggregate_output_tokens_per_second",
+  "direction": "maximize",
+  "gates": {
+   "exact_completion_tokens": 64,
+   "zero_errors": true
+  }
+ },
+ "rows_ranked": [
+  {
+   "candidate": {
+    "quantization": "q8_0",
+    "precision": "float16",
+    "kernels": "auto",
+    "graphs": true,
+    "kv_quant": "none",
+    "mtp": "dropped",
+    "mtp_spec_graph": false,
+    "prefill": "scan",
+    "max_batch": 4,
+    "prefill_chunk_size": 0,
+    "batch_wait_ms": 0.0,
+    "queue_size": 8,
+    "queue_timeout": 120.0
+   },
+   "metric_value": 393.670821306482
+  },
+  {
+   "candidate": {
+    "quantization": "q8_0",
+    "precision": "float16",
+    "kernels": "auto",
+    "graphs": true,
+    "kv_quant": "none",
+    "mtp": "dropped",
+    "mtp_spec_graph": false,
+    "prefill": "scan",
+    "max_batch": 2,
+    "prefill_chunk_size": 0,
+    "batch_wait_ms": 0.0,
+    "queue_size": 8,
+    "queue_timeout": 120.0
+   },
+   "metric_value": 275.8862197277824
+  }
+ ],
+ "rows_eliminated": [],
+ "winner": {
+  "model": {
+   "version": 1,
+   "models": {
+    "qwen08": {
+     "path": "/home/damen/models/Qwen3.5-0.8B-r2fc0636",
+     "quantization": "q8_0"
+    }
+   }
+  },
+  "environment": {
+   "DAMENDAEMON_HYBRID_PRECISION": "float16",
+   "DAMENDAEMON_KERNELS": "auto",
+   "DAMENDAEMON_HYBRID_KV": "none",
+   "DAMENDAEMON_HYBRID_PREFILL": "scan",
+   "DAMENDAEMON_HYBRID_MTP_DROP": "1"
+  },
+  "serve_flags": [
+   "--batch-size",
+   "4"
+  ],
+  "objective": {
+   "metric": "aggregate_output_tokens_per_second",
+   "direction": "maximize",
+   "gates": {
+    "exact_completion_tokens": 64,
+    "zero_errors": true
+   }
+  },
+  "metric_value": 393.670821306482,
+  "gate_reasons": []
+ }
+}

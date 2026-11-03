@@ -104,6 +104,10 @@ def main():
     server.add_argument("--client-prefill-turns",action="store_true",help="opt-in client prompt-token fairness; requires explicit prefill chunks")
     server.add_argument("--client-decode-turns",action="store_true",help="opt-in configured decode shares per ready client; default equal; may reduce batch utilization")
     server.add_argument("--prefix-cache-tokens",type=int,default=0,help="opt-in GPU prefix snapshot token budget per model")
+    server.add_argument("--auto-tune", metavar="FILE",
+                        help="opt-in pre-serve calibration (#674): run the tune manifest's bounded search before binding admission and apply the winner; default off (fully manual)")
+    server.add_argument("--auto-tune-output", metavar="DIR",
+                        help="evidence directory for the calibration artifacts (required with --auto-tune; must be empty or absent)")
     for command in (run, server):
         command.add_argument("--device", choices=("cuda", "rocm", "mps", "xpu"), default=os.environ.get("DAMENDAEMON_DEVICE", "cuda"))
         command.add_argument("--context", type=int, default=1024)
@@ -269,8 +273,44 @@ def main():
         options["prefix_cache_tokens"] = args.prefix_cache_tokens
         if manifest is not None:
             models, options['quantizations'], templates = manifest
+    use_graph = not args.no_graph
+    if args.command == "serve" and args.auto_tune:
+        if not args.auto_tune_output:
+            parser.error("--auto-tune requires --auto-tune-output")
+        if args.model_config is None or len(models) != 1:
+            parser.error("--auto-tune calibrates exactly one served model; "
+                         "pass it via --model-config with a single entry")
+        from .autotune_serve import calibrate
+        import time as _time
+        calibration_started = _time.perf_counter()
+        try:
+            record, applied = calibrate(args.auto_tune, args.auto_tune_output,
+                                        models, args.context, args.device)
+        except (ValueError, OSError) as error:
+            parser.error(f"auto-tune calibration refused: {error}")
+        except RuntimeError as error:
+            parser.error(f"auto-tune calibration failed: {error}")
+        # Apply the winner before the runtime binds: the environment is
+        # read at executor construction, so this is load-bearing and
+        # identical to launching serve with the recommendation by hand.
+        os.environ.update(applied['environment'])
+        options["batch_size"] = applied['batch_size']
+        options["prefill_chunk_size"] = applied['prefill_chunk_size']
+        options["batch_wait_ms"] = applied['batch_wait_ms']
+        options["queue_size"] = applied['queue_size']
+        options["queue_timeout"] = applied['queue_timeout']
+        use_graph = applied['use_graph']
+        if options["queue_size"] < options["batch_size"]:
+            parser.error('tuned queue size must fit the tuned batch size')
+        print(f"damendaemon: auto-tune applied in "
+              f"{_time.perf_counter() - calibration_started:.0f}s — "
+              f"batch {applied['batch_size']}, graphs "
+              f"{'on' if use_graph else 'off'}, "
+              f"metric {record['metric_value']:.4g} "
+              f"({record['objective']['metric']}); evidence in "
+              f"{args.auto_tune_output}", flush=True)
     runtime = runtime_type(models, chat_templates=templates, **options, context=args.context, gpu_models=args.gpu_models,
-                      host_models=args.host_models, host_gib=args.host_gib, use_graph=not args.no_graph)
+                      host_models=args.host_models, host_gib=args.host_gib, use_graph=use_graph)
     if args.command == "serve":
         from .thermal_pacing import activate_from_env
         try:

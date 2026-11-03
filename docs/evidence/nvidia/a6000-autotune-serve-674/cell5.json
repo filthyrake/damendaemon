@@ -1,0 +1,91 @@
+{
+  "artifacts": "out/auto-tune-artifacts",
+  "calibration": {
+    "candidate_rows": [
+      "row-candidate-0.json",
+      "row-candidate-1.json"
+    ],
+    "rows_eliminated": [],
+    "rows_ranked": [
+      {
+        "candidate": {
+          "batch_wait_ms": 0.0,
+          "graphs": true,
+          "kernels": "auto",
+          "kv_quant": "none",
+          "max_batch": 4,
+          "mtp": "dropped",
+          "mtp_spec_graph": false,
+          "precision": "float16",
+          "prefill": "scan",
+          "prefill_chunk_size": 0,
+          "quantization": "q8_0",
+          "queue_size": 8,
+          "queue_timeout": 120.0
+        },
+        "metric_value": 393.670821306482
+      },
+      {
+        "candidate": {
+          "batch_wait_ms": 0.0,
+          "graphs": true,
+          "kernels": "auto",
+          "kv_quant": "none",
+          "max_batch": 2,
+          "mtp": "dropped",
+          "mtp_spec_graph": false,
+          "precision": "float16",
+          "prefill": "scan",
+          "prefill_chunk_size": 0,
+          "quantization": "q8_0",
+          "queue_size": 8,
+          "queue_timeout": 120.0
+        },
+        "metric_value": 275.8862197277824
+      }
+    ],
+    "serve_log_has_applied": true,
+    "winner": {
+      "environment": {
+        "DAMENDAEMON_HYBRID_KV": "none",
+        "DAMENDAEMON_HYBRID_MTP_DROP": "1",
+        "DAMENDAEMON_HYBRID_PRECISION": "float16",
+        "DAMENDAEMON_HYBRID_PREFILL": "scan",
+        "DAMENDAEMON_KERNELS": "auto"
+      },
+      "gate_reasons": [],
+      "metric_value": 393.670821306482,
+      "model": {
+        "models": {
+          "qwen08": {
+            "path": "/home/damen/models/Qwen3.5-0.8B-r2fc0636",
+            "quantization": "q8_0"
+          }
+        },
+        "version": 1
+      },
+      "objective": {
+        "direction": "maximize",
+        "gates": {
+          "exact_completion_tokens": 64,
+          "zero_errors": true
+        },
+        "metric": "aggregate_output_tokens_per_second"
+      },
+      "serve_flags": [
+        "--batch-size",
+        "4"
+      ]
+    }
+  },
+  "completed": true,
+  "context": 2048,
+  "gate": "#674 cell 5: --auto-tune pre-serve calibration",
+  "model": "/home/damen/models/Qwen3.5-0.8B-r2fc0636",
+  "request": {
+    "completion_tokens": 64,
+    "error": null,
+    "first_output_seconds": 2.9986214550444856,
+    "total_seconds": 3.1741654880461283
+  }
+}
