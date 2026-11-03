@@ -102,11 +102,27 @@ class ReferenceStoragePlanTests(unittest.TestCase):
         for options in (dict(max_weight_bytes=1),dict(max_cache_bytes=1),dict(max_output_bytes=1),dict(frame_bytes=256)):
             with self.no_payload():result=plan_reference_stages(layout,[2**30]*2,context=32768,slots=4,**options)
             self.assertFalse(result['storage_plan_found']);self.assertEqual((result['context'],result['slots']),(32768,4));self.assertNotIn('plan',result)
-        for options in (dict(context=True),dict(slots=0),dict(chunk_size=4097),dict(frame_bytes=255),dict(max_cache_bytes=2**31+1)):
+        for options in (dict(context=True),dict(slots=0),dict(chunk_size=4097),dict(frame_bytes=255),dict(max_cache_bytes=2**40+1)):
             with self.assertRaises(ValueError):plan_reference_stages(layout,[2**30]*2,**options)
         with self.assertRaises(ValueError):plan_reference_stages(layout,[True,2**30])
         with self.assertRaises(ValueError):plan_reference_stages(layout,[2**30])
         with self.no_payload(),self.assertRaises(ValueError):plan_reference_stages(layout,[2**30]*2,projection_workspace_bytes=1)
+
+    def test_real_scale_stage_budgets_are_admitted_for_official_release_planning(self):
+        # The official DeepSeek V4 Flash release retains ~148 GiB (~3.3 GiB/layer):
+        # whole-stage weight/cache budgets and chunked-activation frames at practical
+        # context are structurally admissible, not fixture-scale refusals.
+        path,_,_=self.snapshot('deepseek');layout=inspect_reference_storage(path,'deepseek')
+        scale=dict(max_weight_bytes=2**40,max_cache_bytes=2**40,frame_bytes=2048*1024**2,context=32768,slots=4,chunk_size=2048)
+        with self.no_payload():result=plan_reference_stages(layout,[64*2**30]*3,**scale)
+        self.assertTrue(result['storage_plan_found'])
+        for options in (dict(max_weight_bytes=2**40+1),dict(max_cache_bytes=2**40+1),dict(frame_bytes=2048*1024**2+1)):
+            with self.assertRaises(ValueError):plan_reference_stages(layout,[64*2**30]*3,**(scale|options))
+        environment=os.environ|{'OMP_NUM_THREADS':'1','MKL_NUM_THREADS':'1'}
+        args=[sys.executable,'-m','scripts.plan_reference_host_topology','deepseek',str(path),
+              '--budget-mib','256','256','--weight-mib','65536','--cache-mib','4096','--frame-mib','512']
+        result=subprocess.run(args,capture_output=True,text=True,timeout=15,env=environment)
+        self.assertEqual(result.returncode,0,result.stderr);self.assertTrue(json.loads(result.stdout)['storage_plan_found'])
 
     def test_header_drift_and_unowned_header_failure_are_not_capacity_results(self):
         import damendaemon.reference_stage_plan as planner
