@@ -1,0 +1,36 @@
+stage [0,1): loaded 1 blocks in 13.0s, RSS 5.7 GiB, embed=yes, head=no
+  PASS layers.0.attn.wq_a.weight shape=(1024, 4096) dtype=torch.uint8
+  PASS layers.0.attn.wq_a.scale shape=(8, 32) dtype=torch.uint8
+  PASS layers.0.ffn.experts.0.w1.weight shape=(2048, 2048) dtype=torch.uint8
+  PASS layers.0.ffn.experts.0.w1.scale shape=(2048, 128) dtype=torch.uint8
+  PASS layers.0.ffn.experts.255.w2.weight shape=(4096, 1024) dtype=torch.uint8
+  PASS layers.0.ffn.gate.weight shape=(256, 4096) dtype=torch.float32
+  PASS layers.0.attn_norm.weight shape=(4096,) dtype=torch.float32
+  PASS layers.0.ffn.gate.tid2eid shape=(129280, 6) dtype=torch.int64
+  PASS embed.weight shape=(129280, 4096) dtype=torch.float32
+  spot-checks: 9 passed, 0 failed
+  after cleanup RSS 0.3 GiB
+stage [22,23): loaded 1 blocks in 10.3s, RSS 3.7 GiB, embed=no, head=no
+  PASS layers.22.attn.wq_a.weight shape=(1024, 4096) dtype=torch.uint8
+  PASS layers.22.attn.wq_a.scale shape=(8, 32) dtype=torch.uint8
+  PASS layers.22.ffn.experts.0.w1.weight shape=(2048, 2048) dtype=torch.uint8
+  PASS layers.22.ffn.experts.0.w1.scale shape=(2048, 128) dtype=torch.uint8
+  PASS layers.22.ffn.experts.255.w2.weight shape=(4096, 1024) dtype=torch.uint8
+  PASS layers.22.ffn.gate.weight shape=(256, 4096) dtype=torch.float32
+  PASS layers.22.attn_norm.weight shape=(4096,) dtype=torch.float32
+  spot-checks: 7 passed, 0 failed
+  after cleanup RSS 0.3 GiB
+stage [42,43): loaded 1 blocks in 24.7s, RSS 5.7 GiB, embed=no, head=yes
+  PASS layers.42.attn.wq_a.weight shape=(1024, 4096) dtype=torch.uint8
+  PASS layers.42.attn.wq_a.scale shape=(8, 32) dtype=torch.uint8
+  PASS layers.42.ffn.experts.0.w1.weight shape=(2048, 2048) dtype=torch.uint8
+  PASS layers.42.ffn.experts.0.w1.scale shape=(2048, 128) dtype=torch.uint8
+  PASS layers.42.ffn.experts.255.w2.weight shape=(4096, 1024) dtype=torch.uint8
+  PASS layers.42.ffn.gate.weight shape=(256, 4096) dtype=torch.float32
+  PASS layers.42.attn_norm.weight shape=(4096,) dtype=torch.float32
+  PASS head.weight shape=(129280, 4096) dtype=torch.float32
+  PASS norm.weight shape=(4096,) dtype=torch.float32
+  spot-checks: 9 passed, 0 failed
+  after cleanup RSS 0.4 GiB
+CELL-A-RESULT {"[0,1)": {"blocks": 1, "seconds": 13.0, "checks_passed": 9, "checks_failed": 0}, "[22,23)": {"blocks": 1, "seconds": 10.3, "checks_passed": 7, "checks_failed": 0}, "[42,43)": {"blocks": 1, "seconds": 24.7, "checks_passed": 9, "checks_failed": 0}}
+peak RSS GiB 9.2
