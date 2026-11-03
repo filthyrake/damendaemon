@@ -50,12 +50,15 @@ class DeepSeekNativeHostCommandTests(unittest.TestCase):
         return args+list(extra)
 
     def complete(self,extra):
+        # Multi-process completions spawn 2-3 python/torch subprocesses; under
+        # concurrent suite load those imports alone can eat most of a 25 s budget.
+        # This is a functional-match test, not a latency gate — budget generously.
         return subprocess.run([sys.executable,'-m','scripts.run_deepseek_host_topology',*self.args('complete',extra=extra)],
-            capture_output=True,text=True,timeout=25,env=self.environment)
+            capture_output=True,text=True,timeout=90,env=self.environment)
 
     def finish_workers(self,workers,code=0):
         for worker in workers:
-            output,error=worker.communicate(timeout=8);self.assertEqual(worker.returncode,code,error)
+            output,error=worker.communicate(timeout=30);self.assertEqual(worker.returncode,code,error)
             self.assertEqual('"event": "stopped"' in output,code==0)
 
     @staticmethod
