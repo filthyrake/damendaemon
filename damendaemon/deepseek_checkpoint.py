@@ -1,8 +1,14 @@
 """Offline main-model tensor contract for the pinned DeepSeek V4 Flash layout.
 
-Names/geometry follow official inference/model.py and the tensor index at
-60d8d70770c6776ff598c94bb586a859a38244f1 (MIT). No model admission or weight
-materialization. MTP tensors are explicitly excluded and reported, not validated.
+Names/geometry follow official inference/model.py and the official 0731
+release (deepseek-ai/DeepSeek-V4-Flash-0731, HF revision
+7872f01b1d1fe23eabc4c98b48bffcef5a386062, MIT). The release's
+compress_ratios covers the main layers plus one entry per dspark draft
+block (dspark_target_layer_ids; the 0731 release ships three mtp.N
+blocks with confidence/markov heads — more than
+num_nextn_predict_layers declares). No model admission or weight
+materialization. MTP/dspark tensors are explicitly excluded and reported,
+not validated.
 """
 from .checkpoint_contract import TensorSpec
 
@@ -14,6 +20,32 @@ DTYPES = {
     'scale': frozenset(('F8_E8M0', 'F8_E8M0FNU')),
     'integer': frozenset(('I32', 'I64')),
 }
+
+
+def _mtp_blocks(config, layers):
+    """Draft-block count the compress_ratios tail must cover: the official
+    release derives it from dspark_target_layer_ids (the 0731 release
+    ships 3 despite num_nextn_predict_layers=1); pre-dspark layouts use
+    num_nextn_predict_layers. Returns (count, error) without raising so
+    the caller's pinned refusal message stays single."""
+    targets = config.get('dspark_target_layer_ids')
+    nextn = config.get('num_nextn_predict_layers', 0)
+    if type(nextn) is not int or not 0 <= nextn <= 16:
+        return None, 'invalid nextn draft-layer count'
+    if targets is None:
+        return nextn, None
+    if (not isinstance(targets, list) or not targets
+            or any(type(t) is not int or not 0 <= t < layers for t in targets)
+            or len(targets) > 16):
+        return None, 'invalid dspark draft-target layer ids'
+    block = config.get('dspark_block_size')
+    rank = config.get('dspark_markov_rank')
+    noise = config.get('dspark_noise_token_id')
+    if (type(block) is not int or not 1 <= block <= 2**21
+            or type(rank) is not int or not 1 <= rank <= 2**21
+            or type(noise) is not int or not 0 <= noise < 2**21):
+        return None, 'invalid dspark block/markov/noise geometry'
+    return len(targets), None
 
 
 def tensor_specs(config):
@@ -28,10 +60,12 @@ def tensor_specs(config):
     dim, vocab, layers, experts, top, intermediate, hc, heads, head, qrank, groups, orank, ih, idim = (config[k] for k in fields)
     hashes = config.get('num_hash_layers')
     ratios = config.get('compress_ratios')
-    mtp_layers = config.get('num_nextn_predict_layers', 0)
+    mtp_blocks, mtp_error = _mtp_blocks(config, layers if isinstance(layers, int) else 0)
+    if mtp_blocks is None:
+        raise ValueError(f'unsupported draft schedule: {mtp_error}')
     if (type(hashes) is not int or not 0 <= hashes <= layers or not isinstance(ratios, list)
-            or type(mtp_layers) is not int or not 0 <= mtp_layers <= 16
-            or len(ratios) not in (layers, layers+mtp_layers) or any(type(r) is not int or r not in (0, 4, 128) for r in ratios)
+            or len(ratios) not in (layers, layers+mtp_blocks)
+            or any(type(r) is not int or r not in (0, 4, 128) for r in ratios)
             or top > experts or heads % groups or dim % 32 or intermediate % 32
             or layers*(6*experts+100)+6 > 1_000_000):
         raise ValueError('unsupported hash/compression/expert geometry or tensor inventory size')
