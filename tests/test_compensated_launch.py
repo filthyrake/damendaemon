@@ -4,10 +4,18 @@ import types
 import unittest
 from unittest import mock
 
-# compensated_q8 imports triton at module scope; provide the minimal stub when
-# triton is absent (CPU contract runs) so the launch policy stays testable.
+# compensated_q8 imports triton at module scope (bare `import triton`), so a
+# triton-less host needs the minimal stub present WHILE that module body
+# executes. The stub must NOT persist in sys.modules past this import: a
+# leaked fake triton makes every later test in the same pytest session
+# dispatch on "triton available" and silently take the (Mock) fused path —
+# #697: the 37-file-prefix pollution of test_hybrid_mtp_serving et al. Keep
+# the stub alive only for this module's own reference; remove it from
+# sys.modules so the rest of the session sees the honest ImportError and
+# later modules take their own graceful no-triton fallbacks.
 try:
     import triton  # noqa: F401
+    _installed_stub = None
 except ImportError:
     from unittest import mock as _mock
     triton = types.ModuleType('triton')
@@ -25,12 +33,19 @@ except ImportError:
     triton.cdiv = lambda a, b: -(-a // b)
     language.constexpr = object
     triton.language = language
-    sys.modules.setdefault('triton', triton)
-    sys.modules.setdefault('triton.language', language)
+    sys.modules['triton'] = triton
+    sys.modules['triton.language'] = language
+    _installed_stub = (triton, language)
 
 import torch
 
 from damendaemon import compensated_q8
+
+if _installed_stub is not None:
+    # The module body above executed under the stub (compensated_q8 holds its
+    # own references); undo the sys.modules installation for the session.
+    del sys.modules['triton']
+    del sys.modules['triton.language']
 
 
 class LaunchValidationTest(unittest.TestCase):
@@ -77,6 +92,18 @@ class LaunchValidationTest(unittest.TestCase):
         rows = self.x.shape[0]
         self.assertEqual(grid[0], (rows + 127) // 128)
         self.assertEqual(grid[0], 1)
+
+    def test_triton_stub_does_not_leak_into_the_session(self):
+        """#697: on triton-less hosts the stub must not persist in sys.modules
+        past this module's import — a leaked fake triton flips every later
+        module's availability dispatch onto the Mock fused path."""
+        if _installed_stub is None:
+            self.skipTest('real triton present; the stub never installs')
+        stub, language = _installed_stub
+        self.assertNotIn('triton', sys.modules)
+        self.assertNotIn('triton.language', sys.modules)
+        # compensated_q8 keeps its own references — the module stays usable.
+        self.assertIs(compensated_q8.tr, stub)
 
 
 if __name__ == '__main__':
