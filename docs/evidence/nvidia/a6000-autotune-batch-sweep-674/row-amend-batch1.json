@@ -1,0 +1,152 @@
+{
+  "aggregate_output_tokens_per_second": 24.812040656028824,
+  "candidate": {
+    "batch_wait_ms": 0.0,
+    "graphs": false,
+    "kernels": "auto",
+    "kv_quant": "none",
+    "max_batch": 1,
+    "mtp": "dropped",
+    "mtp_spec_graph": false,
+    "precision": "float16",
+    "prefill": "scan",
+    "prefill_chunk_size": 0,
+    "quantization": "q8_0",
+    "queue_size": 8,
+    "queue_timeout": 120.0
+  },
+  "candidate_index": 0,
+  "completed": true,
+  "completion_tokens": [
+    512,
+    512
+  ],
+  "errors": 0,
+  "first_output_seconds": [
+    7.778591099020559,
+    28.348350554995704
+  ],
+  "gates": {
+    "exact_completion_tokens": 512,
+    "max_first_output_seconds": 600.0,
+    "max_request_seconds": 1200,
+    "zero_errors": true
+  },
+  "metric_value": 24.812040656028824,
+  "objective": {
+    "direction": "maximize",
+    "gates": {
+      "exact_completion_tokens": 512,
+      "max_first_output_seconds": 600.0,
+      "max_request_seconds": 1200,
+      "zero_errors": true
+    },
+    "metric": "aggregate_output_tokens_per_second"
+  },
+  "p95_first_output_seconds": 28.348350554995704,
+  "request_seconds": [
+    20.611559060023865,
+    41.26630992200808
+  ],
+  "requests_measured": 2,
+  "round_seconds": 41.270285431004595,
+  "status_after_round": {
+    "closed": false,
+    "closing": false,
+    "context": 32768,
+    "cuda_allocated_bytes": 38098691072,
+    "cuda_devices": null,
+    "cuda_peak_allocated_bytes": 43261325312,
+    "device": "cuda",
+    "gpu_model_limit": 1,
+    "hip_allocated_bytes": null,
+    "host_budget_bytes": 42949672960,
+    "host_cached_bytes": 37325015552,
+    "host_model_limit": 1,
+    "models": [
+      {
+        "chat_template": {
+          "sha256": null,
+          "source": "checkpoint"
+        },
+        "executor_failed": false,
+        "gpu_packed_layout_overhead_bytes": 0,
+        "gpu_projection_cache_bytes": 0,
+        "host_weight_bytes": 37325015552,
+        "id": "tune",
+        "kv_cache_bytes": 671088640,
+        "kv_cache_mode": "none",
+        "output_head_workspace_bytes": 0,
+        "partition": null,
+        "partition_rebind_count": null,
+        "pipeline": null,
+        "q4_marlin_abi": null,
+        "quantization": "q8_0",
+        "residency": "gpu",
+        "vision_gpu_weight_bytes": 0,
+        "vision_host_weight_bytes": 0,
+        "weight_streaming": null
+      }
+    ],
+    "mps_allocated_bytes": null,
+    "pending_executor_cleanup": 0,
+    "pending_pipeline_cleanup": 0,
+    "rocm_aotriton_experimental": null,
+    "xpu_allocated_bytes": null,
+    "xpu_peak_allocated_bytes": null,
+    "xpu_reserved_bytes": null
+  },
+  "status_after_warmup": {
+    "closed": false,
+    "closing": false,
+    "context": 32768,
+    "cuda_allocated_bytes": 38098691072,
+    "cuda_devices": null,
+    "cuda_peak_allocated_bytes": 38180718080,
+    "device": "cuda",
+    "gpu_model_limit": 1,
+    "hip_allocated_bytes": null,
+    "host_budget_bytes": 42949672960,
+    "host_cached_bytes": 37325015552,
+    "host_model_limit": 1,
+    "models": [
+      {
+        "chat_template": {
+          "sha256": null,
+          "source": "checkpoint"
+        },
+        "executor_failed": false,
+        "gpu_packed_layout_overhead_bytes": 0,
+        "gpu_projection_cache_bytes": 0,
+        "host_weight_bytes": 37325015552,
+        "id": "tune",
+        "kv_cache_bytes": 671088640,
+        "kv_cache_mode": "none",
+        "output_head_workspace_bytes": 0,
+        "partition": null,
+        "partition_rebind_count": null,
+        "pipeline": null,
+        "q4_marlin_abi": null,
+        "quantization": "q8_0",
+        "residency": "gpu",
+        "vision_gpu_weight_bytes": 0,
+        "vision_host_weight_bytes": 0,
+        "weight_streaming": null
+      }
+    ],
+    "mps_allocated_bytes": null,
+    "pending_executor_cleanup": 0,
+    "pending_pipeline_cleanup": 0,
+    "rocm_aotriton_experimental": null,
+    "xpu_allocated_bytes": null,
+    "xpu_peak_allocated_bytes": null,
+    "xpu_reserved_bytes": null
+  },
+  "unmeasurable_reason": null,
+  "warmup": {
+    "completion_tokens": 4,
+    "error": null,
+    "first_output_seconds": 124.1860917750164,
+    "request_seconds": 124.26762632001191
+  }
+}

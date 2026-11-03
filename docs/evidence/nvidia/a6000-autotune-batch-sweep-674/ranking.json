@@ -1,0 +1,92 @@
+{
+  "manifest_model": {
+    "alias": "qwen36",
+    "mtp": false,
+    "path": "/home/damen/models/Qwen_Qwen3.6-35B-A3B",
+    "quantization": "q8_0"
+  },
+  "objective": {
+    "direction": "maximize",
+    "gates": {
+      "exact_completion_tokens": 512,
+      "max_first_output_seconds": 600.0,
+      "max_request_seconds": 1200,
+      "zero_errors": true
+    },
+    "metric": "aggregate_output_tokens_per_second"
+  },
+  "rows_eliminated": [],
+  "rows_ranked": [
+    {
+      "candidate": {
+        "batch_wait_ms": 0.0,
+        "graphs": false,
+        "kernels": "auto",
+        "kv_quant": "none",
+        "max_batch": 6,
+        "mtp": "dropped",
+        "mtp_spec_graph": false,
+        "precision": "float16",
+        "prefill": "scan",
+        "prefill_chunk_size": 0,
+        "quantization": "q8_0",
+        "queue_size": 8,
+        "queue_timeout": 120.0
+      },
+      "metric_value": 34.36216043561618
+    },
+    {
+      "candidate": {
+        "batch_wait_ms": 0.0,
+        "graphs": false,
+        "kernels": "auto",
+        "kv_quant": "none",
+        "max_batch": 1,
+        "mtp": "dropped",
+        "mtp_spec_graph": false,
+        "precision": "float16",
+        "prefill": "scan",
+        "prefill_chunk_size": 0,
+        "quantization": "q8_0",
+        "queue_size": 8,
+        "queue_timeout": 120.0
+      },
+      "metric_value": 24.812040656028824
+    }
+  ],
+  "winner": {
+    "environment": {
+      "DAMENDAEMON_HYBRID_KV": "none",
+      "DAMENDAEMON_HYBRID_MTP_DROP": "1",
+      "DAMENDAEMON_HYBRID_PRECISION": "float16",
+      "DAMENDAEMON_HYBRID_PREFILL": "scan",
+      "DAMENDAEMON_KERNELS": "auto"
+    },
+    "gate_reasons": [],
+    "metric_value": 34.36216043561618,
+    "model": {
+      "models": {
+        "qwen36": {
+          "path": "/home/damen/models/Qwen_Qwen3.6-35B-A3B",
+          "quantization": "q8_0"
+        }
+      },
+      "version": 1
+    },
+    "objective": {
+      "direction": "maximize",
+      "gates": {
+        "exact_completion_tokens": 512,
+        "max_first_output_seconds": 600.0,
+        "max_request_seconds": 1200,
+        "zero_errors": true
+      },
+      "metric": "aggregate_output_tokens_per_second"
+    },
+    "serve_flags": [
+      "--batch-size",
+      "6",
+      "--no-graph"
+    ]
+  }
+}

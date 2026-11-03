@@ -1,0 +1,35 @@
+{
+  "candidate": {
+    "batch_wait_ms": 0.0,
+    "graphs": true,
+    "kernels": "auto",
+    "kv_quant": "none",
+    "max_batch": 6,
+    "mtp": "dropped",
+    "mtp_spec_graph": false,
+    "precision": "float16",
+    "prefill": "scan",
+    "prefill_chunk_size": 0,
+    "quantization": "q8_0",
+    "queue_size": 8,
+    "queue_timeout": 120.0
+  },
+  "candidate_index": 1,
+  "completed": false,
+  "gates": {
+    "exact_completion_tokens": 512,
+    "max_first_output_seconds": 600.0,
+    "max_request_seconds": 1200,
+    "zero_errors": true
+  },
+  "objective": {
+    "direction": "maximize",
+    "gates": {
+      "exact_completion_tokens": 512,
+      "max_first_output_seconds": 600.0,
+      "max_request_seconds": 1200,
+      "zero_errors": true
+    },
+    "metric": "aggregate_output_tokens_per_second"
+  }
+}
