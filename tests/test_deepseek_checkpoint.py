@@ -25,8 +25,36 @@ class DeepSeekCheckpointTests(unittest.TestCase):
         fingerprint = hashlib.sha256(('\n'.join(names)+'\n').encode()).hexdigest()
         self.assertEqual(len(names), fixture['main_tensor_count'])
         self.assertEqual(fingerprint, fixture['main_tensor_names_sha256'])
-        self.assertEqual(len(fixture['config']['compress_ratios']), 44)
+        # The official 0731 release: 43 main layers + 3 dspark draft blocks
+        # (dspark_target_layer_ids) even though num_nextn_predict_layers=1.
+        self.assertEqual(len(fixture['config']['compress_ratios']), 46)
         self.assertEqual(fixture['config']['num_hidden_layers'], 43)
+        self.assertEqual(len(fixture['config']['dspark_target_layer_ids']), 3)
+        self.assertEqual(fixture['revision'],
+                         '7872f01b1d1fe23eabc4c98b48bffcef5a386062')
+
+    def test_dspark_draft_schedule_derivation(self):
+        base = config()  # 3 layers, no dspark fields
+        # Pre-dspark layouts keep the num_nextn fallback.
+        self.assertEqual(tensor_specs(base | {'num_nextn_predict_layers': 1,
+                                             'compress_ratios': [0, 4, 128, 0]}),
+                         tensor_specs(base))
+        # dspark targets drive the ratio tail: 3 layers + 2 draft blocks.
+        dspark = base | {'dspark_target_layer_ids': [0, 2], 'dspark_block_size': 5,
+                         'dspark_markov_rank': 256, 'dspark_noise_token_id': 7,
+                         'compress_ratios': [0, 4, 128, 0, 0]}
+        self.assertEqual(tensor_specs(dspark), tensor_specs(base))
+        # A ratio tail that does not cover the declared draft blocks refuses.
+        for bad in (dspark | {'compress_ratios': [0, 4, 128, 0]},
+                    dspark | {'compress_ratios': [0, 4, 128, 0, 0, 0]},
+                    dspark | {'dspark_target_layer_ids': [0, 3]},   # 3 is out of range
+                    dspark | {'dspark_target_layer_ids': []},
+                    dspark | {'dspark_block_size': 0},
+                    dspark | {'dspark_markov_rank': 'many'},
+                    dspark | {'dspark_noise_token_id': -1},
+                    dspark | {'num_nextn_predict_layers': 17}):
+            with self.assertRaises(ValueError):
+                tensor_specs(bad)
 
     def test_explicit_shapes_and_per_layer_variants(self):
         specs = tensor_specs(config())
