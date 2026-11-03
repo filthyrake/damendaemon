@@ -194,10 +194,18 @@ def main():
     model = manifest['model']
     config = model_config(model['path'])
     has_mtp = has_mtp_tensors(model['path'])
-    if has_mtp != model['mtp']:
-        raise ValueError(f'manifest declares mtp={model["mtp"]} but the checkpoint '
-                         f'probe found MTP tensors={has_mtp}; refusing to measure '
-                         'a mislabeled model')
+    # model.mtp is the SEARCH intent (may the sweep include head-armed
+    # candidates); the checkpoint probe validates that intent — it does
+    # not require the head (the qualified headless serve drops it).
+    declared = manifest['search'].get('values', {})
+    declared_mtp_on = 'on' in declared.get('mtp', [])
+    if declared_mtp_on != model['mtp']:
+        raise ValueError('manifest model.mtp must match the declared mtp '
+                         'search values (the field is the search intent, '
+                         'not the checkpoint contents)')
+    if model['mtp'] and not has_mtp:
+        raise ValueError('the search declares MTP candidates but the '
+                         'checkpoint carries no MTP tensors')
     grid = declared_grid(manifest['search'].get('values', {}), model['quantization'])
     admitted, refusals = enumerate_candidates(
         config, accelerator=manifest['hardware']['accelerator'],
