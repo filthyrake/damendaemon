@@ -566,7 +566,16 @@ class HybridExecutor:
             torch.cuda.synchronize()
         self.batch_graphs = {}
         self.spec_graphs = {}
-        if use_graph:
+        if use_graph and self.mtp_layer is None:
+            # Plain decode graphs (batch.py's decode_batch replay). The MTP
+            # head armed is deliberately excluded (#691): forward_embeddings'
+            # per-slot stash (slots.tolist()) is a host read — uncapturable —
+            # and a REPLAY of a captured stash would silently skip the MTP
+            # hidden/KV maintenance (stale draft seeds, MTP KV holes). With
+            # the head armed, plain decode steps run eager (the #684-measured
+            # exact path); the spec round's own [B, 2] forward is captured
+            # separately below. The greedy spec serve never calls
+            # decode_batch, so eager fallback costs nothing in that cell.
             from .cuda_warmup import warmup_stream
             for size in range(1, max_batch+1):
                 metadata = torch.zeros((3, size), dtype=torch.long, device=self.device)
