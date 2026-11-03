@@ -50,9 +50,30 @@ def a6000_context_probe():
             raise ValueError('Q4 context probe is text-only (vision disabled)')
 
     def select(model, use_graph, max_batch, kernels):
+        import os
         if model.quantization != 'q4_0':
             raise ValueError('Q4 context probe cannot change another weight format')
         validate(model.config, model.max_context)
+        if os.environ.get('DAMENDAEMON_HYBRID_MTP_SPEC_GRAPH', '0') == '1':
+            # #691 qualification view: CUDA graphs are admitted for the
+            # compensated Q4 spec serve (MTP head loaded, spec-round graph
+            # capture) under this explicit opt-in. This is the isolated
+            # experiment view only — production hybrid_precision.select is
+            # unchanged and still refuses graphs on the compensated surface.
+            # Every other guard of the compensated surface is reimplemented
+            # verbatim: qwen3_5_text, context bound, batch <= 4, Triton
+            # kernels, scan prefill, text-only, pinned single-device guard
+            # (validate above).
+            if (model.config.get('model_type') != 'qwen3_5_text'
+                    or max_batch > 4
+                    or kernels == 'torch'
+                    or os.environ.get('DAMENDAEMON_HYBRID_PREFILL', 'scan') != 'scan'
+                    or os.environ.get('DAMENDAEMON_HYBRID_PRECISION') != 'compensated'
+                    or getattr(model, 'vision_weights', None) is not None):
+                raise ValueError('spec-graph qualification view requires the compensated '
+                                 'Q4 qwen3_5_text surface: Triton scan, text-only, '
+                                 'at most four slots')
+            return 'compensated'
         admission = copy(model)
         admission.max_context = 512
         return original_precision(admission, use_graph, max_batch, kernels)

@@ -30,6 +30,67 @@ def use_grouped_prefill(accelerator, precision, prefill, query_tokens, kv_tokens
             and 1 < query_tokens <= kv_tokens and kv_tokens >= 1024)
 
 
+def window(q, k, v, positions, *, scratch_bytes=256*1024**2):
+    """#691: graph-capturable grouped attention over a STATIC full-context
+    window with a positions-derived causal mask.
+
+    Same bounded pure-torch GEMM math as `attention`, generalized for
+    packed spec-round rows whose positions differ per row (and per batch
+    row): allowed[b, r, c] = key c <= positions[b, r]. Every tensor shape
+    is static (k/v are the FULL persistent cache window — no [:end]
+    slicing), all dynamic content flows through `positions` (a device
+    long tensor), so a CUDA graph replay only needs the metadata staging
+    copy. Unwritten tail positions read as zero keys; the mask excludes
+    them (keys beyond a row's own last position are -inf). Requires FP32
+    like `attention` — the fused SDPA backends reject fp32, and the math
+    backend's GQA head expansion is the #689/#685 transient trap."""
+    # NOTE: unlike `attention`, NO host-value validation here (isfinite /
+    # range reads sync the device) — this function runs INSIDE CUDA graph
+    # capture (#691), where synchronizing reads are forbidden. Shape and
+    # dtype checks only; the caller owns position values (spec_round
+    # guarantees 0 <= position < context structurally).
+    if (q.ndim != 4 or k.ndim != 4 or v.shape != k.shape
+            or q.shape[0] != k.shape[0] or q.shape[-1] != k.shape[-1]
+            or not q.shape[0] or not k.shape[1] or not q.shape[1]
+            or q.shape[1] % k.shape[1] or not q.shape[-1]
+            or not 0 < q.shape[2] <= k.shape[2]
+            or positions.shape != (q.shape[0], q.shape[2])
+            or positions.dtype != torch.long or positions.device != q.device
+            or any(x.dtype != torch.float32 or x.device != q.device for x in (q, k, v))):
+        raise ValueError('requires matching FP32 GQA tensors, a long position '
+                         'matrix [batch, length] inside the window, and static shapes')
+    if type(scratch_bytes) is not int or scratch_bytes <= 0:
+        raise ValueError('attention scratch budget must be a positive byte count')
+    batch, heads, length, dim = q.shape
+    repeats = heads // k.shape[1]
+    context = k.shape[2]
+    # Two FP32 score/probability buffers and one shared boolean mask row set.
+    rows = scratch_bytes // (context*(2*batch*repeats*4+1))
+    if rows < 1:
+        raise ValueError('attention scratch budget cannot fit one query row')
+    output = torch.empty(q.shape, device=q.device, dtype=q.dtype)
+    keys = torch.arange(context, device=q.device)
+    for start in range(0, length, rows):
+        stop = min(start+rows, length)
+        # [batch, 1, stop-start, context]: True where the key is NOT
+        # allowed. The explicit singleton head axis is load-bearing —
+        # without it the mask's batch axis right-aligns onto the repeats
+        # axis (they can even be numerically equal, silently wrong).
+        mask = keys[None, None, None, :] > positions[:, None, start:stop, None]
+        for head in range(k.shape[1]):
+            first, last = head*repeats, (head+1)*repeats
+            query = q[:, first:last, start:stop].reshape(batch, repeats*(stop-start), dim)
+            scores = query @ k[:, head].transpose(-1, -2)
+            scores.mul_(dim**-.5)
+            scores = scores.reshape(batch, repeats, stop-start, context)
+            scores.masked_fill_(mask, -float('inf'))
+            probabilities = scores.softmax(-1).reshape(batch, repeats*(stop-start), context)
+            output[:, first:last, start:stop] = (probabilities @ v[:, head]).reshape(batch, repeats, stop-start, dim)
+            del query, scores, probabilities
+        del mask
+    return output
+
+
 def attention(q, k, v, *, scratch_bytes=256*1024**2):
     if (q.ndim != 4 or k.ndim != 4 or v.shape != k.shape
             or q.shape[0] != k.shape[0] or q.shape[-1] != k.shape[-1]
