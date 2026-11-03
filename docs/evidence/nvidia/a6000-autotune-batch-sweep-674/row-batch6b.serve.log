@@ -1,0 +1,95 @@
+damendaemon listening on http://127.0.0.1:8152
+[W1103 03:48:06.644331553 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 264241152 bytes (free: 150274048, total: 47750578176).
+[W1103 03:48:06.657227295 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 264241152 bytes (free: 261423104, total: 47750578176).
+Traceback (most recent call last):
+  File "/tmp/damendaemon-674/damendaemon/server.py", line 356, in post_authorized
+    for event in generation:
+                 ^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/scheduler.py", line 336, in generate
+    raise request.error
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 252.00 MiB. GPU 0 has a total capacity of 44.47 GiB of which 249.31 MiB is free. Including non-PyTorch memory, this process has 44.22 GiB memory in use. Of the allocated memory 43.70 GiB is allocated by PyTorch, with 3.89 GiB allocated in private pools (e.g., CUDA Graphs), and 82.38 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+Worker traceback:
+  File "/tmp/damendaemon-674/damendaemon/scheduler.py", line 936, in _group
+    logits = executor.prefill_batch(
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/hybrid.py", line 1429, in prefill_batch
+    return torch.cat([self.prefill(p, s) for p, s in zip(prompts, slots)])
+                      ^^^^^^^^^^^^^^^^^^
+  File "/home/damen/3090-damendaemon/venv/lib64/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/hybrid.py", line 1163, in prefill
+    result = self.forward(torch.tensor([tokens], device=self.device),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/damen/3090-damendaemon/venv/lib64/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/hybrid.py", line 918, in forward
+    result = self.forward_embeddings(self.embedding(ids),positions,slots,prefill,
+[W1103 03:48:06.683149910 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 528482304 bytes (free: 261423104, total: 47750578176).
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/hybrid.py", line 942, in forward_embeddings
+    x = self.forward_layers(x, positions, slots, prefill, prefix_length)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/hybrid.py", line 997, in forward_layers
+    x = self._run_layer(x, i, positions, slots, prefill, prefix_length)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/hybrid.py", line 1029, in _run_layer
+    x = x + (self.linear_attention(h, i, slots, prefill, prefix_length) if self.c['layer_types'][i] == 'linear_attention'
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/hybrid.py", line 704, in linear_attention
+    z = self.linear(x, w[f'{i}.z']).view(n, length, self.lv, self.dv)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/quantization.py", line 196, in __call__
+    return linear(x, weight, self.scales[id(weight)], bias)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/quantized_kernels.py", line 84, in linear
+    result = torch.nn.functional.linear(x, expand(weight, scales, x.dtype), bias)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+[W1103 03:48:06.686215454 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 528482304 bytes (free: 278200320, total: 47750578176).
+Traceback (most recent call last):
+  File "/tmp/damendaemon-674/damendaemon/server.py", line 356, in post_authorized
+    for event in generation:
+                 ^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/scheduler.py", line 336, in generate
+    raise request.error
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 504.00 MiB. GPU 0 has a total capacity of 44.47 GiB of which 265.31 MiB is free. Including non-PyTorch memory, this process has 44.20 GiB memory in use. Of the allocated memory 43.23 GiB is allocated by PyTorch, with 3.89 GiB allocated in private pools (e.g., CUDA Graphs), and 554.38 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+Worker traceback:
+  File "/tmp/damendaemon-674/damendaemon/scheduler.py", line 936, in _group
+    logits = executor.prefill_batch(
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/hybrid.py", line 1429, in prefill_batch
+    return torch.cat([self.prefill(p, s) for p, s in zip(prompts, slots)])
+                      ^^^^^^^^^^^^^^^^^^
+  File "/home/damen/3090-damendaemon/venv/lib64/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/hybrid.py", line 1163, in prefill
+    result = self.forward(torch.tensor([tokens], device=self.device),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/damen/3090-damendaemon/venv/lib64/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/hybrid.py", line 918, in forward
+    result = self.forward_embeddings(self.embedding(ids),positions,slots,prefill,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/hybrid.py", line 942, in forward_embeddings
+    x = self.forward_layers(x, positions, slots, prefill, prefix_length)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/hybrid.py", line 997, in forward_layers
+    x = self._run_layer(x, i, positions, slots, prefill, prefix_length)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/hybrid.py", line 1029, in _run_layer
+    x = x + (self.linear_attention(h, i, slots, prefill, prefix_length) if self.c['layer_types'][i] == 'linear_attention'
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/hybrid.py", line 703, in linear_attention
+    qkv = self.linear(x, w[f'{i}.qkv'])
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/quantization.py", line 196, in __call__
+    return linear(x, weight, self.scales[id(weight)], bias)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-674/damendaemon/quantized_kernels.py", line 84, in linear
+    result = torch.nn.functional.linear(x, expand(weight, scales, x.dtype), bias)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+

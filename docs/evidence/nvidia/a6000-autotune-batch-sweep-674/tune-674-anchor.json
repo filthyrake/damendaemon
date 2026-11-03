@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "model": {
+    "alias": "qwen36",
+    "path": "/home/damen/models/Qwen_Qwen3.6-35B-A3B",
+    "quantization": "q8_0",
+    "mtp": false
+  },
+  "hardware": {"accelerator": "cuda"},
+  "context": 32768,
+  "corpus": {
+    "prompt_sha256": "31836e963e26cd642684d7bce9c778132376800375c2b09917612a5d398be727",
+    "prompt_tokens": 32256,
+    "description": "the pinned C-series paragraph at 32,256 tokens (batch-sweep anchor, #674 cell 3)"
+  },
+  "requests": {"count": 2, "max_tokens": 512, "concurrency": 2},
+  "objective": {
+    "metric": "aggregate_output_tokens_per_second",
+    "direction": "maximize",
+    "gates": {
+      "max_first_output_seconds": 600.0,
+      "max_request_seconds": 1200,
+      "exact_completion_tokens": 512,
+      "zero_errors": true
+    }
+  },
+  "search": {"rounds": 1, "timeout_seconds": 1800,
+             "values": {"max_batch": [1, 6], "graphs": [false]}}
+}
