@@ -494,8 +494,17 @@ class HybridExecutor:
         # Opt-in via the load-time DAMENDAEMON_HYBRID_MTP gate.
         self.mtp_layer = None
         if 'mtp.fc' in self.w:
-            if use_graph:
-                raise ValueError('the MTP draft head requires eager decode (no CUDA graphs)')
+            _spec_graph = os.environ.get('DAMENDAEMON_HYBRID_MTP_SPEC_GRAPH', '0')
+            if _spec_graph not in ('0', '1'):
+                raise ValueError('DAMENDAEMON_HYBRID_MTP_SPEC_GRAPH must be 0 or 1')
+            if use_graph and _spec_graph != '1':
+                # The #691 qualification surface: graphs with the draft head
+                # are admitted ONLY under the explicit opt-in (the main
+                # spec-round forward is captured with the window-masked
+                # grouped attention; the MTP proposal stays eager between
+                # replays). Default stays the measured eager serve.
+                raise ValueError('the MTP draft head requires eager decode '
+                                 '(no CUDA graphs) without the spec-graph opt-in')
             if self.gate is not None:
                 raise ValueError('the MTP draft head is not qualified with token gating')
             if self.kv_quant != 'none':
@@ -556,7 +565,17 @@ class HybridExecutor:
                     print(f'damendaemon: hybrid kernel toolchain unavailable ({type(error).__name__}); using torch kernels', file=sys.stderr)
             torch.cuda.synchronize()
         self.batch_graphs = {}
-        if use_graph:
+        self.spec_graphs = {}
+        if use_graph and self.mtp_layer is None:
+            # Plain decode graphs (batch.py's decode_batch replay). The MTP
+            # head armed is deliberately excluded (#691): forward_embeddings'
+            # per-slot stash (slots.tolist()) is a host read — uncapturable —
+            # and a REPLAY of a captured stash would silently skip the MTP
+            # hidden/KV maintenance (stale draft seeds, MTP KV holes). With
+            # the head armed, plain decode steps run eager (the #684-measured
+            # exact path); the spec round's own [B, 2] forward is captured
+            # separately below. The greedy spec serve never calls
+            # decode_batch, so eager fallback costs nothing in that cell.
             from .cuda_warmup import warmup_stream
             for size in range(1, max_batch+1):
                 metadata = torch.zeros((3, size), dtype=torch.long, device=self.device)
@@ -574,6 +593,41 @@ class HybridExecutor:
                     logits = self.forward_batch(ids, positions, slots)
                     next_ids = logits.argmax(-1)
                 self.batch_graphs[size] = (metadata, staging, values, copied, graph, logits, next_ids)
+        # #691 spec-round graphs: the main [B, 2] forward of every spec
+        # round, captured with the window-masked grouped attention (all
+        # dynamic content — tokens, positions, slots — lives in the
+        # metadata tensors; the MTP proposal stays eager between replays).
+        # Admission mirrors the eager spec serve's qualified surface: CUDA,
+        # Triton fused kernels (the scan is captured in the decode graphs
+        # already), unquantized FP32 KV (compensated compute), MTP head,
+        # explicit DAMENDAEMON_HYBRID_MTP_SPEC_GRAPH=1. Default off.
+        if (use_graph and self.mtp_layer is not None
+                and os.environ.get('DAMENDAEMON_HYBRID_MTP_SPEC_GRAPH', '0') == '1'
+                and self.fused is not None and self.kv_quant == 'none'
+                and self.compute_dtype == torch.float32):
+            from .cuda_warmup import warmup_stream
+            for size in range(1, max_batch+1):
+                device_tokens = torch.zeros((size, 2), dtype=torch.long, device=self.device)
+                device_positions = torch.zeros((size, 2), dtype=torch.long, device=self.device)
+                device_slots = torch.arange(size, device=self.device)
+                stage_tokens = torch.empty((size, 2), dtype=torch.long, pin_memory=True)
+                stage_positions = torch.empty((size, 2), dtype=torch.long, pin_memory=True)
+                stage_slots = torch.empty((size,), dtype=torch.long, pin_memory=True)
+                token_values = (ctypes.c_int64 * (2*size)).from_address(stage_tokens.data_ptr())
+                position_values = (ctypes.c_int64 * (2*size)).from_address(stage_positions.data_ptr())
+                slot_values = (ctypes.c_int64 * size).from_address(stage_slots.data_ptr())
+                copied = torch.cuda.Event()
+                with warmup_stream(), torch.inference_mode():
+                    for _ in range(3):
+                        self._spec_main_forward(device_tokens, device_positions, device_slots)
+                torch.cuda.synchronize()
+                graph = torch.cuda.CUDAGraph()
+                with torch.inference_mode(), torch.cuda.graph(graph):
+                    hidden, logits = self._spec_main_forward(device_tokens, device_positions, device_slots)
+                self.spec_graphs[size] = (device_tokens, device_positions, device_slots,
+                                          stage_tokens, stage_positions, stage_slots,
+                                          token_values, position_values, slot_values,
+                                          copied, graph, hidden, logits)
         # Capturing recurrent updates changes state. No captured warmup is user history.
         for group in (*self.conv.values(), *self.state.values(), *self.kv.values()):
             for tensor in (group if isinstance(group, tuple) else (group,)):
@@ -1584,6 +1638,53 @@ class HybridExecutor:
         return output, accepted, steps
 
     @torch.inference_mode()
+    def _spec_attention_window(self, h, i, positions, slots):
+        """#691: the full-attention layer of the graph-captured spec-round
+        main forward. Mirrors attention()'s qkv/rope/KV-write exactly; the
+        read is the static full-context grouped window with the
+        positions-derived mask (graph-safe: no [:end] slicing, no host
+        value reads). Eager parity is pinned by the CPU tests."""
+        from .grouped_attention import window
+        w = self.w
+        n, length, _ = h.shape
+        qkv = self.linear(h, w[f'{i}.qkv'])
+        q, k, v = qkv.split((2*self.heads*self.dim, self.kh*self.dim, self.kh*self.dim), -1)
+        q, gate = q.view(n, length, self.heads, 2*self.dim).chunk(2, -1)
+        k, v = [a.view(n, length, self.kh, self.dim) for a in (k, v)]
+        q = self.rotate(self.norm(q, w[f'{i}.q_norm'], torch.float32), positions)
+        k = self.rotate(self.norm(k, w[f'{i}.k_norm'], torch.float32), positions)
+        ck, cv = self.kv[i].unbind(0)
+        ck[slots[:, None], :, positions, :] = k
+        cv[slots[:, None], :, positions, :] = v
+        # Gather the active slots' cache rows (ck is the slot-capacity
+        # cache [slots_cap, kh, ctx, dim], not n-row). The gather indexes
+        # the staged device slots tensor — capture-safe.
+        # .float() is an identity view on the production fp32 serve; it
+        # only upcasts on non-fp32 computes (window's contract is fp32).
+        out = window(q.transpose(1, 2).float(), ck[slots].float(), cv[slots].float(), positions)
+        out = out.transpose(1, 2).float()*gate.float().sigmoid()
+        return self.linear(out.reshape(n, length, -1).to(self.compute_dtype), w[f'{i}.o'])
+
+    def _spec_main_forward(self, tokens, positions, slots):
+        """#691: the spec-round main forward as a static-shape graph body:
+        [B, 2] continuation rows with every dynamic value flowing through
+        the metadata tensors. Linear layers run the continuation scan
+        (prefix >= 1 always holds — spec rounds only run after a prompt;
+        prefix_length=1 selects the same continuation branch eager rounds
+        take, with all python decisions static). Full-attention layers take
+        the window-masked grouped path. The MTP proposal is NOT part of
+        this forward — it stays eager between replays."""
+        x = self.embedding(tokens)
+        for i in range(self.layer_start, self.layer_end):
+            h = self.norm(x, self.w[f'{i}.norm1'])
+            if self.c['layer_types'][i] == 'linear_attention':
+                x = x + self.linear_attention(h, i, slots, True, 1)
+            else:
+                x = x + self._spec_attention_window(h, i, positions, slots)
+            x = self._mlp_half(x, i)
+        return x, self.output_logits(x)
+
+    @torch.inference_mode()
     def spec_round(self, blocks):
         """One packed optimistic MTP decode round (#68 spec serving cell).
 
@@ -1639,8 +1740,34 @@ class HybridExecutor:
         tokens = torch.tensor([[first, second] for _, first, second, _ in rows], device=device)
         positions = torch.tensor([[L, L + 1] for L in lengths], device=device)
         slots = torch.tensor([slot for slot, *_ in rows], device=device)
-        x = self.forward_layers(self.embedding(tokens), positions, slots, True, min(lengths))
-        logits = self.output_logits(x)
+        # #691 spec-round graph: when captured for this batch size, the main
+        # forward replays with only the metadata staging copy — tokens,
+        # positions (divergent per row by construction) and slots. The MTP
+        # proposals/backfills below stay eager on the replayed hidden buffer
+        # (stash views alias it; every consumer reads before the next
+        # replay, and rejected-slot seeds are never taken from a corrupted
+        # stash — corrective blocks carry the truth, fresh blocks seed from
+        # post-round values). Rollback restores the same persistent state
+        # buffers the graph mutates.
+        spec_entry = self.spec_graphs.get(len(rows))
+        if spec_entry is not None:
+            (device_tokens, device_positions, device_slots,
+             stage_tokens, stage_positions, stage_slots,
+             token_values, position_values, slot_values,
+             copied, graph, x, logits) = spec_entry
+            # Do not overwrite pinned memory until the previous DMA read it.
+            copied.synchronize()
+            token_values[:] = [token for _, first, second, _ in rows for token in (first, second)]
+            position_values[:] = [value for L in lengths for value in (L, L + 1)]
+            slot_values[:] = [slot for slot, *_ in rows]
+            device_tokens.copy_(stage_tokens, non_blocking=True)
+            device_positions.copy_(stage_positions, non_blocking=True)
+            device_slots.copy_(stage_slots, non_blocking=True)
+            copied.record()
+            graph.replay()
+        else:
+            x = self.forward_layers(self.embedding(tokens), positions, slots, True, min(lengths))
+            logits = self.output_logits(x)
         emissions, corrective, accepted = [], [], 0
         for row, (slot, first, second, is_corrective) in enumerate(rows):
             L = lengths[row]
