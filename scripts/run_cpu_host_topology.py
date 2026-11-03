@@ -106,6 +106,13 @@ def run(args,*,family='qwen',cuda=False):
             options=dict(epoch=args.epoch,max_weight_bytes=args.weight_mib*2**20,
                 max_cache_bytes=args.cache_mib*2**20,max_workspace_bytes=args.workspace_mib*2**20,
                 projection_workspace_bytes=args.projection_workspace_mib*2**20,max_output_bytes=args.output_mib*2**20)
+            if args.verify_model_id:
+                # Real checkpoints need whole-snapshot identity bounds (the official
+                # DSV4F release is ~156 GiB across 48 shards); the builder defaults
+                # (2 GiB/60 s) are fixture-scale and would refuse the very snapshot
+                # the coordinator already verified with the same CLI flags.
+                options.update(identity_max_bytes=args.identity_max_mib*1024**2,
+                               identity_timeout=args.identity_timeout)
             if cuda:
                 from damendaemon.cuda_host_pipeline_build import build_cuda_host_pipeline_worker
                 worker=build_cuda_host_pipeline_worker(args.snapshot,plan,args.index,transports,**options,**build_options(args))

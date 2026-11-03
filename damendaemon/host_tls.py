@@ -68,7 +68,10 @@ def _validate_policy(context,*,server_side,peer_pin,server_hostname,timeout,canc
             or context.protocol!=(ssl.PROTOCOL_TLS_SERVER if server_side else ssl.PROTOCOL_TLS_CLIENT)
             or context.verify_mode!=ssl.CERT_REQUIRED or context.check_hostname!=(not server_side)
             or context.minimum_version<ssl.TLSVersion.TLSv1_3
-            or type(timeout) not in (int,float) or not 0<timeout<=30
+            # Real-model reference stages load for tens of minutes before a peer
+            # connects; the accept/handshake wait ceiling is a day, not seconds.
+            # A dead or malicious peer still fails on TLS/handshake errors.
+            or type(timeout) not in (int,float) or not 0<timeout<=86400
             or (server_side and server_hostname is not None)
             or (not server_side and (not isinstance(server_hostname,str) or not 1<=len(server_hostname)<=253 or '\0' in server_hostname))
             or (cancelled is not None and not callable(cancelled))):

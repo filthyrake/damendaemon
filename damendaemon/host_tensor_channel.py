@@ -35,7 +35,13 @@ class HostTensorChannel:
             raise ValueError('host tensor channel requires a 32-byte identity and rank 0 or 1')
         if type(max_frame_bytes) is not int or not 1<=max_frame_bytes<=MAX_FRAME_BYTES:
             raise ValueError('invalid host tensor frame cap')
-        if type(timeout) not in (int,float) or not 0<timeout<=300:
+        if type(timeout) not in (int,float) or not 0<timeout<=86400:
+            # Real-model reference compute between transport operations takes
+            # minutes-to-hours per chunk (tile-wise CPU reference on ~75 GiB
+            # stages); a silent-but-alive peer is normal for that span, so the
+            # per-operation deadline ceiling is a day, not seconds. A dead peer
+            # still fails fast on connection close/reset (EOF), independent of
+            # the deadline.
             raise ValueError('invalid host tensor operation timeout')
         # Validate before assuming ownership. The caller retains invalid inputs.
         self.connection=connection

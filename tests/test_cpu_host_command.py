@@ -81,7 +81,7 @@ class CpuHostCommandTests(unittest.TestCase):
 
     def test_preflight_rejects_before_network_or_payload(self):
         extra_cases=[['--model-id','bad'],['--split','4'],['--slots','1'],['--context','65'],
-            ['--timeout','nan'],['--frame-mib','65'],['--weight-mib','2049'],['--context','513'],
+            ['--timeout','nan'],['--frame-mib','65'],['--weight-mib',str(2**20+1)],['--context','513'],
             ['--address','hostname.invalid'],['--server-name',''],['--max-new-tokens','0']]
         for extra in extra_cases:
             with (self.subTest(extra=extra),patch.object(cli,'connect_peer',side_effect=AssertionError('network')),
@@ -91,6 +91,38 @@ class CpuHostCommandTests(unittest.TestCase):
         self.batch.write_text(json.dumps([{'tokens':[999]}]))
         with patch.object(cli,'connect_peer',side_effect=AssertionError('network')),redirect_stderr(io.StringIO()):
             with self.assertRaises(SystemExit):cli.main(self.args('complete',1234))
+
+    def test_real_scale_stage_budgets_and_transport_deadlines_pass_preflight(self):
+        # Whole official-release stages (~75 GiB), minutes-per-chunk reference
+        # compute between transport ops, and whole-snapshot identity bounds are
+        # structurally admissible, not refused.
+        from scripts import run_cpu_host_topology as topology
+        plan=self.path/'plan.json';plan.write_text(json.dumps({'ranges':[[0,2],[2,4]]}))
+        args=['worker',str(self.path),'--address','127.0.0.1','--port','0',
+            '--plan',str(plan),'--index','1','--model-id','ab'*32,'--context','64','--slots','2',
+            '--timeout','7200','--quantization','none','--weight-mib','78000','--cache-mib','4096',
+            '--peer-cert',str(self.cert/'client.pem'),'--ca',str(self.cert/'ca.pem'),
+            '--cert',str(self.cert/'server.pem'),'--key',str(self.cert/'server.key')]
+        with patch.object(topology,'HostPeerListener') as listener,patch.object(topology,'HostTensorChannel'),patch.object(topology,'build_cpu_host_pipeline_worker') as builder:
+            listener.return_value.listener.getsockname.return_value=('127.0.0.1',9470)
+            builder.side_effect=AssertionError('payload')
+            with self.assertRaises(AssertionError):topology.main(args)
+            listener.assert_called_once()  # passed preflight incl. TLS listen path
+            self.assertEqual(builder.call_args.kwargs['max_weight_bytes'],78000*2**20)
+        with patch.object(topology,'HostPeerListener') as listener,patch.object(topology,'HostTensorChannel'),patch.object(topology,'build_cpu_host_pipeline_worker') as builder:
+            listener.return_value.listener.getsockname.return_value=('127.0.0.1',9470)
+            builder.side_effect=AssertionError('payload')
+            from damendaemon.cpu_snapshot_identity import fingerprint
+            identity=fingerprint(self.path).model_id
+            with self.assertRaises(AssertionError):topology.main(['worker',str(self.path),'--address','127.0.0.1','--port','0',
+                '--plan',str(plan),'--index','1','--model-id',identity,'--context','64','--slots','2',
+                '--timeout','7200','--quantization','none','--weight-mib','78000','--cache-mib','4096',
+                '--peer-cert',str(self.cert/'client.pem'),'--ca',str(self.cert/'ca.pem'),
+                '--cert',str(self.cert/'server.pem'),'--key',str(self.cert/'server.key'),
+                '--verify-model-id','--identity-max-mib','160000','--identity-timeout','2400'])
+            forwarded=builder.call_args.kwargs
+            self.assertEqual(forwarded['identity_max_bytes'],160000*2**20)
+            self.assertEqual(forwarded['identity_timeout'],2400.)
 
     def test_verified_snapshot_peers_and_mixed_mode_rejection(self):
         from damendaemon.cpu_snapshot_identity import fingerprint
