@@ -1,0 +1,9 @@
+tokens[0:8] = [[3, 10, 17, 24, 31, 38, 45, 52, 59, 66, 73, 80, 87, 94, 101, 108, 115, 122, 129, 136, 143, 150, 157, 164, 171, 178, 185, 192, 199, 206, 213, 220]] vocab=129280 K=32
+stages loaded, RSS 9.0 GiB; streams=4 dim=4096 ratio0=0 ratio2=4
+GATE1 PASS: prefill(32) layer0 333.35s layer2 328.30s shapes (1, 32, 4, 4096) (1, 32, 4, 4096)
+GATE2 layer0(ratio-0): max|dec-pref|=2.980e-07 |h|mean=1.396e-01 rel=2.13e-06
+GATE2 layer2(ratio-4): max|dec-pref|=3.874e-07 |h|mean=1.452e-01 rel=2.67e-06
+GATE3 reload determinism: layer0 byte-identical=True layer2 byte-identical=True
+CELL-C-RESULT {"k": 32, "layer0_seconds": 333.35, "layer2_seconds": 328.3, "parity_max_abs": {"layer0": 2.980232238769531e-07, "layer2": 3.8743019104003906e-07}, "parity_relative": {"layer0": 2.1345109003068146e-06, "layer2": 2.669003892844832e-06}, "reload_byte_identical": {"layer0": true, "layer2": true}, "magnitude_mean": {"layer0": 0.1396213173866272, "layer2": 0.14515909552574158}}
+CELL-C-GATES ALL PASS
+final RSS 17.7 GiB
