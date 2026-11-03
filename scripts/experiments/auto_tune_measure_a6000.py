@@ -242,7 +242,10 @@ def main():
                *candidate.serve_flags(),
                '--port', str(PORT), '--gpu-models', '1', '--host-models', '1',
                '--host-gib', '40', '--queue-timeout', '600',
-               '--queue-size', str(requests_spec['concurrency'])]
+               # The CLI requires the queue to fit the batch; the workload's
+               # concurrency can exceed the batch, so size for both.
+               '--queue-size', str(max(candidate.max_batch,
+                                       requests_spec['concurrency']))]
     server = None
     try:
         server = subprocess.Popen(command, env=environment,
