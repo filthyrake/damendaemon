@@ -1,0 +1,10 @@
+[graph-warmup] first Nones total 173.9s decode Nones tokens None error=True
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/tmp/damendaemon-691/scripts/experiments/hybrid_q4_spec_graph_ab_a6000.py", line 248, in <module>
+    main()
+  File "/tmp/damendaemon-691/scripts/experiments/hybrid_q4_spec_graph_ab_a6000.py", line 214, in main
+    raise RuntimeError(f"warmup failed: {warm['error']}")
+RuntimeError: warmup failed: HTTP Error 500: Internal Server Error
+shared CUDA gate refused or stopped run; see report
