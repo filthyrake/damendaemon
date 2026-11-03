@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "model": {
+    "alias": "qwen08",
+    "path": "/home/damen/models/Qwen3.5-0.8B-r2fc0636",
+    "quantization": "q8_0",
+    "mtp": false
+  },
+  "hardware": {"accelerator": "cuda"},
+  "context": 2048,
+  "corpus": {
+    "prompt_sha256": "f7e6220b896305f1bd8fdbd65c24d0195819112f3178b33648e58e977d83771f",
+    "prompt_tokens": 1024,
+    "description": "the pinned C-series paragraph at 1024 tokens (0.8B serve-integration cell, #674 cell 5)"
+  },
+  "requests": {"count": 2, "max_tokens": 64, "concurrency": 2},
+  "objective": {
+    "metric": "aggregate_output_tokens_per_second",
+    "direction": "maximize",
+    "gates": {
+      "exact_completion_tokens": 64,
+      "zero_errors": true
+    }
+  },
+  "search": {"rounds": 1, "timeout_seconds": 900, "values": {"max_batch": [2, 4]}}
+}
