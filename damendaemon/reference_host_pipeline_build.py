@@ -24,7 +24,7 @@ def build_reference_host_worker(path, topology, index, transports, *, model_type
             or not 0<=index<len(topology.ranges) or type(verify_source) is not bool
             or type(identity_max_bytes) is not int or not 1<=identity_max_bytes<=2**40
             or type(identity_timeout) not in (int,float) or not 0<identity_timeout<=3600
-            or any(type(value) is not int or not 1<=value<=2**31 for value in bounds)):
+            or any(type(value) is not int or not 1<=value<=2**40 for value in bounds)):
         raise ValueError('invalid reference host pipeline build controls')
     transports=_claim_transports(topology,index,transports,epoch)
     channels=[];stage=None;model=None

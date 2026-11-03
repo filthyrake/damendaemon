@@ -47,7 +47,7 @@ def parser_for_command(*,topology=False,family='qwen'):
     parser.add_argument('--slots',type=_positive,default=4)
     parser.add_argument('--quantization',choices=('fp4_fp8_reference',) if family=='deepseek' else ('fp8_reference',) if family in ('glm','flash','deepseek') else ('none','q4_0','q8_0'),
                         default='fp4_fp8_reference' if family=='deepseek' else 'fp8_reference' if family in ('glm','flash','deepseek') else 'none')
-    parser.add_argument('--timeout',type=float,default=10.,help='seconds per connection or transport operation, at most 30')
+    parser.add_argument('--timeout',type=float,default=10.,help='seconds per connection or transport operation, at most 86400')
     parser.add_argument('--http-port',type=int,default=8088,help='serve role: loopback HTTP port, 0 chooses an available port')
     parser.add_argument('--alias',default='model')
     parser.add_argument('--queue-size',type=int if family in ('glm','flash','deepseek') else _positive,default=0 if family in ('glm','flash','deepseek') else 8)
@@ -110,10 +110,10 @@ def prepare(args,*,family='qwen'):
     if args.client_prefill_turns and (args.role!='serve' or not args.interleaved_prefill):
         raise ValueError('client prefill turns require the serve role with interleaved prefill')
     if args.interleaved_prefill and args.role!='serve':raise ValueError('interleaved prefill requires the serve role')
-    if (not 0<args.timeout<=30 or not 1<=args.slots<=4 or not 1<=args.frame_mib<=64
+    if (not 0<args.timeout<=86400 or not 1<=args.slots<=4 or not 1<=args.frame_mib<=64
             or not 1<=args.context<=args.context_limit<=2**20
             or not (0 if args.role=='worker' else 1)<=args.port<=65535
-            or any(getattr(args,n)>2048 for n in ('weight_mib','cache_mib','workspace_mib',
+            or any(getattr(args,n)>(2**20 if n in ('weight_mib','cache_mib') else 2048) for n in ('weight_mib','cache_mib','workspace_mib',
                 'loader_workspace_mib','projection_workspace_mib','output_mib'))):
         raise ValueError('invalid CPU host endpoint, context or resource limits')
     if args.role!='worker' and (not args.server_name or len(args.server_name)>253 or '\0' in args.server_name):
