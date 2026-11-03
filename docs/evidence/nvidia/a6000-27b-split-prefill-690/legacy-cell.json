@@ -1,0 +1,232 @@
+{
+  "aggregate_bound_confirmed": true,
+  "batch": 4,
+  "chunk": 1024,
+  "completed": true,
+  "context": 32768,
+  "device": "GPU-4adb9ddb-7bb3-189c-0fa2-51d67d1189ed",
+  "first_output_seconds": [
+    504.88759673500317,
+    523.877920614992,
+    527.0382296940079,
+    530.3993185200088
+  ],
+  "gate": "#690 split prefill admission A/B (C4, 27B spec serve)",
+  "graphs": false,
+  "model": "/home/damen/models/Qwen3.8-27B-1d4bf0f2",
+  "model_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "output_limit": 512,
+  "phase": "legacy",
+  "post_admission_first_output_seconds": [
+    504.887466426997,
+    520.8167320490174,
+    523.9813106069923,
+    527.3474996060249
+  ],
+  "precision": "compensated",
+  "prompt_tokens": 32256,
+  "quantization": "q4_0",
+  "queue_seconds": [
+    0.0001303080061916262,
+    3.0611885659745894,
+    3.056919087015558,
+    3.0518189139838796
+  ],
+  "queue_timeout": 900,
+  "rounds": {
+    "c4": {
+      "seconds": 775.2827798369981,
+      "slots": {
+        "0": {
+          "error": null,
+          "first_output_seconds": 504.88759673500317,
+          "output_chars": 3020,
+          "output_ids_digest": "db7acaaee335e4e6863c87242066eda73b76dd33c2b1a0c15110c1167b3fec22",
+          "output_preview": " jumps over the lazy dog while the repository records every bounded qualificatio",
+          "post_admission_first_output": 504.887466426997,
+          "queue_seconds": 0.0001303080061916262,
+          "total_seconds": 771.4592454499798,
+          "usage": {
+            "completion_tokens": 512,
+            "prompt_tokens": 32256,
+            "queue_seconds": 0.0001303080061916262,
+            "total_tokens": 32768
+          }
+        },
+        "1": {
+          "error": null,
+          "first_output_seconds": 523.877920614992,
+          "output_chars": 3018,
+          "output_ids_digest": "b6b66a3426275dd02c2dba1a4e2792b8a4a50a5cdc0a70023861613fccaaf412",
+          "output_preview": " over the lazy dog while the repository records every bounded qualification cell",
+          "post_admission_first_output": 520.8167320490174,
+          "queue_seconds": 3.0611885659745894,
+          "total_seconds": 774.5220461729914,
+          "usage": {
+            "completion_tokens": 512,
+            "prompt_tokens": 32256,
+            "queue_seconds": 3.0611885659745894,
+            "total_tokens": 32768
+          }
+        },
+        "2": {
+          "error": null,
+          "first_output_seconds": 527.0382296940079,
+          "output_chars": 3024,
+          "output_ids_digest": "4485d241b278ce2a38e0d67fc605098d1637d89bd8587c469d65c7b69234bf50",
+          "output_preview": " the lazy dog while the repository records every bounded qualification cell with",
+          "post_admission_first_output": 523.9813106069923,
+          "queue_seconds": 3.056919087015558,
+          "total_seconds": 775.0819854619913,
+          "usage": {
+            "completion_tokens": 512,
+            "prompt_tokens": 32256,
+            "queue_seconds": 3.056919087015558,
+            "total_tokens": 32768
+          }
+        },
+        "3": {
+          "error": null,
+          "first_output_seconds": 530.3993185200088,
+          "output_chars": 3028,
+          "output_ids_digest": "b26bccc5af7b6985f56590da40056d66a3f28b0fdbda75506c177299f52d23fb",
+          "output_preview": " lazy dog while the repository records every bounded qualification cell with evi",
+          "post_admission_first_output": 527.3474996060249,
+          "queue_seconds": 3.0518189139838796,
+          "total_seconds": 775.2765763450006,
+          "usage": {
+            "completion_tokens": 512,
+            "prompt_tokens": 32256,
+            "queue_seconds": 3.0518189139838796,
+            "total_tokens": 32768
+          }
+        }
+      }
+    },
+    "warmup": {
+      "value": {
+        "error": null,
+        "first_output_seconds": 177.05337820999557,
+        "output_chars": 19,
+        "output_ids_digest": "5b355502370cbe4a95b8d23c95271250f235c2894077b0dedf010c395370d81e",
+        "output_preview": " the lazy dog while",
+        "post_admission_first_output": 177.0532887840236,
+        "queue_seconds": 8.942597196437418e-05,
+        "total_seconds": 177.38676489001955,
+        "usage": {
+          "completion_tokens": 4,
+          "prompt_tokens": 512,
+          "queue_seconds": 8.942597196437418e-05,
+          "total_tokens": 516
+        }
+      }
+    }
+  },
+  "slot_prompt_digests": [
+    "31836e963e26cd642684d7bce9c778132376800375c2b09917612a5d398be727",
+    "0c5a48f783f9c2b1ef60d83839b6ce81f70e335180360334fcb73c5d6bcbe810",
+    "9f236385b139de997978d97687edbdcc503210f00fba4f781969dc08b377b4d3",
+    "074fe854a95dd048a778999c3a977cd61637d54e5e6510fb619f7498b4a49418"
+  ],
+  "statuses": {
+    "after_round": {
+      "closed": false,
+      "closing": false,
+      "context": 32768,
+      "cuda_allocated_bytes": 36430628864,
+      "cuda_devices": null,
+      "cuda_peak_allocated_bytes": 39764006400,
+      "device": "cuda",
+      "gpu_model_limit": 1,
+      "hip_allocated_bytes": null,
+      "host_budget_bytes": 42949672960,
+      "host_cached_bytes": 17200779264,
+      "host_model_limit": 1,
+      "models": [
+        {
+          "chat_template": {
+            "sha256": null,
+            "source": "checkpoint"
+          },
+          "executor_failed": false,
+          "gpu_packed_layout_overhead_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "host_weight_bytes": 17200779264,
+          "id": "qwen38",
+          "kv_cache_bytes": 18253611008,
+          "kv_cache_mode": "none",
+          "output_head_workspace_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "pipeline": null,
+          "q4_marlin_abi": null,
+          "quantization": "q4_0",
+          "residency": "gpu",
+          "vision_gpu_weight_bytes": 0,
+          "vision_host_weight_bytes": 0,
+          "weight_streaming": null
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "pending_executor_cleanup": 0,
+      "pending_pipeline_cleanup": 0,
+      "rocm_aotriton_experimental": null,
+      "xpu_allocated_bytes": null,
+      "xpu_peak_allocated_bytes": null,
+      "xpu_reserved_bytes": null
+    },
+    "after_warmup": {
+      "closed": false,
+      "closing": false,
+      "context": 32768,
+      "cuda_allocated_bytes": 36398802944,
+      "cuda_devices": null,
+      "cuda_peak_allocated_bytes": 36903988224,
+      "device": "cuda",
+      "gpu_model_limit": 1,
+      "hip_allocated_bytes": null,
+      "host_budget_bytes": 42949672960,
+      "host_cached_bytes": 17200779264,
+      "host_model_limit": 1,
+      "models": [
+        {
+          "chat_template": {
+            "sha256": null,
+            "source": "checkpoint"
+          },
+          "executor_failed": false,
+          "gpu_packed_layout_overhead_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "host_weight_bytes": 17200779264,
+          "id": "qwen38",
+          "kv_cache_bytes": 18253611008,
+          "kv_cache_mode": "none",
+          "output_head_workspace_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "pipeline": null,
+          "q4_marlin_abi": null,
+          "quantization": "q4_0",
+          "residency": "gpu",
+          "vision_gpu_weight_bytes": 0,
+          "vision_host_weight_bytes": 0,
+          "weight_streaming": null
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "pending_executor_cleanup": 0,
+      "pending_pipeline_cleanup": 0,
+      "rocm_aotriton_experimental": null,
+      "xpu_allocated_bytes": null,
+      "xpu_peak_allocated_bytes": null,
+      "xpu_reserved_bytes": null
+    }
+  },
+  "torch": "2.13.0+cu130",
+  "total_seconds": [
+    771.4592454499798,
+    774.5220461729914,
+    775.0819854619913,
+    775.2765763450006
+  ]
+}

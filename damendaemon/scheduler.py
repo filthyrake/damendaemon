@@ -114,6 +114,25 @@ class BatchedRuntime:
         self.models = self.runtime.models
         self.batch_size = batch_size
         self.queue_timeout = queue_timeout
+        # Split prefill admission (#690): how many slots may prefill
+        # concurrently on the chunked path. The default ('1') admits one
+        # prefill lane at a time — the incumbent's first output stops
+        # waiting on later arrivals' chunks, later prefills overlap
+        # incumbent decode one chunk per decode step, and requests beyond
+        # the bound wait in the FIFO queue (queue timeout applies; the
+        # post-admission SLO clock starts at admission). Measured on the
+        # C4 A/B (#690): post-admission first outputs 130-156 s vs the
+        # legacy 505-527 s for every slot, totals unchanged, outputs
+        # byte-identical. '0' keeps the legacy batch-wide round-robin
+        # (every admitted slot shares the chunk stream — clustered
+        # arrivals serialize every first output onto the aggregate
+        # prefill time: C4 first outputs 502-528 s) as the A/B control.
+        admission = os.environ.get('DAMENDAEMON_PREFILL_ADMISSION', '1')
+        if not admission.isascii() or not admission.isdecimal():
+            raise ValueError('DAMENDAEMON_PREFILL_ADMISSION must be a nonnegative integer')
+        self.prefill_admission = int(admission) or batch_size
+        if not 1 <= self.prefill_admission <= batch_size:
+            raise ValueError('DAMENDAEMON_PREFILL_ADMISSION must stay within 1..batch size')
         self.queue_capacity = queue_size
         self.admission = threading.BoundedSemaphore(queue_size)
         self.admitted_count = 0
@@ -625,7 +644,14 @@ class BatchedRuntime:
                     incoming=[next_request]
                     next_request=None
                     with self.condition:
-                        while len(incoming)+len(active)+len(partial)<self.batch_size:
+                        # Split prefill admission (#690): a queued request
+                        # joins only while a prefill lane is free — counting
+                        # `incoming`, which are about to prefill (a cache-
+                        # restored request skips prefill and only makes this
+                        # conservative). Beyond the bound, requests stay in
+                        # the FIFO queue.
+                        while (len(incoming)+len(active)+len(partial)<self.batch_size
+                               and len(incoming)+len(partial)<self.prefill_admission):
                             request=self._next(first.alias)
                             if request is None:break
                             incoming.append(request)
@@ -695,7 +721,11 @@ class BatchedRuntime:
                         request.max_batch_seen=max(request.max_batch_seen,len(ready))
                         if self._emit(request,token,executor,length):del active[slot]
                 with self.condition:
-                    if len(active)+len(partial)<self.batch_size:
+                    # An empty partial always admits a pull (no deadlock);
+                    # a full prefill lane leaves queued work FIFO-waiting
+                    # (#690) — its post-admission clock starts when pulled.
+                    if (len(active)+len(partial)<self.batch_size
+                            and len(partial)<self.prefill_admission):
                         next_request=self._next(first.alias)
                     if active and not ready and not partial and next_request is None:
                         self.condition.wait(timeout=.02)

@@ -613,16 +613,37 @@ class ChunkedSchedulerTests(unittest.TestCase):
         self.assertEqual([e['token'] for e in b if 'token' in e],list(range(1,9)))
 
     def test_short_prompt_advances_before_long_prefill_finishes(self):
-        # Hold the first chunk until the short request is queued. Both paths
-        # must share prompt work once the second slot is admitted.
+        # The LEGACY control contract (#690: admission '0' — the batch-wide
+        # round-robin): both admitted prompts share prompt work, so neither
+        # consumes consecutive turns while the other waits. The default
+        # (split admission) is pinned separately in SplitPrefillAdmissionTests;
+        # the runtime must be constructed under the control env.
+        environment = {'DAMENDAEMON_PREFILL_ADMISSION': '0'}
+        with patch.dict('os.environ', environment, clear=False), \
+                patch('damendaemon.scheduler.Runtime', FakeRuntime):
+            runtime = BatchedRuntime({'a': 'a'}, batch_size=2, queue_size=4,
+                                     prefill_chunk_size=2)
+        self.addCleanup(runtime.close)
+        executor = ChunkExecutor()
+        runtime.runtime.executor = executor
+        self.addCleanup(executor.release.set)
+
+        def run(prompt):
+            return list(runtime.generate('a', [{'content': prompt}], 2))
+
         with ThreadPoolExecutor(2) as pool:
-            long = pool.submit(self.generate, 'abcdefghijklmnop', 2)
-            self.assertTrue(self.executor.entered.wait(2))
-            short = pool.submit(self.generate, 'wxyz', 2)
-            self.wait_pending(1)
-            self.executor.release.set()
-            long_result, short_result = long.result(3), short.result(3)
-        chunks = [event for event in self.executor.chunk_events if event[0] == 'prefill']
+            long = pool.submit(run, 'abcdefghijklmnop')
+            self.assertTrue(executor.entered.wait(2))
+            short = pool.submit(run, 'wxyz')
+            deadline = time.monotonic() + 3
+            while time.monotonic() < deadline:
+                with runtime.condition:
+                    if len(runtime.pending) == 1:
+                        break
+                time.sleep(.001)
+            executor.release.set()
+            long_result, short_result = long.result(5), short.result(5)
+        chunks = [event for event in executor.chunk_events if event[0] == 'prefill']
         short_final = next(i for i, event in enumerate(chunks)
                            if event[1:3] == (1, 2))
         long_final = next(i for i, event in enumerate(chunks)
@@ -683,6 +704,132 @@ class ChunkedSchedulerTests(unittest.TestCase):
         for value in (-1,True,1.5):
             with self.subTest(value=value),self.assertRaises(ValueError):
                 BatchedRuntime({},prefill_chunk_size=value)
+
+
+class SplitPrefillAdmissionTests(unittest.TestCase):
+    """#690: split prefill admission on the chunked path.
+    DAMENDAEMON_PREFILL_ADMISSION bounds how many slots prefill at once
+    ('0' = legacy batch-wide round-robin, the A/B control). The pinned
+    contract: at bound 1 a queued request's first chunk is dispatched only
+    after the incumbent's prefill completes (its first output no longer
+    waits on later arrivals' chunks), every queued request still completes
+    (FIFO, no starvation), and decode keeps interleaving one chunk per
+    decode step."""
+
+    def setUp(self):
+        # The DEFAULT post-#690 is split admission ('1'); these tests pin
+        # that default explicitly (an ambient DAMENDAEMON_PREFILL_ADMISSION
+        # from the caller does not leak in).
+        environment = {'DAMENDAEMON_PREFILL_ADMISSION': '1'}
+        patcher = patch('damendaemon.scheduler.Runtime', FakeRuntime)
+        with patch.dict('os.environ', environment, clear=False):
+            patcher.start()
+        self.addCleanup(patcher.stop)
+        with patch.dict('os.environ', environment, clear=False):
+            self.runtime = BatchedRuntime({'a': 'a', 'b': 'b'}, batch_size=2,
+                                           queue_size=4, prefill_chunk_size=2)
+        self.executor = ChunkExecutor()
+        self.runtime.runtime.executor = self.executor
+        self.addCleanup(self.runtime.close)
+        self.addCleanup(self.executor.release.set)
+
+    def test_default_admission_is_split(self):
+        # No env in this process context: the scheduler defaults to the
+        # qualified split admission (bound 1), not the legacy batch drain.
+        import os
+        with patch.dict('os.environ', {}, clear=False):
+            os.environ.pop('DAMENDAEMON_PREFILL_ADMISSION', None)
+            runtime = BatchedRuntime({'a': 'a'}, batch_size=3, queue_size=4,
+                                     prefill_chunk_size=2)
+        self.addCleanup(runtime.close)
+        self.assertEqual(runtime.prefill_admission, 1)
+
+    def generate(self, prompt, count=8, alias='a'):
+        return list(self.runtime.generate(alias, [{'content': prompt}], count))
+
+    def wait_pending(self, count):
+        deadline = time.monotonic() + 3
+        while time.monotonic() < deadline:
+            with self.runtime.condition:
+                if len(self.runtime.pending) == count:
+                    return
+            time.sleep(.001)
+        self.fail('requests did not queue')
+
+    def test_second_prefill_starts_after_incumbent_prefill_completes(self):
+        with ThreadPoolExecutor(2) as pool:
+            long = pool.submit(self.generate, 'abcdefghijklmnop')
+            self.assertTrue(self.executor.entered.wait(2))
+            short = pool.submit(self.generate, 'wxyz')
+            self.wait_pending(1)
+            self.executor.release.set()
+            long_result, short_result = long.result(5), short.result(5)
+        chunks = [event for event in self.executor.chunk_events if event[0] == 'prefill']
+        # The incumbent (slot 0) owns the whole prefill lane: every one of
+        # its chunks precedes the second request's first chunk.
+        self.assertEqual([event[1] for event in chunks[:8]], [0] * 8)
+        self.assertEqual([event[2] for event in chunks if event[1] == 0],
+                         list(range(0, 16, 2)))
+        self.assertEqual([event[2] for event in chunks if event[1] == 1], [0, 2])
+        # Decode of the incumbent interleaves with the second prefill —
+        # the overlap the split exists to create.
+        self.assertTrue(any(event[0] == 'decode' and 0 in event[1]
+                            for event in self.executor.chunk_events))
+        for result, prompt_tokens in ((long_result, 16), (short_result, 4)):
+            self.assertEqual(result[-1]['usage']['prompt_tokens'], prompt_tokens)
+            self.assertEqual(result[-1]['usage']['completion_tokens'], 8)
+
+    def test_all_queued_requests_complete_without_starvation(self):
+        # Three requests against batch 2, admission bound 1: the third waits
+        # for a free prefill lane, then a free slot — and still completes.
+        with ThreadPoolExecutor(3) as pool:
+            self.executor.release.set()
+            futures = [pool.submit(self.generate, prompt)
+                      for prompt in ('abcdef', 'ghijkl', 'mnopqr')]
+            results = [future.result(5) for future in futures]
+        for result in results:
+            self.assertEqual(result[-1]['usage']['prompt_tokens'], 6)
+            self.assertEqual(result[-1]['usage']['completion_tokens'], 8)
+
+    def test_admission_env_is_validated(self):
+        for value in ('yes', '-1', '1.5', '3'):
+            with self.subTest(value=value):
+                with patch.dict('os.environ', {'DAMENDAEMON_PREFILL_ADMISSION': value},
+                                clear=False):
+                    with self.assertRaisesRegex(ValueError, 'PREFILL_ADMISSION'):
+                        BatchedRuntime({'a': 'a'}, batch_size=2, queue_size=4,
+                                       prefill_chunk_size=2)
+
+    def test_legacy_env_keeps_round_robin_prefill(self):
+        # The control contract: '0' admits the whole batch, so two admitted
+        # prefilling slots alternate chunks (the aggregate-prefill bound).
+        environment = {'DAMENDAEMON_PREFILL_ADMISSION': '0'}
+        with patch.dict('os.environ', environment, clear=False), \
+                patch('damendaemon.scheduler.Runtime', FakeRuntime):
+            runtime = BatchedRuntime({'a': 'a'}, batch_size=2, queue_size=4,
+                                     prefill_chunk_size=2)
+        self.addCleanup(runtime.close)
+        executor = ChunkExecutor()
+        runtime.runtime.executor = executor
+        self.addCleanup(executor.release.set)
+
+        def run(prompt):
+            return list(runtime.generate('a', [{'content': prompt}], 4))
+
+        with ThreadPoolExecutor(2) as pool:
+            long = pool.submit(run, 'abcdefghijklmnop')
+            self.assertTrue(executor.entered.wait(2))
+            short = pool.submit(run, 'wxyz')
+            deadline = time.monotonic() + 3
+            while time.monotonic() < deadline:
+                with runtime.condition:
+                    if len(runtime.pending) == 1:
+                        break
+                time.sleep(.001)
+            executor.release.set()
+            long.result(5), short.result(5)
+        chunks = [event for event in executor.chunk_events if event[0] == 'prefill']
+        self.assertEqual([event[1] for event in chunks[1:5]], [0, 1, 0, 1])
 
 
 class MtpChunkExecutor(ChunkExecutor):
