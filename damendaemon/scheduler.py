@@ -115,17 +115,19 @@ class BatchedRuntime:
         self.batch_size = batch_size
         self.queue_timeout = queue_timeout
         # Split prefill admission (#690): how many slots may prefill
-        # concurrently on the chunked path. '0' (legacy default) admits the
-        # whole batch at once, so every prefilling slot shares the
-        # one-chunk-per-decode-step stream — clustered arrivals serialize
-        # every first output onto the aggregate prefill time (C4 first
-        # outputs 502-528 s; C5 projects ~630 s > the 600 s gate). A positive
-        # bound admits that many prefills at a time: the incumbent's first
-        # output stops waiting on later arrivals' chunks and later prefills
-        # overlap incumbent decode one chunk per decode step. Requests
-        # beyond the bound wait in the FIFO queue (queue timeout applies;
-        # the post-admission SLO clock starts at admission).
-        admission = os.environ.get('DAMENDAEMON_PREFILL_ADMISSION', '0')
+        # concurrently on the chunked path. The default ('1') admits one
+        # prefill lane at a time — the incumbent's first output stops
+        # waiting on later arrivals' chunks, later prefills overlap
+        # incumbent decode one chunk per decode step, and requests beyond
+        # the bound wait in the FIFO queue (queue timeout applies; the
+        # post-admission SLO clock starts at admission). Measured on the
+        # C4 A/B (#690): post-admission first outputs 130-156 s vs the
+        # legacy 505-527 s for every slot, totals unchanged, outputs
+        # byte-identical. '0' keeps the legacy batch-wide round-robin
+        # (every admitted slot shares the chunk stream — clustered
+        # arrivals serialize every first output onto the aggregate
+        # prefill time: C4 first outputs 502-528 s) as the A/B control.
+        admission = os.environ.get('DAMENDAEMON_PREFILL_ADMISSION', '1')
         if not admission.isascii() or not admission.isdecimal():
             raise ValueError('DAMENDAEMON_PREFILL_ADMISSION must be a nonnegative integer')
         self.prefill_admission = int(admission) or batch_size
