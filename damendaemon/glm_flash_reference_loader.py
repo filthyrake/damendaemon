@@ -64,7 +64,7 @@ def _load_reference(path,start,end,*,max_weight_bytes=256*1024**2,projection_wor
     """
     if sys.byteorder!='little':raise ValueError('Flash reference loading requires a little-endian host')
     if (type(max_weight_bytes) is not int or max_weight_bytes<1
-            or any(type(v) is not int or not 1<=v<=2**31
+            or any(type(v) is not int or not 1<=v<=2**40
                    for v in (projection_workspace_bytes,max_workspace_bytes,max_output_bytes))):
         raise ValueError('invalid Flash reference loader byte budgets')
     path=Path(path)

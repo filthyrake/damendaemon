@@ -17,7 +17,7 @@ def main(argv=None):
     parser.add_argument('--prefill-chunk',type=bounded_integer(1,4096),default=128)
     parser.add_argument('--plan-output',help='write ranges-only JSON for the existing host command, only if a plan fits')
     for name,default in (('weight',256),('cache',256),('projection-workspace',8),('workspace',64),('output',64),('frame',64)):
-        bound=2**20 if name in ('weight','cache') else 2048  # weight/cache carry whole real-model stages (2**20 MiB); frame covers chunked-activation frames at practical context
+        bound=2**20 if name in ('weight','cache','workspace') else 2048  # weight/cache carry whole real-model stages; workspace covers real-geometry KDA recurrence scratch (2**20 MiB); frame covers chunked-activation frames at practical context
         parser.add_argument('--'+name+'-mib',type=bounded_integer(1,bound),default=default)
     args=parser.parse_args(argv)
     try:

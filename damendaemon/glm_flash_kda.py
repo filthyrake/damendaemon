@@ -28,7 +28,7 @@ def _recurrent_attention(query,key,value,log_decay,beta,initial_state=None,*,
     update gates in [0,1]; pinned Flash gates occupy the narrower [-5,0] interval.
     """
     if (not isinstance(query,torch.Tensor) or query.ndim!=4
-            or any(type(v) is not int or not 1<=v<=2**31 for v in (max_workspace_bytes,max_output_bytes))):
+            or any(type(v) is not int or not 1<=v<=2**40 for v in (max_workspace_bytes,max_output_bytes))):
         raise ValueError('invalid Flash KDA geometry or budgets')
     b,t,h,k=query.shape
     if (not 1<=b<=65536 or not 1<=t<=2**20 or not 1<=h<=4096 or not 1<=k<=4096

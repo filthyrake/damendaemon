@@ -47,7 +47,7 @@ class _FlashLinearAttention:
         if (any(type(v) is not int or not 1<=v<=4096 for v in (heads,head_dim,kernel_size))
                 or type(lower_bound) not in (int,float) or not -100<=lower_bound<0
                 or type(epsilon) not in (int,float) or not 0<epsilon<=1
-                or any(type(v) is not int or not 1<=v<=2**31 for v in (max_workspace_bytes,max_output_bytes))
+                or any(type(v) is not int or not 1<=v<=2**40 for v in (max_workspace_bytes,max_output_bytes))
                 or not isinstance(weights,dict) or not isinstance(weights.get('q_proj.weight'),torch.Tensor)
                 or weights['q_proj.weight'].ndim!=2):
             raise ValueError('invalid Flash KDA layer options')
