@@ -1,0 +1,29 @@
+stage [0,1): FlashLinearAttention/PackedFlashFeedForward in 11.4s, RSS 3.4 GiB, embed=yes, head=no
+  PASS [values(float32)] model.language_model.layers.0.self_attn.q_proj.weight shape=(8192, 4096)
+  PASS [values(float32)] model.language_model.layers.0.self_attn.o_proj.weight shape=(4096, 8192)
+  PASS [values(float32)] model.language_model.layers.0.self_attn.A_log shape=(64,)
+  PASS [values(float32)] model.language_model.layers.0.self_attn.dt_bias shape=(8192,)
+  PASS [values(float32)] model.language_model.embed_tokens.weight shape=(154880, 4096)
+  spot-checks: 5 passed, 0 failed
+  after cleanup RSS 1.0 GiB
+stage [3,4): FlashSparseAttention/PackedFlashFeedForward in 19.8s, RSS 7.4 GiB, embed=no, head=no
+  PASS [bytes] model.language_model.layers.3.self_attn.kv_a_proj_with_mqa.weight shape=(512, 4096)
+  PASS [values(float32)] model.language_model.layers.3.self_attn.kv_a_proj_with_mqa.weight_scale_inv shape=(4, 32)
+  PASS [values(float32)] model.language_model.layers.3.self_attn.kv_b_proj.weight shape=(32768, 512)
+  PASS [values(float32)] model.language_model.layers.3.self_attn.indexer.wk.weight shape=(128, 4096)
+  PASS [bytes] model.language_model.layers.3.mlp.experts.0.gate_proj.weight shape=(2048, 4096)
+  PASS [values(float32)] model.language_model.layers.3.mlp.experts.0.gate_proj.weight_scale_inv shape=(16, 32)
+  PASS [bytes] model.language_model.layers.3.mlp.experts.287.down_proj.weight shape=(4096, 2048)
+  PASS [values(float32)] model.language_model.layers.3.mlp.gate.weight shape=(288, 4096)
+  PASS [values(float32)] model.language_model.layers.3.mlp.gate.e_score_correction_bias shape=(288,)
+  spot-checks: 9 passed, 0 failed
+  after cleanup RSS 7.4 GiB
+stage [44,45): FlashLinearAttention/PackedFlashFeedForward in 22.6s, RSS 16.9 GiB, embed=no, head=yes
+  PASS [values(float32)] model.language_model.layers.44.self_attn.q_proj.weight shape=(8192, 4096)
+  PASS [bytes] model.language_model.layers.44.mlp.experts.5.up_proj.weight shape=(2048, 4096)
+  PASS [values(float32)] model.language_model.layers.44.mlp.gate.weight shape=(288, 4096)
+  PASS [head] lm_head.weight shape=(154880, 4096)
+  spot-checks: 4 passed, 0 failed
+  after cleanup RSS 14.5 GiB
+GLM-CELL-A-RESULT {"[0,1)": {"seconds": 11.4, "checks_passed": 5, "checks_failed": 0}, "[3,4)": {"seconds": 19.8, "checks_passed": 9, "checks_failed": 0}, "[44,45)": {"seconds": 22.6, "checks_passed": 4, "checks_failed": 0}}
+peak RSS GiB 21.2
