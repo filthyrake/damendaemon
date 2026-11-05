@@ -32,7 +32,7 @@ class _FlashHyperConnection:
                 or not _tensor(base,(streams*(streams+2),),self.device) or not _tensor(scale,(3,),self.device)
                 or type(iterations) is not int or not 1<=iterations<=128
                 or any(type(v) not in (int,float) or not 0<v<=1 for v in (norm_epsilon,connection_epsilon))
-                or any(type(v) is not int or not 1<=v<=2**31 for v in (max_workspace_bytes,max_output_bytes))):
+                or any(type(v) is not int or not 1<=v<=2**40 for v in (max_workspace_bytes,max_output_bytes))):
             raise ValueError('invalid Flash hyper-connection parameters or limits')
         _finite(projection,base,scale)
         self.projection,self.base,self.scale=projection,base,scale

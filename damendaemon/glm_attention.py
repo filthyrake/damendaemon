@@ -39,7 +39,10 @@ def _positions(positions,shape,device='cpu'):
 
 
 def _budgets(output,scratch,max_output_bytes,max_workspace_bytes):
-    if any(type(bound) is not int or not 1<=bound<=2**31 for bound in (max_output_bytes,max_workspace_bytes)):
+    # Real-geometry reference layers (e.g. flash KDA at 64 heads x 128 dim) demand
+    # ~17 MB of recurrence workspace per token; a 2 GiB ceiling admits only
+    # ~115-token chunks. These are admission ceilings, not allocations.
+    if any(type(bound) is not int or not 1<=bound<=2**40 for bound in (max_output_bytes,max_workspace_bytes)):
         raise ValueError('invalid GLM attention tensor storage budget')
     if output>max_output_bytes or scratch>max_workspace_bytes:
         raise ValueError('GLM attention exceeds output/workspace tensor storage budget')

@@ -36,7 +36,7 @@ def inspect_reference_storage(path,family,*,projection_workspace_bytes=8*1024**2
     Receipts detect ordinary concurrent file changes, not authenticate model bytes.
     """
     if family not in ('glm','flash','deepseek'):raise ValueError('unsupported CPU reference storage family')
-    if any(type(v) is not int or not 1<=v<=2**31 for v in (projection_workspace_bytes,max_workspace_bytes,max_output_bytes)):
+    if any(type(v) is not int or not 1<=v<=2**40 for v in (projection_workspace_bytes,max_workspace_bytes,max_output_bytes)):
         raise ValueError('invalid CPU storage inspection workspace/output bounds')
     path=Path(path).expanduser().resolve();receipt=snapshot_inventory(path)
     options=dict(max_weight_bytes=2**40,max_output_bytes=max_output_bytes)
@@ -117,7 +117,7 @@ def plan_reference_stages(layout,budgets,*,context=512,slots=4,chunk_size=128,
             or type(context) is not int or not 1<=context<=min(2**20,limit)
             or type(slots) is not int or not 1<=slots<=4 or type(chunk_size) is not int or not 1<=chunk_size<=4096
             or any(type(v) is not int or not 1<=v<=2**40 for v in (max_weight_bytes,max_cache_bytes))
-            or any(type(v) is not int or not 1<=v<=2**31 for v in (projection_workspace_bytes,max_workspace_bytes,max_output_bytes))
+            or any(type(v) is not int or not 1<=v<=2**40 for v in (projection_workspace_bytes,max_workspace_bytes,max_output_bytes))
             or type(frame_bytes) is not int or not 256<=frame_bytes<=2048*1024**2):
         raise ValueError('invalid reference storage placement controls')
     layout.verify_unchanged()

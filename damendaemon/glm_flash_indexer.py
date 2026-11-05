@@ -19,7 +19,7 @@ class _FlashIndexer:
                 or weights['wk.weight'].ndim!=2
                 or any(type(v) is not int or not 1<=v<=4096 for v in (heads,pool_size,top_k))
                 or top_k%pool_size or top_k<pool_size
-                or any(type(v) is not int or not 1<=v<=2**31 for v in (max_workspace_bytes,max_output_bytes))):
+                or any(type(v) is not int or not 1<=v<=2**40 for v in (max_workspace_bytes,max_output_bytes))):
             raise ValueError('invalid Flash indexer geometry/budgets')
         width,dim=weights['wk.weight'].shape
         query=weights.get('wq_b.weight')

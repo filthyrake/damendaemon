@@ -111,6 +111,41 @@ class FlashReferenceLoaderTests(unittest.TestCase):
             with patch('damendaemon.glm_flash_reference_loader.sys.byteorder','big'):
                 with self.assertRaisesRegex(ValueError,'endian'):load_reference_model(path)
 
+    def test_real_geometry_kda_workspace_is_admitted(self):
+        # The official GLM-5.3-Flash geometry (64 heads x 128 head_dim) drives the
+        # gated-deltanet recurrence workspace to ~17 MB/token: a 32-token real
+        # prefill needs ~832 MiB and a practical chunk-2048 prefill ~36 GiB, both
+        # far beyond the old 2 GiB fixture-scale ceiling. Admission is a ceiling,
+        # not an allocation: real-scale workspace budgets must pass preflight.
+        from damendaemon.glm_flash_linear import FlashLinearAttention
+        weights={'q_proj.weight':torch.zeros(8192,4096)}
+        heads,head_dim,dim=64,128,4096
+        width=heads*head_dim
+        for name in ('q','k','v'):
+            weights[f'{name}_proj.weight']=torch.zeros(width,dim);weights[f'{name}_conv1d.weight']=torch.zeros(width,1,4)
+        for name in ('f','g'):
+            weights[f'{name}_a_proj.weight']=torch.zeros(head_dim,dim)
+            weights[f'{name}_b_proj.weight']=torch.zeros(width,head_dim)
+        weights.update({'o_proj.weight':torch.zeros(dim,width),'o_norm.weight':torch.ones(head_dim),
+            'b_proj.weight':torch.zeros(heads,dim),'A_log':torch.zeros(heads),
+            'dt_bias':torch.zeros(width)})
+        layer=FlashLinearAttention({k:v.to(torch.float32) for k,v in weights.items()},heads=heads,head_dim=head_dim,
+            max_workspace_bytes=2**40,max_output_bytes=2**31)
+        for batch,tokens,exceeds_old_default,exceeds_old_ceiling in ((1,32,64*2**20,False),(4,2048,64*2**20,True)):
+            workspace=256*batch*tokens*(dim+8*width)+256*batch*heads*head_dim*head_dim
+            self.assertGreater(workspace,exceeds_old_default)  # real geometry exceeds the 64 MiB loader default
+            if exceeds_old_ceiling:
+                self.assertGreater(workspace,2**31)  # practical chunks exceed the old 2 GiB ceiling outright
+            self.assertLessEqual(workspace,layer.max_workspace_bytes)  # ...and are admitted now
+        with self.assertRaises(ValueError):
+            FlashLinearAttention({k:v.to(torch.float32) for k,v in weights.items()},heads=heads,head_dim=head_dim,
+                max_workspace_bytes=2**40+1,max_output_bytes=2**31)
+        with tempfile.TemporaryDirectory() as temp:
+            path=Path(temp);config,headers,_=fixture(path)
+            self.assertEqual(len(load_reference_model(path,max_workspace_bytes=2**40).blocks),3)
+            with patch('damendaemon.glm_flash_reference_loader._payload',side_effect=AssertionError('values read')):
+                with self.assertRaises(ValueError):load_reference_model(path,max_workspace_bytes=2**40+1)
+
     def test_visual_and_mtp_omitted_payload_failure_closes_descriptors_and_mutation_rejected(self):
         import damendaemon.glm_flash_reference_loader as loader
         with tempfile.TemporaryDirectory() as temp:

@@ -113,7 +113,7 @@ def prepare(args,*,family='qwen'):
     if (not 0<args.timeout<=86400 or not 1<=args.slots<=4 or not 1<=args.frame_mib<=64
             or not 1<=args.context<=args.context_limit<=2**20
             or not (0 if args.role=='worker' else 1)<=args.port<=65535
-            or any(getattr(args,n)>(2**20 if n in ('weight_mib','cache_mib') else 2048) for n in ('weight_mib','cache_mib','workspace_mib',
+            or any(getattr(args,n)>(2**20 if n in ('weight_mib','cache_mib','workspace_mib') else 2048) for n in ('weight_mib','cache_mib','workspace_mib',
                 'loader_workspace_mib','projection_workspace_mib','output_mib'))):
         raise ValueError('invalid CPU host endpoint, context or resource limits')
     if args.role!='worker' and (not args.server_name or len(args.server_name)>253 or '\0' in args.server_name):
