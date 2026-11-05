@@ -1,0 +1,17 @@
+{
+  "checkpoint": "zai-org/GLM-5.3-Flash",
+  "bytes": 328366173639,
+  "files": 74,
+  "shards": 62,
+  "family": "flash (glm5_next)",
+  "contract_amendments_needed": 0,
+  "retained_gib": 309.49,
+  "layers": 45,
+  "per_layer_gib_min_max": [0.66, 7.3],
+  "embedding_gib": 2.36,
+  "head_gib": 2.36,
+  "largest_conversion_overlap_gib": 1.18,
+  "mtp_layer": "layers.45 (eh_proj/enorm/hnorm/shared_head) excluded by stage ranges; num_nextn_predict_layers=1",
+  "vision_tower": "model.visual.* (24-block ViT, fp32 per modules_to_not_convert) — separate #57 surface, not part of language audit",
+  "audit_modes": ["config tensor_specs", "storage inspection (header accounting vs loader admission)"]
+}
