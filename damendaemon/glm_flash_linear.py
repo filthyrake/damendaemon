@@ -69,7 +69,7 @@ class _FlashLinearAttention:
 
     def new_state(self,batch,capacity,*,max_cache_bytes=256*1024**2):
         if (type(batch) is not int or not 1<=batch<=128 or type(capacity) is not int or not 1<=capacity<=2**20
-                or type(max_cache_bytes) is not int or not 1<=max_cache_bytes<=2**31
+                or type(max_cache_bytes) is not int or not 1<=max_cache_bytes<=2**40
                 or batch*self.bytes_per_slot>max_cache_bytes):
             raise ValueError('invalid Flash KDA cache geometry/budget')
         return FlashLinearState(self,torch.zeros(batch,3,self.heads*self.head_dim,self.kernel_size-1,dtype=torch.float32,device=self.device),
