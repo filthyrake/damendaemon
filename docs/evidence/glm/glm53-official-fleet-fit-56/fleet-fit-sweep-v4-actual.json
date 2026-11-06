@@ -1,0 +1,41 @@
+{
+ "actual_state": {
+  "archimedes_host_free_gib": 129,
+  "labnode3_gib_visible": 589,
+  "note": "589 GiB visible in guest (GPU MMIO reservations); plan uses 589 not 600",
+  "note_680g_failure": "680 GiB attempt wedged QEMU ~100 GiB short (other guests hold ~323 GiB actual + host headroom); killed, resized 600 GiB",
+  "vm_config_mib": 614400
+ },
+ "covered_all_layers": true,
+ "greedy_plan": [
+  {
+   "gib": 585.99,
+   "host": "labnode3-589g",
+   "layers": [
+    0,
+    66
+   ]
+  },
+  {
+   "gib": 101.29,
+   "host": "rocky10-desktop",
+   "layers": [
+    66,
+    77
+   ]
+  },
+  {
+   "gib": 14.51,
+   "host": "homer",
+   "layers": [
+    77,
+    78
+   ]
+  }
+ ],
+ "official_revision": "ba32f8c19c8738e2c57c71798c601d477a7bf844",
+ "retained_converted_gib": 698.15,
+ "scope": "glm53_official_fleet_fit_v4_actual",
+ "verdict": "feasible",
+ "weights_only_zero_cache": true
+}

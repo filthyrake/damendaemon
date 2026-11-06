@@ -1,7 +1,12 @@
 """Metadata-only GLM-5.3 main-model checkpoint contract.
 
-Pinned layout: zai-org/GLM-5.3, aca966e4e02791568aa6a4ced368624b3d897f42.
-Geometry independently transcribed from Transformers v5.15.0 glm_moe_dsa.
+Pinned layout: zai-org/GLM-5.3, ba32f8c19c8738e2c57c71798c601d477a7bf844
+(official release; the earlier aca966e4 transcription proved byte-identical —
+config and index hash unchanged).
+Geometry independently transcribed from Transformers v5.15.0 glm_moe_dsa and
+validated against the official release model.safetensors.index.json without
+payload reads: 117,060 main tensors exact (names set-equality), 694.4 GiB main
+storage bytes, 1,569 MTP tensors excluded (9.3 GiB, layer 78).
 No payload reads, model loading or numerical qualification. MTP is excluded.
 """
 import math
