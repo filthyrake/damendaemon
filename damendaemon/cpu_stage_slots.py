@@ -17,7 +17,7 @@ class CpuStageSlots:
         if (self.stage_type is None or not isinstance(stage, self.stage_type) or type(context) is not int
                 or not 1 <= context <= min(2**20, self._configuration(stage).get('max_position_embeddings', 2**20))
                 or type(max_batch) is not int or not 1 <= max_batch <= 4
-                or type(max_cache_bytes) is not int or not 1 <= max_cache_bytes <= 2**31):
+                or type(max_cache_bytes) is not int or not 1 <= max_cache_bytes <= 2**40):
             raise ValueError('invalid CPU stage slot controls')
         reserved = max_batch * self._cache_per_slot(stage,context)
         if reserved > max_cache_bytes: raise ValueError('CPU stage aggregate slot cache budget exceeded')

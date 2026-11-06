@@ -62,6 +62,34 @@ class FlashStageSlotTests(unittest.TestCase):
         linear.stage.config['text_config']['max_position_embeddings']=4
         with self.assertRaises(ValueError):FlashStageSlots(linear.stage,8)
 
+    def test_real_scale_stage_cache_budgets_are_admitted(self):
+        # The official GLM-5.3-Flash 3x110 GiB fleet plan (context 32768, slots 4)
+        # reserves 1,844,051,968 bytes of slot cache for stage [0,17) — within 15%
+        # of the old 2 GiB fixture-scale ceiling, so real-scale stage cache budgets
+        # like the 3-host cell's 4096 MiB were refused outright ('invalid CPU stage
+        # slot controls'). Admission is a ceiling, not an allocation: real-scale
+        # cache budgets must pass preflight.
+        real_per_slot = 1844051968 // 4  # official-plan stage [0,17) per-slot reservation
+        owner = self.owners()[0]
+        owner.stage.config['text_config']['max_position_embeddings'] = 2**20
+        with patch.object(owner.stage, '_cache_per_slot', return_value=real_per_slot):
+            aggregate = 4 * real_per_slot
+            self.assertLess(2**31, 4096*2**20)  # the 3-host cell's real budget crossed the old ceiling
+            exact = FlashStageSlots(owner.stage, 32768, 4, max_cache_bytes=aggregate)
+            self.assertEqual(exact.reserved_cache_bytes, aggregate)
+            exact.close()
+            with self.assertRaisesRegex(ValueError, 'aggregate'):
+                FlashStageSlots(owner.stage, 32768, 4, max_cache_bytes=aggregate - 1)
+            cell = FlashStageSlots(owner.stage, 128, 2, max_cache_bytes=4096*2**20)
+            cell.close()
+            long_context = FlashStageSlots(owner.stage, 65536, 4, max_cache_bytes=2**40)
+            long_context.close()
+        with self.assertRaisesRegex(ValueError, 'controls'):
+            FlashStageSlots(owner.stage, 128, 2, max_cache_bytes=2**40 + 1)
+        real_scale = owner.stage.new_state(1, 8, max_cache_bytes=2**40); real_scale.close()
+        with self.assertRaisesRegex(ValueError, 'bounds'):
+            owner.stage.new_state(1, 8, max_cache_bytes=2**40 + 1)
+
     def test_invalid_geometry_positions_and_budget_leave_slots_usable(self):
         owners=self.owners();first=owners[0];hidden=first.embedding(torch.tensor([[1,2]]))
         position=torch.tensor([[0,1]]);slots=torch.tensor([0])

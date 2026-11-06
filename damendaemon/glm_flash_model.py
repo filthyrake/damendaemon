@@ -125,7 +125,7 @@ class _FlashModel:
 
     def new_state(self,batch,capacity,*,max_cache_bytes=256*1024**2):
         if (type(batch) is not int or not 1<=batch<=128 or type(capacity) is not int or not 1<=capacity<=2**20
-                or type(max_cache_bytes) is not int or not 1<=max_cache_bytes<=2**31):
+                or type(max_cache_bytes) is not int or not 1<=max_cache_bytes<=2**40):
             raise ValueError('invalid Flash model cache bounds')
         if batch*self._cache_per_slot(capacity)>max_cache_bytes:
             raise ValueError('aggregate Flash cache reservation exceeds budget')
