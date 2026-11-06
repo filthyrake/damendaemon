@@ -111,7 +111,7 @@ class _GlmModel:
 
     def new_state(self,batch,capacity,*,max_cache_bytes=256*1024**2):
         if (type(batch) is not int or not 1<=batch<=128 or type(capacity) is not int or not 1<=capacity<=2**20
-                or type(max_cache_bytes) is not int or not 1<=max_cache_bytes<=2**31):
+                or type(max_cache_bytes) is not int or not 1<=max_cache_bytes<=2**40):
             raise ValueError('invalid GLM model cache bounds')
         width=sum(block.attention.rank+block.attention.rope_dim+
                   (block.attention.indexer.width if block.attention.indexer is not None else 0) for block in self.blocks)

@@ -23,6 +23,25 @@ class GlmModelTests(unittest.TestCase):
         self.model=model_fixture()
         self.tokens=torch.tensor([[1,3,2,5,4],[2,4,3,6,5]])
 
+    def test_real_scale_cache_budgets_are_admitted(self):
+        # The official GLM-5.3 3-host topology cell (context 128, slots 2)
+        # passes --cache-mib 8192 (2**33) — above the old 2**31 fixture-scale
+        # max_cache_bytes ceiling in GlmModel.new_state /
+        # CachedGlmAttention.new_state / GlmGeneration, which refused the
+        # cell at 'invalid GLM model cache bounds' after all three stages
+        # were already READY. Admission is a ceiling, not an allocation:
+        # real-scale cache budgets must pass preflight (2**40 boundary),
+        # same discipline as the flash family (#713).
+        model = self.model
+        real_scale = model.new_state(1, 2, max_cache_bytes=2**40)
+        self.assertGreater(real_scale.capacity, 0)
+        real_scale.close()
+        with self.assertRaisesRegex(ValueError, 'bounds'):
+            model.new_state(1, 2, max_cache_bytes=2**40 + 1)
+        # 2**31 + 1 must be admitted now (it was the old refusal boundary):
+        legacy = model.new_state(1, 2, max_cache_bytes=2**31 + 1)
+        legacy.close()
+
     def test_incremental_logits_match_full_prefix_and_manual_stack(self):
         model=self.model
         whole,state=model.prefill(self.tokens,capacity=5,all_logits=True)
