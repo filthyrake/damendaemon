@@ -1,0 +1,9 @@
+tokens[0:8] = [3, 10, 17, 24, 31, 38, 45, 52] vocab=154880 K=32
+stages loaded, RSS 41.2 GiB; dim=6144 layer0=CachedGlmAttention/PackedGlmFeedForward layer6=CachedGlmAttention/PackedGlmFeedForward
+GATE1 PASS: prefill(32) layer0 420.06s layer6 2372.08s shapes (1, 32, 6144) (1, 32, 6144)
+GATE2 layer0(dense+full-idx MLA): max|dec-pref|=1.118e-08 |h|mean=2.721e-03 rel=4.11e-06
+GATE2 layer6(sparse top-8/256 MoE): max|dec-pref|=2.086e-07 |h|mean=1.661e-02 rel=1.26e-05
+GATE3 reload determinism: layer0 byte-identical=True layer6 byte-identical=True
+GLM53-CELL-C-RESULT {"k": 32, "layer0_seconds": 420.06, "layer6_seconds": 2372.08, "parity_max_abs": {"layer0": 1.1175870895385742e-08, "layer6": 2.086162567138672e-07}, "parity_relative": {"layer0": 4.106853834248577e-06, "layer6": 1.2556697131231948e-05}, "reload_byte_identical": {"layer0": true, "layer6": true}}
+GLM53-CELL-C-GATES ALL PASS
+final RSS 82.0 GiB
