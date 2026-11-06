@@ -1,0 +1,36 @@
+stage [0,1): attn=CachedGlmAttention ffn=PackedGlmFeedForward blocks=1 in 13.0s, RSS 4.4 GiB, embed=yes, head=no
+  PASS [fp8-bytes] model.layers.0.self_attn.q_a_proj.weight shape=(2048, 6144)
+  PASS [scales] model.layers.0.self_attn.q_a_proj.weight_scale_inv shape=(16, 48)
+  PASS [values] model.layers.0.self_attn.q_a_layernorm.weight shape=(2048,)
+  PASS [fp8-bytes] model.layers.0.self_attn.o_proj.weight shape=(6144, 16384)
+  PASS [scales] model.layers.0.self_attn.o_proj.weight_scale_inv shape=(48, 128)
+  PASS [fp8-bytes] model.layers.0.self_attn.indexer.wk.weight shape=(128, 6144)
+  PASS [values] model.layers.0.self_attn.indexer.k_norm.bias shape=(128,)
+  PASS [fp8-bytes] model.layers.0.mlp.down_proj.weight shape=(6144, 12288)
+  PASS [scales] model.layers.0.mlp.down_proj.weight_scale_inv shape=(48, 96)
+  PASS [values] model.embed_tokens.weight shape=(154880, 6144)
+  spot-checks: 10/10 passed
+  after cleanup RSS 0.9 GiB
+stage [6,10): attn=CachedGlmAttention ffn=PackedGlmFeedForward blocks=4 in 85.5s, RSS 37.4 GiB, embed=no, head=no
+  PASS [fp8-bytes] model.layers.6.self_attn.kv_a_proj_with_mqa.weight shape=(576, 6144)
+  PASS [fp8-bytes] model.layers.6.self_attn.q_b_proj.weight shape=(16384, 2048)
+  PASS [fp8-bytes] model.layers.6.self_attn.kv_b_proj.weight shape=(28672, 512)
+  PASS [fp8-bytes] model.layers.6.mlp.experts.0.gate_proj.weight shape=(2048, 6144)
+  PASS [scales] model.layers.6.mlp.experts.0.gate_proj.weight_scale_inv shape=(16, 48)
+  PASS [fp8-bytes] model.layers.6.mlp.experts.255.down_proj.weight shape=(6144, 2048)
+  FAIL [fp8-bytes] model.layers.6.mlp.shared_experts.up_proj.weight shape=(2048, 6144)
+  PASS [values] model.layers.6.mlp.gate.weight shape=(256, 6144)
+  PASS [values] model.layers.6.mlp.gate.e_score_correction_bias shape=(256,)
+  PASS [fp8-bytes] model.layers.9.mlp.experts.7.up_proj.weight shape=(2048, 6144)
+  spot-checks: 9/10 passed
+  after cleanup RSS 9.8 GiB
+stage [74,78): attn=CachedGlmAttention ffn=PackedGlmFeedForward blocks=4 in 95.2s, RSS 49.9 GiB, embed=no, head=yes
+  PASS [fp8-bytes] model.layers.77.self_attn.kv_b_proj.weight shape=(28672, 512)
+  PASS [fp8-bytes] model.layers.77.mlp.experts.7.up_proj.weight shape=(2048, 6144)
+  PASS [values] model.layers.77.mlp.gate.weight shape=(256, 6144)
+  PASS [values] lm_head.weight shape=(154880, 6144)
+  PASS [values] model.norm.weight shape=(6144,)
+  spot-checks: 5/5 passed
+  after cleanup RSS 37.0 GiB
+GLM53-CELL-A-RESULT {"[0,1)": {"seconds": 13.0, "checks_passed": 10, "checks_total": 10}, "[6,10)": {"seconds": 85.5, "checks_passed": 9, "checks_total": 10}, "[74,78)": {"seconds": 95.2, "checks_passed": 5, "checks_total": 5}}
+peak RSS GiB 56.3
