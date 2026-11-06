@@ -1,0 +1,52 @@
+{
+ "checkpoint_total_bytes": 755617140416,
+ "covered_all_layers": true,
+ "family": "glm",
+ "fleet_inventory": {
+  "archimedes": {
+   "labnode3_current_gib": 118,
+   "other_guests_gib": 323,
+   "ram_total_gib": 1007
+  },
+  "dedicated_vram_gb": {
+   "3090": 24,
+   "A2": 15,
+   "A30": 24,
+   "A6000": 46,
+   "total": 109
+  },
+  "physical_hosts_gib": {
+   "3090box": 125,
+   "homer": 122,
+   "rocky10-desktop": 124
+  }
+ },
+ "greedy_plan": [
+  {
+   "gib": 677.99,
+   "host": "labnode3-expanded",
+   "layers": [
+    0,
+    76
+   ]
+  },
+  {
+   "gib": 23.71,
+   "host": "rocky10-desktop",
+   "layers": [
+    76,
+    78
+   ]
+  }
+ ],
+ "main_model_storage_bytes": 745584469056,
+ "official_revision": "ba32f8c19c8738e2c57c71798c601d477a7bf844",
+ "retained_converted_bytes": 749637364800,
+ "retained_converted_gib": 698.15,
+ "scope": "glm53_official_fleet_fit_v3_labnode3_expansion",
+ "single_host_max_without_touching_guests_gib": 683,
+ "single_labnode3_expanded_gib": 699.93,
+ "topology_note": "labnode3 = archimedes VM 109 (A30+A2 passed through); archimedes 1007 GiB total, other guests 323 GiB; expansion is a VM config change + restart",
+ "verdict": "feasible",
+ "weights_only_zero_cache": true
+}

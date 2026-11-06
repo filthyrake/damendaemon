@@ -1,0 +1,65 @@
+{
+ "checkpoint_total_bytes": 755617140416,
+ "covered_all_layers": true,
+ "family": "glm",
+ "fleet_inventory": {
+  "archimedes": {
+   "note": "Proxmox host; dedicated VM carved at 540 GiB conservative",
+   "ram_available_gib": 565,
+   "ram_total_gib": 1007
+  },
+  "cpu_hosts_gib": {
+   "3090box": 125,
+   "homer": 122,
+   "labnode3": 118,
+   "rocky10-desktop": 124
+  },
+  "dedicated_vram_gb": {
+   "3090 (3090box)": 24,
+   "A2 (labnode3)": 15,
+   "A30 (labnode3)": 24,
+   "A6000 (rocky10)": 46,
+   "total": 109
+  },
+  "homer_gtt_gb": 112
+ },
+ "fleet_total_stage_capacity_gib": 980,
+ "greedy_plan": [
+  {
+   "bytes": 579815821184,
+   "gib": 540.0,
+   "host": "archimedes-vm",
+   "layers": [
+    0,
+    61
+   ]
+  },
+  {
+   "bytes": 108757818752,
+   "gib": 101.29,
+   "host": "labnode3",
+   "layers": [
+    61,
+    72
+   ]
+  },
+  {
+   "bytes": 64970719040,
+   "gib": 60.51,
+   "host": "homer",
+   "layers": [
+    72,
+    78
+   ]
+  }
+ ],
+ "hosts_used": 3,
+ "main_model_storage_bytes": 745584469056,
+ "official_revision": "ba32f8c19c8738e2c57c71798c601d477a7bf844",
+ "retained_converted_bytes": 749637364800,
+ "retained_converted_gib": 698.15,
+ "scope": "glm53_official_fleet_fit_corrected",
+ "single_host_note": "archimedes alone (1007 GiB total) can hold the whole 698.2 GiB converted model in one VM with headroom",
+ "verdict": "fit: fleet-RAM-gated-FALSE corrected \u2014 feasible",
+ "weights_only_zero_cache": true
+}

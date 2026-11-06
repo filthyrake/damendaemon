@@ -38,6 +38,20 @@ class GlmCheckpointTests(unittest.TestCase):
         self.assertEqual(specs['model.layers.0.self_attn.kv_b_proj.weight'].shape,(28672,512))
         self.assertEqual(specs['model.layers.0.self_attn.q_b_proj.weight'].shape,(16384,2048))
 
+    def test_pinned_official_release_byte_accounting(self):
+        # Validated against the official release model.safetensors.index.json
+        # (no payload reads): main-model storage bytes and the MTP exclusion
+        # together reconstruct the official checkpoint total exactly.
+        fixture=json.loads((Path(__file__).parent/'fixtures/glm53_contract.json').read_text())
+        specs=tensor_specs(fixture['config'])
+        storage_bytes={'floating':2,'fp8':1,'scale':4}
+        total=sum(math.prod(spec.shape)*storage_bytes[spec.storage] for spec in specs.values())
+        self.assertEqual(total,fixture['main_model_storage_bytes'])
+        self.assertEqual(fixture['official_checkpoint_total_bytes'],755617140416)
+        self.assertEqual(fixture['official_checkpoint_total_bytes'],
+                         fixture['main_model_storage_bytes']+fixture['excluded_mtp_storage_bytes'])
+        self.assertEqual(fixture['revision'],'ba32f8c19c8738e2c57c71798c601d477a7bf844')
+
     def test_latent_shapes_dense_sparse_and_shared_indexer_ownership(self):
         specs=tensor_specs(config())
         expected={'model.layers.0.self_attn.q_b_proj.weight':(16,8),

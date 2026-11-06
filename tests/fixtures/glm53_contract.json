@@ -1,10 +1,4 @@
 {
-  "repository": "zai-org/GLM-5.3",
-  "revision": "aca966e4e02791568aa6a4ced368624b3d897f42",
-  "index_sha256": "e0fe7f28c1f853d4824e4d796374e3dacf1fe470988773952c79b063768134bf",
-  "main_tensor_count": 117060,
-  "excluded_mtp_count": 1569,
-  "main_tensor_names_sha256": "27a03234cf02bde0563f2308dc1f04add7ca8dabf785bfd471ece4c9755f0ab0",
   "config": {
     "architectures": [
       "GlmMoeDsaForCausalLM"
@@ -213,29 +207,9 @@
     "qk_head_dim": 256,
     "qk_nope_head_dim": 192,
     "qk_rope_head_dim": 64,
-    "rms_norm_eps": 1e-05,
-    "rope_interleave": true,
-    "rope_parameters": {
-      "rope_theta": 8000000,
-      "rope_type": "default"
-    },
-    "routed_scaling_factor": 2.5,
-    "scoring_func": "sigmoid",
-    "tie_word_embeddings": false,
-    "topk_group": 1,
-    "topk_method": "noaux_tc",
-    "transformers_version": "5.15.0",
-    "use_cache": true,
-    "v_head_dim": 256,
-    "vocab_size": 154880,
     "quantization_config": {
       "activation_scheme": "dynamic",
       "fmt": "e4m3",
-      "quant_method": "fp8",
-      "weight_block_size": [
-        128,
-        128
-      ],
       "modules_to_not_convert": [
         "model.layers.59.post_attention_layernorm",
         "model.layers.47.mlp.gate.e_score_correction_bias",
@@ -778,7 +752,36 @@
         "model.layers.10.mlp.gate.e_score_correction_bias",
         "model.layers.5.self_attn.q_a_layernorm",
         "model.layers.37.self_attn.kv_a_layernorm"
+      ],
+      "quant_method": "fp8",
+      "weight_block_size": [
+        128,
+        128
       ]
-    }
-  }
+    },
+    "rms_norm_eps": 1e-05,
+    "rope_interleave": true,
+    "rope_parameters": {
+      "rope_theta": 8000000,
+      "rope_type": "default"
+    },
+    "routed_scaling_factor": 2.5,
+    "scoring_func": "sigmoid",
+    "tie_word_embeddings": false,
+    "topk_group": 1,
+    "topk_method": "noaux_tc",
+    "transformers_version": "5.15.0",
+    "use_cache": true,
+    "v_head_dim": 256,
+    "vocab_size": 154880
+  },
+  "excluded_mtp_count": 1569,
+  "excluded_mtp_storage_bytes": 10032671360,
+  "index_sha256": "e0fe7f28c1f853d4824e4d796374e3dacf1fe470988773952c79b063768134bf",
+  "main_model_storage_bytes": 745584469056,
+  "main_tensor_count": 117060,
+  "main_tensor_names_sha256": "27a03234cf02bde0563f2308dc1f04add7ca8dabf785bfd471ece4c9755f0ab0",
+  "official_checkpoint_total_bytes": 755617140416,
+  "repository": "zai-org/GLM-5.3",
+  "revision": "ba32f8c19c8738e2c57c71798c601d477a7bf844"
 }
