@@ -55,8 +55,9 @@ retention arithmetic (cache/workspace zero — weights-alone, most generous):
   operational finding (other guests hold ~323 GiB actual vs much larger
   configured allocations; `qm set --memory` takes MiB, not GiB)
 - **3-host plan, all within real budgets**: labnode3 [0,66) 585.99 GiB ·
-  rocky10-desktop [66,77) 101.29 GiB · homer [77,78) 14.51 GiB (final
-  norm/head ride the last stage)
+  rocky10-desktop [66,77) 101.29 GiB · **3090box** [77,78) 14.51 GiB (final
+  norm/head ride the last stage; 3090box preferred over homer so homer's
+  sheena serving stack stays up)
 
 ## Consequence for the #56 ladder
 
