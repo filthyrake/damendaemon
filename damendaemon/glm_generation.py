@@ -66,7 +66,7 @@ class ReferenceGenerator:
                 or not is_bytelevel(text.tokenizer.decoder)):
             raise ValueError('GLM generation requires matching explicit-device model and ByteLevel tokenizer')
         if (type(max_context) is not int or not 1<=max_context<=2**20
-                or type(max_cache_bytes) is not int or not 1<=max_cache_bytes<=2**31):
+                or type(max_cache_bytes) is not int or not 1<=max_cache_bytes<=2**40):
             raise ValueError('invalid GLM generation context/cache budget')
         validate_text_config(self._configuration(model),text,max_context)
         self.device=model.embedding.device
