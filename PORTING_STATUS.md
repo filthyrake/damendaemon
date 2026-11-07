@@ -28,10 +28,40 @@ assembly. Yes, all of it. This branch is the vehicle.
 | metal_q4_policy.py | 12 | ✅ PORTED (module 11) |
 | scoring.py | 16 | ✅ PORTED (module 12) |
 | prefill.py | 15 | ✅ PORTED (module 13) |
+| error_state.py | 18 | ✅ PORTED (module 14) |
 
-Ported: 486 LoC across 13 modules (1.10%). Remaining: 357 modules / 44,001 lines.
+Ported: 504 LoC across 14 modules (1.14%). Remaining: 356 modules / 43,983 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
+
+## error_state — notes (module 14, FIRST try/except PORT)
+
+- `native/error_state_asm.s` (~550 lines, 21-slot iface): detached_error
+  with the try/except-Exception realized at the C level — every C-API
+  NULL routes to the classify path (PyErr_Occurred →
+  PyErr_ExceptionMatches(Exception) → PyErr_Clear →
+  RuntimeError(str(error))); non-Exception BaseExceptions propagate
+  exactly like the original. BaseExceptionGroup dispatch via
+  PyObject_IsInstance; the comprehension is a PyList_Append loop over
+  error.exceptions; recursion is a direct `bl _dd_detached_error` (each
+  level owns its own try/except); copy.copy/with_traceback(None) via
+  iface-held callables; __cause__/__context__=None and the
+  __notes__=list(getattr(error,'__notes__',())) snapshot with the
+  missing-attribute → PyErr_Clear → PyList_New(0) path.
+- Verified: test_error_state 2/2 (nested groups + weakref detachment,
+  BaseExceptionGroup with SystemExit members); 11-case differential vs
+  git HEAD (plain/nested/base/exc groups, notes, __context__/__cause__
+  clearing, non-exception inputs → RuntimeError(str), __str__-raising
+  objects → TypeError propagation, AttributeError copy failures,
+  weakref detachment parity) — 0 diffs x3 runs (normalize object
+  addresses in reprs!); 200-iteration soak gc-clean; full battery green.
+- Divergence documented (untested by the suite): recursion runs on the
+  C stack, so >~1000-deep nesting does not raise RecursionError like
+  the original would.
+- Port cost: 1 bug — the shared cleanup chain dropped the x20 park,
+  but on success x20 IS the return value (decref-and-return →
+  BaseException_dealloc crash on first use); ownership must transfer to
+  the x28 result park before the generic exit.
 
 ## prefill — notes (module 13, FIRST GENERATOR PORT)
 
@@ -394,3 +424,20 @@ work is left as an exercise for future generations.
     Also: generator bodies run at first next(), not at call time —
     construct lazily (it=None sentinel) so TypeErrors surface at
     iteration, exactly like the original.
+34. **The result register must be excluded from the shared cleanup
+    chain.** error_state parked the return value in x20 (same reg the
+    error paths drop) — the generic exit decref'd and returned it;
+    BaseException_dealloc crashed on first use. When a success path
+    reuses a register that cleanup drops, explicitly transfer ownership
+    (`mov x20, xzr` after moving to x0) before the generic exit.
+35. **C-level try/except Exception: PyErr_Occurred →
+    PyErr_ExceptionMatches(Exception) → PyErr_Clear.** Route every
+    C-API NULL to one classifier; non-matching (BaseException)
+    propagates with the exception still set. Recursion through the
+    classifier preserves per-level semantics (each level owns its own
+    try/except) — but note recursion now runs on the C stack
+    (document the RecursionError divergence).
+36. **Differential reprs leak object addresses** (`<Obj at 0x…>`) —
+    two separately-constructed instances always diff. Normalize hex
+    addresses (regex `0x[0-9a-f]+`) in snapshot comparators, and run
+    the differential 2-3x to catch flaky passes.
