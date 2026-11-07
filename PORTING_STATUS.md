@@ -25,10 +25,27 @@ assembly. Yes, all of it. This branch is the vehicle.
 | harmony.py | 118 | ✅ PORTED (module 8) |
 | attention_budget.py | 10 | ✅ PORTED (module 9) |
 | metal_projection_policy.py | 11 | ✅ PORTED (module 10) |
+| metal_q4_policy.py | 12 | ✅ PORTED (module 11) |
 
-Ported: 443 LoC across 10 modules (1.00%). Remaining: 360 modules / 44,015 lines.
+Ported: 455 LoC across 11 modules (1.03%). Remaining: 359 modules / 44,003 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
+
+## metal_q4_policy — notes (module 11)
+
+- `native/metal_q4_policy_asm.s` (~420 lines, 18-slot iface): the
+  Qwen2.5-0.5B geometry dict (8 entries, insertion order, from
+  key/immediates data tables — 151936 = 0x25180 via movz/movk),
+  the `any(config.get(key) != value ...)` scan realized as a loop over
+  the same pairs with identical short-circuit, `config.get('rope_scaling')`
+  truthiness, exact-int type checks (ob_type == PyLong_Type) for
+  context/max_batch, chained `1 <= x <= 2048` / `1 <= x <= 4`
+  comparisons, both exact ValueErrors, implicit-None return.
+- Verified: test_metal_q4_policy 2/2 (incl. the qwen2.Executor
+  integration test), 44-case differential vs git HEAD (geometry drift
+  per-key, rope variants, bool/float/str/bignum contexts, missing
+  keys, AttributeError config=None, max_batch grid) — 0 diffs,
+  500-iteration soak gc-clean, full battery green.
 
 ## attention_budget + metal_projection_policy — notes (modules 9-10)
 
