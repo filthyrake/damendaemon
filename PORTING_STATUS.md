@@ -27,10 +27,39 @@ assembly. Yes, all of it. This branch is the vehicle.
 | metal_projection_policy.py | 11 | ✅ PORTED (module 10) |
 | metal_q4_policy.py | 12 | ✅ PORTED (module 11) |
 | scoring.py | 16 | ✅ PORTED (module 12) |
+| prefill.py | 15 | ✅ PORTED (module 13) |
 
-Ported: 471 LoC across 12 modules (1.07%). Remaining: 358 modules / 44,002 lines.
+Ported: 486 LoC across 13 modules (1.10%). Remaining: 357 modules / 44,001 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
+
+## prefill — notes (module 13, FIRST GENERATOR PORT)
+
+- `native/prefill_asm.s` (~840 lines, 22-slot iface): groups() as a
+  RESUMABLE STATE MACHINE. `_dd_groups` constructs the state object
+  (prompts/slots/budget/it=None/done/batch/assigned/count/pending);
+  `_dd_iter_next` runs one resumption: lazy zip creation (generator
+  bodies run on first next, so a non-iterable prompts raises at
+  iteration time, not call time), the `if batch and count+len>budget`
+  gate (PyNumber_Add + RichCompareBool — arbitrary precision), the
+  yield flush ((batch, assigned) tuple + fresh-list reset), the
+  post-yield RE-SUMPTION with the saved in-flight pair (self.pending —
+  a generator resumes at batch.append for the SAME prompt), appends via
+  getattr+call, count updates, and the final tail yield with done=True
+  + StopIteration via PyErr_SetNone.
+- Bridge supplies only the protocol shell: `_GroupsIterator.__iter__`
+  returns self; `__next__` delegates to asm (logic-free).
+- Verified: test_prefill 3/3; 30-case differential vs git HEAD (budget
+  grid incl. 2**100/-1/0/floats/str/None, empty/shortest-zip inputs,
+  single-over-budget prompts, partial consumption (next x1/x2 then
+  abandon), lazy TypeError timing, weird-budget TypeError timing) —
+  0 diffs; 300-iteration full-conversation soak gc-clean; full battery
+  green (77 pytest, 117 unittest).
+- Port cost: 3 bugs — (a) x10 kept across a call (x9-x15 are
+  CALLER-saved in AAPCS64; reload the iface pointer per use), (b) the
+  budget-compare parked its total in x27, clobbering the slot register
+  so `assigned` accumulated running counts, (c) the flush dropped the
+  in-flight pair, losing the prompt that triggered the yield.
 
 ## scoring — notes (module 12)
 
@@ -344,3 +373,24 @@ work is left as an exercise for future generations.
     (404 rows vs 118). Read the source line while writing each asm
     block and mirror the exact grouping — multiplication order also
     affects float rounding (bug-for-bug fidelity).
+31. **AAPCS64: x9–x15 are CALLER-saved — only x19–x28 survive a call.**
+    x10 held the iface pointer across a `bl _t_setattr_s` and came
+    back as garbage (4); every earlier module reloaded the iface
+    pointer per use, which is why the pattern held until one didn't.
+    Never carry x9-x15 across a call, even for "one quick load".
+32. **Don't multiplex a live value register as a scratch park.** The
+    budget-compare parked its arithmetic total in x27 while x27 still
+    held the (borrowed) slot needed by the fallthrough append — the
+    `assigned` list silently accumulated running counts (values were
+    plausible!). Park temps in a dedicated stack slot, and audit every
+    register's full lifetime across ALL branches, not just the path
+    that wrote it.
+33. **Generator yields suspend mid-loop: the in-flight item survives
+    the yield.** `yield` inside a for loop means resumption CONTINUES
+    with the current element (batch.append(prompt) runs for the SAME
+    prompt after the yield). A state-machine port must stash the
+    pending pair (self.pending) at flush and process it FIRST on the
+    next resumption — dropping it loses the element entirely.
+    Also: generator bodies run at first next(), not at call time —
+    construct lazily (it=None sentinel) so TypeErrors surface at
+    iteration, exactly like the original.
