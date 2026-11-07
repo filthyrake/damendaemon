@@ -14,10 +14,11 @@ assembly. Yes, all of it. This branch is the vehicle.
 
 | Module | Python LoC | Status |
 |---|---:|---|
-| damendaemon (whole package) | 44,201 | **0.09% ported** |
-| stopping.py | 41 | ✅ PORTED (41/44,201 lines) |
+| damendaemon (whole package) | 44,201 | **0.14% ported** |
+| stopping.py | 41 | ✅ PORTED (module 1) |
+| tokenizer_decoders.py | 19 | ✅ PORTED (module 2) |
 
-Ported surface: 370 modules. Remaining: 369 modules / 44,160 lines.
+Ported surface: 370 modules. Remaining: 368 modules / 44,141 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
 
@@ -69,3 +70,16 @@ work is left as an exercise for future generations.
 5. Frame-slot collisions with saved register pairs (an `i` local sharing
    an offset with saved x22) restore NULL into the interpreter and
    segfault far from the cause. Count frame slots twice.
+6. **A call's result must be stashed before any decref** — x0 is just
+   another caller-saved register; `bl _t_decref` erases your return
+   value. Save to a callee-saved reg first (module 2 bug).
+7. **C signatures are (obj, name) not (name, obj)**: e.g.
+   `PyObject_GetAttrString(v, name)` wants the *PyObject* in x0 and the
+   *char\** in x1. Swapping them derefs string bytes as a PyObject —
+   the crash address literally spells the C-string in ASCII (module 2
+   bug; the crash report told on us).
+8. **Immortal singletons (True/False/None in 3.12+) must not be
+   refcount-poked** — return them as-is through py_object restype.
+9. Mutable-sequence idioms map to: `pop()` = GetItem(borrowed) +
+   INCREF + `PyList_SetSlice(list, n-1, n, NULL)`; `extend(reversed(x))`
+   = backward-index GetItem + Append loop.
