@@ -23,10 +23,33 @@ assembly. Yes, all of it. This branch is the vehicle.
 | bytelevel_stream.py | 45 | ✅ PORTED (module 6) |
 | tokenizer_metadata.py | 103 | ✅ PORTED (module 7) |
 | harmony.py | 118 | ✅ PORTED (module 8) |
+| attention_budget.py | 10 | ✅ PORTED (module 9) |
+| metal_projection_policy.py | 11 | ✅ PORTED (module 10) |
 
-Ported: 422 LoC across 8 modules (0.95%). Remaining: 362 modules / 44,018 lines.
+Ported: 443 LoC across 10 modules (1.00%). Remaining: 360 modules / 44,015 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
+
+## attention_budget + metal_projection_policy — notes (modules 9-10)
+
+- `native/attention_budget_asm.s` (~290 lines, 9-slot iface): exact-int
+  type check via ob_type == PyLong_Type (rejects bools/floats like the
+  original `type(x) is not int`), positivity check, per-row budget
+  arithmetic, both ValueErrors, floor division — ALL arithmetic through
+  PyNumber_Add/Multiply/FloorDivide + PyObject_RichCompareBool, so
+  arbitrary-precision semantics (2**200 budgets, float dims) and the
+  ZeroDivisionError for per_row==0 are bit-faithful.
+- `native/metal_projection_policy_asm.s` (~270 lines, 7-slot iface):
+  row-count fast path, fp32 gate, max(m1,m2,m3) with CPython max()
+  first-maximal tie semantics, the 2**32 unsigned-index bound, the
+  rows<=16 and 4M-element packed thresholds — same PyNumber/RichCompare
+  approach; the 2**27 test boundary is exact.
+- Both bridges (~50 lines each) resolve only C API + ValueError +
+  True/False singletons; shims are 4 lines.
+- Verified: test_attention_budget 3/3, test_metal_projection_policy
+  2/2; differential vs git HEAD — 88 + 328 cases (bignums to 2**200,
+  floats, exact 2**32/4M boundaries, type errors, ZeroDivision) —
+  0 diffs; 500-iteration soaks gc-clean; full battery green.
 
 ## harmony — implementation notes (module 8)
 
@@ -269,3 +292,18 @@ work is left as an exercise for future generations.
     0x30D3E, but the module shipped `movz #0xd9e; movk #3` = 0x30D9E =
     200094 — the control-token guard silently passed unknown markers.
     Compute the halves, don't eyeball hex; test the boundary value.
+28. **Callee-saved registers used as parks must be zeroed at entry.**
+    Stack parks get `stp xzr,xzr` init; register parks need the same:
+    the module-9 raise path `cbz x24,3f` read a stale caller value and
+    Py_DecRef'd it (crash on x0=6). Zero every owned-park register in
+    the prologue, not just stack slots.
+29. **PyObject_RichCompareBool op codes: Py_LT=0, Py_LE=1, Py_EQ=2,
+    Py_NE=3, Py_GT=4, Py_GE=5.** Module 10 used #3 for "GE" — which is
+    NE — and every gate inverted (40 >= 2**32 came out True). The small
+    LE/EQ codes are adjacent to the GT/GE ones; write the enum comment
+    beside every call site.
+30. **Walk the original AST, not the summary.** Porting
+    `heads*(splits*(dim+1)*4+dim*ob)` from memory dropped the `*4`
+    (404 rows vs 118). Read the source line while writing each asm
+    block and mirror the exact grouping — multiplication order also
+    affects float rounding (bug-for-bug fidelity).
