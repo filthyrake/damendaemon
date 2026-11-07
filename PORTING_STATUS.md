@@ -22,10 +22,39 @@ assembly. Yes, all of it. This branch is the vehicle.
 | model_path.py | 12 | ✅ PORTED (module 5) |
 | bytelevel_stream.py | 45 | ✅ PORTED (module 6) |
 | tokenizer_metadata.py | 103 | ✅ PORTED (module 7) |
+| harmony.py | 118 | ✅ PORTED (module 8) |
 
-Ported: 304 LoC across 7 modules (0.69%). Remaining: 363 modules / 44,045 lines.
+Ported: 422 LoC across 8 modules (0.95%). Remaining: 362 modules / 44,018 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
+
+## harmony — implementation notes (module 8)
+
+- `native/harmony_asm.s` (~3500 lines, 44-slot iface): `_dd_init`
+  (MARKERS validation dict + reverse map), `_dd_text_init` (TextStream
+  state + tools/name validation via validate_tools + `_MARKERS`
+  per-kind token_to_id checks), `_dd_feed` (full marker grammar:
+  start/channel/format header metadata, message→begin_body, end/return
+  commit paths, call handoff with uuid4/json.dumps function-call dict,
+  eot, unknown-control raise, header/body token accumulation, header
+  256-token limit, completed/emitted dict copies, text_delta
+  delta calls, 3-tuple return), `_dd_output_stream` (gpt_oss dispatch,
+  schema/logprobs/ignore_eos rejection, TextStream construction),
+  `_dd_markers` (rebuild `_MARKERS` dict), `_dd_decode` trampoline.
+  Helpers: `_meth0/_meth_call`, `_getitem_str`, `_getdefault`,
+  `_slice_from`, `_startswith`, `_incref`, `_raise_value`,
+  `_call0`, `_decode`, `_marker_check`, `_tuple_item`, plus 30 iface
+  trampolines.
+- `damendaemon/harmony_asm.py`: 150-line logic-free ctypes bridge
+  (44-slot iface table, dylib build/cache); `damendaemon/harmony.py`:
+  4-line delegation shim.
+- Verified: test_harmony 11/11 (incl. 8 subtests), 8-sequence
+  differential vs `git show HEAD:damendaemon/harmony.py` (markers dict
+  equality, feed tuples + end-state snapshots) — 0 diffs, 200-iteration
+  full-conversation soak (declared handoff incl. CALL) gc-clean,
+  scheduler battery 83/83 via output_stream on SimpleNamespace models
+  (regression caught and fixed: NULL-without-exception + None
+  model_type strcmp).
 
 ## bytelevel_stream — implementation notes (module 6)
 
@@ -215,3 +244,28 @@ work is left as an exercise for future generations.
     copies); `PyErr_SetObject(ValueError, msg_str)` is WRONG — it
     wants an exception *instance*, not a message (module 7 bug:
     SystemError "not a BaseException subclass").
+24. **Park slots must sit above the callee-saved save area — and
+    helpers must not squat on callee-saved regs they don't save.**
+    `_decode` parked its args tuple in x21 without saving it, silently
+    corrupting every caller's x21 (channel in begin_body, `final` in
+    feed); symptom: garbage late in ffi *after* the helper returned.
+    Move helper temps into frame parks or save/restore the reg
+    (module 8 bug — every `[6, MESSAGE]` feed crashed in GC).
+25. **Attribute access vs method call: read the original object model,
+    not the name.** `uuid.uuid4().hex` is an attribute read (UUID.hex
+    is a str set in __init__), not a bound-method call; `_meth0` on it
+    raises "'str' object is not callable". Same class as war story 18:
+    dict `__getitem__` vs `PyObject_GetItem` (`_t_seq_getitem` on dicts
+    raises "dict is not a sequence") — pick GetItemWithError for
+    subscript/`.get` on mappings, and know which objects own which
+    protocol slots.
+26. **Returning NULL with no exception set is undefined under ctypes
+    py_object.** `dict.get()`-absent → Los_drop_cfg returned `mov x0,#0`
+    and segfaulted inside `_ctypes_callproc` instead of raising
+    SystemError. NULL is legal ONLY when PyErr is set; for "return
+    None", load the None singleton from the iface (borrowed is fine
+    for a py_object restype).
+27. **movz/movk immediates need arithmetic verification.** 199998 =
+    0x30D3E, but the module shipped `movz #0xd9e; movk #3` = 0x30D9E =
+    200094 — the control-token guard silently passed unknown markers.
+    Compute the halves, don't eyeball hex; test the boundary value.
