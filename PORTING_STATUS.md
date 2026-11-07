@@ -20,10 +20,34 @@ assembly. Yes, all of it. This branch is the vehicle.
 | prompts.py | 51 | ✅ PORTED (module 3) |
 | token_observation.py | 33 | ✅ PORTED (module 4) |
 | model_path.py | 12 | ✅ PORTED (module 5) |
+| bytelevel_stream.py | 45 | ✅ PORTED (module 6) |
 
-Ported surface: 370 modules. Remaining: 365 modules / 44,045 lines.
+Ported: 201 LoC across 6 modules (0.45%). Remaining: 364 modules / 44,045 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
+
+## bytelevel_stream — implementation notes (module 6)
+
+- `native/bytelevel_stream_asm.s` (~1090 lines, 39-slot iface): the
+  BYTE_VALUES alphabet built in the original's exact insertion order
+  (`_dd_init` two-pass visible/invisible, plus a `g_table` ord->byte
+  fast path), `_dd_stream_init` (ByteLevel validation, tokenizer/added/
+  allowed/utf8 state via codecs.getincrementaldecoder('utf-8')
+  (errors='replace')), `_dd_feed` (suppression check, added-token
+  dispatch incl. special/literal flush+reset and the ordinary-added
+  fallthrough to id_to_token, per-char alphabet map into an
+  uninitialized PyBytes scratch buffer, whole-piece UTF-8 fallback),
+  `_dd_finish`.
+- `damendaemon/bytelevel_stream.py`: 10-line shim re-exporting
+  BYTE_VALUES and ByteLevelStream from the asm bridge.
+- Verified: 50/50 differential vs `git show HEAD` reference (plain +
+  added modes, split-UTF-8 'Ã'/'©' interleavings), 200-iteration
+  heap-corruption reproducer clean, 300-iteration refcount soak with
+  zero drift on entry/content/decoder, gc.garbage == 0, full battery:
+  test_bytelevel_stream + deepseek_generation + stopping + prompts +
+  logprobs + harmony (70 passed, 151 subtests), scheduler+CLI 90/90,
+  manifest suites 13/13.
+
 
 ## stopping — implementation notes
 
@@ -109,3 +133,33 @@ work is left as an exercise for future generations.
     — increfing the value and then calling the API without inserting
     it leaves a NULL slot in the args tuple; the callee vectorcalls
     the NULL and dies at address 0 (module 5 bug).
+15. **`getattr(x, name, default)` fallbacks must NOT decref the
+    default.** The asm idiom "on GetAttr failure, load the iface-table
+    default" loads a *shared bridge-held singleton* (e.g. `_EMPTY_DICT`)
+    — treating it as an owned GetAttr result and calling Py_DecRef
+    frees it on the first call, and every later call decrefs freed
+    heap. Symptom: plain-mode soaks pass, added-token mode corrupts
+    the heap and crashes at a *different iteration each run* (iter 37,
+    then 60, then a random frame in PyList_Extend) — the freed block is
+    only fatal once the allocator reuses it. Fix: a borrowed-marker
+    callee-saved register (x24=1 → skip the decref). Note `()` is
+    immortal in 3.12 (rc 4294967295, decref is a no-op) but `{}` is
+    mortal — the bug hid in the second default (module 6 bug, the
+    nastiest so far).
+16. **`PyBytes_FromStringAndSize(NULL, n)` returns UNINITIALIZED
+    bytes** (`b'd\x00\x00...'` — verified). Any asm that allocates a
+    scratch buffer this way must write every one of the n bytes before
+    it escapes, or heap garbage leaks into output (and a length
+    mismatch overflows into the neighboring heap object).
+17. **id() of a bridge temporary dangles.** Every object whose address
+    goes into the iface table (singletons like 'utf-8', defaults like
+    `{}`) must first be held in a module global; `id({})` in the table
+    constructor is the address of a dead dict by the first feed (module
+    6 bug — the asm then read unrelated objects, e.g. a CDLL's dict,
+    as the 'errors' kwarg dict).
+18. Helper routines must preserve their argument register until the
+    final `w0` exits (`mov w0, #0` *before* the comparisons returns 0
+    unconditionally; `_ord_valid` bug), and dict-setstr call sites must
+    not confuse the key register (x1) with the value register (x2) —
+    the `final=True/False` kwarg bug loaded the bool into x1 and the
+    key C-string into x2 (module 6 bugs).
