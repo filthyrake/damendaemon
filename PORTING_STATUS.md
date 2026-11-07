@@ -14,12 +14,14 @@ assembly. Yes, all of it. This branch is the vehicle.
 
 | Module | Python LoC | Status |
 |---|---:|---|
-| damendaemon (whole package) | 44,201 | **0.25% ported** |
+| damendaemon (whole package) | 44,201 | **0.35% ported** |
 | stopping.py | 41 | ✅ PORTED (module 1) |
 | tokenizer_decoders.py | 19 | ✅ PORTED (module 2) |
 | prompts.py | 51 | ✅ PORTED (module 3) |
+| token_observation.py | 33 | ✅ PORTED (module 4) |
+| model_path.py | 12 | ✅ PORTED (module 5) |
 
-Ported surface: 370 modules. Remaining: 367 modules / 44,090 lines.
+Ported surface: 370 modules. Remaining: 365 modules / 44,045 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
 
@@ -96,3 +98,14 @@ work is left as an exercise for future generations.
 12. A register loaded for comparisons (e.g. the None singleton) is
     caller-saved like any other: reload it or keep it in x19-x28
     across interleaved calls (module 3 bug: dict got spurious keys).
+13. **Verify pattern/literal bytes with `od -c`, never a rendered file
+    read** — file reads can double backslashes in raw strings, and a
+    ported regex with doubled escapes silently never matches. The
+    module-5 shard regex MUST be `\.` (escaped dot): asm `.asciz
+    "...\\.gguf"` (asm `\\` = one backslash). The symlink-based
+    split-GGUF tests are the only thing that catches this — plain-path
+    differential cases can't distinguish the branches.
+14. **Every INCREF-before-steal needs its matching PyTuple_SetItem**
+    — increfing the value and then calling the API without inserting
+    it leaves a NULL slot in the args tuple; the callee vectorcalls
+    the NULL and dies at address 0 (module 5 bug).
