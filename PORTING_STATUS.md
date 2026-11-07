@@ -29,10 +29,54 @@ assembly. Yes, all of it. This branch is the vehicle.
 | scoring.py | 16 | ✅ PORTED (module 12) |
 | prefill.py | 15 | ✅ PORTED (module 13) |
 | error_state.py | 18 | ✅ PORTED (module 14) |
+| deepseek_pipeline_generation.py | 7 | ✅ PORTED (module 15) |
+| queued_deepseek_host_serving.py | 7 | ✅ PORTED (module 16) |
+| queued_glm_flash_host_serving.py | 7 | ✅ PORTED (module 17) |
+| queued_glm_host_serving.py | 7 | ✅ PORTED (module 18) |
+| cuda_deepseek_generation.py | 8 | ✅ PORTED (module 19) |
+| deepseek_host_serving.py | 8 | ✅ PORTED (module 20) |
+| glm_flash_host_serving.py | 8 | ✅ PORTED (module 21) |
+| glm_host_serving.py | 8 | ✅ PORTED (module 22) |
+| glm_flash_host_image_serving.py | 14 | ✅ PORTED (module 23) |
+| glm_flash_text.py | 14 | ✅ PORTED (module 24) |
+| glm_flash_pipeline_generation.py | 12 | ✅ PORTED (module 25) |
+| glm_flash_pipeline_image_generation.py | 12 | ✅ PORTED (module 26) |
+| glm_pipeline_generation.py | 14 | ✅ PORTED (module 27) |
+| cuda_glm_generation.py | 18 | ✅ PORTED (module 28) |
 
-Ported: 504 LoC across 14 modules (1.14%). Remaining: 356 modules / 43,983 lines.
+Ported: 648 LoC across 28 modules (1.47%). Remaining: 342 modules / 43,839 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
+
+## class-def modules (15–28) — notes (GENERATOR-STAMPED)
+
+- 14 pure class-statement modules (subclass + class attrs, `pass`/
+  docstring bodies, 28 classes total) ported at once via
+  `tools/gen_classdef_ports.py`, which emits per-module
+  `native/<mod>_asm.s` carrying FULL `__build_class__` semantics:
+  `_calc_meta` (CPython `_PyType_CalculateMetaclass` — winner starts
+  at `type`, per base `t = type(base)`, `PyType_IsSubtype` winner
+  swap, exact metaclass-conflict TypeError), `__prepare__` lookup via
+  GetAttrString with PyErr_Clear fallback to a fresh dict, ordered ns
+  population (`__module__` from the caller's `__name__`, `__qualname__`
+  from the class name — consumed by type_new like CPython —
+  `__doc__`, then attrs in source order), and
+  `PyObject_Call(meta, (name, bases, ns))`. Later classes in a module
+  can base themselves on earlier results (frame parks). The generator
+  reproduces the shipped .s files byte-exactly (rerun + git diff).
+- Bridges hold C-API + `type`/`True`/`TypeError` + every imported name
+  via `id()`; the bridge passes `__name__.rsplit('_asm', 1)[0]` so
+  classes carry the ORIGINAL module name in `__module__` (repr/pickle
+  parity — a plain `__name__` pass leaks `*_asm` into every class).
+- Verified: class-surface differential vs git HEAD for all 28 classes
+  (name/qualname/module/mro/doc/attr reprs/__dict__ ORDER) + re-export
+  parity — 0 diffs; metaclass-conflict path differential vs CPython
+  `type()` (exact message, raised at the same observable point) and
+  derived-metaclass winner selection (C2 over C1) — both match; all 16
+  affected test suites green (89 passed, 4 subtests; one
+  TimeoutError flake under full-batch load reproduced clean solo on
+  both port and original); 30-round module reload soak gc-clean;
+  standard battery green.
 
 ## error_state — notes (module 14, FIRST try/except PORT)
 
@@ -441,3 +485,18 @@ work is left as an exercise for future generations.
     two separately-constructed instances always diff. Normalize hex
     addresses (regex `0x[0-9a-f]+`) in snapshot comparators, and run
     the differential 2-3x to catch flaky passes.
+37. **Class statements: `__module__` comes from the CALLER's frame.**
+    The bridge's `__name__` is `<mod>_asm` — passing it straight puts
+    `*_asm` into every class's `__module__` (reprs and pickles change).
+    Strip the suffix (`__name__.rsplit('_asm', 1)[0]`) so classes
+    carry the original module name.
+38. **Generator-stamped ports need ground-truth probes FIRST.** The
+    class-dict order (3.12: type_new consumes `__qualname__` from ns,
+    appends `__dict__`/`__weakref__`, docless classes get `__doc__:
+    None` appended LAST) and the exact metaclass-conflict message came
+    from file-based dis()/repr probes of the live interpreter — memory
+    of "how CPython does it" was wrong on two counts (qualname key,
+    doc position). Also: when stamping N near-identical modules, build
+    ONE algorithm (with a conflict-path differential) instead of N
+    hand ports — and keep the generator in-repo so the shipped .s
+    files are reproducible.

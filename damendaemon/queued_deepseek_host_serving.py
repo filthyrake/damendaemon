@@ -1,7 +1,4 @@
 """Explicit bounded serialized native DeepSeek host HTTP admission."""
-from .deepseek_host_serving import HostDeepSeekReferenceRuntime
-from .queued_native_host_serving import QueuedNativeHostReferenceRuntime
 
+from .queued_deepseek_host_serving_asm import (QueuedHostDeepSeekReferenceRuntime, HostDeepSeekReferenceRuntime, QueuedNativeHostReferenceRuntime)
 
-class QueuedHostDeepSeekReferenceRuntime(QueuedNativeHostReferenceRuntime,HostDeepSeekReferenceRuntime):
-    pass

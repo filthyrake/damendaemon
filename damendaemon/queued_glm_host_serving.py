@@ -1,7 +1,4 @@
 """Explicit queued native GLM host HTTP admission."""
-from .glm_host_serving import HostGlmReferenceRuntime
-from .queued_native_host_serving import QueuedNativeHostReferenceRuntime
 
+from .queued_glm_host_serving_asm import (QueuedHostGlmReferenceRuntime, HostGlmReferenceRuntime, QueuedNativeHostReferenceRuntime)
 
-class QueuedHostGlmReferenceRuntime(QueuedNativeHostReferenceRuntime,HostGlmReferenceRuntime):
-    pass

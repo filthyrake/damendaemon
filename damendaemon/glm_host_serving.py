@@ -1,8 +1,4 @@
 """Explicit GLM native host HTTP admission."""
-from .glm_host_generation import HostGlmGenerator
-from .native_host_serving import NativeHostReferenceRuntime
 
+from .glm_host_serving_asm import (HostGlmReferenceRuntime, HostGlmGenerator, NativeHostReferenceRuntime)
 
-class HostGlmReferenceRuntime(NativeHostReferenceRuntime):
-    runner_type=HostGlmGenerator
-    model_type='glm_moe_dsa'

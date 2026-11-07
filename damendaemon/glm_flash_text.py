@@ -7,8 +7,6 @@ format and tokenizer validation, not the media/tool branches. Checkpoint license
 docs/licenses/glm53-flash-MIT.txt. Official prompt/token-ID cases are pinned in
 tests/fixtures/glm53_flash_text_contract.json.
 """
-from .glm_text import GlmText,render_chat
 
+from .glm_flash_text_asm import (FlashText, GlmText, render_chat)
 
-class FlashText(GlmText):
-    """Explicit Flash family binding over the verified shared ordinary format."""
