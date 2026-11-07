@@ -21,8 +21,9 @@ assembly. Yes, all of it. This branch is the vehicle.
 | token_observation.py | 33 | ✅ PORTED (module 4) |
 | model_path.py | 12 | ✅ PORTED (module 5) |
 | bytelevel_stream.py | 45 | ✅ PORTED (module 6) |
+| tokenizer_metadata.py | 103 | ✅ PORTED (module 7) |
 
-Ported: 201 LoC across 6 modules (0.45%). Remaining: 364 modules / 44,045 lines.
+Ported: 304 LoC across 7 modules (0.69%). Remaining: 363 modules / 44,045 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
 
@@ -47,6 +48,31 @@ work is left as an exercise for future generations.
   test_bytelevel_stream + deepseek_generation + stopping + prompts +
   logprobs + harmony (70 passed, 151 subtests), scheduler+CLI 90/90,
   manifest suites 13/13.
+
+
+## tokenizer_metadata — implementation notes (module 7)
+
+- `native/tokenizer_metadata_asm.s` (~1860 lines, 47-slot iface):
+  `_dd_read_object` (Path() wrap, with-protocol open/enter/read(limit+1)/
+  exit, byte-limit + object validation, parse_metadata_json dispatch),
+  the two public readers (limits resolved at call time via GetAttrString
+  on the shim module so test-suite patching of MAX_* works),
+  `_dd_special_token_text` (bos/eos extraction, structured AddedToken
+  content, UTF-8 encodability), `_select_named` (1..64 entries, exact
+  name/template entry shape via len==2+contains, per-entry UTF-8 byte
+  budget, duplicate detection, explicit default, tool_use selection),
+  `_dd_checkpoint_template` (chat_template precedence, Path/'chat_
+  template.jinja' fallback with the with-protocol, byte budget, UTF-8
+  validation).
+- Bridge holds `Path`, `parse_metadata_json`, the shim module object,
+  and all key strings in module globals (their id()s feed the iface);
+  the shim defines the MAX_* constants ABOVE the bridge import so the
+  partially-initialized module is usable during its own import.
+- Verified: test_tokenizer_metadata 7/7 + 58 subtests; soaks — 3-entry
+  list 500x, 2-entry + tools 500x, dict 500x, patched-budget 300x,
+  reader+special 200x — all zero refcount drift, gc.garbage 0; full
+  battery (9 suites) 77 passed + 209 subtests; scheduler+cli+manifests
+  103/103; qwen2/awq_model/t5/mamba/mamba2/runtime all import.
 
 
 ## stopping — implementation notes
@@ -163,3 +189,29 @@ work is left as an exercise for future generations.
     not confuse the key register (x1) with the value register (x2) —
     the `final=True/False` kwarg bug loaded the bool into x1 and the
     key C-string into x2 (module 6 bugs).
+19. **The return register x0 does not survive a cleanup epilogue.**
+    A shared cleanup block that drops parks via `Py_DecRef` clobbers
+    x0 with park pointers; ctypes' py_object restype then wraps the
+    garbage. Park the result (free stack slot or callee-saved reg)
+    BEFORE the decrefs and reload it at the end (module 7 bug — every
+    error/early exit segfaulted; NULL returns are legal only when an
+    exception is already set, so NULL-probing hid the real faults).
+20. **Loading a park into a register without clearing the park is a
+    double drop.** The cleanup later drops every nonzero park; the
+    loaded copy and the park both "own" one ref (module 7 bug: the
+    caller's chat-template LIST was freed while alive — its memory got
+    reused, the list read back as empty, and everything downstream
+    segfaulted nondeterministically).
+21. **PyIter_Next returns NEW references.** Unlike PyDict_GetItem*
+    (borrowed), each yielded item must be decref'd after use (module
+    7 bug: leaked one ref per entry per call).
+22. **`dd_init(ctypes.byref(iface()))` dangles if the array is a
+    temporary** — the asm stores the pointer; the array is freed after
+    the call; every later asm call reads freed memory. The iface array
+    must live in a module global (this bit my *debugging probes*, not
+    the shipped bridge — cost a full red-herring investigation).
+23. Dynamic error messages: build the str (FromOrdinal/Concat), then
+    `PyUnicode_AsUTF8AndSize(msg, NULL)` + `PyErr_SetString` (which
+    copies); `PyErr_SetObject(ValueError, msg_str)` is WRONG — it
+    wants an exception *instance*, not a message (module 7 bug:
+    SystemError "not a BaseException subclass").
