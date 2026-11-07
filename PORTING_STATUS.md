@@ -26,10 +26,30 @@ assembly. Yes, all of it. This branch is the vehicle.
 | attention_budget.py | 10 | ✅ PORTED (module 9) |
 | metal_projection_policy.py | 11 | ✅ PORTED (module 10) |
 | metal_q4_policy.py | 12 | ✅ PORTED (module 11) |
+| scoring.py | 16 | ✅ PORTED (module 12) |
 
-Ported: 455 LoC across 11 modules (1.03%). Remaining: 359 modules / 44,003 lines.
+Ported: 471 LoC across 12 modules (1.07%). Remaining: 358 modules / 44,002 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
+
+## scoring — notes (module 12)
+
+- `native/scoring_asm.s` (~430 lines, 19-slot iface): validate_raw
+  delegation via an iface-held callable + kwargs dict (max_length),
+  PyObject_IsInstance vs PyList_Type, the 2..256 count window as a
+  direct ssize compare, the any() token scan (exact-int type check +
+  Py_LT zero compare) as an indexed loop over PySequence_GetItem,
+  set-distinctness via PySet_New + PyObject_Size, and the
+  (prompt, list(candidates)) construction via PyObject_Call on
+  PyList_Type — copy semantics identical.
+- `damendaemon/scoring.py`: shim keeping the module docstring verbatim
+  (import-surface parity); the bridge holds prompts.validate_raw in a
+  module global for the iface.
+- Verified: test_scoring 4/4 (incl. Runtime.score + Executor
+  integration), 24-case differential vs git HEAD (bignum candidates,
+  bool/float/str/tuple/dict/set rejections, validate_raw interplay,
+  copy semantics after input mutation) — 0 diffs, 500-iteration soak
+  gc-clean, full battery green.
 
 ## metal_q4_policy — notes (module 11)
 
