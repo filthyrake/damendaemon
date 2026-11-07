@@ -14,11 +14,12 @@ assembly. Yes, all of it. This branch is the vehicle.
 
 | Module | Python LoC | Status |
 |---|---:|---|
-| damendaemon (whole package) | 44,201 | **0.14% ported** |
+| damendaemon (whole package) | 44,201 | **0.25% ported** |
 | stopping.py | 41 | ✅ PORTED (module 1) |
 | tokenizer_decoders.py | 19 | ✅ PORTED (module 2) |
+| prompts.py | 51 | ✅ PORTED (module 3) |
 
-Ported surface: 370 modules. Remaining: 368 modules / 44,141 lines.
+Ported surface: 370 modules. Remaining: 367 modules / 44,090 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
 
@@ -83,3 +84,15 @@ work is left as an exercise for future generations.
 9. Mutable-sequence idioms map to: `pop()` = GetItem(borrowed) +
    INCREF + `PyList_SetSlice(list, n-1, n, NULL)`; `extend(reversed(x))`
    = backward-index GetItem + Append loop.
+10. **ctypes passes py_object args as BORROWED refs.** Anything that
+    "steals" (PyTuple_SetItem, PyList_SetItem) must be preceded by a
+    manual INCREF or the container's dealloc underflows the refcount
+    — delayed heap corruption that surfaces far away, flakily (module
+    3 bug; 200-iteration soak loops catch it, single calls don't).
+11. **INCREF = ldr [obj] / add / str [obj] — deref the pointer.** When
+    the pointer lives in a stack slot, first load it into a register;
+    incrementing the slot's CONTENT adds 1 to the pointer, handing
+    `object+1` to the C API (module 3 bug).
+12. A register loaded for comparisons (e.g. the None singleton) is
+    caller-saved like any other: reload it or keep it in x19-x28
+    across interleaved calls (module 3 bug: dict got spurious keys).
