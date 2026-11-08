@@ -43,8 +43,11 @@ assembly. Yes, all of it. This branch is the vehicle.
 | glm_flash_pipeline_image_generation.py | 12 | ✅ PORTED (module 26) |
 | glm_pipeline_generation.py | 14 | ✅ PORTED (module 27) |
 | cuda_glm_generation.py | 18 | ✅ PORTED (module 28) |
+| floating_parameter.py | 6 | ✅ PORTED (module 29) |
+| reference_numerics.py | 6 | ✅ PORTED (module 30) |
+| glm_normalization.py | 10 | ✅ PORTED (module 31) |
 
-Ported: 648 LoC across 28 modules (1.47%). Remaining: 342 modules / 43,839 lines.
+Ported: 670 LoC across 31 modules (1.51%). Remaining: 339 modules / 43,831 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
 
@@ -500,3 +503,32 @@ work is left as an exercise for future generations.
     ONE algorithm (with a conflict-path differential) instead of N
     hand ports — and keep the generator in-repo so the shipped .s
     files are reproducible.
+39. **PyUnicode_AsUTF8AndSize(u, &size) WRITES 8 bytes at *x1.** Passing
+    a stale/garbage x1 (which held a live PyObject at both new call
+    sites) corrupts that object's ob_refcount — symptoms surface much
+    later, at interpreter shutdown (`weakref._select_for_exit`
+    segfault) or as "random" refcount chaos. Always `mov x1, xzr`
+    (NULL = no size out-param) before the call. (Modules 29/30 both
+    had it; all committed modules audited clean — tokenizer_metadata
+    got it right.)
+40. **The generic exit's cleanup loads clobber x0.** reference_numerics'
+    `Lrn_out` began `ldr x0, [sp, #104]` — the success result sitting
+    in x0 was destroyed and NULL (no exception) returned; ctypes'
+    py_object conversion of NULL then segfaults inside
+    _ctypes_callproc, presenting as a "silent crash inside torch"
+    because fault-PC symbolization lands in the victim frame. Fix:
+    park the result in a dedicated stack slot across the decref chain
+    (`str x0, [sp, #112]` … `ldr x0, [sp, #112]`), widening the frame
+    if needed.
+41. **Zero EVERY register park at entry, not just the ones this path
+    uses.** glm_normalization zeroed x22/x23 but not x24–x26; an
+    early-exit error path (getattr AttributeError) reached the
+    generic cleanup, which read the callee-saved regs still holding
+    CTYPES' leftovers — Py_DecRef(4), crash inside the framework.
+    The cleanup chain is a garbage-collector for every register it
+    names; all of them must be xzr at every entry path.
+42. **`if not X.all()` compiles to `b.ne raise` on IsTrue's result**
+    (0 = falsy = nonfinite = raise; 1 = truthy = fine). The natural
+    "b.eq" reading inverts the gate — module 31 and (earlier) module
+    30 both shipped inverted finite-gates on first build. Write the
+    polarity in a comment at every IsTrue branch.
