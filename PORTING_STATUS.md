@@ -48,8 +48,9 @@ assembly. Yes, all of it. This branch is the vehicle.
 | glm_normalization.py | 10 | ✅ PORTED (module 31) |
 | awq_decode_policy.py | 16 | ✅ PORTED (module 32) |
 | q4_prefill_policy.py | 18 | ✅ PORTED (module 33) |
+| glm_flash_ffn.py | 20 | ✅ PORTED (module 34) |
 
-Ported: 704 LoC across 33 modules (1.59%). Remaining: 337 modules / 43,797 lines.
+Ported: 724 LoC across 34 modules (1.64%). Remaining: 336 modules / 43,777 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
 
@@ -556,3 +557,23 @@ work is left as an exercise for future generations.
     documented divergence (unused repo-wide). Two modules with the
     same decorated helper (awq_decode_policy, q4_prefill_policy) get
     SEPARATE caches — copy the .s, don't share the dylib.
+45. **Class-def modules with __init__ bodies: the method's decision
+    logic ports to asm; the bridge supplies only a signature shell.**
+    Pattern (glm_flash_ffn, module 34): bridge defines
+    `def _flash_init(self, weights, *, activation_limit=10., **options):
+    return _lib.dd_flash_ffn_init(self, weights, activation_limit,
+    options)` — zero logic; ns gets this function via an iface slot
+    (dict SetItem does NOT steal — pass the borrowed iface ref, no
+    incref). super() fidelity: don't fake the parent lookup — call the
+    real `super` builtin with (defining_class, self), getattr
+    '__init__', then Call. The defining class must come from a
+    bridge-held registry dict filled AFTER dd_classes returns (iface
+    id() is stable across the fill); asm resolves it per call via
+    GetItemWithError. kwargs merge `f(a=k, **options)`: DictNew,
+    SetItem a, then PyDict_Merge(kwargs, options, override=1) —
+    options wins, exactly like CPython's call-site kwargs build.
+    Pitfall found: building the finfo args tuple — the incref'd
+    argument was left in x0 while x0 was reloaded with the callable;
+    the SetItem never ran and finfo() received an EMPTY tuple
+    ("missing 1 required positional argument"). Park the tuple, set
+    the item, THEN load the callable.
