@@ -89,6 +89,15 @@ MODS = [
   [('FlashText', ['GlmText'],
     'Explicit Flash family binding over the verified shared ordinary format.', [])]),
 
+ ('glm_flash_tool_generation',
+  '\"\"\"Explicit Flash binding over the verified shared bounded tool lifecycle.\"\"\"',
+  [('damendaemon.glm_flash_generation', ['FlashReferenceGenerator']),
+   ('damendaemon.glm_flash_tool_text', ['FlashToolText']),
+   ('damendaemon.glm_flash_tool_output', ['FlashToolTokenStream']),
+   ('damendaemon.glm_tool_generation', ['ToolGenerationMixin'])],
+  [('FlashToolReferenceGenerator', ['ToolGenerationMixin', 'FlashReferenceGenerator'], None,
+    [('text_type', N('FlashToolText')), ('stream_type', N('FlashToolTokenStream'))])]),
+
  ('glm_flash_pipeline_generation',
   '"""Explicit native Flash text/tool generation over complete CPU layer pipelines."""',
   [('damendaemon.glm_flash_layer_pipeline', ['FlashLayerPipeline']),

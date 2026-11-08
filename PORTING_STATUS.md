@@ -52,8 +52,9 @@ assembly. Yes, all of it. This branch is the vehicle.
 | cuda_glm_flash_indexer.py | 9 | ✅ PORTED (module 35) |
 | cuda_glm_flash_linear.py | 9 | ✅ PORTED (module 36) |
 | cuda_glm_flash_sparse.py | 10 | ✅ PORTED (module 37) |
+| glm_flash_tool_generation.py | 10 | ✅ PORTED (module 38) |
 
-Ported: 752 LoC across 37 modules (1.70%). Remaining: 333 modules / 43,449 lines.
+Ported: 762 LoC across 38 modules (1.72%). Remaining: 332 modules / 43,439 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
 
