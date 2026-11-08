@@ -105,11 +105,19 @@ def main():
         report['router_source_dtype'] = str(tensors[router_names[0]].dtype)
 
         def gpu_matrix(prefix_part):
-            codes = tensors[f'{prefix_part}_proj.weight'].to(device)
-            scales = tensors[f'{prefix_part}_proj.weight_scale_inv'].to(device)
-            if codes.dtype != torch.uint8 or scales.dtype != torch.float32:
-                raise ValueError(f'unexpected shipped storage dtypes for {prefix_part}')
-            return codes, scales
+            # safetensors hands back native float8_e4m3fn codes; the packed-tile
+            # decoder reads uint8 byte storage — same bytes, one view.
+            raw = tensors[f'{prefix_part}_proj.weight']
+            if raw.dtype == torch.uint8:
+                codes = raw
+            elif raw.dtype == torch.float8_e4m3fn:
+                codes = raw.view(torch.uint8)
+            else:
+                raise ValueError(f'unexpected shipped codes dtype {raw.dtype} for {prefix_part}')
+            scales = tensors[f'{prefix_part}_proj.weight_scale_inv']
+            if scales.dtype != torch.float32:
+                raise ValueError(f'unexpected shipped scale dtype {scales.dtype} for {prefix_part}')
+            return codes.to(device), scales.to(device)
 
         oracle_bank, oracle_shared = [], None
         for expert in range(experts):
