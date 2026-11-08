@@ -46,8 +46,10 @@ assembly. Yes, all of it. This branch is the vehicle.
 | floating_parameter.py | 6 | ✅ PORTED (module 29) |
 | reference_numerics.py | 6 | ✅ PORTED (module 30) |
 | glm_normalization.py | 10 | ✅ PORTED (module 31) |
+| awq_decode_policy.py | 16 | ✅ PORTED (module 32) |
+| q4_prefill_policy.py | 18 | ✅ PORTED (module 33) |
 
-Ported: 670 LoC across 31 modules (1.51%). Remaining: 339 modules / 43,831 lines.
+Ported: 704 LoC across 33 modules (1.59%). Remaining: 337 modules / 43,797 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
 
@@ -532,3 +534,25 @@ work is left as an exercise for future generations.
     "b.eq" reading inverts the gate — module 31 and (earlier) module
     30 both shipped inverted finite-gates on first build. Write the
     polarity in a comment at every IsTrue branch.
+43. **PyDict_SetItem returns an INT (0 = success, -1 = failure), not
+    a PyObject.** `cbz x0, error` after DictSetItem branches on the
+    SUCCESS path — and the "error" cleanup then decref'd a register
+    holding the RichCompareBool int 0/1, i.e. Py_DecRef(1) → segfault
+    inside the framework (module 32, first build). Int-returning C-API
+    calls (DictSetItem, DictSetString, SetItem, Print) test nonzero
+    for error; pointer-returning calls test NULL. Also: never park an
+    int result (RCB 0/1/-1, Contains) in a register a drop-chain
+    decrefs — use a register outside every cleanup chain.
+44. **lru_cache(maxsize=None) ports cleanly as a bridge-held dict**:
+    lookup via PyDict_GetItemWithError (hit: incref for the py_object
+    restype; miss: PyErr_Occurred to separate error from miss), then
+    compute, then store before returning the NEW bool. Exceptions are
+    never cached (error path exits before the store) — lru fidelity.
+    The decorated function must ALSO resolve patchable globals per
+    call: `torch.cuda.get_device_properties` is patched by tests, so
+    resolve torch → .cuda → .get_device_properties via GetAttrString
+    on every miss, never a bridge-held id(). Bridge exposes a
+    protocol shell (cache_clear → asm PyDict_Clear) — cache_info is a
+    documented divergence (unused repo-wide). Two modules with the
+    same decorated helper (awq_decode_policy, q4_prefill_policy) get
+    SEPARATE caches — copy the .s, don't share the dylib.
