@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/tmp/damendaemon-g719/scripts/experiments/verify_glm_q4_a6000.py", line 215, in <module>
+    main()
+  File "/tmp/damendaemon-g719/scripts/experiments/verify_glm_q4_a6000.py", line 116, in main
+    matrices = [CudaPackedMatrix(*gpu_matrix(f'model.layers.{layer}.mlp.experts.{expert}.{p}'), 'e4m3fn_f32')
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/damendaemon-g719/scripts/experiments/verify_glm_q4_a6000.py", line 111, in gpu_matrix
+    raise ValueError(f'unexpected shipped storage dtypes for {prefix_part}')
+ValueError: unexpected shipped storage dtypes for model.layers.6.mlp.experts.0.gate
+shared CUDA gate refused or stopped run; see report
