@@ -81,9 +81,13 @@ class CudaPackedGlmFeedForward:
         all_experts=bank if dense else bank+(shared,)
         if any(not isinstance(e,CudaPackedExpert) for e in all_experts):
             raise ValueError('CUDA GLM requires prepared CUDA routed/shared experts')
+        # One bank, one admitted format: the shipped e4m3fn_f32 storage or the
+        # Q4_0 packing measured in docs/evidence/glm/glm53-q4-fleet-719/. The
+        # bank must stay uniform — mixed-format experts refuse (gl #719).
+        formats={m.format for e in all_experts for m in (e.gate,e.up,e.down)}
         device,dim=bank[0].device,bank[0].width
-        if device.type!='cuda' or any(e.device!=device or e.width!=dim or e.activation_limit!=activation_limit
-                or any(m.format!='e4m3fn_f32' for m in (e.gate,e.up,e.down)) for e in all_experts):
+        if device.type!='cuda' or len(formats)!=1 or next(iter(formats)) not in ('e4m3fn_f32','q4_0_f16') \
+                or any(e.device!=device or e.width!=dim or e.activation_limit!=activation_limit for e in all_experts):
             raise ValueError('CUDA GLM expert device/format/geometry/activation policy mismatch')
         count=0 if dense else len(bank)
         if not dense:
