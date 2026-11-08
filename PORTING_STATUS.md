@@ -14,7 +14,7 @@ assembly. Yes, all of it. This branch is the vehicle.
 
 | Module | Python LoC | Status |
 |---|---:|---|
-| damendaemon (whole package) | 44,201 | **0.35% ported** |
+| damendaemon (whole package) | 44,201 | **2.16% ported** |
 | stopping.py | 41 | ✅ PORTED (module 1) |
 | tokenizer_decoders.py | 19 | ✅ PORTED (module 2) |
 | prompts.py | 51 | ✅ PORTED (module 3) |
@@ -59,8 +59,9 @@ assembly. Yes, all of it. This branch is the vehicle.
 | glm_layer_pipeline.py | 14 | ✅ PORTED (module 42) |
 | evidence_environment.py | 27 | ✅ PORTED (module 43) |
 | checkpoint_manifest.py | 23 | ✅ PORTED (module 44) |
+| moe_prefill.py | 23 | ✅ PORTED (module 45) |
 
-Ported: 934 LoC across 44 modules (2.11%). Remaining: 326 modules / 43,267 lines.
+Ported: 957 LoC across 45 modules (2.16%). Remaining: 325 modules / 43,244 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
 
@@ -343,6 +344,18 @@ message.
   Return -1 means "tokenizer revised already streamed text"; the bridge
   raises the RuntimeError.
 - `dd_stop_sequences(value) -> tuple or NULL` (exception set on NULL).
+
+## moe_prefill — notes (module 45)
+
+`qualified_scope` / `use_grouped_prefill` / `use_packed_prefill`: geometry
+dict literal via DSET macro, and-chains with CPython operand-return
+semantics (falsy operand propagates as the result), chained compares
+(`1 <= ctx <= 2048`), `all()`/`sum()` as explicit GetIter/IterNext loops
+(views are NOT iterators — the `items()` view needs its own `iter()`),
+`config.get('clip_qkv') is None` as a pointer compare against the iface
+slot holding `id(None)`. Differential: 16,666 cases (full config/device/
+quant/context/batch matrix incl. exception identity + 300-iter random
+soak) — ALL MATCH. Battery: 224 tests OK.
 
 ### macOS/arm64 war stories (so the next module port doesn't rediscover these)
 1. **dlsym has no underscore.** ctypes attribute names are the C name;
@@ -677,3 +690,30 @@ message.
     stderr byte stream. And: `ldr xN,[xN,#0]` disassembles as a bare
     `ldr xN,[xN]` — don't misread offset-0 iface slots as missing
     offsets.
+
+49. **ILOAD's `adrp x9` scratch silently REPLACES any value held in x9 —
+    and hand-rolled `_incref` segfaults on immortal singletons**
+    (module 45, one crash, two root causes in one hunt). (a) `ldr x9,
+    [sp,#120]` parked g (`config.get('clip_qkv')`) in x9, then
+    `ILOAD #96` (load the iface None slot for the `is None` compare)
+    executes its own `adrp x9, g_iface@PAGE` — g is silently replaced
+    by the g_iface ADDRESS. The pointer compare never matches, the
+    "not None" path runs `Py_DecRef(&g_iface)`, which decrements the
+    interface TABLE POINTER itself by 1 — every subsequent ILOAD reads
+    misaligned garbage (dump showed `id(False) << 8`), and the final
+    `_incref` faults on an unmapped pointer. The crash PC pointing at
+    `_incref` was pure misdirection. Rules: **never hold a value in
+    x9/x10 across an ILOAD** (the macro owns them — park in x24 or a
+    stack slot and reload); "dumped pointer looks one byte off" means
+    the TABLE POINTER was corrupted, not the object. (b) the
+    hand-rolled `_incref` (`ldr x9,[x0]; add; str`) WRITES the
+    refcount — True/False/None and small ints are PEP-683 immortals in
+    read-only pages, so increfing False segfaults on the `str` even
+    with a perfectly valid pointer. Route increfs through the real
+    `Py_IncRef` (iface slot, `br x11`); raw refcount writes are only
+    for heap objects. Related: return paths that trail cleanup
+    `Py_DecRef`s must re-park the result in a callee-saved reg first
+    (same class as 48). Differential-probe hygiene: drawing RNG args
+    once per SIDE fabricates diffs — draw once per case; and
+    `(e1 or e2 and ...)` counts identical exceptions as mismatches —
+    compare exception type+str explicitly.
