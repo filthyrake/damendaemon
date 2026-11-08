@@ -53,8 +53,9 @@ assembly. Yes, all of it. This branch is the vehicle.
 | cuda_glm_flash_linear.py | 9 | ✅ PORTED (module 36) |
 | cuda_glm_flash_sparse.py | 10 | ✅ PORTED (module 37) |
 | glm_flash_tool_generation.py | 10 | ✅ PORTED (module 38) |
+| glm_tool_text.py | 18 | ✅ PORTED (module 39) |
 
-Ported: 762 LoC across 38 modules (1.72%). Remaining: 332 modules / 43,439 lines.
+Ported: 780 LoC across 39 modules (1.76%). Remaining: 331 modules / 43,421 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
 
@@ -630,3 +631,17 @@ message.
     data is scrambled/zeroed with a valid header is a double-free
     victim, not an AsUTF8AndSize x1 bug — read the byte pattern first
     (UTF-16-looking escapes = two str bodies interleaved).
+47. **A shim must re-export EVERY module-level name of the original —
+    not just the ones its own tests use** (module 34 fallout, caught at
+    module 39). The glm_flash_ffn shim dropped `_limit`; four serving
+    suites (glm_host_generation, cuda_glm_generation,
+    glm_native_host_command, glm_flash_host_generation) import it
+    transitively but were never in the battery — latent ImportError
+    until the tool-chain suites ran. Related trap: `_dd_limit` was
+    missing from `.globl` — a perfectly implemented asm entry point is
+    unusable if the symbol is local (nm lowercase `t`). After every
+    port, run an export audit: parse the ORIGINAL module's AST
+    (defs/classes/imports/assigns), import the shim, diff the names —
+    and grep the repo for imports of every dropped name. The audit
+    script pattern lives in this file's history; 0 missing after the
+    fix.

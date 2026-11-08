@@ -38,6 +38,7 @@
 
 .globl _dd_init
 .globl _dd_classes
+.globl _dd_limit
 .globl _dd_flash_ffn_init
 .globl _dd_packed_flash_ffn_init
 

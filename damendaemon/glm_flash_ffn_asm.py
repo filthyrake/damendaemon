@@ -50,6 +50,8 @@ _lib = ctypes.PyDLL(_build())
 _lib.dd_init.argtypes = [ctypes.c_void_p]
 _lib.dd_classes.restype = ctypes.py_object
 _lib.dd_classes.argtypes = [ctypes.py_object]
+_lib.dd_limit.restype = ctypes.py_object
+_lib.dd_limit.argtypes = [ctypes.py_object]
 _lib.dd_flash_ffn_init.restype = ctypes.py_object
 _lib.dd_flash_ffn_init.argtypes = [ctypes.py_object] * 4
 _lib.dd_packed_flash_ffn_init.restype = ctypes.py_object
@@ -67,6 +69,11 @@ def _flash_init(self, weights, *, activation_limit=10., **options):
 def _packed_flash_init(self, experts, *, activation_limit=10., **options):
     """Protocol shell — logic in native/glm_flash_ffn_asm.s."""
     return _lib.dd_packed_flash_ffn_init(self, experts, activation_limit, options)
+
+
+def _limit(value):
+    """Protocol shell — logic in native/glm_flash_ffn_asm.s."""
+    return _lib.dd_limit(value)
 
 
 # ABI table shared with native/glm_flash_ffn_asm.s (offsets/8):

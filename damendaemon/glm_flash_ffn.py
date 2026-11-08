@@ -2,4 +2,4 @@
 
 Delegation shim — decision logic lives in native/glm_flash_ffn_asm.s.
 """
-from .glm_flash_ffn_asm import FlashFeedForward, PackedFlashFeedForward  # noqa: F401
+from .glm_flash_ffn_asm import FlashFeedForward, PackedFlashFeedForward, _limit  # noqa: F401
