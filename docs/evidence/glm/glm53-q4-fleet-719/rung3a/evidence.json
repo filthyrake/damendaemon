@@ -1,0 +1,52 @@
+{
+  "cases": [],
+  "checks": 1,
+  "device": "Radeon 8060S Graphics",
+  "error": "checkpoint misses ['model.layers.6.mlp.0.gate_proj.weight', 'model.layers.6.mlp.0.gate_proj.weight_scale_inv', 'model.layers.6.mlp.0.up_proj.weight']",
+  "experts": 48,
+  "fans": [
+    {
+      "level": 5,
+      "minimum_rpm": 3000,
+      "mode": "fixed",
+      "name": "fan1",
+      "rpm": 4219
+    },
+    {
+      "level": 5,
+      "minimum_rpm": 3000,
+      "mode": "fixed",
+      "name": "fan2",
+      "rpm": 4312
+    },
+    {
+      "level": 5,
+      "minimum_rpm": 1000,
+      "mode": "fixed",
+      "name": "fan3",
+      "rpm": 1824
+    }
+  ],
+  "gates": [],
+  "hip": "7.13.26162",
+  "layer": 6,
+  "limit_celsius": 80,
+  "maximum_observed_celsius": 38.375,
+  "model_qualified": false,
+  "passed": false,
+  "sensors": [
+    {
+      "celsius": 30.0,
+      "cutoff_celsius": 80,
+      "driver": "amdgpu",
+      "label": "edge"
+    },
+    {
+      "celsius": 38.375,
+      "cutoff_celsius": 80,
+      "driver": "k10temp",
+      "label": "Tctl"
+    }
+  ],
+  "torch": "2.11.0+rocm7.13.0a20260425"
+}

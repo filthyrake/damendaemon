@@ -1,0 +1,67 @@
+{
+  "command": [
+    "/home/damen/strixenv/bin/python",
+    "-m",
+    "scripts.experiments.verify_glm_q4_homer",
+    "--output",
+    "evidence.json"
+  ],
+  "timeout_seconds": 900,
+  "cooling": {
+    "limit_celsius": 80,
+    "checks": 2,
+    "fans": [
+      {
+        "name": "fan1",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4219,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan2",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4312,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan3",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 1824,
+        "minimum_rpm": 1000
+      }
+    ],
+    "maximum_observed_celsius": 38.25,
+    "sensors": [
+      {
+        "driver": "amdgpu",
+        "label": "edge",
+        "celsius": 30.0,
+        "cutoff_celsius": 80
+      },
+      {
+        "driver": "k10temp",
+        "label": "Tctl",
+        "celsius": 38.25,
+        "cutoff_celsius": 80
+      }
+    ],
+    "error": null
+  },
+  "watchdog": {
+    "reserve_bytes": 21474836480,
+    "minimum_available_bytes": 127766528000,
+    "last_available_bytes": 127766528000,
+    "triggered": false,
+    "error": null
+  },
+  "phase": "failed",
+  "cleanup_complete": true,
+  "host_available_before": 128133382144,
+  "child_pid": 1227740,
+  "seconds": 1.2324354029260576,
+  "exit_code": 1,
+  "host_available_after": 128058757120
+}

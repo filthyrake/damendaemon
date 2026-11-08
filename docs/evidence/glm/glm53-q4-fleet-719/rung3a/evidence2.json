@@ -1,0 +1,321 @@
+{
+  "cases": [],
+  "checks": 1,
+  "device": "Radeon 8060S Graphics",
+  "error": null,
+  "experts": 48,
+  "fans": [
+    {
+      "level": 5,
+      "minimum_rpm": 3000,
+      "mode": "fixed",
+      "name": "fan1",
+      "rpm": 4219
+    },
+    {
+      "level": 5,
+      "minimum_rpm": 3000,
+      "mode": "fixed",
+      "name": "fan2",
+      "rpm": 4303
+    },
+    {
+      "level": 5,
+      "minimum_rpm": 1000,
+      "mode": "fixed",
+      "name": "fan3",
+      "rpm": 1830
+    }
+  ],
+  "fp8_bank_bytes": 1850139648,
+  "gates": [
+    {
+      "gate": "q4_smaller_than_fp8",
+      "passed": true,
+      "ratio": 0.5624
+    },
+    {
+      "cases": [
+        {
+          "expert": 0,
+          "passed": true,
+          "rel_rms": 0.14910489320755005
+        },
+        {
+          "expert": 1,
+          "passed": true,
+          "rel_rms": 0.1419857144355774
+        },
+        {
+          "expert": 4,
+          "passed": true,
+          "rel_rms": 0.1359783411026001
+        },
+        {
+          "expert": 5,
+          "passed": true,
+          "rel_rms": 0.1473042219877243
+        },
+        {
+          "expert": 7,
+          "passed": true,
+          "rel_rms": 0.13963811099529266
+        },
+        {
+          "expert": 8,
+          "passed": true,
+          "rel_rms": 0.14117613434791565
+        },
+        {
+          "expert": 9,
+          "passed": true,
+          "rel_rms": 0.14484873414039612
+        },
+        {
+          "expert": 10,
+          "passed": true,
+          "rel_rms": 0.1372860223054886
+        },
+        {
+          "expert": 12,
+          "passed": true,
+          "rel_rms": 0.14422602951526642
+        },
+        {
+          "expert": 16,
+          "passed": true,
+          "rel_rms": 0.1428198218345642
+        },
+        {
+          "expert": 17,
+          "passed": true,
+          "rel_rms": 0.1394283026456833
+        },
+        {
+          "expert": 19,
+          "passed": true,
+          "rel_rms": 0.14319540560245514
+        },
+        {
+          "expert": 20,
+          "passed": true,
+          "rel_rms": 0.13662824034690857
+        },
+        {
+          "expert": 23,
+          "passed": true,
+          "rel_rms": 0.13720209896564484
+        },
+        {
+          "expert": 25,
+          "passed": true,
+          "rel_rms": 0.1459926962852478
+        },
+        {
+          "expert": 26,
+          "passed": true,
+          "rel_rms": 0.14253240823745728
+        },
+        {
+          "expert": 27,
+          "passed": true,
+          "rel_rms": 0.14918041229248047
+        },
+        {
+          "expert": 29,
+          "passed": true,
+          "rel_rms": 0.1383664906024933
+        },
+        {
+          "expert": 30,
+          "passed": true,
+          "rel_rms": 0.1374935358762741
+        },
+        {
+          "expert": 31,
+          "passed": true,
+          "rel_rms": 0.14941176772117615
+        },
+        {
+          "expert": 32,
+          "passed": true,
+          "rel_rms": 0.14099259674549103
+        },
+        {
+          "expert": 33,
+          "passed": true,
+          "rel_rms": 0.1481650322675705
+        },
+        {
+          "expert": 34,
+          "passed": true,
+          "rel_rms": 0.1472870111465454
+        },
+        {
+          "expert": 35,
+          "passed": true,
+          "rel_rms": 0.14467495679855347
+        },
+        {
+          "expert": 36,
+          "passed": true,
+          "rel_rms": 0.14405104517936707
+        },
+        {
+          "expert": 38,
+          "passed": true,
+          "rel_rms": 0.1465837061405182
+        },
+        {
+          "expert": 39,
+          "passed": true,
+          "rel_rms": 0.13808126747608185
+        },
+        {
+          "expert": 40,
+          "passed": true,
+          "rel_rms": 0.13978177309036255
+        },
+        {
+          "expert": 41,
+          "passed": true,
+          "rel_rms": 0.14006954431533813
+        },
+        {
+          "expert": 42,
+          "passed": true,
+          "rel_rms": 0.1472819596529007
+        },
+        {
+          "expert": 45,
+          "passed": true,
+          "rel_rms": 0.14618945121765137
+        },
+        {
+          "expert": 46,
+          "passed": true,
+          "rel_rms": 0.1352599412202835
+        },
+        {
+          "expert": "shared",
+          "passed": true,
+          "rel_rms": 0.127053365111351
+        }
+      ],
+      "gate": "per_expert_parity",
+      "passed": true,
+      "selected": [
+        0,
+        1,
+        4,
+        5,
+        7,
+        8,
+        9,
+        10,
+        12,
+        16,
+        17,
+        19,
+        20,
+        23,
+        25,
+        26,
+        27,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        38,
+        39,
+        40,
+        41,
+        42,
+        45,
+        46
+      ],
+      "worst_rel_rms": 0.14941176772117615
+    },
+    {
+      "gate": "ffn_parity",
+      "max_abs": 1.1582043170928955,
+      "max_abs_of_absmax": 0.08732787395663753,
+      "oracle_absmax": 13.262710571289062,
+      "passed": true,
+      "rel_rms": 0.12386040389537811
+    },
+    {
+      "gate": "q4_composition_equivalence",
+      "max_abs": 0.0,
+      "passed": true
+    }
+  ],
+  "hidden_width": 6144,
+  "hip": "7.13.26162",
+  "layer": 6,
+  "limit_celsius": 80,
+  "maximum_observed_celsius": 38.0,
+  "model_qualified": false,
+  "passed": true,
+  "peak_reserved_bytes": 3135242240,
+  "q4_bank_bytes": 1040449536,
+  "q4_projected_bytes": 1019215872,
+  "router_source_dtype": "torch.bfloat16",
+  "routing_ids": [
+    0,
+    1,
+    4,
+    5,
+    7,
+    8,
+    9,
+    10,
+    12,
+    16,
+    17,
+    19,
+    20,
+    23,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    38,
+    39,
+    40,
+    41,
+    42,
+    45,
+    46
+  ],
+  "sensors": [
+    {
+      "celsius": 30.0,
+      "cutoff_celsius": 80,
+      "driver": "amdgpu",
+      "label": "edge"
+    },
+    {
+      "celsius": 38.0,
+      "cutoff_celsius": 80,
+      "driver": "k10temp",
+      "label": "Tctl"
+    }
+  ],
+  "shards": 3,
+  "subset_experts": 48,
+  "tokens": 8,
+  "torch": "2.11.0+rocm7.13.0a20260425",
+  "total_experts": 256
+}
