@@ -57,8 +57,9 @@ assembly. Yes, all of it. This branch is the vehicle.
 | glm_tool_output.py | 17 | ✅ PORTED (module 40) |
 | glm_flash_tool_output.py | 73 | ✅ PORTED (module 41) |
 | glm_layer_pipeline.py | 14 | ✅ PORTED (module 42) |
+| evidence_environment.py | 27 | ✅ PORTED (module 43) |
 
-Ported: 884 LoC across 42 modules (2.0%). Remaining: 328 modules / 43,317 lines.
+Ported: 911 LoC across 43 modules (2.06%). Remaining: 327 modules / 43,290 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
 
