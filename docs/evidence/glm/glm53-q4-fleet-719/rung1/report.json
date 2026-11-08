@@ -1,0 +1,213 @@
+{
+ "date": "2026-11-08",
+ "official_revision": "ba32f8c19c8738e2c57c71798c601d477a7bf844",
+ "packed_tensor_rows": [
+  {
+   "elements": 12582912,
+   "idempotent": true,
+   "max_abs": 0.011108399368822575,
+   "max_abs_rel_to_absmax": 0.0625,
+   "name": "model.layers.0.self_attn.q_a_proj.weight",
+   "packed_bytes": 7077888,
+   "ratio": 0.5624,
+   "rel_rms": 0.09076546877622604,
+   "seconds": 0.2,
+   "shape": [
+    2048,
+    6144
+   ],
+   "source_bytes": 12585984
+  },
+  {
+   "elements": 786432,
+   "idempotent": true,
+   "max_abs": 0.09130859375,
+   "max_abs_rel_to_absmax": 0.058437,
+   "name": "model.layers.0.self_attn.indexer.wk.weight",
+   "packed_bytes": 442368,
+   "ratio": 0.5624,
+   "rel_rms": 0.10124463587999344,
+   "seconds": 0.1,
+   "shape": [
+    128,
+    6144
+   ],
+   "source_bytes": 786624
+  },
+  {
+   "elements": 3538944,
+   "idempotent": true,
+   "max_abs": 0.0693359375,
+   "max_abs_rel_to_absmax": 0.0625,
+   "name": "model.layers.6.self_attn.kv_a_proj_with_mqa.weight",
+   "packed_bytes": 1990656,
+   "ratio": 0.5623,
+   "rel_rms": 0.09550446271896362,
+   "seconds": 0.1,
+   "shape": [
+    576,
+    6144
+   ],
+   "source_bytes": 3539904
+  },
+  {
+   "elements": 33554432,
+   "idempotent": true,
+   "max_abs": 0.04492190480232239,
+   "max_abs_rel_to_absmax": 0.068047,
+   "name": "model.layers.6.self_attn.q_b_proj.weight",
+   "packed_bytes": 18874368,
+   "ratio": 0.5624,
+   "rel_rms": 0.10242015868425369,
+   "seconds": 0.7,
+   "shape": [
+    16384,
+    2048
+   ],
+   "source_bytes": 33562624
+  },
+  {
+   "elements": 12582912,
+   "idempotent": true,
+   "max_abs": 0.01123046875,
+   "max_abs_rel_to_absmax": 0.097872,
+   "name": "model.layers.6.mlp.experts.0.gate_proj.weight",
+   "packed_bytes": 7077888,
+   "ratio": 0.5624,
+   "rel_rms": 0.08863523602485657,
+   "seconds": 0.2,
+   "shape": [
+    2048,
+    6144
+   ],
+   "source_bytes": 12585984
+  },
+  {
+   "elements": 12582912,
+   "idempotent": true,
+   "max_abs": 0.00909423828125,
+   "max_abs_rel_to_absmax": 0.056784,
+   "name": "model.layers.6.mlp.experts.255.down_proj.weight",
+   "packed_bytes": 7077888,
+   "ratio": 0.5624,
+   "rel_rms": 0.08707508444786072,
+   "seconds": 0.3,
+   "shape": [
+    6144,
+    2048
+   ],
+   "source_bytes": 12585984
+  },
+  {
+   "elements": 12582912,
+   "idempotent": true,
+   "max_abs": 0.0334472693502903,
+   "max_abs_rel_to_absmax": 0.0625,
+   "name": "model.layers.6.mlp.shared_experts.up_proj.weight",
+   "packed_bytes": 7077888,
+   "ratio": 0.5624,
+   "rel_rms": 0.08768165111541748,
+   "seconds": 0.2,
+   "shape": [
+    2048,
+    6144
+   ],
+   "source_bytes": 12585984
+  },
+  {
+   "elements": 951582720,
+   "idempotent": true,
+   "max_abs": 0.0186767578125,
+   "max_abs_rel_to_absmax": 0.062094,
+   "name": "lm_head.weight",
+   "packed_bytes": 535265280,
+   "ratio": 0.2812,
+   "rel_rms": 0.08113179355859756,
+   "seconds": 13.8,
+   "shape": [
+    154880,
+    6144
+   ],
+   "source_bytes": 1903165440
+  }
+ ],
+ "packing": "quantization.quantize_q4 (uint8 paired nibbles + FP16 per-32 scales)",
+ "projection": {
+  "fp8_retained_gib": 698.15,
+  "per_stage": [
+   {
+    "host": "labnode3",
+    "layers": [
+     0,
+     62
+    ],
+    "q4_gib": 309.57
+   },
+   {
+    "host": "rocky10-desktop",
+    "layers": [
+     62,
+     70
+    ],
+    "q4_gib": 41.41
+   },
+   {
+    "host": "3090box",
+    "layers": [
+     70,
+     78
+    ],
+    "q4_gib": 44.95
+   }
+  ],
+  "q4_projected_total_gib": 395.93,
+  "stage_ranges": [
+   [
+    0,
+    62
+   ],
+   [
+    62,
+    70
+   ],
+   [
+    70,
+    78
+   ]
+  ]
+ },
+ "scope": "glm53_q4_fleet_719_rung1",
+ "source": "NAS original /mnt/nas-models/models/GLM-5.3",
+ "truth": "blockwise-E4M3-FP8 x scale_inv dequantized to FP32 (shipped values)",
+ "unpacked_classes": [
+  {
+   "bytes": 1903165440,
+   "decision": "stays high precision (selection/embed semantics)",
+   "dtype": "torch.bfloat16",
+   "name": "model.embed_tokens.weight",
+   "shape": [
+    154880,
+    6144
+   ]
+  },
+  {
+   "bytes": 3145728,
+   "decision": "stays high precision (selection/embed semantics)",
+   "dtype": "torch.bfloat16",
+   "name": "model.layers.6.mlp.gate.weight",
+   "shape": [
+    256,
+    6144
+   ]
+  },
+  {
+   "bytes": 1024,
+   "decision": "stays high precision (selection/embed semantics)",
+   "dtype": "torch.float32",
+   "name": "model.layers.6.mlp.gate.e_score_correction_bias",
+   "shape": [
+    256
+   ]
+  }
+ ]
+}
