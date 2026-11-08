@@ -40,10 +40,17 @@ def decode_blockwise_fp8(codes, scale_inv):
                          f'disagrees with {tuple(codes.shape)} (expected {grid})')
     if not hasattr(torch, 'float8_e4m3fn'):
         raise RuntimeError('PyTorch build without float8_e4m3fn support')
+    # BYTE reinterpretation of the stored codes — `.to()` is a NUMERIC cast
+    # (uint8 value 153 -> fp8 ~152) and decodes garbage. The production tile
+    # decoder (packed_tiles._e4m3) agrees with the view bit-for-bit; this bug
+    # was caught by the #719 A6000 paired-oracle cell (attempt 2, retained).
+    if not codes.is_contiguous():
+        codes = codes.contiguous()
+    values = codes.view(torch.float8_e4m3fn).float()
     row_index = torch.arange(rows, device=codes.device) // BLOCK
     column_index = torch.arange(width, device=codes.device) // BLOCK
     expanded = scale_inv[row_index][:, column_index].float()
-    return codes.to(torch.float8_e4m3fn).float() * expanded
+    return values * expanded
 
 
 def q4_matrix(truth, **matrix_options):

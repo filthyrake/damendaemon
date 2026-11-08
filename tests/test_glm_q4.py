@@ -11,9 +11,15 @@ from damendaemon.quantization import dequantize_q4, quantize_q4
 
 
 def _pair(rows, width, seed=7):
-    """Synthetic shipped-style blockwise-FP8 tensor with a partial tail grid."""
+    """Synthetic shipped-style blockwise-FP8 tensor with a partial tail grid.
+
+    Codes avoid the E4M3FN NaN encodings (0x7F/0xFF) — real checkpoint
+    weights are finite and the packer refuses non-finite truth.
+    """
     rng = torch.Generator().manual_seed(seed)
-    codes = torch.randint(0, 200, (rows, width), generator=rng).to(torch.uint8)
+    codes = torch.randint(0, 256, (rows, width), generator=rng).to(torch.uint8)
+    codes[codes == 0x7F] = 0x7E
+    codes[codes == 0xFF] = 0xFE
     grid = torch.randn(-(-rows // BLOCK), -(-width // BLOCK), generator=rng).abs() + 0.1
     return codes, grid
 
@@ -23,10 +29,17 @@ class GlmQ4DecodeTests(unittest.TestCase):
         # 576 rows -> 4 full blocks + one 64-row tail block (the real kv_a shape)
         codes, grid = _pair(576, 6144)
         truth = decode_blockwise_fp8(codes, grid)
-        expected = (codes.to(torch.float8_e4m3fn).float()
+        # BYTE reinterpretation is the shipped semantic (`.to()` would be a
+        # numeric cast and decode garbage — see glm_q4.decode_blockwise_fp8).
+        expected = (codes.view(torch.float8_e4m3fn).float()
                     * grid.repeat_interleave(BLOCK, 0)[:576].repeat_interleave(BLOCK, 1)[:, :6144])
         torch.testing.assert_close(truth, expected, rtol=0, atol=0)
         self.assertEqual(truth.dtype, torch.float32)
+        # The fp8 value decode must agree with the production tile decoder
+        # bit-for-bit on every finite code (decode with unit scales = raw values).
+        from damendaemon.packed_tiles import _e4m3
+        unit = decode_blockwise_fp8(codes, torch.ones(-(-576 // BLOCK), -(-6144 // BLOCK)))
+        self.assertTrue(torch.equal(unit, _e4m3(codes)))
 
     def test_decode_refuses_mismatched_grid_and_rank(self):
         codes, grid = _pair(128, 256)
