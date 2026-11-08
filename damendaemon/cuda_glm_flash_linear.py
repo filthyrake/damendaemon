@@ -1,9 +1,6 @@
-"""Explicit CUDA FP32 Flash linear attention with transactional owned state."""
-from .glm_flash_linear import _FlashLinearAttention
-from .cuda_glm_flash_primitives import _device
+"""Explicit CUDA FP32 Flash linear attention with transactional owned state.
 
-
-class CudaFlashLinearAttention(_FlashLinearAttention):
-    def __init__(self,weights,**options):
-        device=_device(weights.get('q_proj.weight') if isinstance(weights,dict) else None)
-        super().__init__(weights,device=device,**options)
+Delegation shim — decision logic lives in native/cuda_glm_flash_linear_asm.s.
+"""
+from .cuda_glm_flash_linear_asm import (  # noqa: F401
+    CudaFlashLinearAttention, _FlashLinearAttention, _device)

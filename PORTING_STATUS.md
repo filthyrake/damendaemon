@@ -49,10 +49,42 @@ assembly. Yes, all of it. This branch is the vehicle.
 | awq_decode_policy.py | 16 | ✅ PORTED (module 32) |
 | q4_prefill_policy.py | 18 | ✅ PORTED (module 33) |
 | glm_flash_ffn.py | 20 | ✅ PORTED (module 34) |
+| cuda_glm_flash_indexer.py | 9 | ✅ PORTED (module 35) |
+| cuda_glm_flash_linear.py | 9 | ✅ PORTED (module 36) |
+| cuda_glm_flash_sparse.py | 10 | ✅ PORTED (module 37) |
 
-Ported: 724 LoC across 34 modules (1.64%). Remaining: 336 modules / 43,777 lines.
+Ported: 752 LoC across 37 modules (1.70%). Remaining: 333 modules / 43,449 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
+
+## cuda_glm_flash trio — notes (modules 35-37)
+
+`cuda_glm_flash_{indexer,linear,sparse}.py` are thin class-defs over
+`cuda_glm_flash_primitives` (untouched — the primitives module is a
+later port). All three follow the module-34 class-def recipe exactly:
+`__init__` bodies in asm (kwargs merge via PyDict_Merge override=1,
+real `super()` builtin call, defining class resolved per call from the
+bridge-held `_CLSREG` dict), the `_dd_use…` device gates in asm
+(`weights.get('wk.weight')` when `isinstance(weights, dict)`, then
+`_device(tensor).type == 'cuda' and _is_a2(...)` — args evaluated in
+exact CPython order), bridge supplies logic-free signature shells and
+holds the base classes (`_FlashIndexer`, `_device`) plus
+`_WKEY`/`_DKEY` constants. The shims re-export the base classes
+(`_FlashIndexer`, `CudaFlashIndexer`, `_FlashSparseAttention`) and
+`_device` because the tests patch them on the module namespace.
+Bridges are per-module copies — separate `_CLSREG`/`_HOLD` tuples, no
+shared dylib. Divergence: none. Differential: class structure (mro,
+dict order, qualname, module, bases), `__init__` behavior, and
+fixture-driven construction — 0 diffs; soak ok; trio tests 6/6;
+combined with the rest of the battery, 143 unittest tests green.
+
+The trio was committed together with the fix for the module-31
+double-free (war story 46) that blocked it: the regression initially
+looked like it was caused by these modules (pairs of trio + glm_model
+failed, singles passed) but was really heap-shape-dependent detonation
+of a latent module-31 bug — the trio tests' allocations just shaped
+the heap so the double-freed block landed on the next exception
+message.
 
 ## class-def modules (15–28) — notes (GENERATOR-STAMPED)
 
@@ -577,3 +609,23 @@ work is left as an exercise for future generations.
     the SetItem never ran and finfo() received an EMPTY tuple
     ("missing 1 required positional argument"). Park the tuple, set
     the item, THEN load the callable.
+46. **A ref fully consumed by a helper MUST be zeroed in the caller's
+    register before any shared exit label drops it again** (module 31,
+    glm_normalization — the two-week "layout-dependent heap corruption"
+    regression). `_allcheck(obj)` takes obj NEW and decrefs it
+    internally; the caller left the pointer in x24 and every path
+    through the shared epilogue drop chain decref'd it a SECOND time —
+    a double-free on every successful rms_norm call. The freed block
+    got handed to two owners; symptom was a RuntimeError message str
+    full of interleaved foreign strings/binary (two live objects
+    sharing one block), plus GC segvs at shutdown, all
+    ~layout-dependent (sometimes clean, sometimes not, pure-py bridges
+    still "corrupting" because the trigger was the HEAP SHAPE of the
+    test run, not the trio under suspicion). Rules: (a) zero a register
+    the moment its ownership leaves it (helper consumes it / value
+    stolen into a tuple/dict); (b) never trust "the trio/pairs fail"
+    combinatorics when the corruption source is heap-shape-dependent —
+    restore EACH suspect to originals in turn instead; (c) a str whose
+    data is scrambled/zeroed with a valid header is a double-free
+    victim, not an AsUTF8AndSize x1 bug — read the byte pattern first
+    (UTF-16-looking escapes = two str bodies interleaved).

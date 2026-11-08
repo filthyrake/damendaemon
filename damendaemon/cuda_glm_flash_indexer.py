@@ -1,9 +1,5 @@
-"""Explicit CUDA FP32 Flash learned pool selection."""
-from .glm_flash_indexer import _FlashIndexer
-from .cuda_glm_flash_primitives import _device
+"""Explicit CUDA FP32 Flash learned pool selection.
 
-
-class CudaFlashIndexer(_FlashIndexer):
-    def __init__(self,weights,**options):
-        device=_device(weights.get('wk.weight') if isinstance(weights,dict) else None)
-        super().__init__(weights,device=device,**options)
+Delegation shim — decision logic lives in native/cuda_glm_flash_indexer_asm.s.
+"""
+from .cuda_glm_flash_indexer_asm import CudaFlashIndexer, _FlashIndexer, _device  # noqa: F401

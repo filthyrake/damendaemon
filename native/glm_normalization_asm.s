@@ -160,6 +160,7 @@ _dd_rms_norm:
     ldr   x0, [sp, #96]
     bl    _t_decref
     str   xzr, [sp, #96]
+    mov   x0, xzr
     cbz   x24, Lgn_out
 
     // ---- m = s.mean (method NEW) ----
@@ -226,6 +227,7 @@ _dd_rms_norm:
     mov   x0, x24
     bl    _t_decref
     mov   x24, xzr
+    mov   x0, xzr
     cbz   x22, Lgn_out
 
     // ---- t = torch.isfinite(variance); not t.all() ----
@@ -252,6 +254,7 @@ _dd_rms_norm:
     cbz   x24, Lgn_drop22
     mov   x0, x24
     bl    _allcheck
+    mov   x24, xzr                         // t consumed inside _allcheck
     cmn   w0, #1
     b.eq  Lgn_drop22                        // error -> propagate
     cmp   w0, #1
@@ -330,6 +333,7 @@ _dd_rms_norm:
     cbz   x24, Lgn_drop23
     mov   x0, x24
     bl    _allcheck
+    mov   x24, xzr                         // t consumed inside _allcheck
     cmn   w0, #1
     b.eq  Lgn_drop23
     cmp   w0, #1
@@ -345,22 +349,37 @@ _dd_rms_norm:
     b     Lgn_out
 
 Lgn_raise_var:
+    cbz   x23, 1f
+    mov   x0, x23
+    bl    _t_decref
+    mov   x23, xzr
+1:  mov   x0, x22
+    bl    _t_decref
+    mov   x22, xzr
     adrp  x9, g_iface@PAGE
     ldr   x10, [x9, g_iface@PAGEOFF]
     ldr   x0, [x10, #72]                   // RuntimeError
     adrp  x1, m_var@PAGE
     add   x1, x1, m_var@PAGEOFF
     bl    _t_seterr
-    b     Lgn_drop22
+    mov   x0, xzr
+    b     Lgn_out
 
 Lgn_raise_out:
+    mov   x0, x23
+    bl    _t_decref
+    mov   x23, xzr
+    mov   x0, x22
+    bl    _t_decref
+    mov   x22, xzr
     adrp  x9, g_iface@PAGE
     ldr   x10, [x9, g_iface@PAGEOFF]
     ldr   x0, [x10, #72]                   // RuntimeError
     adrp  x1, m_out@PAGE
     add   x1, x1, m_out@PAGEOFF
     bl    _t_seterr
-    b     Lgn_drop23
+    mov   x0, xzr
+    b     Lgn_out
 
 Lgn_drop96_104:
     ldr   x0, [sp, #96]
@@ -378,11 +397,13 @@ Lgn_drop24:
     mov   x0, x24
     bl    _t_decref
     mov   x24, xzr
+    mov   x0, xzr                          // error path: NULL + exception
     b     Lgn_out
 Lgn_drop96:
     ldr   x0, [sp, #96]
     bl    _t_decref
     str   xzr, [sp, #96]
+    mov   x0, xzr                          // error path: NULL + exception
     b     Lgn_out
 Lgn_drop26:
     mov   x0, x26
@@ -401,10 +422,11 @@ Lgn_drop23:
     mov   x23, xzr
     b     Lgn_drop22
 Lgn_drop22:
-    cbz   x22, Lgn_out
+    cbz   x22, 8f
     mov   x0, x22
     bl    _t_decref
     mov   x22, xzr
+8:  mov   x0, xzr                          // raise/drop path: NULL + exception
 
 Lgn_out:
     str   x0, [sp, #112]
