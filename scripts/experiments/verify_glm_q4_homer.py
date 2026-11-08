@@ -87,7 +87,7 @@ def main():
         wanted = [f'model.layers.{layer}.mlp.gate.weight',
                   f'model.layers.{layer}.mlp.gate.e_score_correction_bias']
         for expert in list(range(args.experts)) + ['shared_experts']:
-            prefix = (f'model.layers.{layer}.mlp.{expert}' if expert != 'shared_experts'
+            prefix = (f'model.layers.{layer}.mlp.experts.{expert}' if expert != 'shared_experts'
                       else f'model.layers.{layer}.mlp.shared_experts')
             for part in ('gate', 'up', 'down'):
                 for suffix in ('weight', 'weight_scale_inv'):
