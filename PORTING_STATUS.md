@@ -55,8 +55,9 @@ assembly. Yes, all of it. This branch is the vehicle.
 | glm_flash_tool_generation.py | 10 | ✅ PORTED (module 38) |
 | glm_tool_text.py | 18 | ✅ PORTED (module 39) |
 | glm_tool_output.py | 17 | ✅ PORTED (module 40) |
+| glm_flash_tool_output.py | 73 | ✅ PORTED (module 41) |
 
-Ported: 797 LoC across 40 modules (1.80%). Remaining: 330 modules / 43,404 lines.
+Ported: 870 LoC across 41 modules (1.96%). Remaining: 329 modules / 43,331 lines.
 At the current module size (41 LoC median-of-smallest), the remaining
 work is left as an exercise for future generations.
 
@@ -646,3 +647,30 @@ message.
     and grep the repo for imports of every dropped name. The audit
     script pattern lives in this file's history; 0 missing after the
     fix.
+
+48. **x9-x15 are CALLER-SAVED — a PyObject* parked there is dead after
+    ANY `bl`** (module 41, three separate segfaults, all the same
+    class). The dd_classes round already fixed this for the iface
+    pointer (x10 across `bl _t_fromstring`); module 41's feed/finish
+    bodies re-committed it for VALUE registers: (a) `mov x2, x9; bl
+    _t_setattr_s; ...; mov x0, x9; bl _t_decref` — setattr clobbers x9
+    to garbage (observed: 8) and Py_DecRef(8) segfaults while setattr
+    itself survived by luck; (b) a loop counter held in x22 reaching an
+    error-path register sweep that treats it as a NEW ref —
+    Py_DecRef(3) on the plain int; (c) `PyDict_GetItemWithError` returns
+    a BORROWED ref — parking it and decrefing it later drains the class
+    object's refcount across calls until the next lookup dangles.
+    Rules: values that must survive a call live in callee-saved regs
+    (x19-x28, x27/x28 preferred for scratch that shouldn't be swept) or
+    re-parked in a stack slot and RELOADED after every bl; registers
+    used for C-sized scalars (loop counters, sizes) must NEVER be in a
+    function's exception-sweep register list; borrowed refs
+    (GetItemWithError, GetAttrString results already consumed) get an
+    explicit _incref before being parked as owned. Also from this hunt:
+    svc-write markers (safe macro: save x0/x1/x2/x16, `svc #0x80`,
+    restore; `.p2align 2` after inline `.ascii`) are the fastest
+    fault-localizer when lldb is SIP-blocked and macOS crash-report
+    dedup throttles — put a marker at every semantic step and read the
+    stderr byte stream. And: `ldr xN,[xN,#0]` disassembles as a bare
+    `ldr xN,[xN]` — don't misread offset-0 iface slots as missing
+    offsets.
