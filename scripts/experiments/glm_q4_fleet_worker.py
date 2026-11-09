@@ -302,6 +302,10 @@ def main():
                                 context=128, context_limit=128, slots=2, chunk_size=8,
                                 frame_bytes=64 * 1024**2,
                                 mapped_vocab_size=config['vocab_size'], excluded_ids=())
+            # Dump BEFORE connecting: a refused/failed connect must not lose
+            # the computed state — the downstream resumes from this file.
+            handoff_file = Path(args.workdir) / f'handoff-layer{chain_stop}.pt'
+            torch.save(hidden.detach().cpu(), handoff_file)
             context = client_context(ca_file=args.ca, cert_file=args.cert, key_file=args.key)
             server_name = args.next_server_name or f'fleet-stage-{args.stage + 1}'
             connection = connect_peer(args.next_address, args.next_port, context,
@@ -312,10 +316,6 @@ def main():
                                         0, max_frame_bytes=plan.frame_bytes, timeout=args.timeout)
             channel.handshake()
             report['sent_hash'] = _hash(hidden)
-            # Dump BEFORE sending: a refused/failed connect must not lose the
-            # computed state — the downstream can resume from this file.
-            handoff_file = Path(args.workdir) / f'handoff-layer{chain_stop}.pt'
-            torch.save(hidden.detach().cpu(), handoff_file)
             channel.send(hidden.detach().cpu())
             channel.close()
             connection.close()
