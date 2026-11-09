@@ -1,0 +1,27 @@
+{
+  "device": "NVIDIA RTX A6000",
+  "experts": 256,
+  "gates": [
+    {
+      "gate": "channel_echo_bit_identical",
+      "passed": true
+    },
+    {
+      "gate": "chained_q4_vs_oracle",
+      "max_abs": 7.192554473876953,
+      "max_abs_of_absmax": 0.12004587183124606,
+      "oracle_absmax": 59.9150505065918,
+      "passed": true,
+      "rel_rms": 0.11764183640480042
+    },
+    {
+      "gate": "all_tensors_finite",
+      "passed": true
+    }
+  ],
+  "layer": 6,
+  "passed": true,
+  "peak_reserved_bytes": 5857345536,
+  "role": "coordinator",
+  "torch": "2.13.0+cu130"
+}

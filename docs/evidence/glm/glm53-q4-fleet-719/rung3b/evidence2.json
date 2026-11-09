@@ -1,0 +1,58 @@
+{
+  "checks": 1,
+  "device": "Radeon 8060S Graphics",
+  "error": null,
+  "experts": 256,
+  "fans": [
+    {
+      "level": 5,
+      "minimum_rpm": 3000,
+      "mode": "fixed",
+      "name": "fan1",
+      "rpm": 4211
+    },
+    {
+      "level": 5,
+      "minimum_rpm": 3000,
+      "mode": "fixed",
+      "name": "fan2",
+      "rpm": 4321
+    },
+    {
+      "level": 5,
+      "minimum_rpm": 1000,
+      "mode": "fixed",
+      "name": "fan3",
+      "rpm": 1815
+    }
+  ],
+  "gates": [
+    {
+      "gate": "worker_q4_vs_oracle",
+      "passed": true,
+      "rel_rms": 0.11764183640480042
+    }
+  ],
+  "hip": "7.13.26162",
+  "layer": 10,
+  "limit_celsius": 80,
+  "maximum_observed_celsius": 35.0,
+  "passed": true,
+  "peak_reserved_bytes": 15437135872,
+  "role": "worker",
+  "sensors": [
+    {
+      "celsius": 28.0,
+      "cutoff_celsius": 80,
+      "driver": "amdgpu",
+      "label": "edge"
+    },
+    {
+      "celsius": 35.0,
+      "cutoff_celsius": 80,
+      "driver": "k10temp",
+      "label": "Tctl"
+    }
+  ],
+  "torch": "2.11.0+rocm7.13.0a20260425"
+}

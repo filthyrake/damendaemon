@@ -1,0 +1,81 @@
+{
+  "command": [
+    "/home/damen/strixenv/bin/python",
+    "-m",
+    "scripts.experiments.glm_q4_chain_worker",
+    "--output",
+    "evidence.json",
+    "--address",
+    "10.0.2.126",
+    "--port",
+    "9481",
+    "--layer",
+    "10",
+    "--ca",
+    "/tmp/glm719-chain/tls/ca.pem",
+    "--cert",
+    "/tmp/glm719-chain/tls/server-homer.pem",
+    "--key",
+    "/tmp/glm719-chain/tls/server-homer.key",
+    "--peer-cert",
+    "/tmp/glm719-chain/tls/client-r10.pem"
+  ],
+  "timeout_seconds": 900,
+  "cooling": {
+    "limit_celsius": 80,
+    "checks": 374,
+    "fans": [
+      {
+        "name": "fan1",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4211,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan2",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4303,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan3",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 1816,
+        "minimum_rpm": 1000
+      }
+    ],
+    "maximum_observed_celsius": 35.375,
+    "sensors": [
+      {
+        "driver": "amdgpu",
+        "label": "edge",
+        "celsius": 27.0,
+        "cutoff_celsius": 80
+      },
+      {
+        "driver": "k10temp",
+        "label": "Tctl",
+        "celsius": 28.75,
+        "cutoff_celsius": 80
+      }
+    ],
+    "error": null
+  },
+  "watchdog": {
+    "reserve_bytes": 21474836480,
+    "minimum_available_bytes": 101960527872,
+    "last_available_bytes": 110701469696,
+    "triggered": false,
+    "error": null
+  },
+  "phase": "failed",
+  "cleanup_complete": true,
+  "host_available_before": 128101650432,
+  "child_pid": 1353435,
+  "seconds": 381.82060712506063,
+  "exit_code": 1,
+  "host_available_after": 128123125760
+}
