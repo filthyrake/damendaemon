@@ -214,7 +214,8 @@ def main():
             report['received_hash'] = _hash(hidden)
         else:
             generator = torch.Generator().manual_seed(719)
-            tokens = torch.randint(0, geometry['vocab'], (1, args.tokens), generator=generator)
+            tokens = torch.randint(0, geometry['vocab'], (1, args.tokens),
+                                    generator=generator).to(device)
             embed_names = ['model.embed_tokens.weight']
             from scripts.experiments.glm_q4_fleet_common import _load_tensors
             embed_tensors, _ = _load_tensors(args.model, embed_names)
