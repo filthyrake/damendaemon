@@ -74,10 +74,13 @@ def main():
     if args.output.exists():
         raise ValueError('new report path required')
     start, end = STAGE_RANGES[args.stage]
-    if args.stage > 1 and not args.port:
-        raise ValueError('stages 2-4 require --port')
-    if args.stage < 4 and not (args.next_address and args.next_port and args.next_cert):
-        raise ValueError('stages 1-3 require next-stage connection arguments')
+    packing = args.pack_start is not None or args.pack_stop is not None
+    if not packing and args.stage > 1 and not args.port:
+        raise ValueError('stages 2-4 require --port in chain mode')
+    if not packing and args.stage < 4 and not (args.next_address and args.next_port and args.next_cert):
+        raise ValueError('stages 1-3 require next-stage connection arguments in chain mode')
+    if packing and (args.pack_start is None or args.pack_stop is None):
+        raise ValueError('pack mode needs both --pack-start and --pack-stop')
 
     import torch
     if args.stage == 4:
