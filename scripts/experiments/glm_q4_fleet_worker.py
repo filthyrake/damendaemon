@@ -64,6 +64,9 @@ def main():
     parser.add_argument('--chain-stop', type=int)
     parser.add_argument('--hop-index', type=int, default=0,
                         help='HostTopology result index both ends of THIS hop agree on')
+    parser.add_argument('--inbound-file', default=None,
+                        help='resume: load the inbound hidden state from this file '
+                             'instead of listening (crash-recovery path)')
     # inbound (stages 2-4)
     parser.add_argument('--address', default='0.0.0.0')
     parser.add_argument('--port', type=int)
@@ -212,7 +215,13 @@ def main():
         save(args.output, report)
 
         # ---- inbound chain state
-        if args.stage > 1 or chain_start > start:
+        if args.inbound_file:
+            hidden = torch.load(args.inbound_file, map_location=device, weights_only=True)
+            if tuple(hidden.shape) != (1, args.tokens, geometry['dim']):
+                raise ValueError('inbound resume file shape mismatch')
+            report['received_hash'] = _hash(hidden)
+            report['resumed_from_file'] = args.inbound_file
+        elif args.stage > 1 or chain_start > start:
             connection = listener.accept(timeout=args.timeout)
             listener.close()
             listener = None
@@ -303,6 +312,10 @@ def main():
                                         0, max_frame_bytes=plan.frame_bytes, timeout=args.timeout)
             channel.handshake()
             report['sent_hash'] = _hash(hidden)
+            # Dump BEFORE sending: a refused/failed connect must not lose the
+            # computed state — the downstream can resume from this file.
+            handoff_file = Path(args.workdir) / f'handoff-layer{chain_stop}.pt'
+            torch.save(hidden.detach().cpu(), handoff_file)
             channel.send(hidden.detach().cpu())
             channel.close()
             connection.close()
