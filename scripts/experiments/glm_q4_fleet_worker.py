@@ -67,6 +67,9 @@ def main():
     parser.add_argument('--inbound-file', default=None,
                         help='resume: load the inbound hidden state from this file '
                              'instead of listening (crash-recovery path)')
+    parser.add_argument('--handoff-file', default=None,
+                        help='directory: dump the outbound hidden state to a file here '
+                             'instead of a TCP hop (intra-host cells — no listener needed)')
     # inbound (stages 2-4)
     parser.add_argument('--address', default='0.0.0.0')
     parser.add_argument('--port', type=int)
@@ -100,12 +103,13 @@ def main():
         for boundary in (chain_start, chain_stop):
             if start < boundary < end and schedule[boundary] != 'full':
                 raise ValueError(f'chain boundary {boundary} is not a full-indexer layer')
-    if not packing and (args.stage > 1 or chain_start > start) and not (args.port and args.ca and args.cert and args.key and args.peer_cert):
+    if not packing and (args.stage > 1 or chain_start > start) and not args.inbound_file \
+            and not (args.port and args.ca and args.cert and args.key and args.peer_cert):
         raise ValueError('listening cells require --port and TLS arguments')
-    if not packing and chain_stop == end and args.stage < 4 and not (args.next_address and args.next_port and args.next_cert):
-        raise ValueError('cells ending a stage require next-stage connection arguments')
-    if not packing and args.stage < 4 and not (args.ca and args.cert and args.key):
-        raise ValueError('CUDA chain cells require TLS arguments')
+    needs_handoff = chain_stop < end or (chain_stop == end and args.stage < 4)
+    has_tcp_next = bool(args.next_address and args.next_port and args.next_cert)
+    if not packing and needs_handoff and not (has_tcp_next or args.handoff_file):
+        raise ValueError('cells must hand off via TCP next-stage args or --handoff-file')
     if packing and (args.pack_start is None or args.pack_stop is None):
         raise ValueError('pack mode needs both --pack-start and --pack-stop')
 
@@ -295,23 +299,44 @@ def main():
                                   rel=gate.get('rel_rms'))), flush=True)
 
         # ---- finish
-        if chain_stop < end or args.stage < 4:
+        if args.handoff_file:
+            handoff_dir = Path(args.handoff_file)
+            handoff_dir.mkdir(parents=True, exist_ok=True)
+            target = handoff_dir / f'handoff-layer{chain_stop}.pt'
+            torch.save(hidden.detach().cpu(), target)
+            report['sent_hash'] = _hash(hidden)
+            report['handoff_file'] = str(target)
+            save(args.output, report)
+            print(json.dumps(dict(event='handoff_dumped', layer=chain_stop)), flush=True)
+        elif chain_stop < end or args.stage < 4:
+            import time
             config = json.load(open(f'{args.model}/config.json'))
             plan = HostTopology(config, [[0, 34], [34, 50], [50, 66], [66, 78]],
                                 bytes(range(32)), quantization='fp8_reference',
                                 context=128, context_limit=128, slots=2, chunk_size=8,
                                 frame_bytes=64 * 1024**2,
                                 mapped_vocab_size=config['vocab_size'], excluded_ids=())
-            # Dump BEFORE connecting: a refused/failed connect must not lose
-            # the computed state — the downstream resumes from this file.
+            # Dump BEFORE connecting: a failed connect must not lose the
+            # computed state — the downstream can resume from this file.
             handoff_file = Path(args.workdir) / f'handoff-layer{chain_stop}.pt'
             torch.save(hidden.detach().cpu(), handoff_file)
             context = client_context(ca_file=args.ca, cert_file=args.cert, key_file=args.key)
             server_name = args.next_server_name or f'fleet-stage-{args.stage + 1}'
-            connection = connect_peer(args.next_address, args.next_port, context,
-                                      peer_pin=certificate_pin(args.next_cert),
-                                      server_hostname=server_name,
-                                      timeout=args.timeout)
+            # The downstream's guard+import+bind can lose the startup race to
+            # this connect; retry until the channel timeout instead of dying.
+            deadline = time.monotonic() + min(args.timeout, 900.)
+            while True:
+                try:
+                    connection = connect_peer(args.next_address, args.next_port, context,
+                                              peer_pin=certificate_pin(args.next_cert),
+                                              server_hostname=server_name,
+                                              timeout=min(args.timeout, 60.))
+                    break
+                except OSError:
+                    if time.monotonic() >= deadline:
+                        raise
+                    print(json.dumps(dict(event='connect_retry', port=args.next_port)), flush=True)
+                    time.sleep(15.)
             channel = HostTensorChannel(connection, plan.stage_identity(args.hop_index),
                                         0, max_frame_bytes=plan.frame_bytes, timeout=args.timeout)
             channel.handshake()
