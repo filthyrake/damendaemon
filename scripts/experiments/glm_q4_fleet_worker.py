@@ -194,7 +194,7 @@ def main():
             return
 
         # Bind before the long phases so the upstream connect waits in backlog.
-        if args.stage > 1 or chain_start > start:
+        if (args.stage > 1 or chain_start > start) and not args.inbound_file:
             raw = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             raw.bind((args.address, args.port))
             context = server_context(ca_file=args.ca, cert_file=args.cert, key_file=args.key)
