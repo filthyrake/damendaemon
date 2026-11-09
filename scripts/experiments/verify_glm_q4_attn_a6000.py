@@ -198,6 +198,14 @@ def main():
         selection = dict(gate='selection_exactness',
                          identical=bool(torch.equal(oracle_selected, candidate_selected)),
                          selected_per_query=oracle_selected.shape[-1])
+        if not selection['identical']:
+            # Divergence record for the honest failure: how many of the
+            # [batch, seq, top_k] selections moved, and where.
+            different = (oracle_selected != candidate_selected)
+            selection['differing_entries'] = int(different.sum().item())
+            selection['total_entries'] = int(different.numel())
+            selection['differing_queries'] = int(different.any(-1).sum().item())
+            selection['total_queries'] = int(different.any(-1).numel())
         selection['passed'] = selection['identical']
         report['gates'].append(selection)
         report['gates'].append(dict(gate='finiteness',
