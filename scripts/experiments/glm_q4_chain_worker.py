@@ -86,6 +86,7 @@ def main():
         listener = None
         channel = HostTensorChannel(connection, plan.stage_identity(1), 1,
                                      max_frame_bytes=plan.frame_bytes, timeout=args.timeout)
+        channel.handshake()
         hidden = channel.receive((1, args.tokens, 6144), torch.float32)
         y_a = channel.receive((1, args.tokens, 6144), torch.float32)
 

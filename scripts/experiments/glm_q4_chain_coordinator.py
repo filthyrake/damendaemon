@@ -79,6 +79,7 @@ def main():
                                   server_hostname='homer-chain-worker', timeout=args.timeout)
         channel = HostTensorChannel(connection, plan.stage_identity(1), 0,
                                     max_frame_bytes=plan.frame_bytes, timeout=args.timeout)
+        channel.handshake()
         channel.send(hidden)
         channel.send(y_a)
         y_b_q4 = channel.receive((1, args.tokens, 6144), torch.float32)
