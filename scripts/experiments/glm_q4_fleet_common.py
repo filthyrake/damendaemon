@@ -92,19 +92,26 @@ def load_geometry(model):
                 indexer_types=config['indexer_types'])
 
 
-def load_attention_tensors(model, layer):
-    """Every self_attn tensor of one layer (packed fp8, dense fp32, indexer)."""
+def load_attention_tensors(model, layer, full=True):
+    """Every self_attn tensor of one layer (packed fp8, dense fp32, indexer).
+
+    Shared-indexer layers ship NO indexer weights — they inherit the previous
+    full-indexer layer's selection through previous_indices."""
     attn = f'model.layers.{layer}.self_attn'
     names = [f'{attn}.{n}.weight' for n in ATTENTION_QUANTIZED + ATTENTION_DENSE]
     names += [f'{attn}.{n}.weight_scale_inv' for n in ATTENTION_QUANTIZED]
-    names += [f'{attn}.indexer.{n}.weight' for n in INDEXER_QUANTIZED + INDEXER_DENSE]
-    names += [f'{attn}.indexer.{n}.weight_scale_inv' for n in INDEXER_QUANTIZED]
-    names += [f'{attn}.indexer.k_norm.bias']
+    if full:
+        names += [f'{attn}.indexer.{n}.weight' for n in INDEXER_QUANTIZED + INDEXER_DENSE]
+        names += [f'{attn}.indexer.{n}.weight_scale_inv' for n in INDEXER_QUANTIZED]
+        names += [f'{attn}.indexer.k_norm.bias']
     return _load_tensors(model, names)
 
 
-def build_attention(tensors, model, layer, device, geometry):
-    """The production CudaCachedGlmAttention for one real layer, all-fp8 shipped."""
+def build_attention(tensors, model, layer, device, geometry, full=True):
+    """The production CudaCachedGlmAttention for one real layer, all-fp8 shipped.
+
+    Shared-indexer layers build without indexer weights; their selection comes
+    from the previous full-indexer layer (previous_indices at forward time)."""
     attn = f'model.layers.{layer}.self_attn'
     weights = {}
     for name in ATTENTION_QUANTIZED:
@@ -114,19 +121,20 @@ def build_attention(tensors, model, layer, device, geometry):
             codes.to(device), scales.to(device), format='e4m3fn_f32', dtype=torch.float32)
     for name in ATTENTION_DENSE:
         weights[f'{name}.weight'] = tensors[f'{attn}.{name}.weight'].float().to(device)
-    for name in INDEXER_DENSE:
-        weights[f'indexer.{name}.weight'] = tensors[f'{attn}.indexer.{name}.weight'].float().to(device)
-    weights['indexer.k_norm.bias'] = tensors[f'{attn}.indexer.k_norm.bias'].float().to(device)
-    for name in INDEXER_QUANTIZED:
-        codes, scales = _codes_and_scales(tensors, f'{attn}.indexer.{name}.weight',
-                                         f'{attn}.indexer.{name}.weight_scale_inv')
-        weights[f'indexer.{name}.weight'] = CudaPackedProjection(
-            codes.to(device), scales.to(device), format='e4m3fn_f32', dtype=torch.float32)
+    if full:
+        for name in INDEXER_DENSE:
+            weights[f'indexer.{name}.weight'] = tensors[f'{attn}.indexer.{name}.weight'].float().to(device)
+        weights['indexer.k_norm.bias'] = tensors[f'{attn}.indexer.k_norm.bias'].float().to(device)
+        for name in INDEXER_QUANTIZED:
+            codes, scales = _codes_and_scales(tensors, f'{attn}.indexer.{name}.weight',
+                                             f'{attn}.indexer.{name}.weight_scale_inv')
+            weights[f'indexer.{name}.weight'] = CudaPackedProjection(
+                codes.to(device), scales.to(device), format='e4m3fn_f32', dtype=torch.float32)
     return CudaCachedGlmAttention(
         weights, heads=geometry['heads'], nope_dim=geometry['nope'], rope_dim=geometry['rope'],
         value_dim=geometry['value'], index_top_k=geometry['top_k'],
         rope_base=geometry['rope_base'], epsilon=geometry['epsilon'],
-        indexer_type='full' if geometry['indexer_types'][layer] == 'full' else 'shared',
+        indexer_type='full' if full else 'shared',
         max_workspace_bytes=512 * 1024**2, max_output_bytes=256 * 1024**2)
 
 

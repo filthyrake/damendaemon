@@ -226,8 +226,10 @@ def main():
         # ---- chain phase
         selected = None
         for layer in range(start, end):
-            attention_tensors, _ = load_attention_tensors(args.model, layer)
-            attention = build_attention(attention_tensors, args.model, layer, device, geometry)
+            full = geometry['indexer_types'][layer] == 'full'
+            attention_tensors, _ = load_attention_tensors(args.model, layer, full)
+            attention = build_attention(attention_tensors, args.model, layer, device,
+                                        geometry, full)
             (input_norm, post_norm), _ = load_block_norms(args.model, layer)
             input_norm, post_norm = input_norm.to(device), post_norm.to(device)
             normed = rms_norm(hidden, input_norm, geometry['epsilon'])
