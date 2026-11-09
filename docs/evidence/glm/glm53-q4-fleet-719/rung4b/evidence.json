@@ -1,0 +1,71 @@
+{
+  "device": "NVIDIA RTX A6000",
+  "fp8_projection_bytes": 165029744,
+  "gates": [
+    {
+      "gate": "attention_parity",
+      "max_abs": 0.008191792294383049,
+      "max_abs_of_absmax": 0.10670295138223367,
+      "oracle_absmax": 0.07677193731069565,
+      "passed": false,
+      "rel_rms": 0.16113577783107758
+    },
+    {
+      "differing_entries": 976,
+      "differing_queries": 56,
+      "gate": "selection_exactness",
+      "identical": false,
+      "passed": false,
+      "selected_per_query": 64,
+      "total_entries": 4096,
+      "total_queries": 64
+    },
+    {
+      "gate": "finiteness",
+      "passed": true
+    },
+    {
+      "fp8_bytes": 165029744,
+      "gate": "memory",
+      "passed": true,
+      "q4_bytes": 92823552
+    }
+  ],
+  "heads": 64,
+  "kr": 512,
+  "layer": 6,
+  "model_qualified": true,
+  "nope": 192,
+  "passed": false,
+  "peak_reserved_bytes": 316657152,
+  "q4_projection_bytes": 92823552,
+  "qr": 2048,
+  "rope": 64,
+  "shards": 1,
+  "tokens": 64,
+  "top_k": 2048,
+  "torch": "2.13.0+cu130",
+  "value": 256,
+  "weight_drift": [
+    {
+      "projection": "q_a_proj",
+      "rel_rms": 0.08814921230077744
+    },
+    {
+      "projection": "q_b_proj",
+      "rel_rms": 0.10242015868425369
+    },
+    {
+      "projection": "kv_a_proj_with_mqa",
+      "rel_rms": 0.09550446271896362
+    },
+    {
+      "projection": "kv_b_proj",
+      "rel_rms": 0.08735691756010056
+    },
+    {
+      "projection": "o_proj",
+      "rel_rms": 0.08726628869771957
+    }
+  ]
+}

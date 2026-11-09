@@ -145,5 +145,67 @@ class CudaGlmQ4AdmissionTests(unittest.TestCase):
                 CudaPackedGlmFeedForward(mixed, workspace_bytes=1024)
 
 
+class GlmAttentionQ4ProjectionTests(unittest.TestCase):
+    """#719 rung 4b: GLM attention projections admit canonical q4_0_f16 storage."""
+
+    def _geometry(self, seed=5):
+        # Tiny MLA geometry: dim=128, qr=64, kr=32, heads=4, nope width=32 —
+        # every contraction side divisible by 32 (Q4_0 group requirement).
+        rng = torch.Generator().manual_seed(seed)
+        dim, qr, kr, heads, width = 128, 64, 32, 4, 32
+        truth = {'q_a_proj.weight': torch.randn(qr, dim, generator=rng),
+                 'q_b_proj.weight': torch.randn(heads * width, qr, generator=rng),
+                 'kv_a_proj_with_mqa.weight': torch.randn(kr, dim, generator=rng)}
+        truth['q_a_layernorm.weight'] = torch.ones(qr)
+        truth['kv_a_layernorm.weight'] = torch.ones(kr)
+        return truth, dict(dim=dim, qr=qr, kr=kr, heads=heads, width=width)
+
+    def _packed(self, truth):
+        from damendaemon.glm_attention import _projection
+        from damendaemon.prepared_projection import PackedProjection
+        packed = dict(truth)
+        for name in ('q_a_proj.weight', 'q_b_proj.weight', 'kv_a_proj_with_mqa.weight'):
+            weight, scales = quantize_q4(truth[name])
+            packed[name] = PackedProjection(weight, scales, format='q4_0_f16')
+            self.assertTrue(_projection(packed[name], 'cpu'))
+        return packed
+
+    def test_attention_projection_admits_q4_and_refuses_other_formats(self):
+        from damendaemon.glm_attention import _projection
+        from damendaemon.prepared_projection import PackedProjection
+        truth, _ = self._geometry()
+        packed = self._packed(truth)
+        for name, value in packed.items():
+            if 'layernorm' in name:
+                continue
+            self.assertTrue(_projection(value, 'cpu'))
+        # A VALID q8_0_f16 projection is constructable but not admitted by
+        # the GLM attention admission (e2m1/q8 stay out of the #719 surface).
+        q8 = PackedProjection(torch.zeros((64, 128), dtype=torch.int8),
+                              torch.ones((64, 4), dtype=torch.float16), format='q8_0_f16')
+        self.assertFalse(_projection(q8, 'cpu'))
+        self.assertFalse(_projection(packed['q_a_proj.weight'], 'cuda'))  # cpu tensor, cuda device
+
+    def test_project_mla_executes_q4_projections(self):
+        # Same _project_mla the CUDA flash path delegates to (rope_dim=0):
+        # dense-FP32 truth vs q4-packed candidate through the identical code.
+        from damendaemon.glm_attention import _project_mla
+        truth, geometry = self._geometry()
+        packed = self._packed(truth)
+        rng = torch.Generator().manual_seed(9)
+        hidden = torch.randn(1, 16, geometry['dim'], generator=rng)
+        positions = torch.arange(16).reshape(1, 16)
+        dense = _project_mla(hidden, positions, truth, heads=geometry['heads'],
+                             nope_dim=geometry['width'], rope_dim=0)
+        quantized = _project_mla(hidden, positions, packed, heads=geometry['heads'],
+                                 nope_dim=geometry['width'], rope_dim=0)
+        for name in ('query', 'low_rank', 'latents'):
+            self.assertTrue(torch.isfinite(quantized[name]).all())
+            # Synthetic Q4_0 drift tracks the real-weight envelope (rung 1:
+            # 8-10% rel RMS; the standing #719 gate is 1.5x that family).
+            rel_rms = (quantized[name] - dense[name]).norm() / dense[name].norm()
+            self.assertLess(float(rel_rms), 0.15)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -19,10 +19,14 @@ def _float(value,rank,device='cpu'):
 
 
 def _projection(value,device='cpu'):
+    # Packed GLM projections admit the shipped blockwise E4M3-FP8 storage and,
+    # for the #719 q4 fleet path, the canonical Q4_0 storage the widened GLM
+    # FFN bank already admits (#721) — uniform per-projection format, identical
+    # executor path; activation/selection math is never quantized (#668).
     expected = CudaPackedProjection if torch.device(device).type=='cuda' else PackedProjection
     return (_float(value,2,device) or (isinstance(value,expected)
             and value.dtype==torch.float32 and value.device==torch.device(device)
-            and value.format=='e4m3fn_f32'))
+            and value.format in ('e4m3fn_f32','q4_0_f16')))
 
 
 def _finite_parameter(value):
