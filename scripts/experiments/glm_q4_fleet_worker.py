@@ -58,6 +58,12 @@ def main():
     parser.add_argument('--banks-dir', default='/tmp/damendaemon-g719r5/banks')
     parser.add_argument('--pack-start', type=int)
     parser.add_argument('--pack-stop', type=int)
+    # chain sub-cell range (guards cap at 1800s; boundaries MUST be full-indexer
+    # layers so shared-indexer previous_indices never crosses a cell)
+    parser.add_argument('--chain-start', type=int)
+    parser.add_argument('--chain-stop', type=int)
+    parser.add_argument('--hop-index', type=int, default=0,
+                        help='HostTopology result index both ends of THIS hop agree on')
     # inbound (stages 2-4)
     parser.add_argument('--address', default='0.0.0.0')
     parser.add_argument('--port', type=int)
@@ -68,19 +74,35 @@ def main():
     # outbound (stages 1-3)
     parser.add_argument('--next-address')
     parser.add_argument('--next-port', type=int)
-    parser.add_argument('--next-cert', help='server certificate of the next stage')
+    parser.add_argument('--next-cert', help='server certificate of the next cell')
+    parser.add_argument('--next-server-name', default=None,
+                        help='TLS server hostname of the next cell (defaults to next stage CN)')
     parser.add_argument('--timeout', type=float, default=7200.)
     args = parser.parse_args()
     if args.output.exists():
         raise ValueError('new report path required')
     start, end = STAGE_RANGES[args.stage]
+    chain_start = args.chain_start if args.chain_start is not None else start
+    chain_stop = args.chain_stop if args.chain_stop is not None else end
+    if not (start <= chain_start < chain_stop <= end):
+        raise ValueError('chain range must lie inside the stage range')
     packing = args.pack_start is not None or args.pack_stop is not None
-    if not packing and args.stage > 1 and not (args.port and args.ca and args.cert and args.key and args.peer_cert):
-        raise ValueError('stages 2-4 require --port and TLS arguments in chain mode')
-    if not packing and args.stage < 4 and not (args.next_address and args.next_port and args.next_cert):
-        raise ValueError('stages 1-3 require next-stage connection arguments in chain mode')
+    if not packing:
+        # A cell opening on a shared-indexer layer would need previous_indices
+        # from before its boundary; a cell closing before a shared layer would
+        # have to hand the selection on. Both are forbidden — boundaries are
+        # full-indexer (or dense) layers only.
+        with open(f'{args.model}/config.json') as reader:
+            schedule = json.load(reader)['indexer_types']
+        for boundary in (chain_start, chain_stop):
+            if start < boundary < end and schedule[boundary] != 'full':
+                raise ValueError(f'chain boundary {boundary} is not a full-indexer layer')
+    if not packing and (args.stage > 1 or chain_start > start) and not (args.port and args.ca and args.cert and args.key and args.peer_cert):
+        raise ValueError('listening cells require --port and TLS arguments')
+    if not packing and chain_stop == end and args.stage < 4 and not (args.next_address and args.next_port and args.next_cert):
+        raise ValueError('cells ending a stage require next-stage connection arguments')
     if not packing and args.stage < 4 and not (args.ca and args.cert and args.key):
-        raise ValueError('stages 1-3 require TLS arguments in chain mode')
+        raise ValueError('CUDA chain cells require TLS arguments')
     if packing and (args.pack_start is None or args.pack_stop is None):
         raise ValueError('pack mode needs both --pack-start and --pack-stop')
 
@@ -165,34 +187,32 @@ def main():
             return
 
         # Bind before the long phases so the upstream connect waits in backlog.
-        if args.stage > 1:
+        if args.stage > 1 or chain_start > start:
             raw = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             raw.bind((args.address, args.port))
             context = server_context(ca_file=args.ca, cert_file=args.cert, key_file=args.key)
             listener = HostPeerListener(raw, context, peer_pin=certificate_pin(args.peer_cert))
             print(json.dumps(dict(event='listening', stage=args.stage, port=args.port)), flush=True)
 
-        # ---- chain banks: per-layer transient load (or in-flight pack when
-        # the persisted bank is absent — the disk-poor host path, logged).
+        # ---- chain banks: per-cell preload into host RAM (the disk read is
+        # paid once per layer, not once per use).
         banks_path = Path(args.banks_dir)
-
-        def layer_bank(layer):
+        cell_banks = {}
+        for layer in range(chain_start, chain_stop):
+            if layer < geometry['first_dense']:
+                continue
             bank_file = banks_path / f'layer{layer}.pt'
-            if bank_file.exists():
-                # Bank files hold only tensors, dicts, lists and primitives
-                # written by this cell family — weights_only is sufficient.
-                payload = torch.load(bank_file, map_location='cpu', weights_only=True)
-                return (payload['host_bank'], payload['shared'], payload['router'],
-                        payload['bias'], payload['packed_bytes'])
-            tensors, experts, _ = load_moe_tensors(args.model, layer)
-            host_bank, host_shared, router, bias, packed = pack_q4_bank(
-                tensors, experts, layer, device)
-            report.setdefault('inflight_packed_layers', []).append(layer)
-            del tensors
-            return host_bank, host_shared, router, bias, packed
+            if not bank_file.exists():
+                raise ValueError(f'bank layer{layer}.pt missing — run the pack cells first')
+            payload = torch.load(bank_file, map_location='cpu', weights_only=True)
+            cell_banks[layer] = (payload['host_bank'], payload['shared'], payload['router'],
+                                 payload['bias'], payload['packed_bytes'])
+            del payload
+        report['cell_packed_bytes'] = sum(entry[4] for entry in cell_banks.values())
+        save(args.output, report)
 
         # ---- inbound chain state
-        if args.stage > 1:
+        if args.stage > 1 or chain_start > start:
             connection = listener.accept(timeout=args.timeout)
             listener.close()
             listener = None
@@ -202,9 +222,7 @@ def main():
                                 context=128, context_limit=128, slots=2, chunk_size=8,
                                 frame_bytes=64 * 1024**2,
                                 mapped_vocab_size=config['vocab_size'], excluded_ids=())
-            # One shared channel identity per hop: the receiving stage's
-            # 0-based index; sender rank 0, receiver rank 1.
-            channel = HostTensorChannel(connection, plan.stage_identity(args.stage - 1),
+            channel = HostTensorChannel(connection, plan.stage_identity(args.hop_index),
                                         1, max_frame_bytes=plan.frame_bytes, timeout=args.timeout)
             channel.handshake()
             hidden = channel.receive((1, args.tokens, geometry['dim']), torch.float32)
@@ -225,7 +243,7 @@ def main():
 
         # ---- chain phase
         selected = None
-        for layer in range(start, end):
+        for layer in range(chain_start, chain_stop):
             full = geometry['indexer_types'][layer] == 'full'
             attention_tensors, _ = load_attention_tensors(args.model, layer, full)
             attention = build_attention(attention_tensors, args.model, layer, device,
@@ -253,7 +271,7 @@ def main():
                 gate = dict(layer=layer, kind='dense_fp8', streamed_bytes=0)
                 del expert, dense_tensors
             else:
-                host_bank, host_shared, router, bias, packed = layer_bank(layer)
+                host_bank, host_shared, router, bias, packed = cell_banks[layer]
                 geometry['_bank_bytes'] = packed
                 y, gate = moe_layer_forward(ffn_input, args.model, layer, host_bank,
                                              host_shared, router, bias, device, geometry)
@@ -268,7 +286,7 @@ def main():
                                   rel=gate.get('rel_rms'))), flush=True)
 
         # ---- finish
-        if args.stage < 4:
+        if chain_stop < end or args.stage < 4:
             config = json.load(open(f'{args.model}/config.json'))
             plan = HostTopology(config, [[0, 34], [34, 50], [50, 66], [66, 78]],
                                 bytes(range(32)), quantization='fp8_reference',
@@ -276,11 +294,12 @@ def main():
                                 frame_bytes=64 * 1024**2,
                                 mapped_vocab_size=config['vocab_size'], excluded_ids=())
             context = client_context(ca_file=args.ca, cert_file=args.cert, key_file=args.key)
+            server_name = args.next_server_name or f'fleet-stage-{args.stage + 1}'
             connection = connect_peer(args.next_address, args.next_port, context,
                                       peer_pin=certificate_pin(args.next_cert),
-                                      server_hostname=f'fleet-stage-{args.stage + 1}',
+                                      server_hostname=server_name,
                                       timeout=args.timeout)
-            channel = HostTensorChannel(connection, plan.stage_identity(args.stage),
+            channel = HostTensorChannel(connection, plan.stage_identity(args.hop_index),
                                         0, max_frame_bytes=plan.frame_bytes, timeout=args.timeout)
             channel.handshake()
             report['sent_hash'] = _hash(hidden)
