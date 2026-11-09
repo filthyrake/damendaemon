@@ -61,10 +61,10 @@ def main():
     # inbound (stages 2-4)
     parser.add_argument('--address', default='0.0.0.0')
     parser.add_argument('--port', type=int)
-    parser.add_argument('--ca', required=True)
-    parser.add_argument('--cert', required=True)
-    parser.add_argument('--key', required=True)
-    parser.add_argument('--peer-cert', required=True, help='certificate of the previous stage')
+    parser.add_argument('--ca')
+    parser.add_argument('--cert')
+    parser.add_argument('--key')
+    parser.add_argument('--peer-cert', help='certificate of the previous stage')
     # outbound (stages 1-3)
     parser.add_argument('--next-address')
     parser.add_argument('--next-port', type=int)
@@ -75,10 +75,12 @@ def main():
         raise ValueError('new report path required')
     start, end = STAGE_RANGES[args.stage]
     packing = args.pack_start is not None or args.pack_stop is not None
-    if not packing and args.stage > 1 and not args.port:
-        raise ValueError('stages 2-4 require --port in chain mode')
+    if not packing and args.stage > 1 and not (args.port and args.ca and args.cert and args.key and args.peer_cert):
+        raise ValueError('stages 2-4 require --port and TLS arguments in chain mode')
     if not packing and args.stage < 4 and not (args.next_address and args.next_port and args.next_cert):
         raise ValueError('stages 1-3 require next-stage connection arguments in chain mode')
+    if not packing and args.stage < 4 and not (args.ca and args.cert and args.key):
+        raise ValueError('stages 1-3 require TLS arguments in chain mode')
     if packing and (args.pack_start is None or args.pack_stop is None):
         raise ValueError('pack mode needs both --pack-start and --pack-stop')
 
