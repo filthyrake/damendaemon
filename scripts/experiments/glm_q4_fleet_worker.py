@@ -55,6 +55,9 @@ def main():
     parser.add_argument('--model', default='/mnt/nas-models/models/GLM-5.3')
     parser.add_argument('--tokens', type=int, default=8)
     parser.add_argument('--workdir', default='/tmp/damendaemon-g719r5')
+    parser.add_argument('--banks-dir', default='/tmp/damendaemon-g719r5/banks')
+    parser.add_argument('--pack-start', type=int)
+    parser.add_argument('--pack-stop', type=int)
     # inbound (stages 2-4)
     parser.add_argument('--address', default='0.0.0.0')
     parser.add_argument('--port', type=int)
@@ -123,7 +126,40 @@ def main():
                                                       'top_k', 'dim', 'layers', 'vocab')}
         save(args.output, report)
 
-        # Bind before the long pack so the upstream connect waits in backlog.
+        # ---- pack mode: guarded pre-cell that persists per-layer q4 banks.
+        # The guards cap at 1800 s, so large stages pack in chunks; chain cells
+        # load each layer's bank transiently (or pack in-flight when the file
+        # is absent and --pack-stop was not given — the disk-poor host path).
+        if args.pack_start is not None or args.pack_stop is not None:
+            if args.pack_start is None or args.pack_stop is None or not (start <= args.pack_start < args.pack_stop <= end):
+                raise ValueError('pack range must lie inside the stage range')
+            import time
+            banks_path = Path(args.banks_dir)
+            banks_path.mkdir(parents=True, exist_ok=True)
+            for layer in range(args.pack_start, args.pack_stop):
+                if layer < geometry['first_dense']:
+                    continue
+                began = time.monotonic()
+                tensors, experts, shards = load_moe_tensors(args.model, layer)
+                host_bank, host_shared, router, bias, packed = pack_q4_bank(
+                    tensors, experts, layer, device)
+                del tensors
+                torch.save(dict(layer=layer, experts=experts, host_bank=host_bank,
+                                shared=host_shared, router=router, bias=bias,
+                                packed_bytes=packed),
+                           banks_path / f'layer{layer}.pt')
+                del host_bank, host_shared, router, bias
+                report['packed_layers'] = report.get('packed_layers', 0) + 1
+                report['last_layer_seconds'] = round(time.monotonic() - began, 1)
+                save(args.output, report)
+                print(json.dumps(dict(event='packed', layer=layer,
+                                      seconds=report['last_layer_seconds'])), flush=True)
+            report['phase'] = 'pack_complete'
+            save(args.output, report)
+            print('FLEET_PACK_DONE', args.stage)
+            return
+
+        # Bind before the long phases so the upstream connect waits in backlog.
         if args.stage > 1:
             raw = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             raw.bind((args.address, args.port))
@@ -131,22 +167,24 @@ def main():
             listener = HostPeerListener(raw, context, peer_pin=certificate_pin(args.peer_cert))
             print(json.dumps(dict(event='listening', stage=args.stage, port=args.port)), flush=True)
 
-        # ---- pack phase: host-resident q4 banks for this stage's MoE layers
-        banks = {}
-        for layer in range(start, end):
-            if layer < geometry['first_dense']:
-                continue
-            tensors, experts, shards = load_moe_tensors(args.model, layer)
+        # ---- chain banks: per-layer transient load (or in-flight pack when
+        # the persisted bank is absent — the disk-poor host path, logged).
+        banks_path = Path(args.banks_dir)
+
+        def layer_bank(layer):
+            bank_file = banks_path / f'layer{layer}.pt'
+            if bank_file.exists():
+                # Bank files hold only tensors, dicts, lists and primitives
+                # written by this cell family — weights_only is sufficient.
+                payload = torch.load(bank_file, map_location='cpu', weights_only=True)
+                return (payload['host_bank'], payload['shared'], payload['router'],
+                        payload['bias'], payload['packed_bytes'])
+            tensors, experts, _ = load_moe_tensors(args.model, layer)
             host_bank, host_shared, router, bias, packed = pack_q4_bank(
                 tensors, experts, layer, device)
-            banks[layer] = (host_bank, host_shared, router, bias, packed, experts)
+            report.setdefault('inflight_packed_layers', []).append(layer)
             del tensors
-            report['packed_layers'] = len(banks)
-            report['packed_bytes'] = sum(entry[4] for entry in banks.values())
-            save(args.output, report)
-            print(json.dumps(dict(event='packed', layer=layer, experts=experts)), flush=True)
-        report['packed_gib'] = round(report['packed_bytes'] / 2**30, 2)
-        save(args.output, report)
+            return host_bank, host_shared, router, bias, packed
 
         # ---- inbound chain state
         if args.stage > 1:
@@ -207,7 +245,7 @@ def main():
                 gate = dict(layer=layer, kind='dense_fp8', streamed_bytes=0)
                 del expert, dense_tensors
             else:
-                host_bank, host_shared, router, bias, packed, experts = banks[layer]
+                host_bank, host_shared, router, bias, packed = layer_bank(layer)
                 geometry['_bank_bytes'] = packed
                 y, gate = moe_layer_forward(ffn_input, args.model, layer, host_bank,
                                              host_shared, router, bias, device, geometry)
@@ -264,8 +302,8 @@ def main():
             passed=all(g['parity'] for g in parity_gates)))
         report['gates'].append(dict(
             gate='streaming_bounded',
-            passed=all(0 < g['streamed_bytes'] < report['packed_bytes']
-                       for g in report['layer_gates'] if g.get('streamed_bytes'))))
+            passed=all(0 < g['streamed_bytes'] < g['host_bank_bytes']
+                       for g in report['layer_gates'] if g.get('kind') != 'dense_fp8')))
         report['gates'].append(dict(gate='all_layers_finite',
                                     passed=all(g['finite'] for g in report['layer_gates'])))
         report['passed'] = all(g['passed'] for g in report['gates'])
