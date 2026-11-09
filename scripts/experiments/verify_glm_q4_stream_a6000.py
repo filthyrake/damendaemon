@@ -157,7 +157,6 @@ def main():
                                     passed=gate1_delta == 0.0))
         save(args.output, report)
 
-        fp8_out = fp8_ffn(hidden)
         delta = output - fp8_out
         rel = float((delta.norm() / fp8_out.norm()).item())
         max_abs = float(delta.abs().max().item())
