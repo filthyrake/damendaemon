@@ -56,7 +56,7 @@ def main():
     torch.set_num_threads(1)
     torch.backends.cuda.matmul.allow_tf32 = False
     properties = torch.cuda.get_device_properties(0)
-    torch.cuda.set_per_process_memory_fraction(int(12 * 2**30) / properties.total_memory)
+    torch.cuda.set_per_process_memory_fraction(int(26 * 2**30) / properties.total_memory)
     report = dict(passed=False, device=torch.cuda.get_device_name(), torch=torch.__version__,
                   layer=args.layer, gates=[], mechanism='selected_expert_streaming')
     save(args.output, report)
@@ -91,17 +91,23 @@ def main():
             return CudaPackedExpert(*[CudaPackedMatrix(w.to(device), s.to(device), 'q4_0_f16')
                                       for w, s in triple])
 
-        # Resident oracle: the whole q4 bank on device (rung 2's production path).
+        # Sequential phases with explicit frees: only small output tensors ever
+        # coexist on device (attempt 1 held resident-q4 + fp8 banks together
+        # and hit the allocator cap — an honest sizing bug, retained).
+        generator = torch.Generator().manual_seed(719)
+        hidden = torch.randn(1, args.tokens, 6144, generator=generator).to(device)
+        rows = hidden.reshape(-1, hidden.shape[-1])
+
+        # Phase 1: resident q4 oracle (rung-2 production path).
         resident_bank = [resident(host_bank[e]) for e in range(experts)]
         resident_shared = resident(host_shared)
         resident_ffn = CudaPackedGlmFeedForward(resident_bank, router=router, correction_bias=bias,
                                                 shared=resident_shared, top_k=8, composition='batched')
-        generator = torch.Generator().manual_seed(719)
-        hidden = torch.randn(1, args.tokens, 6144, generator=generator).to(device)
-        rows = hidden.reshape(-1, hidden.shape[-1])
-        resident_out = resident_ffn(hidden)
+        resident_out = resident_ffn(hidden).clone()
+        del resident_bank, resident_shared, resident_ffn
+        torch.cuda.empty_cache()
 
-        # Shipped-FP8 oracle bank for the drift-context gate.
+        # Phase 2: shipped-fp8 oracle bank for the drift-context gate.
         def resident_fp8(prefix, part):
             raw = tensors[f'{prefix}.{part}_proj.weight']
             codes = (raw if raw.dtype == torch.uint8 else raw.contiguous().view(torch.uint8)).to(device)
@@ -114,8 +120,11 @@ def main():
                                          for p in ('gate', 'up', 'down')])
         fp8_ffn = CudaPackedGlmFeedForward(fp8_bank, router=router, correction_bias=bias,
                                            shared=fp8_shared, top_k=8, composition='batched')
+        fp8_out = fp8_ffn(hidden).clone()
+        del fp8_bank, fp8_shared, fp8_ffn
+        torch.cuda.empty_cache()
 
-        # Streamed path: route on device, stream ONLY selected experts.
+        # Phase 3: streamed path — route on device, stream ONLY selected experts.
         logits = torch.nn.functional.linear(rows, router)
         coefficients, ids = _select(logits, bias, 8, 2.5)
         streamed_bytes = 0
