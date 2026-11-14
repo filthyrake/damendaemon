@@ -279,19 +279,24 @@ def _fp8_bank_get_factory(model, layer, device):
 
 
 def moe_layer_forward(hidden, model, layer, host_bank, host_shared, router, bias,
-                      device, geometry, oracle=True):
+                      device, geometry, oracle=True, bank_get_factory=None):
     """One MoE layer's FFN: streamed q4 chain output + inline paired fp8 oracle.
 
     Returns (y_q4 [b, s, dim], gate dict) — the chain continues on y_q4 while
     the gate records q4-vs-fp8 parity on the ACTUAL chain activations with the
     SAME router selection (fp32 exact, #668) and identical accumulation order.
+
+    ``bank_get_factory`` (optional) overrides the default host-streaming
+    factory — #730's split-resident banks pass one whose triples already sit
+    on a peer device, so the on-demand ``.to(device)`` read crosses NVLink.
     """
     rows = hidden.reshape(-1, hidden.shape[-1])
     experts = len(host_bank)
     logits = torch.nn.functional.linear(rows, router.to(device))
     coefficients, ids = _select(logits, bias.to(device), geometry['experts_per_tok'],
                                 geometry['route_scale'])
-    bank_get = _q4_bank_get_factory(host_bank, device)
+    bank_get = bank_get_factory(host_bank, device) if bank_get_factory \
+        else _q4_bank_get_factory(host_bank, device)
     shared_q4 = _q4_expert(host_shared, device)
     y_q4, streamed_bytes = streamed_composition(rows, ids, coefficients, bank_get,
                                                 shared_q4, experts)
