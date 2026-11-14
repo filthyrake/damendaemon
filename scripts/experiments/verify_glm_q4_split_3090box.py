@@ -224,7 +224,7 @@ def main():
         save(args.output, report)
         print(json.dumps(dict(event='layer', layer=layer,
                               parity=gate.get('parity'),
-                              rel=gate.get('rel_rms')), flush=True))
+                              rel=gate.get('rel_rms'))), flush=True)
         with torch.cuda.device(local):
             torch.cuda.empty_cache()
         with torch.cuda.device(far):
