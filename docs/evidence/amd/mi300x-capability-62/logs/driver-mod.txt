@@ -1,0 +1,19 @@
+/sys/module/amdgpu/version:6.16.13
+amdgpu              16576512  1330
+amddrm_ttm_helper      12288  1 amdgpu
+amdttm                131072  2 amdgpu,amddrm_ttm_helper
+amddrm_buddy           32768  1 amdgpu
+amdxcp                 12288  1 amdgpu
+drm_ttm_helper         16384  1 amdgpu
+amddrm_exec            16384  1 amdgpu
+drm_suballoc_helper    16384  1 amdgpu
+amd_sched              73728  1 amdgpu
+amdkcl                 36864  4 amd_sched,amdttm,amddrm_exec,amdgpu
+drm_panel_backlight_quirks    12288  1 amdgpu
+drm_display_helper    319488  1 amdgpu
+cec                    81920  2 drm_display_helper,amdgpu
+video                  77824  2 dell_wmi,amdgpu
+drm_client_lib         16384  2 mgag200,amdgpu
+i2c_algo_bit           20480  2 mgag200,amdgpu
+drm_kms_helper        266240  6 drm_shmem_helper,drm_display_helper,mgag200,amdgpu,drm_ttm_helper,drm_client_lib
+drm                   843776  55 drm_panel_backlight_quirks,drm_kms_helper,amd_sched,amdttm,drm_suballoc_helper,drm_shmem_helper,drm_display_helper,mgag200,amddrm_exec,amdgpu,drm_ttm_helper,amddrm_buddy,drm_client_lib,ttm,amddrm_ttm_helper,amdxcp
