@@ -1,0 +1,37 @@
+{
+  "device": [
+    "NVIDIA GeForce RTX 3090",
+    "NVIDIA GeForce RTX 3090"
+  ],
+  "gates": [
+    {
+      "connection": "NV4",
+      "gate": "topology_nvlink",
+      "passed": true,
+      "rows": "GPU0\t X \tNV4\t0-15\t0\t\tN/A"
+    },
+    {
+      "backward": true,
+      "forward": true,
+      "gate": "peer_access",
+      "passed": true
+    },
+    {
+      "gate": "bandwidth",
+      "host_staged_gib_s": 1.32,
+      "passed": true,
+      "peer_gib_s": 47.52,
+      "ratio": 36.11
+    },
+    {
+      "gate": "payload_bit_identical",
+      "passed": true
+    }
+  ],
+  "host_staged_gib_s": 1.32,
+  "mechanism": "nvlink_peer",
+  "passed": true,
+  "peak_reserved_bytes": 2147483648,
+  "peer_gib_s": 47.52,
+  "torch": "2.10.0"
+}
