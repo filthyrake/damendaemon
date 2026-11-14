@@ -1,0 +1,157 @@
+{
+  "cell_packed_bytes": 43656413184,
+  "device": "NVIDIA GeForce RTX 3090",
+  "gates": [
+    {
+      "gate": "per_layer_paired_oracle_parity",
+      "layers": 8,
+      "passed": true,
+      "worst_rel_rms": 0.13310155272483826
+    },
+    {
+      "gate": "streaming_bounded",
+      "passed": true
+    },
+    {
+      "gate": "all_layers_finite",
+      "passed": true
+    }
+  ],
+  "geometry": {
+    "dim": 6144,
+    "heads": 64,
+    "layers": 78,
+    "nope": 192,
+    "rope": 64,
+    "top_k": 2048,
+    "value": 256,
+    "vocab": 154880
+  },
+  "handoff_file": "/tmp/damendaemon-g719r5/handoffs/handoff-layer66.pt",
+  "layer_gates": [
+    {
+      "distinct_selected": 47,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 58,
+      "max_abs": 0.4422222375869751,
+      "max_abs_of_absmax": 0.031203977941106704,
+      "oracle_absmax": 14.171982765197754,
+      "parity": true,
+      "rel_rms": 0.11304589360952377,
+      "selected": 64,
+      "streamed_bytes": 997982208,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 38,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 59,
+      "max_abs": 0.3002920150756836,
+      "max_abs_of_absmax": 0.016098989055127248,
+      "oracle_absmax": 18.652849197387695,
+      "parity": true,
+      "rel_rms": 0.10585758090019226,
+      "selected": 64,
+      "streamed_bytes": 806879232,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 47,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 60,
+      "max_abs": 0.8395531177520752,
+      "max_abs_of_absmax": 0.07962832527433722,
+      "oracle_absmax": 10.543397903442383,
+      "parity": true,
+      "rel_rms": 0.1251341551542282,
+      "selected": 64,
+      "streamed_bytes": 997982208,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 42,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 61,
+      "max_abs": 1.2281136512756348,
+      "max_abs_of_absmax": 0.10972991235380229,
+      "oracle_absmax": 11.192150115966797,
+      "parity": true,
+      "rel_rms": 0.13310155272483826,
+      "selected": 64,
+      "streamed_bytes": 891813888,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 44,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 62,
+      "max_abs": 0.9254579544067383,
+      "max_abs_of_absmax": 0.08748904485763973,
+      "oracle_absmax": 10.577986717224121,
+      "parity": true,
+      "rel_rms": 0.12639056146144867,
+      "selected": 64,
+      "streamed_bytes": 934281216,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 42,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 63,
+      "max_abs": 0.7192225456237793,
+      "max_abs_of_absmax": 0.06929674908019752,
+      "oracle_absmax": 10.378878593444824,
+      "parity": true,
+      "rel_rms": 0.12007997184991837,
+      "selected": 64,
+      "streamed_bytes": 891813888,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 40,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 64,
+      "max_abs": 1.4388971328735352,
+      "max_abs_of_absmax": 0.055348393487817504,
+      "oracle_absmax": 25.997089385986328,
+      "parity": true,
+      "rel_rms": 0.10579924285411835,
+      "selected": 64,
+      "streamed_bytes": 849346560,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 49,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 65,
+      "max_abs": 1.0899219512939453,
+      "max_abs_of_absmax": 0.06871835758900763,
+      "oracle_absmax": 15.860710144042969,
+      "parity": true,
+      "rel_rms": 0.11003116518259048,
+      "selected": 64,
+      "streamed_bytes": 1040449536,
+      "streaming_bounded": true
+    }
+  ],
+  "layers": [
+    50,
+    66
+  ],
+  "passed": true,
+  "peak_reserved_bytes": 197132288,
+  "received_hash": "5b983a16d8e7d75058447a52cb27efd5c48ac99216d6a9757963716ef3c940f1",
+  "resumed_from_file": "/tmp/damendaemon-g719r5/handoffs/handoff-layer58.pt",
+  "sent_hash": "4d3f7399d0d2634ae2d1bc526a591ee8360a25eee465a2020ec39aa464a58047",
+  "stage": 3,
+  "tokens": 8,
+  "torch": "2.10.0"
+}

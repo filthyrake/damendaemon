@@ -54,6 +54,9 @@ def main():
     parser.add_argument('--stage', type=int, required=True, choices=(1, 2, 3, 4))
     parser.add_argument('--model', default='/mnt/nas-models/models/GLM-5.3')
     parser.add_argument('--tokens', type=int, default=8)
+    parser.add_argument('--dry-run', action='store_true',
+                        help='validate the full cell plan (args, boundaries, bank files, '
+                             'handoff files) without any GPU work')
     parser.add_argument('--workdir', default='/tmp/damendaemon-g719r5')
     parser.add_argument('--banks-dir', default='/tmp/damendaemon-g719r5/banks')
     parser.add_argument('--pack-start', type=int)
@@ -112,6 +115,42 @@ def main():
         raise ValueError('cells must hand off via TCP next-stage args or --handoff-file')
     if packing and (args.pack_start is None or args.pack_stop is None):
         raise ValueError('pack mode needs both --pack-start and --pack-stop')
+
+    if args.dry_run:
+        # Full cell-plan validation, no torch/GPU: everything the launch
+        # needs before the long phases, checked in one pass.
+        from pathlib import Path as _P
+        import json as _json
+        with open(f'{args.model}/config.json') as reader:
+            _cfg = _json.load(reader)
+        _sched = _cfg['indexer_types']
+        _start, _end = STAGE_RANGES[args.stage]
+        _cs = args.chain_start if args.chain_start is not None else _start
+        _ce = args.chain_stop if args.chain_stop is not None else _end
+        print(f'DRYRUN stage={args.stage} range=[{_cs},{_ce}) packing={args.pack_start is not None}')
+        if not args.pack_start is not None:
+            for _b in (_cs, _ce):
+                if _start < _b < _end and _sched[_b] != 'full':
+                    raise ValueError(f'boundary {_b} not full-indexer')
+            for _l in range(_cs, _ce):
+                if _l >= _cfg['first_k_dense_replace']:
+                    _f = _P(args.banks_dir) / f'layer{_l}.pt'
+                    if not _f.exists():
+                        raise ValueError(f'missing bank {_f}')
+            if args.inbound_file and not _P(args.inbound_file).exists():
+                raise ValueError(f'missing inbound file {args.inbound_file}')
+            if args.handoff_file:
+                _P(args.handoff_file).mkdir(parents=True, exist_ok=True)
+            _needs_out = _ce < _end or (_ce == _end and args.stage < 4)
+            _tcp = bool(args.next_address and args.next_port and args.next_cert)
+            if _needs_out and not (_tcp or args.handoff_file):
+                raise ValueError('no handoff mechanism for a non-final cell')
+            print(f'DRYRUN OK: {len([l for l in range(_cs,_ce) if l >= _cfg["first_k_dense_replace"]])} '
+                  f'MoE bank(s) present, boundaries legal, handoff '
+                  f'{"tcp" if _tcp else ("file" if args.handoff_file else "none-final")}')
+        else:
+            print(f'DRYRUN OK: pack mode [{args.pack_start},{args.pack_stop})')
+        return
 
     import torch
     if args.stage == 4:

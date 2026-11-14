@@ -1,0 +1,216 @@
+{
+  "cell_packed_bytes": 60027568128,
+  "device": "NVIDIA A30",
+  "gates": [
+    {
+      "gate": "per_layer_paired_oracle_parity",
+      "layers": 11,
+      "passed": true,
+      "worst_rel_rms": 0.10274384170770645
+    },
+    {
+      "gate": "streaming_bounded",
+      "passed": true
+    },
+    {
+      "gate": "all_layers_finite",
+      "passed": true
+    }
+  ],
+  "geometry": {
+    "dim": 6144,
+    "heads": 64,
+    "layers": 78,
+    "nope": 192,
+    "rope": 64,
+    "top_k": 2048,
+    "value": 256,
+    "vocab": 154880
+  },
+  "handoff_file": "/tmp/damendaemon-g719r5/handoffs/handoff-layer14.pt",
+  "layer_gates": [
+    {
+      "finite": true,
+      "kind": "dense_fp8",
+      "layer": 0,
+      "streamed_bytes": 0
+    },
+    {
+      "finite": true,
+      "kind": "dense_fp8",
+      "layer": 1,
+      "streamed_bytes": 0
+    },
+    {
+      "finite": true,
+      "kind": "dense_fp8",
+      "layer": 2,
+      "streamed_bytes": 0
+    },
+    {
+      "distinct_selected": 44,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 3,
+      "max_abs": 0.001098737120628357,
+      "max_abs_of_absmax": 0.04231150139337165,
+      "oracle_absmax": 0.025967812165617943,
+      "parity": true,
+      "rel_rms": 0.07758897542953491,
+      "selected": 64,
+      "streamed_bytes": 934281216,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 45,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 4,
+      "max_abs": 0.001729501411318779,
+      "max_abs_of_absmax": 0.08088443336234719,
+      "oracle_absmax": 0.021382376551628113,
+      "parity": true,
+      "rel_rms": 0.07475696504116058,
+      "selected": 64,
+      "streamed_bytes": 955514880,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 50,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 5,
+      "max_abs": 0.0015900186263024807,
+      "max_abs_of_absmax": 0.028596549793859297,
+      "oracle_absmax": 0.05560176447033882,
+      "parity": true,
+      "rel_rms": 0.07632561028003693,
+      "selected": 64,
+      "streamed_bytes": 1061683200,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 50,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 6,
+      "max_abs": 0.0021200962364673615,
+      "max_abs_of_absmax": 0.01858912624845028,
+      "oracle_absmax": 0.11405034363269806,
+      "parity": true,
+      "rel_rms": 0.08282862603664398,
+      "selected": 64,
+      "streamed_bytes": 1061683200,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 46,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 7,
+      "max_abs": 0.01261758804321289,
+      "max_abs_of_absmax": 0.016952890715808116,
+      "oracle_absmax": 0.7442735433578491,
+      "parity": true,
+      "rel_rms": 0.07501491904258728,
+      "selected": 64,
+      "streamed_bytes": 976748544,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 48,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 8,
+      "max_abs": 0.27849245071411133,
+      "max_abs_of_absmax": 0.007672453076784514,
+      "oracle_absmax": 36.297706604003906,
+      "parity": true,
+      "rel_rms": 0.058788225054740906,
+      "selected": 64,
+      "streamed_bytes": 1019215872,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 52,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 9,
+      "max_abs": 2.0038576126098633,
+      "max_abs_of_absmax": 0.032231187341451535,
+      "oracle_absmax": 62.17138671875,
+      "parity": true,
+      "rel_rms": 0.05385592207312584,
+      "selected": 64,
+      "streamed_bytes": 1104150528,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 42,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 10,
+      "max_abs": 0.02604764699935913,
+      "max_abs_of_absmax": 0.012417297011985882,
+      "oracle_absmax": 2.0976905822753906,
+      "parity": true,
+      "rel_rms": 0.055851150304079056,
+      "selected": 64,
+      "streamed_bytes": 891813888,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 45,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 11,
+      "max_abs": 0.003797769546508789,
+      "max_abs_of_absmax": 0.0098741302544941,
+      "oracle_absmax": 0.3846181333065033,
+      "parity": true,
+      "rel_rms": 0.0908413827419281,
+      "selected": 64,
+      "streamed_bytes": 955514880,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 41,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 12,
+      "max_abs": 0.05162405967712402,
+      "max_abs_of_absmax": 0.015653728057872678,
+      "oracle_absmax": 3.2978763580322266,
+      "parity": true,
+      "rel_rms": 0.06800494343042374,
+      "selected": 64,
+      "streamed_bytes": 870580224,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 48,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 13,
+      "max_abs": 0.006563723087310791,
+      "max_abs_of_absmax": 0.010304640087137612,
+      "oracle_absmax": 0.6369677186012268,
+      "parity": true,
+      "rel_rms": 0.10274384170770645,
+      "selected": 64,
+      "streamed_bytes": 1019215872,
+      "streaming_bounded": true
+    }
+  ],
+  "layers": [
+    0,
+    34
+  ],
+  "passed": true,
+  "peak_reserved_bytes": 3814719488,
+  "sent_hash": "37e7ec317eb8d748487c5deec64a52d769d447928abc4074e5ac9d3a753d7fed",
+  "stage": 1,
+  "tokens": 8,
+  "tokens_seed": 719,
+  "torch": "2.13.0+cu130"
+}
