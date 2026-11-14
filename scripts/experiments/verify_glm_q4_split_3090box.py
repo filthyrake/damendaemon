@@ -59,7 +59,12 @@ def _split_bank_get_factory(device, stats):
     """
     from scripts.experiments.glm_q4_fleet_common import _q4_expert
 
-    def make_bank_get(split_bank):
+    def make_bank_get(split_bank, _ignored_device=None):
+        """Two-arg signature matching _q4_bank_get_factory(host_bank, device).
+
+        The device argument is redundant (the closure carries the executing
+        device) but kept for signature parity with the default factory.
+        """
         def bank_get(expert_id):
             triple = split_bank[expert_id]
             moved = sum(w.numel() + s.numel() * 2 for w, s in triple)
