@@ -43,29 +43,57 @@ a 180 s timeout. Full provenance: `STATUS.local.md`, `prepared-command.txt`,
   paths" premise holds on this hardware.
 - **bf16 matmul anchor**: max abs err 0.24 vs fp32 on a 256^3 case (normal
   bf16 rounding magnitude for this range).
-- **FP8 `torch._scaled_mm`: UNRESOLVED - probe defect, not a hardware
-  verdict.** All 32 dtype x layout cells were rejected with "Invalid
-  scaling configuration" because the probe passed a mixed scaling mode
-  (per-row `scale_a` shape (256,) with singleton `scale_b`). This build
-  requires TensorWise (both scales singleton) or RowWise (both scaled
-  per-row/per-col). No conclusion about FP8 matmul support is claimable
-  from this run; the corrected probe (commit `~` below) retests with
-  tensorwise + rowwise scaling and full error strings.
+- **FP8 `torch._scaled_mm`: RESOLVED by run 2 (probe v2, same day 2026-11-14).**
+  Run 1's 32/32 rejection was a probe defect (mixed scaling shapes); run 2
+  with corrected tensorwise/rowwise shapes measured the real support
+  matrix on 64 cells (16 dtype pairs x 2 layouts x 2 scaling modes,
+  256^3, bf16 out): **FP8 matmul works on this stack, fnuz-only,
+  column-major-B.** Five cells executed: `e4m3fnuz x e4m3fnuz` (col-major,
+  tensorwise AND rowwise), `e4m3fnuz x e5m2fnuz` (col, tw),
+  `e5m2fnuz x e4m3fnuz` (col, tw), `e5m2fnuz x e5m2fnuz` (col, tw).
+  Rejections: 20 row-major B ("only row-major x column-major", the
+  cuBLASLt layout contract), 24 B-dtype ("Expected b e4m3fnuz" — the
+  CUDA-native `fn` variants are rejected as B under every combination;
+  ROCm hipBLASLt hard-requires the AMD fnuz encoding), 14
+  HIPBLAS_STATUS_NOT_SUPPORTED (remaining non-fnuz A combos), 1 no
+  hipblaslt solution (`e5m2fnuz x e4m3fnuz` col+rowwise). Rowwise scaling
+  is supported only for the pure `e4m3fnuz x e4m3fnuz` pair. Measured max
+  abs err vs fp32 on unit scales (2.9-6.2) includes FP8 quantization noise;
+  no accuracy threshold is applied and no throughput is claimed. Benches
+  still NOT RUN - D2D bandwidth and GEMM rates remain unmeasured.
 - Benches (D2D bandwidth, GEMM rates): NOT RUN - deferred, opt-in only.
 
 ## What this evidence establishes (and does not)
 
 Established: SKU/stack/NUMA/interconnect identity (#62 item 1); FP8 variant
 semantics on-device; Triton AMD-backend q4 kernel correctness; dtype
-roundtrips. NOT established: FP8 matmul path (probe bug), throughput/SLO of
-any kind (no benches), multi-GPU collectives/RDMA (#51 cell), checkpoint
-serving gates, concurrency. Per the standing discipline these are evidence
+roundtrips; and (run 2) the FP8 scaled_mm support matrix — FP8 matmul is
+available on this stack with fnuz operands and column-major B, rowwise
+scaling for the pure e4m3fnuz pair. NOT established: throughput/SLO of
+any kind (benches still not run), multi-GPU collectives/RDMA (#51 cell),
+checkpoint serving gates, concurrency, and FP8 accuracy thresholds (the
+measured errors carry unit-scale quantization noise; no acceptance
+criterion was applied). Per the standing discipline these are evidence
 attached to #62/#719, not qualified claims; #62 stays open.
+
+## Run 2 provenance (2026-11-14 16:49-16:50 UTC)
+
+The idle window moved: GPU 0 stayed busy for the full 5-minute wait, so
+the run used the healthy idle card at physical PCI `0000:bd:00.0` (host
+card41/renderD168, ~23.27 GiB free) through the existing qwen3-omni
+container (`7cfabe43636cb0`, `runtime-selection.json`), same containment
+(UID/GID 2000, 1 GiB allocator cap, 2 threads, nice 19, private caches,
+180 s timeout + 10 s kill grace, 3 consecutive idle samples before
+launch). Health identical before/after; kernel log clean. Source scripts
+verified byte-identical to repo main (md5). Records:
+`RESULTS-run2.local.md`, `execution.py`, `execution-idle-gpu.py`,
+`capability-approved-run2.log`, `probes-approved-run2/`.
 
 ## Follow-ups
 
-1. Corrected `scaled_mm` probe (tensorwise + rowwise shapes) + opt-in
-   benches shipped in `scripts/mi300_collect/` (same commit as this
-   evidence) - the next user-executed run closes the FP8-matmul question.
+1. Opt-in benches (`--bench`: D2D bandwidth, bf16 + fp8 GEMM rates) —
+   still not run; the last unmeasured single-GPU primitive. The fp8 bench
+   path's tensorwise-first scaling matches the now-measured support
+   matrix.
 2. Collectives cell (RCCL over xGMI, 2 GPUs) needs a separate bounded
    multi-rank harness under #51 - not covered by single-GPU probes.
