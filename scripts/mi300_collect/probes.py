@@ -133,11 +133,18 @@ def fp8_semantics(dev):
 
 
 def scaled_mm_matrix(dev):
-    """Does this stack do FP8 matmul, with which input dtypes/layouts?
-    A plain bf16 matmul sanity anchor runs first; each fp8 cell records
-    max abs error vs fp32 on a 256x256x256 case or the exact error."""
+    """Does this stack do FP8 matmul, with which input dtypes/layouts/scaling?
+    A plain bf16 matmul sanity anchor runs first; each fp8 x scaling cell
+    records max abs error vs fp32 on a 256x256x256 case or the exact error.
+    Scaling modes follow torch's TensorWise/RowWise contract exactly:
+      tensorwise: scale_a/scale_b both 1-element float tensors
+      rowwise:    scale_a (M,1), scale_b (1,N)   (column-major b required)
+    v1 of this probe mixed a per-row scale_a with a singleton scale_b and
+    every cell was rejected with 'Invalid scaling configuration' on the
+    MI300X run (2026-11-14) - that was a probe defect, not a hardware
+    verdict; keep both modes explicit so the result is conclusive."""
     import torch
-    out = {'has_scaled_mm': hasattr(torch, '_scaled_mm')}
+    out: dict = {'has_scaled_mm': hasattr(torch, '_scaled_mm')}
     if not out['has_scaled_mm']:
         return out
     M = K = N = 256
@@ -146,8 +153,10 @@ def scaled_mm_matrix(dev):
     ref = a32 @ b32
     bf = torch.matmul(a32.to(torch.bfloat16), b32.to(torch.bfloat16))
     out['bf16_matmul_max_err'] = (bf.float() - ref).abs().max().item()
-    sa = torch.ones(M, device=dev)
-    sb = torch.ones(1, device=dev)
+    modes = {
+        'tw': (torch.ones(1, device=dev), torch.ones(1, device=dev)),
+        'rw': (torch.ones(M, 1, device=dev), torch.ones(1, N, device=dev)),
+    }
     for aname in FP8:
         if not hasattr(torch, aname):
             continue
@@ -155,20 +164,22 @@ def scaled_mm_matrix(dev):
             if not hasattr(torch, bname):
                 continue
             for layout in ('row', 'col'):
-                key = f'{aname.split("_")[-1]}x{bname.split("_")[-1]}:{layout}'
-                try:
-                    A = a32.to(getattr(torch, aname))
-                    B = b32.to(getattr(torch, bname))
-                    if layout == 'col':
-                        B = B.t().contiguous().t()
-                    C = torch._scaled_mm(A, B, scale_a=sa, scale_b=sb,
-                                         out_dtype=torch.bfloat16)
-                    out[key] = {'ok': True,
-                                'max_abs_err_vs_fp32': round(
-                                    (C.float() - ref).abs().max().item(), 4)}
-                except Exception as e:  # noqa: BLE001
-                    out[key] = {'ok': False,
-                                'err': f'{type(e).__name__}: {str(e)[:160]}'}
+                for mname, (sa, sb) in modes.items():
+                    key = (f'{aname.split("_")[-1]}x{bname.split("_")[-1]}'
+                           f':{layout}:{mname}')
+                    try:
+                        A = a32.to(getattr(torch, aname))
+                        B = b32.to(getattr(torch, bname))
+                        if layout == 'col':
+                            B = B.t().contiguous().t()
+                        C = torch._scaled_mm(A, B, scale_a=sa, scale_b=sb,
+                                             out_dtype=torch.bfloat16)
+                        out[key] = {'ok': True,
+                                    'max_abs_err_vs_fp32': round(
+                                        (C.float() - ref).abs().max().item(), 4)}
+                    except Exception as e:  # noqa: BLE001
+                        out[key] = {'ok': False,
+                                    'err': f'{type(e).__name__}: {str(e)[:300]}'}
     return out
 
 
@@ -272,12 +283,24 @@ def benches(dev, budget_s):
                                                     'float8_e4m3fnuz')
                                                  else torch.float8_e4m3fn)
             B = torch.randn(m, m, device=dev).to(A.dtype).t().contiguous().t()
-            sa = torch.ones(m, device=dev)
+            # tensorwise scaling first (v1's mixed rowwise-a/singleton-b was
+            # rejected on MI300X); rowwise as fallback
+            sa = torch.ones(1, device=dev)
             sb = torch.ones(1, device=dev)
-            for _ in range(3):
-                torch._scaled_mm(A, B, scale_a=sa, scale_b=sb,
-                                 out_dtype=torch.bfloat16)
-            torch.cuda.synchronize()
+            try:
+                for _ in range(3):
+                    torch._scaled_mm(A, B, scale_a=sa, scale_b=sb,
+                                     out_dtype=torch.bfloat16)
+                torch.cuda.synchronize()
+                out['fp8_gemm_scaling'] = 'tensorwise'
+            except Exception:  # noqa: BLE001
+                sa = torch.ones(m, 1, device=dev)
+                sb = torch.ones(1, m, device=dev)
+                for _ in range(3):
+                    torch._scaled_mm(A, B, scale_a=sa, scale_b=sb,
+                                     out_dtype=torch.bfloat16)
+                torch.cuda.synchronize()
+                out['fp8_gemm_scaling'] = 'rowwise'
             t0 = time.perf_counter()
             for _ in range(10):
                 torch._scaled_mm(A, B, scale_a=sa, scale_b=sb,

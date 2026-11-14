@@ -78,8 +78,14 @@ echo "phase A: python environments"
 PY_FOUND=""
 for cand in "$EXTRA_PY" python3 python /opt/rocm*/bin/python3 $(ls /usr/bin/python3.* 2>/dev/null); do
   [ -x "$cand" ] || continue
+  case "$cand" in *-config|*-config-*|[!/]*/python3.*-config) continue ;; esac
   v=$("$cand" -c 'import torch,sys;print(torch.__version__, (getattr(torch.version,"hip",None) or "cuda"))' 2>/dev/null || true)
-  if [ -n "$v" ]; then echo "  [.] torch found: $cand -> $v"; PY_FOUND="$cand"; break; fi
+  # only accept output that looks like a torch version line (python3.x-config
+  # prints a usage banner and exits non-zero; without this check it is
+  # misread as a torch env - seen live on amd-mi300x 2026-11-14)
+  case "$v" in
+    [0-9]*.[0-9]*) echo "  [.] torch found: $cand -> $v"; PY_FOUND="$cand"; break ;;
+  esac
 done
 if [ -n "$PY_FOUND" ]; then
   "$PY_FOUND" -c 'import torch;print("torch",torch.__version__);print("hip",getattr(torch.version,"hip",None))' >"$BASE/logs/torch-env.txt" 2>&1

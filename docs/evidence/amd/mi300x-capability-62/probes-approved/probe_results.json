@@ -1,0 +1,325 @@
+{
+ "meta": {
+  "started_utc": "2026-11-14T16:17:08Z",
+  "host": "amd-mi300x",
+  "python": "3.12.13",
+  "argv": [
+   "cap",
+   "--gpu",
+   "0",
+   "--out",
+   "/tmp/mi300-cri-20261114T1610Z/probes"
+  ],
+  "finished_utc": "2026-11-14T16:17:13Z"
+ },
+ "rocm_env": {
+  "captured": {
+   "ROCR_VISIBLE_DEVICES": "0",
+   "TRITON_CACHE_DIR": "/tmp/mi300-cri-20261114T1610Z/triton-cache",
+   "MIOPEN_USER_DB_PATH": "/tmp/mi300-cri-20261114T1610Z/miopen"
+  },
+  "count": 3,
+  "_seconds": 0.0
+ },
+ "device_props": {
+  "count": 1,
+  "devices": [
+   {
+    "index": 0,
+    "name": "",
+    "gcnArchName": "gfx942:sramecc+:xnack-",
+    "total_mem_GiB": 192.0,
+    "sm_count": 304,
+    "is_integrated": 0,
+    "major": 9,
+    "minor": 4
+   }
+  ],
+  "selected_gpu": 0,
+  "free_GiB": 15.61,
+  "total_GiB": 191.98,
+  "_seconds": 0.0
+ },
+ "dtype_scan": {
+  "float16": {
+   "exists": true,
+   "finfo_max": 65504.0,
+   "cast_roundtrip_gpu": "ok"
+  },
+  "bfloat16": {
+   "exists": true,
+   "finfo_max": 3.3895313892515355e+38,
+   "cast_roundtrip_gpu": "ok"
+  },
+  "float32": {
+   "exists": true,
+   "finfo_max": 3.4028234663852886e+38,
+   "cast_roundtrip_gpu": "ok"
+  },
+  "float8_e4m3fn": {
+   "exists": true,
+   "finfo_max": 448.0,
+   "cast_roundtrip_gpu": "ok"
+  },
+  "float8_e5m2": {
+   "exists": true,
+   "finfo_max": 57344.0,
+   "cast_roundtrip_gpu": "ok"
+  },
+  "float8_e4m3fnuz": {
+   "exists": true,
+   "finfo_max": 240.0,
+   "cast_roundtrip_gpu": "ok"
+  },
+  "float8_e5m2fnuz": {
+   "exists": true,
+   "finfo_max": 57344.0,
+   "cast_roundtrip_gpu": "ok"
+  },
+  "uint8": {
+   "exists": true,
+   "finfo_max": null,
+   "cast_roundtrip_gpu": "ok"
+  },
+  "int8": {
+   "exists": true,
+   "finfo_max": null,
+   "cast_roundtrip_gpu": "ok"
+  },
+  "_seconds": 0.51
+ },
+ "fp8_semantics": {
+  "float8_e4m3fn": {
+   "exists": true,
+   "byte_of_1.0": "0x38",
+   "finfo_max": 448.0,
+   "decode_table": {
+    "0x00": 0.0,
+    "0x38": 1.0,
+    "0x30": 0.5,
+    "0x7e": 448.0,
+    "0x7f": NaN,
+    "0x80": -0.0,
+    "0xff": NaN
+   },
+   "nan_bytes": [
+    "0x7f",
+    "0xff"
+   ]
+  },
+  "float8_e4m3fnuz": {
+   "exists": true,
+   "byte_of_1.0": "0x40",
+   "finfo_max": 240.0,
+   "decode_table": {
+    "0x00": 0.0,
+    "0x38": 0.5,
+    "0x30": 0.25,
+    "0x7e": 224.0,
+    "0x7f": 240.0,
+    "0x80": NaN,
+    "0xff": -240.0
+   },
+   "nan_bytes": [
+    "0x80"
+   ]
+  },
+  "float8_e5m2": {
+   "exists": true,
+   "byte_of_1.0": "0x3c",
+   "finfo_max": 57344.0,
+   "decode_table": {
+    "0x00": 0.0,
+    "0x38": 0.5,
+    "0x30": 0.125,
+    "0x7e": NaN,
+    "0x7f": NaN,
+    "0x80": -0.0,
+    "0xff": NaN
+   },
+   "nan_bytes": [
+    "0x7d",
+    "0x7e",
+    "0x7f",
+    "0xfd",
+    "0xfe",
+    "0xff"
+   ]
+  },
+  "float8_e5m2fnuz": {
+   "exists": true,
+   "byte_of_1.0": "0x40",
+   "finfo_max": 57344.0,
+   "decode_table": {
+    "0x00": 0.0,
+    "0x38": 0.25,
+    "0x30": 0.0625,
+    "0x7e": 49152.0,
+    "0x7f": 57344.0,
+    "0x80": NaN,
+    "0xff": -57344.0
+   },
+   "nan_bytes": [
+    "0x80"
+   ]
+  },
+  "_seconds": 0.0
+ },
+ "scaled_mm_matrix": {
+  "has_scaled_mm": true,
+  "bf16_matmul_max_err": 0.23992156982421875,
+  "e4m3fnxe4m3fn:row": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e4m3fnxe4m3fn:col": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e4m3fnxe4m3fnuz:row": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e4m3fnxe4m3fnuz:col": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e4m3fnxe5m2:row": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e4m3fnxe5m2:col": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e4m3fnxe5m2fnuz:row": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e4m3fnxe5m2fnuz:col": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e4m3fnuzxe4m3fn:row": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e4m3fnuzxe4m3fn:col": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e4m3fnuzxe4m3fnuz:row": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e4m3fnuzxe4m3fnuz:col": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e4m3fnuzxe5m2:row": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e4m3fnuzxe5m2:col": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e4m3fnuzxe5m2fnuz:row": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e4m3fnuzxe5m2fnuz:col": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e5m2xe4m3fn:row": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e5m2xe4m3fn:col": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e5m2xe4m3fnuz:row": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e5m2xe4m3fnuz:col": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e5m2xe5m2:row": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e5m2xe5m2:col": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e5m2xe5m2fnuz:row": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e5m2xe5m2fnuz:col": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e5m2fnuzxe4m3fn:row": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e5m2fnuzxe4m3fn:col": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e5m2fnuzxe4m3fnuz:row": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e5m2fnuzxe4m3fnuz:col": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e5m2fnuzxe5m2:row": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e5m2fnuzxe5m2:col": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e5m2fnuzxe5m2fnuz:row": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "e5m2fnuzxe5m2fnuz:col": {
+   "ok": false,
+   "err": "RuntimeError: Invalid scaling configuration.\n- For TensorWise scaling, a and b should be float8, scales should be float and singletons.\n- For RowWise scaling, a and b should "
+  },
+  "_seconds": 3.2
+ },
+ "triton_q4": {
+  "triton_version": "3.7.1",
+  "max_abs_err_vs_reference": 0.0,
+  "pass": true,
+  "isa_artifacts": [
+   {
+    "file": "_q4_dequant.ttir",
+    "bytes": 4621
+   },
+   {
+    "file": "_q4_dequant.ttgir",
+    "bytes": 4702
+   },
+   {
+    "file": "_q4_dequant.amdgcn",
+    "bytes": 9509
+   },
+   {
+    "file": "_q4_dequant.hsaco",
+    "bytes": 6008
+   }
+  ],
+  "_seconds": 1.13
+ }
+}
