@@ -1,0 +1,52 @@
+{
+  "device": [
+    "NVIDIA GeForce RTX 3090",
+    "NVIDIA GeForce RTX 3090"
+  ],
+  "gates": [],
+  "inbound_shape": [
+    1,
+    8,
+    6144
+  ],
+  "layer": [
+    58,
+    66
+  ],
+  "layer_gates": [
+    {
+      "distinct_selected": 47,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "integrity": true,
+      "layer": 58,
+      "max_abs": 0.4422222375869751,
+      "max_abs_of_absmax": 0.031203977941106704,
+      "oracle_absmax": 14.171982765197754,
+      "parity": true,
+      "rel_rms": 0.11304589360952377,
+      "selected": 64,
+      "streamed_bytes": 997982208,
+      "streaming_bounded": true
+    }
+  ],
+  "mechanism": "nvlink_peer_resident_split_banks",
+  "preload_seconds": 16.5,
+  "resident_bytes": {
+    "aggregate": 43656413184,
+    "per_gpu_local": 21828206592,
+    "per_layer": {
+      "58": 5457051648,
+      "59": 5457051648,
+      "60": 5457051648,
+      "61": 5457051648,
+      "62": 5457051648,
+      "63": 5457051648,
+      "64": 5457051648,
+      "65": 5457051648
+    }
+  },
+  "single_gpu_feasible": false,
+  "tokens": 8,
+  "torch": "2.10.0"
+}
