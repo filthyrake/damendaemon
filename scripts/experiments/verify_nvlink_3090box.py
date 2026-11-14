@@ -53,29 +53,26 @@ def main():
                   mechanism='nvlink_peer', gates=[])
     save(args.output, report)
     try:
-        # Gate 1: topology — an NV line between the two GPUs.
+        # Gate 1: topology — an NV line between the two GPUs (column 3 of
+        # nvidia-smi topo -m rows: GPU, self, interconnect, CPU affinity...).
         topo = subprocess.run(['nvidia-smi', 'topo', '-m'], capture_output=True,
                               text=True, timeout=30).stdout
         rows = {line.split('\t')[0].strip(): line for line in topo.splitlines()
                 if line.startswith('GPU')}
-        nvlink_rows = {g: ('NV' in rows.get(g, '') and 'X' not in rows.get(g, '').split('\t')[1])
-                       for g in ('GPU0', 'GPU1')}
-        connection = rows.get('GPU0', '').split('\t')[1] if 'GPU0' in rows else ''
+        connection = rows.get('GPU0', '').split('\t')[2].strip() if 'GPU0' in rows else ''
         topology = dict(gate='topology_nvlink', connection=connection, rows=rows.get('GPU0', '')[:80])
         topology['passed'] = connection.startswith('NV')
         report['gates'].append(topology)
         save(args.output, report)
 
-        # Gate 2: peer access both directions.
+        # Gate 2: peer access — query both directions. torch 2.10 exposes
+        # can_device_access_peer but no enable_peer_access: peer access for
+        # copy_ is managed by the CUDA driver/runtime, and the measured
+        # cross-device copy IS the observable qualification (gate 3).
         forward = torch.cuda.can_device_access_peer(0, 1)
         backward = torch.cuda.can_device_access_peer(1, 0)
-        enabled = []
-        for source, target in ((0, 1), (1, 0)):
-            with torch.cuda.device(source):
-                enabled.append(bool(torch.cuda.enable_peer_access(target)))
-        peer = dict(gate='peer_access', forward=bool(forward), backward=bool(backward),
-                    enabled=enabled)
-        peer['passed'] = bool(forward and backward and all(enabled))
+        peer = dict(gate='peer_access', forward=bool(forward), backward=bool(backward))
+        peer['passed'] = bool(forward and backward)
         report['gates'].append(peer)
         save(args.output, report)
 
