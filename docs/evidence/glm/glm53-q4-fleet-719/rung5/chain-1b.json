@@ -1,0 +1,213 @@
+{
+  "cell_packed_bytes": 65484619776,
+  "device": "NVIDIA A30",
+  "gates": [
+    {
+      "gate": "per_layer_paired_oracle_parity",
+      "layers": 12,
+      "passed": true,
+      "worst_rel_rms": 0.1216529980301857
+    },
+    {
+      "gate": "streaming_bounded",
+      "passed": true
+    },
+    {
+      "gate": "all_layers_finite",
+      "passed": true
+    }
+  ],
+  "geometry": {
+    "dim": 6144,
+    "heads": 64,
+    "layers": 78,
+    "nope": 192,
+    "rope": 64,
+    "top_k": 2048,
+    "value": 256,
+    "vocab": 154880
+  },
+  "handoff_file": "/tmp/damendaemon-g719r5/handoffs/handoff-layer26.pt",
+  "layer_gates": [
+    {
+      "distinct_selected": 43,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 14,
+      "max_abs": 0.07842087745666504,
+      "max_abs_of_absmax": 0.02138760057431372,
+      "oracle_absmax": 3.666651487350464,
+      "parity": true,
+      "rel_rms": 0.057939764112234116,
+      "selected": 64,
+      "streamed_bytes": 913047552,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 38,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 15,
+      "max_abs": 0.0050506144762039185,
+      "max_abs_of_absmax": 0.022816605894817737,
+      "oracle_absmax": 0.22135695815086365,
+      "parity": true,
+      "rel_rms": 0.10935106873512268,
+      "selected": 64,
+      "streamed_bytes": 806879232,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 40,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 16,
+      "max_abs": 0.014948248863220215,
+      "max_abs_of_absmax": 0.023349698015289633,
+      "oracle_absmax": 0.6401902437210083,
+      "parity": true,
+      "rel_rms": 0.108707956969738,
+      "selected": 64,
+      "streamed_bytes": 849346560,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 35,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 17,
+      "max_abs": 0.03390097618103027,
+      "max_abs_of_absmax": 0.026481749530114746,
+      "oracle_absmax": 1.2801637649536133,
+      "parity": true,
+      "rel_rms": 0.09471151232719421,
+      "selected": 64,
+      "streamed_bytes": 743178240,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 37,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 18,
+      "max_abs": 0.02001035213470459,
+      "max_abs_of_absmax": 0.04339583338315335,
+      "oracle_absmax": 0.46111229062080383,
+      "parity": true,
+      "rel_rms": 0.1216529980301857,
+      "selected": 64,
+      "streamed_bytes": 785645568,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 40,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 19,
+      "max_abs": 0.01245531439781189,
+      "max_abs_of_absmax": 0.02625197362007399,
+      "oracle_absmax": 0.47445249557495117,
+      "parity": true,
+      "rel_rms": 0.11212597787380219,
+      "selected": 64,
+      "streamed_bytes": 849346560,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 33,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 20,
+      "max_abs": 0.012157022021710873,
+      "max_abs_of_absmax": 0.034958704308567526,
+      "oracle_absmax": 0.3477537930011749,
+      "parity": true,
+      "rel_rms": 0.10809323936700821,
+      "selected": 64,
+      "streamed_bytes": 700710912,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 33,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 21,
+      "max_abs": 0.02016669511795044,
+      "max_abs_of_absmax": 0.11129412091711624,
+      "oracle_absmax": 0.18120180070400238,
+      "parity": true,
+      "rel_rms": 0.11801143735647202,
+      "selected": 64,
+      "streamed_bytes": 700710912,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 43,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 22,
+      "max_abs": 0.07343578338623047,
+      "max_abs_of_absmax": 0.005964896788066953,
+      "oracle_absmax": 12.311325073242188,
+      "parity": true,
+      "rel_rms": 0.0636695846915245,
+      "selected": 64,
+      "streamed_bytes": 913047552,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 48,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 23,
+      "max_abs": 0.6349380016326904,
+      "max_abs_of_absmax": 0.023947883108506398,
+      "oracle_absmax": 26.513324737548828,
+      "parity": true,
+      "rel_rms": 0.055067479610443115,
+      "selected": 64,
+      "streamed_bytes": 1019215872,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 45,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 24,
+      "max_abs": 0.1088043600320816,
+      "max_abs_of_absmax": 0.012839687919423812,
+      "oracle_absmax": 8.474065780639648,
+      "parity": true,
+      "rel_rms": 0.0637257844209671,
+      "selected": 64,
+      "streamed_bytes": 955514880,
+      "streaming_bounded": true
+    },
+    {
+      "distinct_selected": 44,
+      "finite": true,
+      "host_bank_bytes": 5457051648,
+      "layer": 25,
+      "max_abs": 0.3072481155395508,
+      "max_abs_of_absmax": 0.03316775860743039,
+      "oracle_absmax": 9.263457298278809,
+      "parity": true,
+      "rel_rms": 0.0672948956489563,
+      "selected": 64,
+      "streamed_bytes": 934281216,
+      "streaming_bounded": true
+    }
+  ],
+  "layers": [
+    0,
+    34
+  ],
+  "passed": true,
+  "peak_reserved_bytes": 197132288,
+  "received_hash": "37e7ec317eb8d748487c5deec64a52d769d447928abc4074e5ac9d3a753d7fed",
+  "resumed_from_file": "/tmp/damendaemon-g719r5/handoffs/handoff-layer14.pt",
+  "sent_hash": "8ef28ad1eb5555468b0410121ccf03f3dee3e1a546efaed322a5a899f3c25a0c",
+  "stage": 1,
+  "tokens": 8,
+  "torch": "2.13.0+cu130"
+}
