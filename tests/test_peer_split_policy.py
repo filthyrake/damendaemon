@@ -22,7 +22,9 @@ def inventory(devices, pairs, capable=True):
                 peer_matrix=matrix)
 
 
-THIRTY_NINETY_X2 = inventory([24 * GIB, 24 * GIB], [(0, 1)])
+# Real RTX 3090 torch total_memory (the cell exposed the nominal-24-GiB error)
+THIRTY_NINETY_BYTES = 25_351_356_416
+THIRTY_NINETY_X2 = inventory([THIRTY_NINETY_BYTES, THIRTY_NINETY_BYTES], [(0, 1)])
 EIGHT_LAYERS = {layer: 5_457_051_648 for layer in range(58, 66)}  # #730's per-layer banks
 # #730 measured working set: peak reserved 24,891,097,088 B − 21,828,206,592 B
 # banks per GPU = 3,062,890,496 B (fleet chain fp8-oracle shape, tokens 8)
@@ -116,7 +118,7 @@ class DecisionTests(unittest.TestCase):
         self.assertIn('single device', decision['reason'])
 
     def test_no_p2p_pair_means_stream(self):
-        inv = inventory([24 * GIB, 24 * GIB], [])
+        inv = inventory([THIRTY_NINETY_BYTES, THIRTY_NINETY_BYTES], [])
         decision: dict = peer_split_decision(EIGHT_LAYERS, inv, enabled=True)
         self.assertEqual(decision['mode'], 'host_resident_stream')
         self.assertIn('no mutually P2P-capable pair', decision['reason'])

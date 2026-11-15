@@ -33,14 +33,16 @@ DISABLE_VALUES = ('0', 'false', 'off')
 # #730 measured the working set on top of split-resident banks directly:
 # peak reserved 24,891,097,088 B − 21,828,206,592 B banks per GPU =
 # 3,062,890,496 B, for the fleet chain's fp8-oracle parity shape (tokens 8).
-# With this measured value the projected free fraction equals the cell's
-# measured 3.41%. Callers with a different workload pass their own.
+# Callers with a different workload pass their own.
 DEFAULT_WORKING_SET_BYTES = 3_062_890_496
-# #730 completed with 3.4% of device memory to spare at that shape; the
-# default go/no-go requires a little more than was measured to spare, so a
-# projection that lands under it has the margin the measured cell actually
-# demonstrated plus a hair. Callers override with their own measurement.
-DEFAULT_MIN_FREE_FRACTION = 0.03
+# #730's cell COMPLETED at peak 24,891,097,088 B on devices whose real
+# total_memory is 25,351,356,416 B (the RTX 3090 exposes ~23.6 GiB, not
+# the 24 GiB nominal) — measured free fraction 1.8155%. The default
+# go/no-go admits a projection only when it leaves at least what the
+# PROVEN cell measurably demonstrated (evidence-derived floor, not an
+# assumed margin). The earlier 3.4%-of-24-GiB claim used the nominal
+# denominator and was corrected on #730/#731.
+DEFAULT_MIN_FREE_FRACTION = 1 - 24_891_097_088 / 25_351_356_416  # ≈ 0.01816
 
 
 def peer_split_enabled(env=None):
