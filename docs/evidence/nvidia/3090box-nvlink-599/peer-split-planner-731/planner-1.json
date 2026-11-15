@@ -1,0 +1,108 @@
+{
+  "bank_read_seconds": 50.2,
+  "device": [
+    "NVIDIA GeForce RTX 3090",
+    "NVIDIA GeForce RTX 3090"
+  ],
+  "gates": [
+    {
+      "devices": [
+        "NVIDIA GeForce RTX 3090",
+        "NVIDIA GeForce RTX 3090"
+      ],
+      "gate": "live_inventory",
+      "passed": true,
+      "peer_matrix": [
+        {
+          "destination": 1,
+          "peer_available": true,
+          "source": 0
+        },
+        {
+          "destination": 0,
+          "peer_available": true,
+          "source": 1
+        }
+      ]
+    },
+    {
+      "decision": {
+        "arithmetic": {
+          "device_total_bytes": {
+            "0": 25351356416,
+            "1": 25351356416
+          },
+          "min_free_fraction": 0.03,
+          "per_gpu_banks_bytes": 21828206592,
+          "projected_free_fraction": {
+            "0": 0.018155215068078823,
+            "1": 0.018155215068078823
+          },
+          "projected_peak_bytes": 24891097088,
+          "working_set_bytes": 3062890496
+        },
+        "layer_count": 8,
+        "mode": "host_resident_stream",
+        "opt_in": true,
+        "pair": [
+          0,
+          1
+        ],
+        "reason": "P2P pair (0,1) exists but the projected peak leaves less than the required free fraction",
+        "single_gpu_feasible": false,
+        "total_bytes": 43656413184
+      },
+      "gate": "plan_picks_split",
+      "passed": false
+    },
+    {
+      "gate": "arithmetic_matches_730",
+      "measured_peak_bytes": 24891097088,
+      "passed": true,
+      "projected_peak_bytes": 24891097088
+    },
+    {
+      "decision": {
+        "arithmetic": {
+          "device_total_bytes": {
+            "0": 25351356416,
+            "1": 25351356416
+          },
+          "min_free_fraction": 0.03,
+          "per_gpu_banks_bytes": 24556732416,
+          "projected_free_fraction": {
+            "0": -0.089473180794714,
+            "1": -0.089473180794714
+          },
+          "projected_peak_bytes": 27619622912,
+          "working_set_bytes": 3062890496
+        },
+        "layer_count": 9,
+        "mode": "host_resident_stream",
+        "opt_in": true,
+        "pair": [
+          0,
+          1
+        ],
+        "reason": "P2P pair (0,1) exists but the projected peak leaves less than the required free fraction",
+        "single_gpu_feasible": false,
+        "total_bytes": 49113464832
+      },
+      "gate": "nine_layers_refused",
+      "note": "layer-66 size proxied by layer-58 (same architecture; its bank is parked on homer and not readable from 3090box)",
+      "passed": true
+    },
+    {
+      "gate": "opt_in_off_by_default",
+      "passed": true,
+      "reason": "DAMENDAEMON_PEER_RESIDENT_SPLIT not enabled (opt-in; default off until promotion per #731)"
+    }
+  ],
+  "layer": [
+    58,
+    66
+  ],
+  "mechanism": "peer_split_planner_validation",
+  "passed": false,
+  "torch": "2.10.0"
+}

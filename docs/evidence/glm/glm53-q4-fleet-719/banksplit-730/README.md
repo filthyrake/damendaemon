@@ -25,14 +25,17 @@ transfer sizes.
 
 **Gate 4 — failed as declared, and the finding is the deliverable.**
 The runner's conservative line (peak reserved ≤ 94% of device memory)
-was exceeded: peaks 24.89 GB (96.6%) / 24.70 GB (95.7%). The issue's
-pre-declared acceptance bound — per-GPU peak within the GUARD envelope —
-held: guard completed clean (633 s), no OOM, no reserve breach at
-`--gpu-reserve-mib 0`. Both numbers are stated; the report's
-`passed: false` is the strict in-runner line and is left unedited. The
-measured headroom (~3.4%) is the real capacity bound: this 8-layer /
-40.66 GiB range fits, a 9-layer range would not. #731's placement
-arithmetic should consume the measured headroom, not the assumed 6%.
+was exceeded. CORRECTED figures (the first write-up divided by the
+24 GiB nominal; the RTX 3090 exposes total_memory 25,351,356,416 B =
+~23.6 GiB, which the #731 planner cell caught): peaks 24.89 GB
+(98.18% of real device memory) / 24.70 GB (97.42%); true free headroom
+**1.82% / 2.58%**, not 3.4%. The issue's pre-declared acceptance bound —
+per-GPU peak within the GUARD envelope — held: guard completed clean
+(633 s), no OOM, no reserve breach at `--gpu-reserve-mib 0`. Both numbers
+are stated; the report's `passed: false` is the strict in-runner line and
+is left unedited. The measured headroom is the real capacity bound: this
+8-layer / 40.66 GiB range fits, a 9-layer range would not. #731's placement
+arithmetic consumes the measured headroom, not the nominal-GiB estimate.
 
 ## Attempts (all retained)
 
@@ -50,7 +53,8 @@ found by init-verification within seconds of the first layer.
 - Aggregate resident banks: 43,656,413,184 B (40.66 GiB) across 8 layers
   (5.08 GiB/layer, 256 experts, contiguous split at expert 128).
 - Per-GPU: 21.83 GiB banks + ~2.9 GB working set (fp8 oracle transients +
-  allocator chunks) → peak 96.6%/95.7% of 24 GB.
+  allocator chunks) → peak 98.18%/97.42% of real device memory
+  (25,351,356,416 B per card; the 24 GB figure is nominal).
 - Single-GPU equivalent: impossible — 40.66 GiB > 24 GB; the shipped path
   streams from host RAM per use instead.
 
